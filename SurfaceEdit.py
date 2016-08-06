@@ -368,8 +368,8 @@ class SurfaceEdit(QtGui.QWidget):
         self.doc1.setGeometry(30, 340, 180, 30)
 
         self.doc2 = QtGui.QLabel(self)
-        self.doc2.setText('\'x\',\'y\',\'z\' : Axis constraint')
-        self.doc2.setGeometry(30, 380, 180, 30)
+        self.doc2.setText('While grabbing points : \n\'x\',\'y\',\'z\' : Axis / Normal plan  constraint\n\'s\' : weight edit')
+        self.doc2.setGeometry(30, 380, 280, 60)
 
     def rounded(self,v):
         return(str(int(v*100)/100.))
