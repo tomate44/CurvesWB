@@ -100,16 +100,26 @@ class Object3D(coin.SoSeparator):
             pts = self.points
             for i, pt in enumerate(pts):
                 if not isinstance(mouse_coords, list):
-                    if (mouse_coords > 0):
+                    if fact == 0:
+                        pt[3] = self._tmp_points[i][3]
+                        pt[0] = self._tmp_points[i][0]
+                        pt[1] = self._tmp_points[i][1]
+                        pt[2] = self._tmp_points[i][2]
+                    elif (mouse_coords > 0.0):
                         pt[3] = self._tmp_points[i][3] * (mouse_coords + 1.) * fact
                         pt[0] = self._tmp_points[i][0] * (mouse_coords + 1.) * fact
                         pt[1] = self._tmp_points[i][1] * (mouse_coords + 1.) * fact
                         pt[2] = self._tmp_points[i][2] * (mouse_coords + 1.) * fact
-                    elif (mouse_coords < 0):
+                    elif (mouse_coords < 0.0):
                         pt[3] = self._tmp_points[i][3] / ( abs(mouse_coords - 1) * fact )
                         pt[0] = self._tmp_points[i][0] / ( abs(mouse_coords - 1) * fact )
                         pt[1] = self._tmp_points[i][1] / ( abs(mouse_coords - 1) * fact )
                         pt[2] = self._tmp_points[i][2] / ( abs(mouse_coords - 1) * fact )
+                    else:
+                        pt[3] = self._tmp_points[i][3]
+                        pt[0] = self._tmp_points[i][0]
+                        pt[1] = self._tmp_points[i][1]
+                        pt[2] = self._tmp_points[i][2]
                     #App.Console.PrintMessage("Weight : " + str(pt[3]) + "\n")
                 else:
                     pt[3] = self._tmp_points[i][3]
@@ -257,6 +267,8 @@ class Container(coin.SoSeparator):
         self.on_drag_start = []
         self._direction = None
         self.Axis = None
+        self.nbUPoles = 1
+        self.nbVPoles = 1
 
     def addChild(self, child):
         super(Container, self).addChild(child)
@@ -356,7 +368,41 @@ class Container(coin.SoSeparator):
                             self.select_object.append(obj)
                 self.ColorSelected()
                 self.selection_changed()
-
+        elif (event.getKey() == ord("r")):
+            if event.getState() == event.DOWN:
+                if self.select_object:
+                    active = self.select_object[-1]
+                    for o in self.select_object:
+                        o.unselect()
+                    self.select_object = []
+                    i = self.objects.index(active)
+                    u = i / self.nbVPoles
+                    v = i % self.nbVPoles
+                    App.Console.PrintMessage("Point UV : " + str((u,v)) + "\n")
+                    for j in range(len(self.objects)):
+                        if self.objects[j].dynamic:
+                            if ((j / self.nbVPoles) == u ):
+                                self.select_object.append(self.objects[j])
+                    self.ColorSelected()
+                    self.selection_changed()
+        elif (event.getKey() == ord("c")):
+            if event.getState() == event.DOWN:
+                if self.select_object:
+                    active = self.select_object[-1]
+                    for o in self.select_object:
+                        o.unselect()
+                    self.select_object = []
+                    i = self.objects.index(active)
+                    u = i / self.nbVPoles
+                    v = i % self.nbVPoles
+                    App.Console.PrintMessage("NbUPoles : " + str(self.nbVPoles) + "\n")
+                    App.Console.PrintMessage("Point IUV : " + str((i,u,v)) + "\n")
+                    for j in range(len(self.objects)):
+                        if self.objects[j].dynamic:
+                            if ((j % self.nbVPoles) == v ):
+                                self.select_object.append(self.objects[j])
+                    self.ColorSelected()
+                    self.selection_changed()
 
     def drag_cb(self, event_callback):
         event = event_callback.getEvent()
@@ -434,12 +480,31 @@ class Container(coin.SoSeparator):
             #self._direction = key
 
         elif type(event) == coin.SoLocation2Event:
-            fact = 0.3 if event.wasShiftDown() else 1.
+            if   event.wasShiftDown():
+                fact = 0.3
+                prop = 0.0
+            elif event.wasCtrlDown():
+                fact = 0.0
+                prop = 1.0
+            else:
+                fact = 1.0
+                prop = 0.0
+            #fact = 0.3 if event.wasShiftDown() else 1.
+            l = 1. * len(self.drag_objects)
             diff = self.cursor_pos(event) - self.start_pos
             diff = self.constrained_vector(diff)
             # self.start_pos = self.cursor_pos(event)
+            dol = []
             for obj in self.drag_objects:
-                obj.drag(diff, fact)
+                dol.append(self.objects.index(obj))
+            dol.sort()
+            i = 1.
+            for j in dol: #self.objects:
+                self.objects[j].drag(diff, fact + prop * i / l)
+                #App.Console.PrintMessage("prop : " + str(fact + prop * i / l) + "\n")
+                i += 1.
+            App.Console.PrintMessage("Drag objects indexes : " + str(dol) + "\n")
+            
             for foo in self.on_drag:
                 foo()
 

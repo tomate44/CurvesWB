@@ -261,20 +261,24 @@ class SurfaceEdit(QtGui.QWidget):
 
         for row in self.markerList:
             self.cpc.addChildren(row)
+        
+        self.cpc.nbUPoles = len(self.markerList)
+        self.cpc.nbVPoles = len(self.markerList[0])
 
         self.updateViewObjects()
         self.CoinSurf = coinSurface(self.selectedSurface)
         self.grid = coinGrid(self.markerList)
-        self.sg.addChild(self.SoCoords)
-        self.sg.addChild(self.grid.gridSep)
+        self.vizSep = coin.SoSeparator()
+        self.vizSep.addChild(self.SoCoords)
+        self.vizSep.addChild(self.grid.gridSep)
         FreeCAD.Console.PrintMessage("Grid added\n")
-        self.sg.addChild(self.CoinSurf.surfaceNode)
+        self.vizSep.addChild(self.CoinSurf.surfaceNode)
         FreeCAD.Console.PrintMessage("Surface added\n")
-        self.sg.addChild(self.cpc)
+        self.vizSep.addChild(self.cpc)
         FreeCAD.Console.PrintMessage("container added\n")
         self.cpc.register(self.view)
         FreeCAD.Console.PrintMessage("container registered\n")
-        #self.sg.addChild(self.SoCoords)
+        self.sg.addChild(self.vizSep)
         #self.sg.addChild(self.grid.gridSep)
         #FreeCAD.Console.PrintMessage("Grid added\n")
         #self.sg.addChild(self.CoinSurf.surfaceNode)
@@ -292,6 +296,7 @@ class SurfaceEdit(QtGui.QWidget):
                 ss = sel0.SubObjects[0]
                 if ss.ShapeType == 'Face':
                     surf = ss.Surface
+                    self.selectedFace = ss
                     self.selectedObject = sel0.Object
                     self.selectedObject.ViewObject.Visibility = False
                     if issubclass(type(surf),Part.BezierSurface):
@@ -368,8 +373,8 @@ class SurfaceEdit(QtGui.QWidget):
         self.doc1.setGeometry(30, 340, 180, 30)
 
         self.doc2 = QtGui.QLabel(self)
-        self.doc2.setText('While grabbing points : \n\'x\',\'y\',\'z\' : Axis / Normal plan  constraint\n\'s\' : weight edit')
-        self.doc2.setGeometry(30, 380, 280, 60)
+        self.doc2.setText('\'x\',\'y\',\'z\' : Axis constraint')
+        self.doc2.setGeometry(30, 380, 180, 30)
 
     def rounded(self,v):
         return(str(int(v*100)/100.))
@@ -450,14 +455,22 @@ class SurfaceEdit(QtGui.QWidget):
                     ##for j in range(len(weights[i])):
                         ##FreeCAD.Console.PrintMessage("Weight - "+str(i+1)+ "  "+str(j+1)+ " -> " + str(weights[i][j]) + "\n")
                         ##s.setWeight(i+1,j+1,weights[i][j])
-            
-            self.selectedObject.Shape = s.toShape()
-            self.selectedObject.ViewObject.Visibility = True
+            faces = []
+            for f in self.selectedObject.Shape.Faces:
+                if not f.isSame(self.selectedFace):
+                    print str(f)
+                    faces.append(f)
+            faces.append(s.toShape())
+            print str(faces)
+            shell = Part.Shell(faces)
+            Part.show(shell)
+            #self.selectedObject.ViewObject.Visibility = False
         FreeCAD.Console.PrintMessage(str(time.time()-t))
 
     def activate(self):
         self.apply()   
         self.onCancel()
+        self.selectedObject.ViewObject.Visibility = False
 
     def clear(self):
         if self.selectedObject:
@@ -465,15 +478,17 @@ class SurfaceEdit(QtGui.QWidget):
             self.selectedObject.touch()
             if self.render:
                 self.render.setRenderMode(self.render.AS_IS)
-            if self.CoinSurf:
-                self.sg.removeChild(self.CoinSurf.surfaceNode)
-            if self.grid:
-                self.sg.removeChild(self.grid.gridSep)
-            if self.SoCoords:
-                self.sg.removeChild(self.SoCoords)
+            #if self.CoinSurf:
+                #self.sg.removeChild(self.CoinSurf.surfaceNode)
+            #if self.grid:
+                #self.sg.removeChild(self.grid.gridSep)
+            #if self.SoCoords:
+                #self.sg.removeChild(self.SoCoords)
             if self.cpc:
                 self.cpc.removeAllChildren()
                 self.cpc.unregister()
+            if self.vizSep:
+                self.sg.removeChild(self.vizSep)
             FreeCAD.activeDocument().recompute()
 
     def onCancel(self):

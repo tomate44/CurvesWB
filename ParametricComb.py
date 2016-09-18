@@ -23,13 +23,13 @@ class Comb:
         self.execute(obj)
 
     def computeComb(self, fp):
-        FreeCAD.Console.PrintMessage("\nComb computeComb\n")
+        FreeCAD.Console.PrintMessage("\nComb : computeComb\n")
         num = fp.Samples
         lines = []
         o = fp.Edge[0]
-        print o
+        #print o
         n = eval(fp.Edge[1][0].lstrip('Edge'))
-        print n
+        #print n
         bs_1 = o.Shape.Edges[n-1].Curve
         firstParameter = o.Shape.Edges[n-1].FirstParameter
         lastParameter = o.Shape.Edges[n-1].LastParameter
@@ -41,9 +41,13 @@ class Comb:
             t = firstParameter + parameterRange * i / num
             v0 = bs_1.value(t)
             pts.append(v0)
-            v1 = bs_1.toShape().centerOfCurvatureAt(t)
-            v2 = v0.sub(v1)
             c = bs_1.toShape().curvatureAt(t)
+            if c:
+                v1 = bs_1.toShape().centerOfCurvatureAt(t)
+            else:
+                v1 = v0
+            v2 = v0.sub(v1)
+            
             lines.append([v0,v2,c])
             if c > max:
                 max  = c
@@ -51,9 +55,9 @@ class Comb:
                 min = c
         fp.CurvePoints = pts
         fp.Shape = Part.makePolygon(pts)
-        print str(min)
-        print str(max)
-        print fp.CurvePoints
+        #print str(min)
+        #print str(max)
+        #print fp.CurvePoints
 
         curvatureScale = fp.Scale
         if fp.Relative and fp.Type == "Curvature":
@@ -74,10 +78,10 @@ class Comb:
                     newVec = FreeCAD.Vector(l[1]).normalize().multiply(curvatureScale / 100)
                 y = l[0].add(newVec)
                 combpts.append(y)
-                print str(y.Length)
+                #print str(y.Length)
             else:
                 combpts.append(l[0])
-                print "  0"
+                #print "  0"
         fp.CombPoints = combpts
 
     def onChanged(self, fp, prop):
@@ -85,15 +89,15 @@ class Comb:
         if not fp.Edge:
             return
         if prop == "Edge":
-            FreeCAD.Console.PrintMessage("\nEdge changed\n")
+            FreeCAD.Console.PrintMessage("\nComb : Edge changed\n")
             print fp.Edge
             self.execute(fp)
         if prop == "Type" or prop == "Scale" or prop == "Samples":
-            FreeCAD.Console.PrintMessage("\nPropery changed\n")
+            FreeCAD.Console.PrintMessage("\nComb : Propery changed\n")
             self.execute(fp)
 
     def execute(self, fp):
-        FreeCAD.Console.PrintMessage("\nComb class execute\n")
+        FreeCAD.Console.PrintMessage("\nComb : execute\n")
         self.computeComb(fp)
 
 
@@ -104,7 +108,7 @@ class ViewProviderComb:
         obj.Proxy = self
 
     def attach(self, obj):
-        FreeCAD.Console.PrintMessage("\n ViewProviderComb.attach \n")
+        FreeCAD.Console.PrintMessage("\nComb : ViewProviderComb.attach \n")
 
         self.wireframe = coin.SoGroup()
 
@@ -135,7 +139,7 @@ class ViewProviderComb:
         self.onChanged(obj,"Color")
 
     def updateData(self, fp, prop):
-        FreeCAD.Console.PrintMessage("\n ViewProviderComb.updateData \n")
+        FreeCAD.Console.PrintMessage("\nComb : ViewProviderComb.updateData \n")
         if fp.Type == "Curvature":
             self.combColor.rgb  = (0,0.8,0)
         elif fp.Type == "Radius":
@@ -152,7 +156,7 @@ class ViewProviderComb:
             cnt1 += 1
         ptsIndex1.append(-1)
 
-        print "Number of Curve points : "+str(len(pts1))
+        #print "Number of Curve points : "+str(len(pts1))
         #print ptsIndex1
         
         pts2 = []
@@ -167,7 +171,7 @@ class ViewProviderComb:
             ptsIndex2.append(1+i*2)
             ptsIndex2.append(-1)
 
-        print "Number of Comb points : "+str(len(pts2))
+        #print "Number of Comb points : "+str(len(pts2))
 
         self.curvePts.point.setValue(0,0,0)
         self.curveLines.coordIndex.setValue(0)
@@ -194,7 +198,7 @@ class ViewProviderComb:
 
     def onChanged(self, vp, prop):
         "Here we can do something when a single property got changed"
-        FreeCAD.Console.PrintMessage("Change property: " + str(prop) + "\n")
+        FreeCAD.Console.PrintMessage("Comb : Change property: " + str(prop) + "\n")
         return
         
     def getIcon(self):

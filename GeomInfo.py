@@ -39,7 +39,7 @@ class GeomInfo:
 
             self.myFont = coin.SoFont()
             self.myFont.name = "Arial"
-            self.myFont.size.setValue(14.0)
+            self.myFont.size.setValue(10.0)
             #self.trans = coin.SoTranslation()
             self.SoText2  = coin.SoText2()
             #self.trans.translation.setValue(.25,.0,1.25)
@@ -54,12 +54,21 @@ class GeomInfo:
             #self.textSep.addChild(self.trans)
             self.textSep.addChild(self.SoText2)
             #self.Active = False
-            self.sg.addChild(self.textSep)
+            #self.sg.addChild(self.textSep)
+            
+            self.viewer=self.view.getViewer()
+            self.render=self.viewer.getSoRenderManager()
+            self.sup = self.render.addSuperimposition(self.textSep)
+            self.sg.touch()
+            #self.cam2 = coin.SoPerspectiveCamera()
+            #self.sg.addChild(self.cam2)
+            
             self.Active = True
             self.getTopo()
         elif (index == 0) and self.Active:
             print "Toggle is off"
-            self.sg.removeChild(self.textSep)
+            self.render.removeSuperimposition(self.sup)
+            self.sg.touch()
             self.Active = False
         #else:
             #print "Else ....."
@@ -82,7 +91,14 @@ class GeomInfo:
         ret.append(beautify(str(surf)))
         ret.append("Poles  : " + str(surf.NbUPoles) + " x " + str(surf.NbVPoles))
         ret.append("Degree : " + str(surf.UDegree) + " x " + str(surf.VDegree))
-        FreeCAD.Console.PrintMessage(ret)
+        funct = [(surf.isURational,"U Rational"),
+                 (surf.isVRational,"V Rational"),
+                 (surf.isUPeriodic,"U Periodic"),
+                 (surf.isVPeriodic,"V Periodic") ]
+        for i in funct:
+            if i[0]():
+                ret.append(i[1])
+        #FreeCAD.Console.PrintMessage(ret)
         return ret
         
     def getCurvInfo(self,edge):
@@ -90,7 +106,7 @@ class GeomInfo:
         ret.append(beautify(str(edge)))
         ret.append("Poles  : " + str(edge.NbPoles))
         ret.append("Degree : " + str(edge.Degree))
-        FreeCAD.Console.PrintMessage(ret)
+        #FreeCAD.Console.PrintMessage(ret)
         return ret
 
     def getTopo(self):
