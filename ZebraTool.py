@@ -18,6 +18,8 @@ class zebra(QtGui.QWidget):
         #self.zebraWidget = QtGui.QWidget()
         self.ui = Zebra_Gui.Ui_Zebra()
         self.ui.setupUi(self) #.zebraWidget)
+        self.tabIndex = 0
+        self.comboview = None
 
         self.StripeWidth = 25
         self.Scale = 20
@@ -107,9 +109,7 @@ class zebra(QtGui.QWidget):
         print "Quit ..."
         self.coinQuit()
         self.close() #zebraWidget.close()
-        mw = getMainWindow()
-        tab = getComboView(getMainWindow())
-        tab.removeTab(2)
+        self.comboview.removeTab(self.tabIndex)
 
 
 def getMainWindow():
@@ -134,12 +134,17 @@ def getComboView(mw):
 
 class ZebraTool:
     def Activated(self):
-        mw = getMainWindow()
-        tab = getComboView(getMainWindow())
+        
+        self.mw = getMainWindow()
+        self.tab = getComboView(self.mw)
+        self.tab2=zebra()
+        i = self.tab.addTab(self.tab2,"Zebra Tool")
+        self.tab.setCurrentIndex(i)
+        self.tab2.comboview = self.tab
+        self.tab2.tabIndex = i
+        self.tab2.show()   #zebraWidget.show()
+        
 
-        tab2=zebra()
-        tab.addTab(tab2,"Zebra Tool")   #.zebraWidget,"Zebra Tool")
-        tab2.show()   #zebraWidget.show()   
 
     def GetResources(self):
         return {'Pixmap' : path_curvesWB_icons+'/zebra.svg', 'MenuText': 'ZebraTool', 'ToolTip': 'Zebra texture for surface inspection'}
