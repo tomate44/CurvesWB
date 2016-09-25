@@ -497,6 +497,7 @@ class SurfaceEdit(QtGui.QWidget):
         mw = getMainWindow()
         tab = getComboView(getMainWindow())
         tab.removeTab(2)
+        SurfaceEditTool.active = False
         
 
 
@@ -522,13 +523,19 @@ def getComboView(mw):
    raise Exception ("No tab widget found")
 
 class SurfaceEditTool:
+    def __init__(self):
+        SurfaceEditTool.active = False
     def Activated(self):
-        mw = getMainWindow()
-        tab = getComboView(getMainWindow())
+        if not SurfaceEditTool.active:
+            mw = getMainWindow()
+            tab = getComboView(getMainWindow())
 
-        tab2=SurfaceEdit()
-        tab.addTab(tab2,"Surface Edit Tool")
-        tab2.show()   #zebraWidget.show()   
+            tab2=SurfaceEdit()
+            tab.addTab(tab2,"Surface Edit Tool")
+            tab2.show()   #zebraWidget.show()   
+            SurfaceEditTool.active = True
+        else:
+            FreeCAD.Console.PrintMessage("Tool already active\n")
 
     def GetResources(self):
         return {'Pixmap' : path_curvesWB_icons+'/Tree_Part_Plane_Parametric.svg', 'MenuText': 'SurfaceEditTool', 'ToolTip': 'Edit NURBS Surfaces'}
