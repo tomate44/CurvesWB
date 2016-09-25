@@ -110,6 +110,7 @@ class zebra(QtGui.QWidget):
         self.coinQuit()
         self.close() #zebraWidget.close()
         self.comboview.removeTab(self.tabIndex)
+        ZebraTool.active = False
 
 
 def getMainWindow():
@@ -133,16 +134,21 @@ def getComboView(mw):
    raise Exception ("No tab widget found")
 
 class ZebraTool:
+    def __init__(self):
+        ZebraTool.active = False
     def Activated(self):
-        
-        self.mw = getMainWindow()
-        self.tab = getComboView(self.mw)
-        self.tab2=zebra()
-        i = self.tab.addTab(self.tab2,"Zebra Tool")
-        self.tab.setCurrentIndex(i)
-        self.tab2.comboview = self.tab
-        self.tab2.tabIndex = i
-        self.tab2.show()   #zebraWidget.show()
+        if not ZebraTool.active:
+            self.mw = getMainWindow()
+            self.tab = getComboView(self.mw)
+            self.tab2=zebra()
+            i = self.tab.addTab(self.tab2,"Zebra Tool")
+            self.tab.setCurrentIndex(i)
+            self.tab2.comboview = self.tab
+            self.tab2.tabIndex = i
+            self.tab2.show()
+            ZebraTool.active = True
+        else:
+            FreeCAD.Console.PrintMessage("Tool already active\n")
         
 
 
