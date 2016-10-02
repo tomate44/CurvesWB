@@ -43,6 +43,7 @@ def getEdgeNormalList(edge, paramList):
     return res
 
 
+
 def getEdgePointCurvNormList(edge, paramList):
     ''' No perf gain '''
     pts = []
@@ -61,6 +62,13 @@ def getEdgeData(edge, paramList):
     nor = getEdgeNormalList(edge, paramList)
     return [pts,cur,nor]
 
+def getCombPoints(data, scale):
+    pts = []
+    for i in range(len(data[0])):
+        v = FreeCAD.Vector(data[2][i]).multiply(data[1][i]*scale)
+        pts.append(data[0][i].add(v))
+    return pts
+
 
 
 class Comb:
@@ -76,6 +84,8 @@ class Comb:
         #obj.addProperty("App::PropertyVectorList","CombPoints","Comb","CombPoints")
         obj.addProperty("Part::PropertyPartShape","Shape","Comb", "Shape of comb plot")
         objs = []
+        obj.Proxy = self
+        
         for o in edge:
             if isinstance(o,tuple) or isinstance(o,list):
                 if o[0].Name != obj.Name:
@@ -85,27 +95,54 @@ class Comb:
                     if "Edge" in el:
                         if o.Object.Name != obj.Name:
                             objs.append((o.Object,el))
-        obj.Edge = objs
-        obj.Proxy = self
-        FreeCAD.Console.PrintMessage(str(edge) + "\n")
-        FreeCAD.Console.PrintMessage(str(obj.Edge) + "\n")
-        self.execute(obj)
+        if objs:
+            obj.Edge = objs
+            FreeCAD.Console.PrintMessage(str(edge) + "\n")
+            FreeCAD.Console.PrintMessage(str(obj.Edge) + "\n")
+            self.execute(obj)
 
     def execute(self, fp):
         #FreeCAD.Console.PrintMessage("\nComb : computeComb\n")
-        num = fp.Samples
+        #num = fp.Samples
         lines = []
-        max = 0
-        min = 1e10
+        maxCur = 0.01
+        minCur = 1e10
         pts = []
+        edges =  []
+        params = []
+        datas =  []
+        totalLength = 0
         for e in fp.Edge:
             o = e[0]
             FreeCAD.Console.PrintMessage(str(o) + " - ")
             for f in e[1]:
                 n = eval(f.lstrip('Edge'))
                 FreeCAD.Console.PrintMessage(str(n) + "\n")
-                
-                bs_1 = o.Shape.Edges[n-1].Curve
+                g = o.Shape.Edges[n-1]
+                totalLength += g.Length
+                edges.append(g)
+                p = getEdgeParamList(g, num = fp.Samples)
+                params.append(p)
+                d = getEdgeData(g, p)
+                datas.append(d)
+                if maxCur < max(d[1]):
+                    maxCur = max(d[1])
+                # computation of min value is not needed
+                #if minCur > min(d[1]):
+                #    minCur = min(d[1])
+        if fp.ScaleAuto:
+            fp.Scale = 0.4 * totalLength
+            if fp.Type == "Curvature":
+                fp.Scale = fp.Scale / maxCur
+
+        self.CurvePoints = []
+        self.CombPoints  = []
+        
+        for d in datas:
+            self.CurvePoints.append(d[0])
+            
+        
+        
                 firstParameter = o.Shape.Edges[n-1].FirstParameter
                 lastParameter = o.Shape.Edges[n-1].LastParameter
                 parameterRange = lastParameter - firstParameter
@@ -175,6 +212,9 @@ class Comb:
 class ViewProviderComb:
     def __init__(self, obj):
         "Set this object to the proxy object of the actual view provider"
+        obj.addProperty("App::PropertyColor","CurveColor","Comb","Color of the curvature curve").Color=(0.8,0.0,0.0)
+        obj.addProperty("App::PropertyColor","CombColor","Comb","Color of the curvature comb").Color=(0.0,0.8,0.0)
+        # TODO : add transparency property
         obj.Proxy = self
 
     def attach(self, obj):
