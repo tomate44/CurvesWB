@@ -39,7 +39,10 @@ def getEdgeCurvatureList(edge, paramList):
 def getEdgeNormalList(edge, paramList):
     res = []
     for p in paramList:
-        res.append(edge.normalAt(p))
+        if not edge.curvatureAt(p):
+            res.append(edge.normalAt(p))
+        else:
+            res.append(FreeCAD.Vector(1e-3,1e-3,1e-3))
     return res
 
 
@@ -70,7 +73,7 @@ def getCombPoints(data, scale):
     return pts
 
 def getSoPoints(data , scale):
-    pts = coin.SoCoordinate3()
+    pts = []
     for i in range(len(data[0])):
         v = FreeCAD.Vector(data[2][i]).multiply(data[1][i]*scale)
         w = data[0][i].add(v)
@@ -99,14 +102,14 @@ class Comb:
         obj.addProperty("App::PropertyLinkSubList","Edge","Comb","Edge")
         obj.addProperty("App::PropertyEnumeration","Type","Comb","Comb Type").Type=["Curvature","Unit Normal"]
         obj.addProperty("App::PropertyFloat","Scale","Comb","Scale (%)").Scale=100.0
-        obj.addProperty("App::PropertyBool","ScaleAuto","Comb","Automatic Scale").ScaleAuto = True
-        obj.addProperty("App::PropertyInteger","Samples","Comb","Number of samples").Samples=128
+        obj.addProperty("App::PropertyBool","ScaleAuto","Comb","Automatic Scale").ScaleAuto = False
+        obj.addProperty("App::PropertyInteger","Samples","Comb","Number of samples").Samples=4
         obj.addProperty("App::PropertyFloat","TotalLength","Comb","Total length of edges")
         #obj.addProperty("App::PropertyVectorList","CombPoints","Comb","CombPoints")
         obj.addProperty("Part::PropertyPartShape","Shape","Comb", "Shape of comb plot")
         obj.Proxy = self
         
-        #self.selectedEdgesToProperty( obj, edge)
+        self.selectedEdgesToProperty( obj, edge)
         self.execute(obj)
         
     def selectedEdgesToProperty(self, obj, edge):
@@ -129,17 +132,18 @@ class Comb:
         totalLength = 0
         for e in obj.Edge:
             o = e[0]
-            #FreeCAD.Console.PrintMessage(str(o) + " - ")
+            FreeCAD.Console.PrintMessage(str(o) + " - ")
             for f in e[1]:
                 n = eval(f.lstrip('Edge'))
-                #FreeCAD.Console.PrintMessage(str(n) + "\n")
+                FreeCAD.Console.PrintMessage(str(n) + "\n")
                 g = o.Shape.Edges[n-1]
                 totalLength += g.Length
         obj.TotalLength = totalLength
+        FreeCAD.Console.PrintMessage("Total Length : " + str(obj.TotalLength) + "\n")
 
 
     def execute(self, obj):
-        self.selectedEdgesToProperty( obj, obj.Edge)
+        #self.selectedEdgesToProperty( obj, obj.Edge)
         self.computeTotalLength(obj)
 
     def onChanged(self, fp, prop):
@@ -196,24 +200,27 @@ class ViewProviderComb:
     def getMaxCurv(self, samples):
         self.maxCurv = 0.001
         for e in self.edges:
-            pl = getEdgeParamList(e, num = samples)
+            pl = getEdgeParamList(e, None, None, samples)
             cl = getEdgeCurvatureList(e, pl)
             m = max(cl)
             if self.maxCurv < m:
                 self.maxCurv = m
+        FreeCAD.Console.PrintMessage("max curvature : "+str(self.maxCurv)+"\n")
                 
     def getCurvFactor(self, obj):
         if obj.ScaleAuto:
             self.factor = 0.5 * obj.TotalLength / self.maxCurv
         else:
             self.factor = obj.Scale / 100
+        FreeCAD.Console.PrintMessage("Curvature Factor : "+str(self.factor)+"\n")
             
     def createNodes(self, fp):
         self.nodes = []
         for e in self.edges:
             node = SoComb(e)
-            self.nodes.append(node)
-            self.wireframe.addChild(node)
+            if not (node in self.nodes):
+                self.nodes.append(node)
+                self.wireframe.addChild(node)
 
     def attach(self, obj):
         #FreeCAD.Console.PrintMessage("\nComb : ViewProviderComb.attach \n")
@@ -244,12 +251,15 @@ class ViewProviderComb:
         self.getMaxCurv(fp.Samples)
         self.getCurvFactor(fp)
         for n in self.nodes:
-            pl = getEdgeParamList(n.edge, fp.Samples)
+            pl = getEdgeParamList(n.edge, None, None, fp.Samples)
             data = getEdgeData(n.edge, pl)
             n.points = getSoPoints(data , self.factor)
+            FreeCAD.Console.PrintMessage(str(len(n.points))+" Comb points : "+str(n.points)+"\n\n")
             ci = getCombCoords(fp.Samples)
+            n.combLines.coordIndex.setValues(0,0,[])
             n.combLines.coordIndex.setValues(0,len(ci),ci)
             di = getCurveCoords(fp.Samples)
+            n.curveLines.coordIndex.setValues(0,0,[])
             n.curveLines.coordIndex.setValues(0,len(di),di)
 
     def getDisplayModes(self,obj):
