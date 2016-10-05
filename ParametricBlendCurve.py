@@ -7,13 +7,56 @@ from pivy import coin
 path_curvesWB = os.path.dirname(dummy.__file__)
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 
+def ClosestPointsOnTwoLines( linePoint1, lineVec1, linePoint2, lineVec2):
+
+    closestPointLine1 = FreeCAD.Vector(0,0,0)
+    closestPointLine2 = FreeCAD.Vector(0,0,0)
+
+    a = lineVec1.dot( lineVec1 )
+    b = lineVec1.dot( lineVec2 )
+    e = lineVec2.dot( lineVec2 )
+
+    d = a*e - b*b
+
+    #lines are not parallel
+    if (d != 0):
+
+        r = linePoint1 - linePoint2
+        c = lineVec1.dot( r )
+        f = lineVec2.dot( r )
+
+        s = (b*f - c*e) / d
+        t = (a*f - c*b) / d
+
+        closestPointLine1 = linePoint1 + lineVec1.multiply(s)
+        closestPointLine2 = linePoint2 + lineVec2.multiply(t)
+
+        ret = [closestPointLine1,closestPointLine2]
+
+        return ret;
+
+    else:
+        return False;
+
+def IntersectionPoint( Pt1, Pt2, Pt3, Pt4):
+        
+    pt = ClosestPointsOnTwoLines( Pt1, Pt2-Pt1, Pt3, Pt4-Pt3 )
+
+    v = pt[1].sub(pt[0])
+    #l = v.Length
+    #v.normalize()
+    v.multiply(0.5)
+    
+    return ( pt[0].add(v) )
+
+
 class BlendCurve:
     def __init__(self, obj , edges):
         ''' Add the properties '''
         FreeCAD.Console.PrintMessage("\nBlendCurve class Init\n")
         
-        obj.addProperty("App::PropertyBool","AddCurves","BlendCurve","Add input curves to result").AddCurves = True
-        obj.addProperty("App::PropertyBool","ShowPoints","BlendCurve","Show ontrol polygon").ShowPoints = True
+        obj.addProperty("App::PropertyBool","AddCurves","BlendCurve","Add input curves to result").AddCurves = False
+        obj.addProperty("App::PropertyBool","ShowPoints","BlendCurve","Show ontrol polygon").ShowPoints = False
         
         obj.addProperty("App::PropertyLinkSub","Edge1","BlendCurve","Edge 1").Edge1 = edges[0]
         obj.addProperty("App::PropertyLinkSub","Edge2","BlendCurve","Edge 2").Edge2 = edges[1]
@@ -47,13 +90,15 @@ class BlendCurve:
         obj.Parameter1 = ( self.edge1.LastParameter * 100, self.edge1.FirstParameter * 100, self.edge1.LastParameter * 100, 0.5 )
         obj.Parameter2 = ( self.edge2.LastParameter * 100, self.edge2.FirstParameter * 100, self.edge2.LastParameter * 100, 0.5 )
         self.param1 = self.edge1.LastParameter
-        self.param2 = self.edge1.LastParameter
+        self.param2 = self.edge2.LastParameter
         
         obj.Proxy = self
         self.execute(obj)
 
     def initEdges(self, fp):
         n1 = eval(fp.Edge1[1][0].lstrip('Edge'))
+        if (not fp.Edge1[0].Shape.Edges) and (not fp.Edge2[0].Shape.Edges):
+            return
         if self.reverse1:
             self.curve1 = fp.Edge1[0].Shape.Edges[n1-1].Curve.copy()
             poles = self.curve1.getPoles()
@@ -80,21 +125,25 @@ class BlendCurve:
         poles = [self.edge1.valueAt(self.param1)] * (self.cont1 + 1) + [self.edge2.valueAt(self.param2)] * (self.cont2 + 1)
         #poles[0]  = self.edge1.valueAt(self.param1)
         #poles[-1] = self.edge2.valueAt(self.param2)
-        chord = poles[-1].sub(poles[0])
-        segmentLength = chord.Length * 1.0 / self.blendDegree
+        polese1 = self.curve1.getPoles()
+        polese2 = self.curve2.getPoles()
+        p = IntersectionPoint(polese1[-1],polese1[-2],polese2[-1],polese1[-2])
+        chordLength = p.sub(polese1[-1]).Length + p.sub(polese2[-1]).Length
+        #chord = poles[-1].sub(poles[0])
+        segmentLength = chordLength * 1.0 / self.blendDegree
         
         if self.cont1 > 0:
             e1d1 = self.edge1.derivative1At(self.param1)
             e1d1.normalize().multiply( segmentLength * self.scale1 )
             poles[1]  = poles[0].add(e1d1)
-            remaining = poles[1].sub(poles[-1]).Length
-            segmentLength = remaining * 1.0 / ( self.blendDegree -1 )
+            #remaining = poles[1].sub(poles[-1]).Length
+            #segmentLength = remaining * 1.0 / ( self.blendDegree -1 )
         if self.cont2 > 0:
             e2d1 = self.edge2.derivative1At(self.param2)
             e2d1.normalize().multiply( segmentLength * self.scale2 )
             poles[-2] = poles[-1].add(e2d1)
-            remaining = poles[-2].sub(poles[self.cont1]).Length
-            segmentLength = remaining * 1.0 / ( self.blendDegree -2 )
+            #remaining = poles[-2].sub(poles[self.cont1]).Length
+            #segmentLength = remaining * 1.0 / ( self.blendDegree -2 )
         
         if self.cont1 > 1:
             curvature1 = self.edge1.curvatureAt(self.param1)
@@ -107,8 +156,8 @@ class BlendCurve:
             c.Center = poles[0].add(v)
             c.Radius = radius
             poles[2] = c.value(c.parameter(poles[-1-self.cont2]))
-            remaining = poles[-1-self.cont2].sub(poles[2]).Length
-            segmentLength = remaining * 1.0 / ( 2 )
+            #remaining = poles[-1-self.cont2].sub(poles[2]).Length
+            #segmentLength = remaining * 1.0 / ( 2 )
             
         if self.cont2 > 1:
             curvature2 = self.edge2.curvatureAt(self.param2)
@@ -121,8 +170,8 @@ class BlendCurve:
             c.Center = poles[-1].add(v)
             c.Radius = radius
             poles[-3] = c.value(c.parameter(poles[self.cont1]))
-            remaining = poles[-3].sub(poles[self.cont1]).Length
-            segmentLength = remaining * 1.0 / ( 1 )
+            #remaining = poles[-3].sub(poles[self.cont1]).Length
+            #segmentLength = remaining * 1.0 / ( 1 )
         
         return poles
         
@@ -152,7 +201,7 @@ class BlendCurve:
             for e in edges:
                 poly.append(Part.makePolygon(e.Curve.getPoles()))
             edges += poly
-        fp.Shape  = Part.Wire(edges)            
+        fp.Shape  = Part.Wire(edges)
         #else:
             
             #fp.Shape = self.blendCurve.toShape()
@@ -176,9 +225,12 @@ class BlendCurve:
         elif prop == "Continuity2":
             self.cont2 = self.getContinuity(fp.Continuity2)
             self.blendDegree = 1 + self.cont1 + self.cont2
-        elif prop == "Reverse1" or prop == "Reverse2":
-            FreeCAD.Console.PrintMessage("\nReverse changed\n")
+        elif prop == "Reverse1":
+            FreeCAD.Console.PrintMessage("\nReverse1 changed\n")
             self.reverse1 = fp.Reverse1
+            self.initEdges(fp)
+        elif prop == "Reverse2":
+            FreeCAD.Console.PrintMessage("\nReverse2 changed\n")
             self.reverse2 = fp.Reverse2
             self.initEdges(fp)
         else:
