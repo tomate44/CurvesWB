@@ -376,13 +376,37 @@ class ParametricComb:
                     i += 1
         return res
     
+    def findComb(self, sel):
+        res = None
+        module = None
+        for obj in sel:
+            FreeCAD.Console.PrintMessage("\n-- Parsing Object : "+str(obj.Object.Label)+"\n")
+            try:
+                module = obj.Object.Proxy.__module__
+                if module == 'ParametricComb':
+                    res = obj.Object
+                    FreeCAD.Console.PrintMessage("Found active Comb : "+str(res.Label)+"\n\n")
+            except:
+                FreeCAD.Console.PrintMessage("No module found\n")
+
+        return res
+    
+    def appendEdges(self, comb, edges):
+        existingEdges = comb.Edge
+        newEdges = existingEdges + edges
+        comb.Edge = newEdges
+    
     def Activated(self):
         s = FreeCADGui.Selection.getSelectionEx()
         edges = self.parseSel(s)
-        FreeCAD.Console.PrintMessage(str(edges) + "\n")
-        obj=FreeCAD.ActiveDocument.addObject("App::FeaturePython","Comb") #add object to document
-        Comb(obj,edges)
-        ViewProviderComb(obj.ViewObject)
+        #FreeCAD.Console.PrintMessage(str(edges) + "\n")
+        combSelected = self.findComb(s)
+        if not combSelected:
+            obj=FreeCAD.ActiveDocument.addObject("App::FeaturePython","Comb") #add object to document
+            Comb(obj,edges)
+            ViewProviderComb(obj.ViewObject)
+        else:
+            self.appendEdges(combSelected, edges)
             
     def GetResources(self):
         return {'Pixmap' : path_curvesWB_icons+'/comb.svg', 'MenuText': 'ParametricComb', 'ToolTip': 'Creates a parametric Comb plot on selected edges'}
