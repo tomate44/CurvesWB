@@ -218,7 +218,7 @@ class Comb:
         if prop == "Type":
             FreeCAD.Console.PrintMessage("\nComb : Type Property changed\n")
         if prop == "Scale":
-            FreeCAD.Console.PrintMessage("\nComb : Scale Property changed\n")
+            FreeCAD.Console.PrintMessage("\nComb : Scale Property changed to "+str(fp.Scale)+"\n")
         if prop == "Samples":
             FreeCAD.Console.PrintMessage("\nComb : Samples Property changed\n")
             self.execute(fp)
@@ -322,33 +322,7 @@ class ViewProviderComb:
         return
         
     def getIcon(self):
-        return """
-            /* XPM */
-            static const char * ViewProviderBox_xpm[] = {
-            "16 16 6 1",
-            "    c None",
-            ".   c #141010",
-            "+   c #615BD2",
-            "@   c #C39D55",
-            "#   c #000000",
-            "$   c #57C355",
-            "        ........",
-            "   ......++..+..",
-            "   .@@@@.++..++.",
-            "   .@@@@.++..++.",
-            "   .@@  .++++++.",
-            "  ..@@  .++..++.",
-            "###@@@@ .++..++.",
-            "##$.@@$#.++++++.",
-            "#$#$.$$$........",
-            "#$$#######      ",
-            "#$$#$$$$$#      ",
-            "#$$#$$$$$#      ",
-            "#$$#$$$$$#      ",
-            " #$#$$$$$#      ",
-            "  ##$$$$$#      ",
-            "   #######      "};
-            """
+        return (path_curvesWB_icons+'/comb.svg')
 
     def __getstate__(self):
         return None
