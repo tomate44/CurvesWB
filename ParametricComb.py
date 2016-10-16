@@ -161,9 +161,13 @@ class Comb:
                         g = o.Shape.Faces[n-1]
                         try:
                             if obj.SurfaceOrientation == 'U':
-                                iso = g.Surface.uIso(0.5).toShape()
+                                bounds = g.Surface.bounds()
+                                midParam = bounds[0] + (bounds[1] - bounds[0]) / 2
+                                iso = g.Surface.uIso(midParam).toShape()
                             else:
-                                iso = g.Surface.vIso(0.5).toShape()
+                                bounds = g.Surface.bounds()
+                                midParam = bounds[2] + (bounds[3] - bounds[2]) / 2
+                                iso = g.Surface.vIso(midParam).toShape()
                             totalLength += iso.Length
                         except:
                             FreeCAD.Console.PrintMessage("Surface Error\n")
@@ -205,14 +209,17 @@ class Comb:
     def getuIsoEdges(self, face, samples):
         res = []
         n = []
+        bounds = face.Surface.bounds()
         if samples <= 1:
-            n = [0.5]
+            midParam = bounds[0] + (bounds[1] - bounds[0]) / 2
+            n = [midParam]
         elif samples == 2:
-            n = [0.0,1.0]
+            n = [bounds[0],bounds[1]]
         else :
+            brange = bounds[1] - bounds[0]
             for  i in range(samples-1):
-                n.append(1.*i/(samples-1))
-            n.append(1.0)
+                n.append(bounds[0] + brange*i/(samples-1))
+            n.append(bounds[1])
         for t in n:
             res.append(face.Surface.uIso(t).toShape())
         FreeCAD.Console.PrintMessage("U Iso curves :\n")
@@ -223,14 +230,17 @@ class Comb:
     def getvIsoEdges(self, face, samples):
         res = []
         n = []
+        bounds = face.Surface.bounds()
         if samples <= 1:
-            n = [0.5]
+            midParam = bounds[2] + (bounds[3] - bounds[2]) / 2
+            n = [midParam]
         elif samples == 2:
-            n = [0.0,1.0]
+            n = [bounds[2], bounds[3]]
         else :
+            brange = bounds[3] - bounds[2]
             for  i in range(samples-1):
-                n.append(1.*i/(samples-1))
-            n.append(1.0)
+                n.append(bounds[2] + brange*i/(samples-1))
+            n.append(bounds[3])
         for t in n:
             res.append(face.Surface.vIso(t).toShape())
         FreeCAD.Console.PrintMessage("V Iso curves :\n")
