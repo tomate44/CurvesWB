@@ -298,7 +298,8 @@ class SurfaceEdit(QtGui.QWidget):
                     surf = ss.Surface
                     self.selectedFace = ss
                     self.selectedObject = sel0.Object
-                    self.selectedObject.ViewObject.Visibility = False
+                    if "Wireframe" in self.selectedObject.ViewObject.listDisplayModes():
+                        self.selectedObject.ViewObject.DisplayMode = "Wireframe"
                     if issubclass(type(surf),Part.BezierSurface):
                         self.selectedSurface = surf
                         self.surfaceType = "Bezier"
@@ -470,11 +471,13 @@ class SurfaceEdit(QtGui.QWidget):
     def activate(self):
         self.apply()   
         self.onCancel()
-        self.selectedObject.ViewObject.Visibility = False
+        if "Wireframe" in self.selectedObject.ViewObject.listDisplayModes():
+            self.selectedObject.ViewObject.DisplayMode = "Wireframe"
 
     def clear(self):
         if self.selectedObject:
-            self.selectedObject.ViewObject.Visibility = True
+            if "Flat Lines" in self.selectedObject.ViewObject.listDisplayModes():
+                self.selectedObject.ViewObject.DisplayMode = "Flat Lines"
             self.selectedObject.touch()
             if self.render:
                 self.render.setRenderMode(self.render.AS_IS)
