@@ -110,6 +110,8 @@ class Comb:
         obj.addProperty("App::PropertyFloat","Scale","Comb","Scale (%)").Scale=100.0
         obj.addProperty("App::PropertyBool","ScaleAuto","Comb","Automatic Scale").ScaleAuto = True
         obj.addProperty("App::PropertyIntegerConstraint","Samples","Comb","Number of samples").Samples = 20
+        obj.addProperty("App::PropertyInteger","SurfaceSamples","Comb","Number of surface samples").SurfaceSamples = 3
+        obj.addProperty("App::PropertyEnumeration","SurfaceOrientation","Comb","Surface Comb Orientation").SurfaceOrientation=["U","V"]
         #obj.addProperty("App::PropertyFloat","TotalLength","Comb","Total length of edges")
         obj.addProperty("App::PropertyVectorList","CombPoints","Comb","CombPoints")
         obj.addProperty("Part::PropertyPartShape","Shape","Comb", "Shape of comb plot")
@@ -146,11 +148,31 @@ class Comb:
             o = e[0]
             FreeCAD.Console.PrintMessage(str(o) + " - ")
             for f in e[1]:
-                n = eval(f.lstrip('Edge'))
-                FreeCAD.Console.PrintMessage(str(n) + "\n")
-                if o.Shape.Edges:
-                    g = o.Shape.Edges[n-1]
-                    totalLength += g.Length
+                if 'Edge' in f:
+                    n = eval(f.lstrip('Edge'))
+                    FreeCAD.Console.PrintMessage(str(n) + "\n")
+                    if o.Shape.Edges:
+                        g = o.Shape.Edges[n-1]
+                        totalLength += g.Length
+                elif 'Face' in f:
+                    n = eval(f.lstrip('Face'))
+                    FreeCAD.Console.PrintMessage(str(n) + "\n")
+                    if o.Shape.Faces:
+                        g = o.Shape.Faces[n-1]
+                        try:
+                            if obj.SurfaceOrientation == 'U':
+                                bounds = g.Surface.bounds()
+                                midParam = bounds[0] + (bounds[1] - bounds[0]) / 2
+                                iso = g.Surface.uIso(midParam).toShape()
+                            else:
+                                bounds = g.Surface.bounds()
+                                midParam = bounds[2] + (bounds[3] - bounds[2]) / 2
+                                iso = g.Surface.vIso(midParam).toShape()
+                            totalLength += iso.Length
+                        except:
+                            FreeCAD.Console.PrintMessage("Surface Error\n")
+ 
+ 
         self.TotalLength = totalLength
         FreeCAD.Console.PrintMessage("Total Length : " + str(self.TotalLength) + "\n")
 
@@ -161,13 +183,71 @@ class Comb:
             o = e[0]
             FreeCAD.Console.PrintMessage(str(o.Name) + " - ")
             for f in e[1]:
-                n = eval(f.lstrip('Edge'))
-                FreeCAD.Console.PrintMessage(str(n) + "\n")
-                FreeCAD.Console.PrintMessage(str(o.Shape) + "\n")
-                if o.Shape.Edges:
-                    edgeList.append(o.Shape.Edges[n-1])
+                if 'Edge' in f:
+                    n = eval(f.lstrip('Edge'))
+                    FreeCAD.Console.PrintMessage('Edge ' + str(n) + "\n")
+                    FreeCAD.Console.PrintMessage(str(o.Shape) + "\n")
+                    if o.Shape.Edges:
+                        edgeList.append(o.Shape.Edges[n-1])
+                elif 'Face' in f:
+                    n = eval(f.lstrip('Face'))
+                    FreeCAD.Console.PrintMessage('Face ' + str(n) + "\n")
+                    FreeCAD.Console.PrintMessage(str(o.Shape) + "\n")
+                    if o.Shape.Faces:
+                        g = o.Shape.Faces[n-1]
+                        #try:
+                        if obj.SurfaceOrientation == 'U':
+                            iso = self.getuIsoEdges(g,obj.SurfaceSamples)
+                        else:
+                            iso = self.getvIsoEdges(g,obj.SurfaceSamples)
+                        edgeList += iso
+                        #except:
+                            #FreeCAD.Console.PrintMessage("Surface Error\n")
         self.edges = edgeList
-        
+ 
+ 
+    def getuIsoEdges(self, face, samples):
+        res = []
+        n = []
+        bounds = face.Surface.bounds()
+        if samples <= 1:
+            midParam = bounds[0] + (bounds[1] - bounds[0]) / 2
+            n = [midParam]
+        elif samples == 2:
+            n = [bounds[0],bounds[1]]
+        else :
+            brange = bounds[1] - bounds[0]
+            for  i in range(samples-1):
+                n.append(bounds[0] + brange*i/(samples-1))
+            n.append(bounds[1])
+        for t in n:
+            res.append(face.Surface.uIso(t).toShape())
+        FreeCAD.Console.PrintMessage("U Iso curves :\n")
+        FreeCAD.Console.PrintMessage(str(res))
+        return res
+
+
+    def getvIsoEdges(self, face, samples):
+        res = []
+        n = []
+        bounds = face.Surface.bounds()
+        if samples <= 1:
+            midParam = bounds[2] + (bounds[3] - bounds[2]) / 2
+            n = [midParam]
+        elif samples == 2:
+            n = [bounds[2], bounds[3]]
+        else :
+            brange = bounds[3] - bounds[2]
+            for  i in range(samples-1):
+                n.append(bounds[2] + brange*i/(samples-1))
+            n.append(bounds[3])
+        for t in n:
+            res.append(face.Surface.vIso(t).toShape())
+        FreeCAD.Console.PrintMessage("V Iso curves :\n")
+        FreeCAD.Console.PrintMessage(str(res))
+        return res
+    
+    
     def getMaxCurv(self, obj):
         self.maxCurv = 0.001
         for e in self.edges:
@@ -218,7 +298,7 @@ class Comb:
         if prop == "Type":
             FreeCAD.Console.PrintMessage("\nComb : Type Property changed\n")
         if prop == "Scale":
-            FreeCAD.Console.PrintMessage("\nComb : Scale Property changed\n")
+            FreeCAD.Console.PrintMessage("\nComb : Scale Property changed to "+str(fp.Scale)+"\n")
         if prop == "Samples":
             FreeCAD.Console.PrintMessage("\nComb : Samples Property changed\n")
             self.execute(fp)
@@ -322,33 +402,7 @@ class ViewProviderComb:
         return
         
     def getIcon(self):
-        return """
-            /* XPM */
-            static const char * ViewProviderBox_xpm[] = {
-            "16 16 6 1",
-            "    c None",
-            ".   c #141010",
-            "+   c #615BD2",
-            "@   c #C39D55",
-            "#   c #000000",
-            "$   c #57C355",
-            "        ........",
-            "   ......++..+..",
-            "   .@@@@.++..++.",
-            "   .@@@@.++..++.",
-            "   .@@  .++++++.",
-            "  ..@@  .++..++.",
-            "###@@@@ .++..++.",
-            "##$.@@$#.++++++.",
-            "#$#$.$$$........",
-            "#$$#######      ",
-            "#$$#$$$$$#      ",
-            "#$$#$$$$$#      ",
-            "#$$#$$$$$#      ",
-            " #$#$$$$$#      ",
-            "  ##$$$$$#      ",
-            "   #######      "};
-            """
+        return (path_curvesWB_icons+'/comb.svg')
 
     def __getstate__(self):
         return None
@@ -366,11 +420,19 @@ class ParametricComb:
                     if issubclass(type(subobj),Part.Edge):
                         res.append((obj.Object,[obj.SubElementNames[i]]))
                         #res.append(obj.SubElementNames[i])
+                    if issubclass(type(subobj),Part.Face):
+                        res.append((obj.Object,[obj.SubElementNames[i]]))
+                        #res.append(obj.SubElementNames[i])
                     i += 1
             else:
                 i = 0
                 for e in obj.Object.Shape.Edges:
                     n = "Edge"+str(i)
+                    res.append((obj.Object,[n]))
+                    #res.append(n)
+                    i += 1
+                for f in obj.Object.Shape.Faces:
+                    n = "Face"+str(i)
                     res.append((obj.Object,[n]))
                     #res.append(n)
                     i += 1

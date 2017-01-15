@@ -132,7 +132,7 @@ class BlendCurve:
         p = IntersectionPoint(polese1[-1],polese1[-2],polese2[-1],polese2[-2])
         chordLength = p.sub(polese1[-1]).Length + p.sub(polese2[-1]).Length
         #chord = poles[-1].sub(poles[0])
-        segmentLength = chordLength * 1.0 / self.blendDegree
+        segmentLength = chordLength * 0.5 / self.blendDegree
         
         if self.cont1 > 0:
             e1d1 = self.edge1.derivative1At(self.param1)
@@ -179,6 +179,22 @@ class BlendCurve:
         
         
     def execute(self, fp):
+
+        self.scale1 = fp.Scale1 / 10.
+        self.scale2 = fp.Scale2 / 10.
+        
+        self.cont1 = self.getContinuity(fp.Continuity1)
+        self.cont2 = self.getContinuity(fp.Continuity2)
+
+        self.reverse1 = fp.Reverse1
+        self.reverse2 = fp.Reverse2
+        self.blendDegree = 1 + self.cont1 + self.cont2
+        
+        self.initEdges(fp)
+        
+
+        self.param1 = fp.Parameter1 / 100
+        self.param2 = fp.Parameter2 / 100
         
         self.blendPoles = self.computePoles() #[self.edge1.valueAt(self.param1),self.edge2.valueAt(self.param2)]
         
@@ -246,10 +262,35 @@ class BlendCurve:
             return 1
         else:
             return 2
+    
+    #def setEdit(self,vobj,mode):   # --- in ViewProvider ---
+        #print "Start Edit"
+        #return True
+
+    #def unsetEdit(self,vobj,mode):
+        #print "End Edit"
+        #return True
+    
+    #def doubleClicked(self,vobj):
+        #print "Double-clicked"
+        #self.setEdit(vobj)
+        #return True
 
 class ParametricBlendCurve:
+    def getParam(self, selectionObject):
+        param = []
+        for o in selectionObject:
+            so = o.SubObjects[0]
+            p = o.PickedPoints[0]
+            poe = so.distToShape(Part.Vertex(p))
+            par = poe[2][0][2]
+            goodpar = (par - so.FirstParameter) * 100. / (so.LastParameter - so.FirstParameter)
+            param.append(goodpar)
+        return param
+
     def parseSel(self, selectionObject):
         res = []
+        params = []
         for obj in selectionObject:
             if obj.HasSubObjects:
                 i = 0
@@ -272,6 +313,9 @@ class ParametricBlendCurve:
         obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Blend Curve") #add object to document
         BlendCurve(obj,edges[0:2])
         obj.ViewObject.Proxy = 0
+        param = self.getParam(s)
+        obj.Parameter1 = param[0]
+        obj.Parameter2 = param[1]
         FreeCAD.ActiveDocument.recompute()
             
     def GetResources(self):
