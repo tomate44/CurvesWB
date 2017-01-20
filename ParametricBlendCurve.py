@@ -73,8 +73,8 @@ class BlendCurve:
         
         obj.addProperty("Part::PropertyPartShape","Shape","BlendCurve", "Shape of the blend curve")
         
-        obj.Scale1 = (10.,0.1,100.,0.5)
-        obj.Scale2 = (10.,0.1,100.,0.5)
+        obj.Scale1 = (10.,0.1,1000.,0.5)
+        obj.Scale2 = (10.,0.1,1000.,0.5)
         self.scale1 = obj.Scale1 / 10.
         self.scale2 = obj.Scale2 / 10.
         
@@ -100,22 +100,22 @@ class BlendCurve:
         if (not fp.Edge1[0].Shape.Edges) and (not fp.Edge2[0].Shape.Edges):
             return
         if self.reverse1:
-            self.curve1 = fp.Edge1[0].Shape.Edges[n1-1].Curve.copy()
+            self.curve1 = fp.Edge1[0].Shape.Edges[n1-1].toNurbs().Edges[0].Curve.copy()
             poles = self.curve1.getPoles()
             for i in range(len(poles)):
                 self.curve1.setPole(i+1,poles[-1-i])
         else:
-            self.curve1 = fp.Edge1[0].Shape.Edges[n1-1].Curve
+            self.curve1 = fp.Edge1[0].Shape.Edges[n1-1].toNurbs().Edges[0].Curve
         self.edge1 = self.curve1.toShape()
         
         n2 = eval(fp.Edge2[1][0].lstrip('Edge'))
         if self.reverse2:
-            self.curve2 = fp.Edge2[0].Shape.Edges[n2-1].Curve.copy()
+            self.curve2 = fp.Edge2[0].Shape.Edges[n2-1].toNurbs().Edges[0].Curve.copy()
             poles = self.curve2.getPoles()
             for i in range(len(poles)):
                 self.curve2.setPole(i+1,poles[-1-i])
         else:
-            self.curve2 = fp.Edge2[0].Shape.Edges[n2-1].Curve
+            self.curve2 = fp.Edge2[0].Shape.Edges[n2-1].toNurbs().Edges[0].Curve
         self.edge2 = self.curve2.toShape()
         
         #fp.Parameter1 = ( self.edge1.LastParameter * 100, self.edge1.FirstParameter * 100, self.edge1.LastParameter * 100, 0.5 )
@@ -129,7 +129,7 @@ class BlendCurve:
         #poles[-1] = self.edge2.valueAt(self.param2)
         polese1 = self.curve1.getPoles()
         polese2 = self.curve2.getPoles()
-        p = IntersectionPoint(polese1[-1],polese1[-2],polese2[-1],polese1[-2])
+        p = IntersectionPoint(polese1[-1],polese1[-2],polese2[-1],polese2[-2])
         chordLength = p.sub(polese1[-1]).Length + p.sub(polese2[-1]).Length
         #chord = poles[-1].sub(poles[0])
         segmentLength = chordLength * 0.5 / self.blendDegree
