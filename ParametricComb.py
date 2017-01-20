@@ -106,10 +106,10 @@ class Comb:
         ''' Add the properties '''
         FreeCAD.Console.PrintMessage("\nComb class Init\n")
         obj.addProperty("App::PropertyLinkSubList","Edge","Comb","Edge").Edge = edge
-        obj.addProperty("App::PropertyEnumeration","Type","Comb","Comb Type").Type=["Curvature","Unit Normal"]
-        obj.addProperty("App::PropertyFloat","Scale","Comb","Scale (%)").Scale=100.0
-        obj.addProperty("App::PropertyBool","ScaleAuto","Comb","Automatic Scale").ScaleAuto = True
-        obj.addProperty("App::PropertyIntegerConstraint","Samples","Comb","Number of samples").Samples = 20
+        #obj.addProperty("App::PropertyEnumeration","Type","Comb","Comb Type").Type=["Curvature","Unit Normal"]
+        obj.addProperty("App::PropertyFloat","Scale","Comb","Scale (%). 0 for AutoScale").Scale=0.0
+        #obj.addProperty("App::PropertyBool","ScaleAuto","Comb","Automatic Scale").ScaleAuto = True
+        obj.addProperty("App::PropertyIntegerConstraint","Samples","Comb","Number of samples").Samples = 64
         obj.addProperty("App::PropertyInteger","SurfaceSamples","Comb","Number of surface samples").SurfaceSamples = 3
         obj.addProperty("App::PropertyEnumeration","SurfaceOrientation","Comb","Surface Comb Orientation").SurfaceOrientation=["U","V"]
         #obj.addProperty("App::PropertyFloat","TotalLength","Comb","Total length of edges")
@@ -124,7 +124,7 @@ class Comb:
         #self.selectedEdgesToProperty( obj, edge)
         #self.setEdgeList( obj)
         self.execute(obj)
-        obj.Scale = self.factor * 100
+        obj.Scale = self.factor
         
     def selectedEdgesToProperty(self, obj, edge):
         objs = []
@@ -259,12 +259,15 @@ class Comb:
         FreeCAD.Console.PrintMessage("max curvature : "+str(self.maxCurv)+"\n")
                 
     def getCurvFactor(self, obj):
-        self.factor = 100
+        self.factor = 1.0
         if hasattr(obj, "Scale"):
-            self.factor = obj.Scale / 100
-        if hasattr(obj, "ScaleAuto"):
-            if obj.ScaleAuto:
+            if obj.Scale == 0.0:
                 self.factor = 0.5 * self.TotalLength / self.maxCurv
+            else:
+                self.factor = obj.Scale
+        #if hasattr(obj, "ScaleAuto"):
+            #if obj.ScaleAuto:
+                #self.factor = 0.5 * self.TotalLength / self.maxCurv
         FreeCAD.Console.PrintMessage("Curvature Factor : "+str(self.factor)+"\n")
 
     def buildPoints(self, obj):
@@ -298,15 +301,18 @@ class Comb:
         if prop == "Type":
             FreeCAD.Console.PrintMessage("\nComb : Type Property changed\n")
         if prop == "Scale":
+            if fp.Scale <= 0.0:
+                self.factor = 0.5 * self.TotalLength / self.maxCurv
+                fp.Scale = self.factor
             FreeCAD.Console.PrintMessage("\nComb : Scale Property changed to "+str(fp.Scale)+"\n")
         if prop == "Samples":
             FreeCAD.Console.PrintMessage("\nComb : Samples Property changed\n")
             self.execute(fp)
-        if prop == "ScaleAuto":
-            FreeCAD.Console.PrintMessage("\nComb : ScaleAuto Property changed\n")
-            if fp.ScaleAuto:
-                self.execute(fp)
-                fp.Scale = self.factor * 100
+        #if prop == "ScaleAuto":
+            #FreeCAD.Console.PrintMessage("\nComb : ScaleAuto Property changed\n")
+            #if fp.ScaleAuto:
+                #self.execute(fp)
+                #fp.Scale = self.factor * 100
             
     def __getstate__(self):
         return None
