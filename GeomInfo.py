@@ -89,17 +89,22 @@ class GeomInfo:
     def getSurfInfo(self,surf):
         ret = []
         ret.append(beautify(str(surf)))
-        ret.append("Poles  : " + str(surf.NbUPoles) + " x " + str(surf.NbVPoles))
-        ret.append("Degree : " + str(surf.UDegree) + " x " + str(surf.VDegree))
-        funct = [(surf.isURational,"U Rational"),
-                 (surf.isVRational,"V Rational"),
-                 (surf.isUPeriodic,"U Periodic"),
-                 (surf.isVPeriodic,"V Periodic") ]
-        for i in funct:
-            if i[0]():
-                ret.append(i[1])
-        #FreeCAD.Console.PrintMessage(ret)
-        return ret
+        try:
+            ret.append("Poles  : " + str(surf.NbUPoles) + " x " + str(surf.NbVPoles))
+            ret.append("Degree : " + str(surf.UDegree) + " x " + str(surf.VDegree))
+            funct = [(surf.isURational,"U Rational"),
+                    (surf.isVRational,"V Rational"),
+                    (surf.isUPeriodic,"U Periodic"),
+                    (surf.isVPeriodic,"V Periodic"),
+                    (surf.isUClosed,  "U Closed"),
+                    (surf.isVClosed,  "V Closed"),]
+            for i in funct:
+                if i[0]():
+                    ret.append(i[1])
+            #FreeCAD.Console.PrintMessage(ret)
+            return ret
+        except:
+            return ret
         
     def getCurvInfo(self,edge):
         ret = []
