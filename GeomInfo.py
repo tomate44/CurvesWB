@@ -38,8 +38,8 @@ class GeomInfo:
             self.trans.translation = (-0.95,0.95,0)
 
             self.myFont = coin.SoFont()
-            self.myFont.name = "Arial"
-            self.myFont.size.setValue(10.0)
+            self.myFont.name = "osiFont,FreeSans,sans"
+            self.myFont.size.setValue(16.0)
             #self.trans = coin.SoTranslation()
             self.SoText2  = coin.SoText2()
             #self.trans.translation.setValue(.25,.0,1.25)
@@ -92,27 +92,54 @@ class GeomInfo:
         try:
             ret.append("Poles  : " + str(surf.NbUPoles) + " x " + str(surf.NbVPoles))
             ret.append("Degree : " + str(surf.UDegree) + " x " + str(surf.VDegree))
+            ret.append("Continuity : " + surf.Continuity)
             funct = [(surf.isURational,"U Rational"),
-                    (surf.isVRational,"V Rational"),
-                    (surf.isUPeriodic,"U Periodic"),
-                    (surf.isVPeriodic,"V Periodic"),
-                    (surf.isUClosed,  "U Closed"),
-                    (surf.isVClosed,  "V Closed"),]
+                    (surf.isVRational, "V Rational"),
+                    (surf.isUPeriodic, "U Periodic"),
+                    (surf.isVPeriodic, "V Periodic"),
+                    (surf.isUClosed,   "U Closed"),
+                    (surf.isVClosed,   "V Closed"),]
             for i in funct:
                 if i[0]():
                     ret.append(i[1])
+            funct = [(surf.getUKnots,"U Knots"),
+                     (surf.getUMultiplicities,"U Mults"),
+                     (surf.getVKnots,"V Knots"),
+                     (surf.getVMultiplicities,"V Mults")]
+            for i in funct:
+                r = i[0]()
+                if r:
+                    s = str(i[1]) + " : " + str(r)
+                    ret.append(s)
             #FreeCAD.Console.PrintMessage(ret)
             return ret
         except:
             return ret
         
-    def getCurvInfo(self,edge):
+    def getCurvInfo(self,curve):
         ret = []
-        ret.append(beautify(str(edge)))
-        ret.append("Poles  : " + str(edge.NbPoles))
-        ret.append("Degree : " + str(edge.Degree))
-        #FreeCAD.Console.PrintMessage(ret)
-        return ret
+        ret.append(beautify(str(curve)))
+        try:
+            ret.append("Poles  : " + str(curve.NbPoles))
+            ret.append("Degree : " + str(curve.Degree))
+            ret.append("Continuity : " + curve.Continuity)
+            funct = [(curve.isRational,"Rational"),
+                    (curve.isPeriodic, "Periodic"),
+                    (curve.isClosed,   "Closed")]
+            for i in funct:
+                if i[0]():
+                    ret.append(i[1])
+            funct = [(curve.getKnots,"Knots"),
+                     (curve.getMultiplicities,"Mults")]
+            for i in funct:
+                r = i[0]()
+                if r:
+                    s = str(i[1]) + " : " + str(r)
+                    ret.append(s)
+            #FreeCAD.Console.PrintMessage(ret)
+            return ret
+        except:
+            return ret
 
     def getTopo(self):
         sel = FreeCADGui.Selection.getSelectionEx()
