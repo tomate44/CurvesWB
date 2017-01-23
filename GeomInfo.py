@@ -16,12 +16,135 @@ def beautify(shp):
         else:
             return shp
 
+def curveNode(cur):
+    try:
+        poles = cur.getPoles()
+        weights = cur.getWeights()
+    except:
+        return False
+    try:
+        knots = cur.getKnots()
+        mults = cur.getMultiplicities()
+        bspline = True
+    except:
+        bspline = False
+
+
+    # *** Set poles ***
+    coinPoles = []
+    for p in poles:
+        coinPoles.append(coin.SbVec3f(p.x,p.y,p.z))
+
+    polesnode = coin.SoCoordinate3()
+    polesnode.point.setValues(0,len(coinPoles),coinPoles)
+
+    #print polesnode
+
+    # *** Set weights ***
+    weightStr = []
+    for w in weights:
+        weightStr.append("%0.2f"%w)
+
+    #print weightStr
+
+    # *** Set polyline ***
+    polySep = coin.SoSeparator()
+    polyLine = coin.SoLineSet()
+    polyColor = coin.SoBaseColor()
+    polyColor.rgb=(0,0,0)
+    polySep.addChild(polyColor)
+    polySep.addChild(polyLine)
+
+    # *** Set markers ***
+    markerSep = coin.SoSeparator()
+    marker = coin.SoMarkerSet()
+    marker.markerIndex = coin.SoMarkerSet.DIAMOND_FILLED_7_7
+    markerColor = coin.SoBaseColor()
+    markerColor.rgb=(1,0,0)
+    markerSep.addChild(markerColor)
+    markerSep.addChild(marker)
+
+    # *** Set weight text ***
+    weightSep = coin.SoSeparator()
+    weightColor = coin.SoBaseColor()
+    weightColor.rgb=(1,0,0)
+    Font = coin.SoFont()
+    Font.name = "osiFont,FreeSans,sans"
+    Font.size.setValue(16.0)
+    weightSep.addChild(weightColor)
+    weightSep.addChild(Font)
+    for p,w in zip(poles,weightStr):
+        sep = coin.SoSeparator()
+        textpos = coin.SoTransform()
+        textpos.translation.setValue([p.x,p.y,p.z+2.0])
+        text = coin.SoText2()
+        text.string = w
+        sep.addChild(textpos)
+        sep.addChild(text)
+        weightSep.addChild(sep)
+
+
+    if bspline:
+
+        # *** Set knots ***
+        knotPoints = []
+        for k in knots:
+            p = cur.value(k)
+            knotPoints.append(coin.SbVec3f(p.x,p.y,p.z))
+        knotsnode = coin.SoCoordinate3()
+        knotsnode.point.setValues(0,len(knotPoints),knotPoints)
+        
+        # *** Set texts ***
+        multStr = []
+        for m in mults:
+            multStr.append("%d"%m)
+
+        # *** Set markers ***
+        knotMarkerSep = coin.SoSeparator()
+        marker = coin.SoMarkerSet()
+        marker.markerIndex = coin.SoMarkerSet.CIRCLE_FILLED_9_9
+        markerColor = coin.SoBaseColor()
+        markerColor.rgb=(0,0,1)
+        knotMarkerSep.addChild(markerColor)
+        knotMarkerSep.addChild(marker)
+
+        # *** Set weight text ***
+        multSep = coin.SoSeparator()
+        weightColor = coin.SoBaseColor()
+        weightColor.rgb=(0,0,1)
+        Font = coin.SoFont()
+        Font.name = "osiFont,FreeSans,sans"
+        Font.size.setValue(16.0)
+        multSep.addChild(weightColor)
+        multSep.addChild(Font)
+        for p,w in zip(knotPoints,multStr):
+            sep = coin.SoSeparator()
+            textpos = coin.SoTransform()
+            textpos.translation.setValue(p.getValue()[0],p.getValue()[1],p.getValue()[2]-3.)
+            text = coin.SoText2()
+            text.string = w
+            sep.addChild(textpos)
+            sep.addChild(text)
+            multSep.addChild(sep)
+
+    vizSep = coin.SoSeparator()
+    vizSep.addChild(polesnode)
+    vizSep.addChild(polySep)
+    vizSep.addChild(markerSep)
+    vizSep.addChild(weightSep)
+    if bspline:
+        vizSep.addChild(knotsnode)
+        vizSep.addChild(knotMarkerSep)
+        vizSep.addChild(multSep)
+    return vizSep
+
+
 class GeomInfo:
     "this class displays info about the geometry of the selected topology"
     def Activated(self,index=0):
 
         if index == 1:
-            print "Toggle is on"
+            print "GeomInfo activated"
             self.view = FreeCADGui.ActiveDocument.ActiveView
             self.stack = []
             FreeCADGui.Selection.addObserver(self)    # installe la fonction en mode resident
@@ -64,10 +187,14 @@ class GeomInfo:
             #self.sg.addChild(self.cam2)
             
             self.Active = True
+            self.viz = False
             self.getTopo()
         elif (index == 0) and self.Active:
-            print "Toggle is off"
+            print "GeomInfo off"
             self.render.removeSuperimposition(self.sup)
+            if self.viz:
+                self.root.removeChild(self.node)
+                self.viz = False
             self.sg.touch()
             self.Active = False
         #else:
@@ -77,15 +204,20 @@ class GeomInfo:
     def addSelection(self,doc,obj,sub,pnt):   # Selection
         if self.Active:
             self.getTopo()
-    def removeSelection(self,doc,obj,sub):    # Effacer l'objet salectionne
+    def removeSelection(self,doc,obj,sub):    # Effacer l'objet selectionne
         if self.Active:
             self.SoText2.string = ""
+            if self.viz:
+                self.root.removeChild(self.node)
+                self.viz = False
     def setPreselection(self, doc, obj, sub):
         pass
     def clearSelection(self,doc):             # Si clic sur l'ecran, effacer la selection
         if self.Active:
             self.SoText2.string = ""
-
+            if self.viz:
+                self.root.removeChild(self.node)
+                self.viz = False
     def getSurfInfo(self,surf):
         ret = []
         ret.append(beautify(str(surf)))
@@ -149,15 +281,20 @@ class GeomInfo:
             if sel0.HasSubObjects:
                 ss = sel0.SubObjects[-1]
                 if ss.ShapeType == 'Face':
-                    FreeCAD.Console.PrintMessage("Face detected"+ "\n")
+                    #FreeCAD.Console.PrintMessage("Face detected"+ "\n")
                     surf = ss.Surface
                     t = self.getSurfInfo(surf)
                     self.SoText2.string.setValues(0,len(t),t)
                 elif ss.ShapeType == 'Edge':
-                    FreeCAD.Console.PrintMessage("Edge detected"+ "\n")
-                    edge = ss.Curve
-                    t = self.getCurvInfo(edge)
+                    #FreeCAD.Console.PrintMessage("Edge detected"+ "\n")
+                    cur = ss.Curve
+                    t = self.getCurvInfo(cur)
                     self.SoText2.string.setValues(0,len(t),t)
+                    self.root = sel0.Object.ViewObject.RootNode
+                    self.node = curveNode(cur)
+                    if self.node:
+                        self.root.addChild(self.node)
+                        self.viz = True
 
     def GetResources(self):
         #return {'Pixmap'  : 'python', 'MenuText': 'Toggle command', 'ToolTip': 'Example toggle command', 'Checkable': True}
