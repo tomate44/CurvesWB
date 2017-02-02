@@ -16,6 +16,12 @@ def beautify(shp):
         else:
             return shp
 
+def removeDecim(arr):
+    r = []
+    for fl in arr:
+        r.append("%0.2f"%fl)
+    return r
+
 def curveNode(cur):
     try:
         poles = cur.getPoles()
@@ -120,9 +126,9 @@ def curveNode(cur):
         for p,w in zip(knotPoints,multStr):
             sep = coin.SoSeparator()
             textpos = coin.SoTransform()
-            textpos.translation.setValue(p.getValue()[0],p.getValue()[1],p.getValue()[2]-3.)
+            textpos.translation.setValue(p.getValue()[0],p.getValue()[1],p.getValue()[2]-2)
             text = coin.SoText2()
-            text.string = w
+            text.string.setValues(0,2,["",w])
             sep.addChild(textpos)
             sep.addChild(text)
             multSep.addChild(sep)
@@ -261,14 +267,12 @@ class GeomInfo:
             for i in funct:
                 if i[0]():
                     ret.append(i[1])
-            funct = [(curve.getKnots,"Knots"),
-                     (curve.getMultiplicities,"Mults")]
-            for i in funct:
-                r = i[0]()
-                if r:
-                    s = str(i[1]) + " : " + str(r)
-                    ret.append(s)
-            #FreeCAD.Console.PrintMessage(ret)
+            r = curve.getKnots()
+            s = "Knots : " + str(removeDecim(r))
+            ret.append(s)
+            r = curve.getMultiplicities()
+            s = "Mults : " + str(r)
+            ret.append(s)
             return ret
         except:
             return ret
