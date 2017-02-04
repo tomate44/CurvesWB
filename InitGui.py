@@ -19,7 +19,8 @@ class CurvesWorkbench (Workbench):
        import ExtractShapes
        import IsoCurve
        import JoinCurves
-       commandslist = ["line","bezierCurve","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","GeomInfo","extract","IsoCurve","join"]
+       import Discretize
+       commandslist = ["line","bezierCurve","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","GeomInfo","extract","IsoCurve","join","Discretize"]
        #FreeCADGui.addIconPath( ':/CurvesWB/icons' )
        self.appendToolbar("Curves",commandslist)
 Gui.addWorkbench(CurvesWorkbench())
