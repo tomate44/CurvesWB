@@ -21,8 +21,11 @@ class join:
         #print(curves)
         success = True
         c0 = curves[0].copy()
+        if not isinstance(c0,Part.BSplineCurve):
+            #FreeCAD.Console.PrintMessage("\nConverting c0 to BSplineCurve\n")
+            c0 = c0.toBSpline()
         for c in curves[1:]:
-            r = c0.join(c)
+            r = c0.join(c.toBSpline())
             if not r:
                 success = False
                 FreeCAD.Console.PrintMessage("Failed to join edge #"+str(curves[1:].index(c)+2)+"\n")

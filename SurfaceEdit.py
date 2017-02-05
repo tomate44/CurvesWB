@@ -541,6 +541,6 @@ class SurfaceEditTool:
             FreeCAD.Console.PrintMessage("Tool already active\n")
 
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/Tree_Part_Plane_Parametric.svg', 'MenuText': 'SurfaceEditTool', 'ToolTip': 'Edit NURBS Surfaces'}
+        return {'Pixmap' : path_curvesWB_icons+'/surfEdit.svg', 'MenuText': 'SurfaceEditTool', 'ToolTip': 'Edit NURBS Surfaces'}
 
 FreeCADGui.addCommand('SurfaceEditTool', SurfaceEditTool())
