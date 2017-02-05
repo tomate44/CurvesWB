@@ -294,6 +294,9 @@ class GeomInfo:
                     cur = ss.Curve
                     t = self.getCurvInfo(cur)
                     self.SoText2.string.setValues(0,len(t),t)
+                    if self.viz:
+                        self.root.removeChild(self.node)
+                        self.viz = False
                     self.root = sel0.Object.ViewObject.RootNode
                     self.node = curveNode(cur)
                     if self.node:
