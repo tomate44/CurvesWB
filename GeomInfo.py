@@ -2,6 +2,9 @@ import os
 import FreeCAD, FreeCADGui, Part
 from pivy import coin
 import dummy
+import CoinNodes as coinNodes
+reload(coinNodes)
+
 
 path_curvesWB = os.path.dirname(dummy.__file__)
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
@@ -36,59 +39,23 @@ def curveNode(cur):
         bspline = False
 
 
-    # *** Set poles ***
-    coinPoles = []
-    for p in poles:
-        coinPoles.append(coin.SbVec3f(p.x,p.y,p.z))
+    # *** Set poles ***    
+    polesnode = coinNodes.coordinate3Node(poles)
 
-    polesnode = coin.SoCoordinate3()
-    polesnode.point.setValues(0,len(coinPoles),coinPoles)
-
-    #print polesnode
-
-    # *** Set weights ***
+    # *** Set weights ***    
     weightStr = []
     for w in weights:
         weightStr.append("%0.2f"%w)
 
-    #print weightStr
+    polySep = coinNodes.polygonNode((0,0,0),1,1)
+    polySep.vertices = poles
 
-    # *** Set polyline ***
-    polySep = coin.SoSeparator()
-    polyLine = coin.SoLineSet()
-    polyColor = coin.SoBaseColor()
-    polyColor.rgb=(0,0,0)
-    polySep.addChild(polyColor)
-    polySep.addChild(polyLine)
-
-    # *** Set markers ***
-    markerSep = coin.SoSeparator()
-    marker = coin.SoMarkerSet()
-    marker.markerIndex = coin.SoMarkerSet.DIAMOND_FILLED_7_7
-    markerColor = coin.SoBaseColor()
-    markerColor.rgb=(1,0,0)
-    markerSep.addChild(markerColor)
-    markerSep.addChild(marker)
+    # *** Set markers ***    
+    markerSep = coinNodes.markerSetNode((1,0,0),coin.SoMarkerSet.DIAMOND_FILLED_7_7)
 
     # *** Set weight text ***
-    weightSep = coin.SoSeparator()
-    weightColor = coin.SoBaseColor()
-    weightColor.rgb=(1,0,0)
-    Font = coin.SoFont()
-    Font.name = "osiFont,FreeSans,sans"
-    Font.size.setValue(16.0)
-    weightSep.addChild(weightColor)
-    weightSep.addChild(Font)
-    for p,w in zip(poles,weightStr):
-        sep = coin.SoSeparator()
-        textpos = coin.SoTransform()
-        textpos.translation.setValue([p.x,p.y,p.z+2.0])
-        text = coin.SoText2()
-        text.string = w
-        sep.addChild(textpos)
-        sep.addChild(text)
-        weightSep.addChild(sep)
-
+    weightSep = coinNodes.multiTextNode((1,0,0),"osiFont,FreeSans,sans",16,(0,0,2))
+    weightSep.data = (poles,weightStr)
 
     if bspline:
 
@@ -96,42 +63,20 @@ def curveNode(cur):
         knotPoints = []
         for k in knots:
             p = cur.value(k)
-            knotPoints.append(coin.SbVec3f(p.x,p.y,p.z))
-        knotsnode = coin.SoCoordinate3()
-        knotsnode.point.setValues(0,len(knotPoints),knotPoints)
+            knotPoints.append((p.x,p.y,p.z))
         
-        # *** Set texts ***
+        knotsnode = coinNodes.coordinate3Node(knotPoints)
+        
+        # *** Set texts ***        
         multStr = []
         for m in mults:
             multStr.append("%d"%m)
+        
+        knotMarkerSep = coinNodes.markerSetNode((0,0,1),coin.SoMarkerSet.CIRCLE_FILLED_9_9)
 
-        # *** Set markers ***
-        knotMarkerSep = coin.SoSeparator()
-        marker = coin.SoMarkerSet()
-        marker.markerIndex = coin.SoMarkerSet.CIRCLE_FILLED_9_9
-        markerColor = coin.SoBaseColor()
-        markerColor.rgb=(0,0,1)
-        knotMarkerSep.addChild(markerColor)
-        knotMarkerSep.addChild(marker)
-
-        # *** Set weight text ***
-        multSep = coin.SoSeparator()
-        weightColor = coin.SoBaseColor()
-        weightColor.rgb=(0,0,1)
-        Font = coin.SoFont()
-        Font.name = "osiFont,FreeSans,sans"
-        Font.size.setValue(16.0)
-        multSep.addChild(weightColor)
-        multSep.addChild(Font)
-        for p,w in zip(knotPoints,multStr):
-            sep = coin.SoSeparator()
-            textpos = coin.SoTransform()
-            textpos.translation.setValue(p.getValue()[0],p.getValue()[1],p.getValue()[2]-2)
-            text = coin.SoText2()
-            text.string.setValues(0,2,["",w])
-            sep.addChild(textpos)
-            sep.addChild(text)
-            multSep.addChild(sep)
+        # *** Set mult text ***        
+        multSep = coinNodes.multiTextNode((0,0,1),"osiFont,FreeSans,sans",16,(0,0,-2))
+        multSep.data = (knotPoints,multStr)
 
     vizSep = coin.SoSeparator()
     vizSep.addChild(polesnode)
@@ -143,7 +88,6 @@ def curveNode(cur):
         vizSep.addChild(knotMarkerSep)
         vizSep.addChild(multSep)
     return vizSep
-
 
 class GeomInfo:
     "this class displays info about the geometry of the selected topology"

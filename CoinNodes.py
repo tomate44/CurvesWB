@@ -2,6 +2,100 @@ import FreeCAD, FreeCADGui, Part
 from pivy import coin
 import dummy
 
+CROSS_5_5 = 0
+PLUS_5_5 = 1
+MINUS_5_5 = 2
+SLASH_5_5 = 3
+BACKSLASH_5_5 = 4
+BAR_5_5 = 5
+STAR_5_5 = 6
+Y_5_5 = 7
+LIGHTNING_5_5 = 8
+WELL_5_5 = 9
+CIRCLE_LINE_5_5 = 10
+SQUARE_LINE_5_5 = 11
+DIAMOND_LINE_5_5 = 12
+TRIANGLE_LINE_5_5 = 13
+RHOMBUS_LINE_5_5 = 14
+HOURGLASS_LINE_5_5 = 15
+SATELLITE_LINE_5_5 = 16
+PINE_TREE_LINE_5_5 = 17
+CAUTION_LINE_5_5 = 18
+SHIP_LINE_5_5 = 19
+CIRCLE_FILLED_5_5 = 20
+SQUARE_FILLED_5_5 = 21
+DIAMOND_FILLED_5_5 = 22
+TRIANGLE_FILLED_5_5 = 23
+RHOMBUS_FILLED_5_5 = 24
+HOURGLASS_FILLED_5_5 = 25
+SATELLITE_FILLED_5_5 = 26
+PINE_TREE_FILLED_5_5 = 27
+CAUTION_FILLED_5_5 = 28
+SHIP_FILLED_5_5 = 29
+CROSS_7_7 = 30
+PLUS_7_7 = 31
+MINUS_7_7 = 32
+SLASH_7_7 = 33
+BACKSLASH_7_7 = 34
+BAR_7_7 = 35
+STAR_7_7 = 36
+Y_7_7 = 37
+LIGHTNING_7_7 = 38
+WELL_7_7 = 39
+CIRCLE_LINE_7_7 = 40
+SQUARE_LINE_7_7 = 41
+DIAMOND_LINE_7_7 = 42
+TRIANGLE_LINE_7_7 = 43
+RHOMBUS_LINE_7_7 = 44
+HOURGLASS_LINE_7_7 = 45
+SATELLITE_LINE_7_7 = 46
+PINE_TREE_LINE_7_7 = 47
+CAUTION_LINE_7_7 = 48
+SHIP_LINE_7_7 = 49
+CIRCLE_FILLED_7_7 = 50
+SQUARE_FILLED_7_7 = 51
+DIAMOND_FILLED_7_7 = 52
+TRIANGLE_FILLED_7_7 = 53
+RHOMBUS_FILLED_7_7 = 54
+HOURGLASS_FILLED_7_7 = 55
+SATELLITE_FILLED_7_7 = 56
+PINE_TREE_FILLED_7_7 = 57
+CAUTION_FILLED_7_7 = 58
+SHIP_FILLED_7_7 = 59
+CROSS_9_9 = 60
+PLUS_9_9 = 61
+MINUS_9_9 = 62
+SLASH_9_9 = 63
+BACKSLASH_9_9 = 64
+BAR_9_9 = 65
+STAR_9_9 = 66
+Y_9_9 = 67
+LIGHTNING_9_9 = 68
+WELL_9_9 = 69
+CIRCLE_LINE_9_9 = 70
+SQUARE_LINE_9_9 = 71
+DIAMOND_LINE_9_9 = 72
+TRIANGLE_LINE_9_9 = 73
+RHOMBUS_LINE_9_9 = 74
+HOURGLASS_LINE_9_9 = 75
+SATELLITE_LINE_9_9 = 76
+PINE_TREE_LINE_9_9 = 77
+CAUTION_LINE_9_9 = 78
+SHIP_LINE_9_9 = 79
+CIRCLE_FILLED_9_9 = 80
+SQUARE_FILLED_9_9 = 81
+DIAMOND_FILLED_9_9 = 82
+TRIANGLE_FILLED_9_9 = 83
+RHOMBUS_FILLED_9_9 = 84
+HOURGLASS_FILLED_9_9 = 85
+SATELLITE_FILLED_9_9 = 86
+PINE_TREE_FILLED_9_9 = 87
+CAUTION_FILLED_9_9 = 88
+SHIP_FILLED_9_9 = 89
+
+
+
+
 def beautify(shp):
     if not shp:
         return ""
@@ -18,19 +112,13 @@ def removeDecim(arr):
         r.append("%0.2f"%fl)
     return r
 
-class polygonNode(coin.SoSeparator):
-    def __init__(self, color = (0.,0.,0.), lineWidth = 1.0):
-        super(polygonNode, self).__init__()
-        #self.color = color
-        self.lineWidth = lineWidth
+
+class colorNode(coin.SoSeparator):
+    def __init__(self, color = (0.,0.,0.)):
+        super(colorNode, self).__init__()
         self.coinColor = coin.SoBaseColor()
-        self.coinColor.rgb = (color[0], color[1], color[2])
-        self.drawStyle = coin.SoDrawStyle()
-        self.drawStyle.lineWidth = self.lineWidth
-        self.lines = coin.SoIndexedLineSet()
         self.addChild(self.coinColor)
-        self.addChild(self.drawStyle)
-        self.addChild(self.lines)
+        self.color = color
 
     @property
     def color(self):
@@ -38,292 +126,221 @@ class polygonNode(coin.SoSeparator):
 
     @color.setter
     def color(self, color):
-        #self.color = color
         self.coinColor.rgb = (color[0], color[1], color[2])
-        
-
-def curveNode(cur):
-    try:
-        poles = cur.getPoles()
-        weights = cur.getWeights()
-    except:
-        return False
-    try:
-        knots = cur.getKnots()
-        mults = cur.getMultiplicities()
-        bspline = True
-    except:
-        bspline = False
 
 
-    # *** Set poles ***
-    coinPoles = []
-    for p in poles:
-        coinPoles.append(coin.SbVec3f(p.x,p.y,p.z))
+class styleNode(colorNode):
+    def __init__(self, color = (0.,0.,0.), lineWidth = 1.0, pointSize = 1.0):
+        super(styleNode, self).__init__()
+        self.drawStyle = coin.SoDrawStyle()
+        self.addChild(self.drawStyle)
+        self.color = color
+        self.lineWidth = lineWidth
+        self.pointSize = pointSize
 
-    polesnode = coin.SoCoordinate3()
-    polesnode.point.setValues(0,len(coinPoles),coinPoles)
+    @property
+    def pointSize(self):
+        return self.drawStyle.pointSize.getValue()
 
-    #print polesnode
+    @pointSize.setter
+    def pointSize(self, pointSize):
+        self.drawStyle.pointSize = pointSize
 
-    # *** Set weights ***
-    weightStr = []
-    for w in weights:
-        weightStr.append("%0.2f"%w)
+    @property
+    def lineWidth(self):
+        return self.drawStyle.lineWidth.getValue()
 
-    #print weightStr
-
-    # *** Set polyline ***
-    polySep = coin.SoSeparator()
-    polyLine = coin.SoLineSet()
-    polyColor = coin.SoBaseColor()
-    polyColor.rgb=(0,0,0)
-    polySep.addChild(polyColor)
-    polySep.addChild(polyLine)
-
-    # *** Set markers ***
-    markerSep = coin.SoSeparator()
-    marker = coin.SoMarkerSet()
-    marker.markerIndex = coin.SoMarkerSet.DIAMOND_FILLED_7_7
-    markerColor = coin.SoBaseColor()
-    markerColor.rgb=(1,0,0)
-    markerSep.addChild(markerColor)
-    markerSep.addChild(marker)
-
-    # *** Set weight text ***
-    weightSep = coin.SoSeparator()
-    weightColor = coin.SoBaseColor()
-    weightColor.rgb=(1,0,0)
-    Font = coin.SoFont()
-    Font.name = "osiFont,FreeSans,sans"
-    Font.size.setValue(16.0)
-    weightSep.addChild(weightColor)
-    weightSep.addChild(Font)
-    for p,w in zip(poles,weightStr):
-        sep = coin.SoSeparator()
-        textpos = coin.SoTransform()
-        textpos.translation.setValue([p.x,p.y,p.z+2.0])
-        text = coin.SoText2()
-        text.string = w
-        sep.addChild(textpos)
-        sep.addChild(text)
-        weightSep.addChild(sep)
+    @lineWidth.setter
+    def lineWidth(self, lineWidth):
+        self.drawStyle.lineWidth = lineWidth
 
 
-    if bspline:
+class polygonNode(styleNode):
+    def __init__(self, color = (0.,0.,0.), lineWidth = 1.0, pointSize = 1.0):
+        super(polygonNode, self).__init__()
+        self.lines = coin.SoIndexedLineSet()
+        self.addChild(self.lines)
+        self.color = color
+        self.lineWidth = lineWidth
+        self.pointSize = pointSize
+        self._numVertices = []
 
-        # *** Set knots ***
-        knotPoints = []
-        for k in knots:
-            p = cur.value(k)
-            knotPoints.append(coin.SbVec3f(p.x,p.y,p.z))
-        knotsnode = coin.SoCoordinate3()
-        knotsnode.point.setValues(0,len(knotPoints),knotPoints)
-        
-        # *** Set texts ***
-        multStr = []
-        for m in mults:
-            multStr.append("%d"%m)
+    @property
+    def vertices(self):
+        return self._numVertices
 
-        # *** Set markers ***
-        knotMarkerSep = coin.SoSeparator()
-        marker = coin.SoMarkerSet()
-        marker.markerIndex = coin.SoMarkerSet.CIRCLE_FILLED_9_9
-        markerColor = coin.SoBaseColor()
-        markerColor.rgb=(0,0,1)
-        knotMarkerSep.addChild(markerColor)
-        knotMarkerSep.addChild(marker)
+    @vertices.setter
+    def vertices(self, arr):
+        a = range(len(arr))
+        a.append(-1)
+        self.lines.coordIndex.setValues(0, len(a), a)
+        self._numVertices = a
 
-        # *** Set weight text ***
-        multSep = coin.SoSeparator()
-        weightColor = coin.SoBaseColor()
-        weightColor.rgb=(0,0,1)
-        Font = coin.SoFont()
-        Font.name = "osiFont,FreeSans,sans"
-        Font.size.setValue(16.0)
-        multSep.addChild(weightColor)
-        multSep.addChild(Font)
-        for p,w in zip(knotPoints,multStr):
-            sep = coin.SoSeparator()
-            textpos = coin.SoTransform()
-            textpos.translation.setValue(p.getValue()[0],p.getValue()[1],p.getValue()[2]-2)
-            text = coin.SoText2()
-            text.string.setValues(0,2,["",w])
-            sep.addChild(textpos)
-            sep.addChild(text)
-            multSep.addChild(sep)
+class coordinate3Node(coin.SoCoordinate3):
+    def __init__(self, points = [(0.,0.,0.)]):
+        super(coordinate3Node, self).__init__()
+        self.points = points
 
-    vizSep = coin.SoSeparator()
-    vizSep.addChild(polesnode)
-    vizSep.addChild(polySep)
-    vizSep.addChild(markerSep)
-    vizSep.addChild(weightSep)
-    if bspline:
-        vizSep.addChild(knotsnode)
-        vizSep.addChild(knotMarkerSep)
-        vizSep.addChild(multSep)
-    return vizSep
+    @property
+    def points(self):
+        r = []
+        for p in self.point.getValues():
+            r.append(p.getValue())
+        return r
+
+    @points.setter
+    def points(self, pts):
+        self.point.setValues(0, len(pts), pts)
+
+class markerSetNode(colorNode):
+    def __init__(self, color = (0.,0.,0.), marker = 0):
+        super(markerSetNode, self).__init__()
+        self.markers = coin.SoMarkerSet()
+        self.addChild(self.markers)
+        self.color = color
+        self.marker = marker
+
+    @property
+    def marker(self):
+        return self.markers.markerIndex.getValues()[0]
+
+    @marker.setter
+    def marker(self, marker):
+        self.markers.markerIndex = marker
+
+class text2dNode(colorNode):
+    def __init__(self, color = (0.,0.,0.), font = 'sans', size = 16, trans = (0,0,0), text = ''):
+        super(text2dNode, self).__init__()
+        self.fontNode = coin.SoFont()
+        self.transNode = coin.SoTransform()
+        self.textNode = coin.SoText2()
+        self.addChild(self.fontNode)
+        self.addChild(self.transNode)
+        self.addChild(self.textNode)
+        self.color = color
+        self.font = font
+        self.size = size
+        self.trans = trans
+        self.text = text
+
+    @property
+    def font(self):
+        return self.fontNode.name.getValue()
+
+    @font.setter
+    def font(self, name):
+        self.fontNode.name = name
+
+    @property
+    def size(self):
+        return self.fontNode.size.getValue()
+
+    @size.setter
+    def size(self, size):
+        self.fontNode.size.setValue(size)
+
+    @property
+    def trans(self):
+        return self.transNode.translation.getValue().getValue()
+
+    @trans.setter
+    def trans(self, trans):
+        self.transNode.translation.setValue([trans[0],trans[1],trans[2]])
+
+    @property
+    def text(self):
+        return self.textNode.string.getValues()[0]
+
+    @text.setter
+    def text(self, text):
+        self.textNode.string = text
+
+class multiTextNode(colorNode):
+    def __init__(self, color = (0.,0.,0.), font = 'sans', size = 16, offset = (0,0,2)):
+        super(multiTextNode, self).__init__()
+        self.fontNode = coin.SoFont()
+        self.textSep = coin.SoSeparator()
+        #self.transNode = coin.SoTransform()
+        self.nodeList = []
+        self._data = []
+        self.addChild(self.fontNode)
+        self.addChild(self.textSep)
+        #self.addChild(self.transNode)
+        #self.addChild(self.textNodes)
+        self.color = color
+        self.font = font
+        self.size = size
+        self.offset = offset
+        #self.trans = trans
+        #self.text = text
+
+    @property
+    def font(self):
+        return self.fontNode.name.getValue()
+
+    @font.setter
+    def font(self, name):
+        self.fontNode.name = name
+
+    @property
+    def size(self):
+        return self.fontNode.size.getValue()
+
+    @size.setter
+    def size(self, size):
+        self.fontNode.size.setValue(size)
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, datarr):
+        if not len(self._data) == len(datarr[0]): # lenghts of the 2 arrays are different. Wipe the Separator and populate it.
+            self.nodeList = []
+            self._data = []
+            self.textSep.removeAllChildren()
+            for i in range(len(datarr[0])):
+                #trans = coin.SoTransform()
+                #text = coin.SoText2()
+                sep = coin.SoSeparator()
+                textpos = coin.SoTransform()
+                textpos.translation.setValue([datarr[0][i][0]+self.offset[0],datarr[0][i][1]+self.offset[1],datarr[0][i][2]+self.offset[2]])
+                text = coin.SoText2()
+                text.string = datarr[1][i]
+                sep.addChild(textpos)
+                sep.addChild(text)
+                self.textSep.addChild(sep)
+                self.nodeList.append((textpos,text))
+                self._data.append((datarr[0][i],datarr[1][i]))
+        else:
+            for i in range(len(datarr[0])):
+                #trans = coin.SoTransform()
+                #text = coin.SoText2()
+                #datum = self.nodeList[i]
+                self.nodeList[i][0].translation.setValue([datarr[0][i][0]+self.offset[0],datarr[0][i][1]+self.offset[1],datarr[0][i][2]+self.offset[2]])
+                #text = coin.SoText2()
+                self.nodeList[i][1].string = datarr[1][i]
+                self._data[i] = (datarr[0][i],datarr[1][i])
 
 
-class GeomInfo:
-    "this class displays info about the geometry of the selected topology"
-    def Activated(self,index=0):
 
-        if index == 1:
-            print "GeomInfo activated"
-            self.view = FreeCADGui.ActiveDocument.ActiveView
-            self.stack = []
-            FreeCADGui.Selection.addObserver(self)    # installe la fonction en mode resident
-            #FreeCADGui.Selection.addObserver(self.getTopo)
-            self.active = True
-            self.sg = self.view.getSceneGraph()
-            self.textSep = coin.SoSeparator()
-            
-            self.cam = coin.SoOrthographicCamera()
-            self.cam.aspectRatio = 1
-            self.cam.viewportMapping = coin.SoCamera.LEAVE_ALONE
 
-            self.trans = coin.SoTranslation()
-            self.trans.translation = (-0.95,0.95,0)
+    #@property
+    #def texts(self):
+        #return self.textNode.string.getValues()
 
-            self.myFont = coin.SoFont()
-            self.myFont.name = "osiFont,FreeSans,sans"
-            self.myFont.size.setValue(16.0)
-            #self.trans = coin.SoTranslation()
-            self.SoText2  = coin.SoText2()
-            #self.trans.translation.setValue(.25,.0,1.25)
-            self.SoText2.string = "" #"Nothing Selected\r2nd line"
-            self.color = coin.SoBaseColor()
-            self.color.rgb = (0,0,0)
+    #@texts.setter
+    #def texts(self, textArray):
+        #self.textNode.string = text
 
-            self.textSep.addChild(self.cam)
-            self.textSep.addChild(self.trans)
-            self.textSep.addChild(self.color)
-            self.textSep.addChild(self.myFont)
-            #self.textSep.addChild(self.trans)
-            self.textSep.addChild(self.SoText2)
-            #self.Active = False
-            #self.sg.addChild(self.textSep)
-            
-            self.viewer=self.view.getViewer()
-            self.render=self.viewer.getSoRenderManager()
-            self.sup = self.render.addSuperimposition(self.textSep)
-            self.sg.touch()
-            #self.cam2 = coin.SoPerspectiveCamera()
-            #self.sg.addChild(self.cam2)
-            
-            self.Active = True
-            self.viz = False
-            self.getTopo()
-        elif (index == 0) and self.Active:
-            print "GeomInfo off"
-            self.render.removeSuperimposition(self.sup)
-            if self.viz:
-                self.root.removeChild(self.node)
-                self.viz = False
-            self.sg.touch()
-            self.Active = False
-        #else:
-            #print "Else ....."
-            #self.sg.addChild(self.textSep)
 
-    def addSelection(self,doc,obj,sub,pnt):   # Selection
-        if self.Active:
-            self.getTopo()
-    def removeSelection(self,doc,obj,sub):    # Effacer l'objet selectionne
-        if self.Active:
-            self.SoText2.string = ""
-            if self.viz:
-                self.root.removeChild(self.node)
-                self.viz = False
-    def setPreselection(self, doc, obj, sub):
-        pass
-    def clearSelection(self,doc):             # Si clic sur l'ecran, effacer la selection
-        if self.Active:
-            self.SoText2.string = ""
-            if self.viz:
-                self.root.removeChild(self.node)
-                self.viz = False
-    def getSurfInfo(self,surf):
-        ret = []
-        ret.append(beautify(str(surf)))
-        try:
-            ret.append("Poles  : " + str(surf.NbUPoles) + " x " + str(surf.NbVPoles))
-            ret.append("Degree : " + str(surf.UDegree) + " x " + str(surf.VDegree))
-            ret.append("Continuity : " + surf.Continuity)
-            funct = [(surf.isURational,"U Rational"),
-                    (surf.isVRational, "V Rational"),
-                    (surf.isUPeriodic, "U Periodic"),
-                    (surf.isVPeriodic, "V Periodic"),
-                    (surf.isUClosed,   "U Closed"),
-                    (surf.isVClosed,   "V Closed"),]
-            for i in funct:
-                if i[0]():
-                    ret.append(i[1])
-            funct = [(surf.getUKnots,"U Knots"),
-                     (surf.getUMultiplicities,"U Mults"),
-                     (surf.getVKnots,"V Knots"),
-                     (surf.getVMultiplicities,"V Mults")]
-            for i in funct:
-                r = i[0]()
-                if r:
-                    s = str(i[1]) + " : " + str(r)
-                    ret.append(s)
-            #FreeCAD.Console.PrintMessage(ret)
-            return ret
-        except:
-            return ret
-        
-    def getCurvInfo(self,curve):
-        ret = []
-        ret.append(beautify(str(curve)))
-        try:
-            ret.append("Poles  : " + str(curve.NbPoles))
-            ret.append("Degree : " + str(curve.Degree))
-            ret.append("Continuity : " + curve.Continuity)
-            funct = [(curve.isRational,"Rational"),
-                    (curve.isPeriodic, "Periodic"),
-                    (curve.isClosed,   "Closed")]
-            for i in funct:
-                if i[0]():
-                    ret.append(i[1])
-            r = curve.getKnots()
-            s = "Knots : " + str(removeDecim(r))
-            ret.append(s)
-            r = curve.getMultiplicities()
-            s = "Mults : " + str(r)
-            ret.append(s)
-            return ret
-        except:
-            return ret
 
-    def getTopo(self):
-        sel = FreeCADGui.Selection.getSelectionEx()
-        if sel != []:
-            
-            sel0 = sel[0]
-            if sel0.HasSubObjects:
-                ss = sel0.SubObjects[-1]
-                if ss.ShapeType == 'Face':
-                    #FreeCAD.Console.PrintMessage("Face detected"+ "\n")
-                    surf = ss.Surface
-                    t = self.getSurfInfo(surf)
-                    self.SoText2.string.setValues(0,len(t),t)
-                elif ss.ShapeType == 'Edge':
-                    #FreeCAD.Console.PrintMessage("Edge detected"+ "\n")
-                    cur = ss.Curve
-                    t = self.getCurvInfo(cur)
-                    self.SoText2.string.setValues(0,len(t),t)
-                    if self.viz:
-                        self.root.removeChild(self.node)
-                        self.viz = False
-                    self.root = sel0.Object.ViewObject.RootNode
-                    self.node = curveNode(cur)
-                    if self.node:
-                        self.root.addChild(self.node)
-                        self.viz = True
+#c = coordinate3Node([(0,1,0),(1,1,0),(2,2,1)])
+#p = polygonNode((0.5,0.9,0.1),2,3)
+#m = markerSetNode((1,0.35,0.8),1)
+#t = text2dNode((0.2,0.9,0.9),'osiFont',15,(10,15,20),'blabla')
+#mt = multiTextNode((0.2,0.9,0.9),'osiFont',15,(10,15,20))
+#mt.data = ([(1,2,3),(4,5,6)],['bla','blublu'])
 
-    def GetResources(self):
-        #return {'Pixmap'  : 'python', 'MenuText': 'Toggle command', 'ToolTip': 'Example toggle command', 'Checkable': True}
-        return {'Pixmap' : path_curvesWB_icons+'/info.svg', 'MenuText': 'Geometry Info', 'ToolTip': 'displays info about the geometry of the selected topology', 'Checkable': False}
-FreeCADGui.addCommand('GeomInfo', GeomInfo())
+
