@@ -177,7 +177,7 @@ class polygonNode(styleNode):
         self._numVertices = a
 
 class coordinate3Node(coin.SoCoordinate3):
-    def __init__(self, points = [(0.,0.,0.)]):
+    def __init__(self, points = []):
         super(coordinate3Node, self).__init__()
         self.points = points
 
@@ -262,7 +262,7 @@ class multiTextNode(colorNode):
         self.textSep = coin.SoSeparator()
         #self.transNode = coin.SoTransform()
         self.nodeList = []
-        self._data = []
+        self._data = [[],[]]
         self.addChild(self.fontNode)
         self.addChild(self.textSep)
         #self.addChild(self.transNode)
