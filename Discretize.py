@@ -16,8 +16,8 @@ class Discretization:
         obj.addProperty("App::PropertyInteger",      "Number",    "Method",   "Number of edge points").Number = 10
         obj.addProperty("App::PropertyFloat",        "Distance",  "Method",   "Distance between edge points").Distance=1.0
         obj.addProperty("App::PropertyFloat",        "Deflection","Method",   "Distance for deflection Algorithm").Deflection=1.0
-        obj.addProperty("App::PropertyFloat",        "ParameterFirst",     "Parameters",   "Start parameter").ParameterFirst=0.0
-        obj.addProperty("App::PropertyFloat",        "ParameterLast",      "Parameters",   "End parameter").ParameterLast=1.0
+        obj.addProperty("App::PropertyFloat",        "ParameterFirst",     "Parameters",   "Start parameter")
+        obj.addProperty("App::PropertyFloat",        "ParameterLast",      "Parameters",   "End parameter")
         obj.addProperty("App::PropertyVectorList",   "Points",    "Discretization",   "Points")
         obj.addProperty("Part::PropertyPartShape",   "Shape",     "Discretization",   "Shape")
         obj.Proxy = self
@@ -26,6 +26,8 @@ class Discretization:
         obj.Algorithm = "Number"
         self.edge = None
         self.setEdge(obj)
+        obj.ParameterFirst = self.edge.FirstParameter
+        obj.ParameterLast = self.edge.LastParameter
         self.execute(obj)
 
         
