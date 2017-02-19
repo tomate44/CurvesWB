@@ -61,20 +61,38 @@ class IsoCurve:
         selfobj.addProperty("App::PropertyEnumeration","Orientation","IsoCurve","Curve Orientation").Orientation=["U","V"]
         selfobj.Proxy = self
 
+    def split(self, e, t0, t1):
+        p0,p1 = e.ParameterRange
+        if (t0 > p0) & (t1 < p1):
+            w = e.split([t0,t1])
+            return w.Edges[1]
+        elif (t0 > p0):
+            w = e.split(t0)
+            return w.Edges[1]
+        elif (t1 < p1):
+            w = e.split(t1)
+            return w.Edges[0]
+        else:
+            return e
+
     def execute(self,selfobj):
         
         #if len(selfobj.Base.Shape.Faces) == 0 or len(selfobj.Tool.Shape.Faces) == 0:
             #raise ValueError("Shapes must have at least one face each.")
         n = eval(selfobj.Face[1][0].lstrip('Face'))
         face = selfobj.Face[0].Shape.Faces[n-1]
-        u0,u1,v0,v1 = face.Surface.bounds()
+        u0,u1,v0,v1 = face.ParameterRange
         if selfobj.Orientation == 'U':
             uRange = u1-u0
             iso = face.Surface.uIso(u0 + 1.*selfobj.Parameter*uRange / 100.0)
+            e = Part.Edge(iso)
+            w = self.split(e,v0,v1)
         elif selfobj.Orientation == 'V':
             vRange = v1-v0
-            iso = face.Surface.vIso(v0 + 1.*selfobj.Parameter*vRange / 100.0)        
-        selfobj.Shape = iso.toShape()
+            iso = face.Surface.vIso(v0 + 1.*selfobj.Parameter*vRange / 100.0) 
+            e = Part.Edge(iso)
+            w = self.split(e,u0,u1)
+        selfobj.Shape = w
 
     def onChanged(self, selfobj, prop):
         if prop == 'Parameter':
