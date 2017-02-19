@@ -12,17 +12,18 @@ class Discretization:
         ''' Add the properties '''
         FreeCAD.Console.PrintMessage("\nDiscretization class Init\n")
         obj.addProperty("App::PropertyLinkSub",      "Edge",      "Discretization",   "Edge").Edge = edge
-        obj.addProperty("App::PropertyEnumeration",  "AMethod",    "Discretization",   "Discretization Method").AMethod=["Number","Distance","Deflection"]
-        obj.addProperty("App::PropertyInteger",      "Number",    "Discretization",   "Number of edge points").Number = 10
-        obj.addProperty("App::PropertyFloat",        "Distance",  "Discretization",   "Distance between edge points").Distance=1.0
-        obj.addProperty("App::PropertyFloat",        "Deflection","Discretization",   "Distance for deflection AMethod").Deflection=1.0
-        obj.addProperty("App::PropertyFloat",        "ParameterFirst",     "Discretization",   "Start parameter").ParameterFirst=0.0
-        obj.addProperty("App::PropertyFloat",        "ParameterLast",      "Discretization",   "End parameter").ParameterLast=1.0
+        obj.addProperty("App::PropertyEnumeration",  "Algorithm",    "Method",   "Discretization Method").Algorithm=["Number","Distance","Deflection"]
+        obj.addProperty("App::PropertyInteger",      "Number",    "Method",   "Number of edge points").Number = 10
+        obj.addProperty("App::PropertyFloat",        "Distance",  "Method",   "Distance between edge points").Distance=1.0
+        obj.addProperty("App::PropertyFloat",        "Deflection","Method",   "Distance for deflection Algorithm").Deflection=1.0
+        obj.addProperty("App::PropertyFloat",        "ParameterFirst",     "Parameters",   "Start parameter").ParameterFirst=0.0
+        obj.addProperty("App::PropertyFloat",        "ParameterLast",      "Parameters",   "End parameter").ParameterLast=1.0
         obj.addProperty("App::PropertyVectorList",   "Points",    "Discretization",   "Points")
         obj.addProperty("Part::PropertyPartShape",   "Shape",     "Discretization",   "Shape")
         obj.Proxy = self
         #obj.Samples = (20,2,1000,10)
         obj.Points = []
+        obj.Algorithm = "Number"
         self.edge = None
         self.setEdge(obj)
         self.execute(obj)
@@ -50,15 +51,15 @@ class Discretization:
         e = obj.Edge[1][0]
         n = eval(e.lstrip('Edge'))
         self.edge = o.Shape.Edges[n-1]
-        obj.ParameterFirst = self.edge.FirstParameter
-        obj.ParameterLast = self.edge.LastParameter
+        obj.ParameterFirst = obj.ParameterFirst #self.edge.FirstParameter
+        obj.ParameterLast = obj.ParameterLast   #self.edge.LastParameter
 
     def buildPoints(self, obj):
-        if   obj.AMethod == "Number":
+        if   obj.Algorithm == "Number":
             obj.Points = self.edge.discretize( Number = obj.Number,         First = obj.ParameterFirst, Last = obj.ParameterLast)
-        elif obj.AMethod == "Distance":
+        elif obj.Algorithm == "Distance":
             obj.Points = self.edge.discretize( Distance = obj.Distance,     First = obj.ParameterFirst, Last = obj.ParameterLast)
-        elif obj.AMethod == "Deflection":
+        elif obj.Algorithm == "Deflection":
             obj.Points = self.edge.discretize( Deflection = obj.Deflection, First = obj.ParameterFirst, Last = obj.ParameterLast)
         #FreeCAD.Console.PrintMessage(str(len(obj.CombPoints))+" Comb points\n")   #+str(obj.CombPoints)+"\n\n")
 
@@ -75,17 +76,17 @@ class Discretization:
         if prop == "Edge":
             FreeCAD.Console.PrintMessage("Discretization : Edge changed\n")
             self.setEdge( fp)
-        if prop == "AMethod":
-            FreeCAD.Console.PrintMessage("Discretization : AMethod changed\n")
-            if fp.AMethod == "Number":
+        if prop == "Algorithm":
+            FreeCAD.Console.PrintMessage("Discretization : Algorithm changed\n")
+            if fp.Algorithm == "Number":
                 fp.setEditorMode("Number", 0)
                 fp.setEditorMode("Distance", 2)
                 fp.setEditorMode("Deflection", 2)
-            elif fp.AMethod == "Distance":
+            elif fp.Algorithm == "Distance":
                 fp.setEditorMode("Number", 2)
                 fp.setEditorMode("Distance", 0)
                 fp.setEditorMode("Deflection", 2)
-            elif fp.AMethod == "Deflection":
+            elif fp.Algorithm == "Deflection":
                 fp.setEditorMode("Number", 2)
                 fp.setEditorMode("Distance", 2)
                 fp.setEditorMode("Deflection", 0)
