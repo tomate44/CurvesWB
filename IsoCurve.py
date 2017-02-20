@@ -57,7 +57,7 @@ class IsoCurve:
     "The IsoCurve feature object"
     def __init__(self,selfobj):
         selfobj.addProperty("App::PropertyLinkSub","Face","IsoCurve","Input face")
-        selfobj.addProperty("App::PropertyFloat","Parameter","IsoCurve","IsoCurve parameter").Parameter=50.
+        selfobj.addProperty("App::PropertyFloat","Parameter","IsoCurve","IsoCurve parameter").Parameter=0.
         selfobj.addProperty("App::PropertyEnumeration","Orientation","IsoCurve","Curve Orientation").Orientation=["U","V"]
         selfobj.Proxy = self
 
@@ -75,33 +75,48 @@ class IsoCurve:
         else:
             return e
 
+    def getFace(self, obj):
+        n = eval(obj.Face[1][0].lstrip('Face'))
+        face = obj.Face[0].Shape.Faces[n-1]
+        self.u0, self.u1, self.v0, self.v1 = face.ParameterRange
+        return face
+
     def execute(self,selfobj):
-        
-        #if len(selfobj.Base.Shape.Faces) == 0 or len(selfobj.Tool.Shape.Faces) == 0:
-            #raise ValueError("Shapes must have at least one face each.")
-        n = eval(selfobj.Face[1][0].lstrip('Face'))
-        face = selfobj.Face[0].Shape.Faces[n-1]
-        u0,u1,v0,v1 = face.ParameterRange
+
+        face = self.getFace(selfobj)
+        #u0,u1,v0,v1 = face.ParameterRange
         if selfobj.Orientation == 'U':
-            uRange = u1-u0
-            iso = face.Surface.uIso(u0 + 1.*selfobj.Parameter*uRange / 100.0)
+            iso = face.Surface.uIso(selfobj.Parameter)
             e = Part.Edge(iso)
-            w = self.split(e,v0,v1)
+            w = self.split(e,self.v0,self.v1)
         elif selfobj.Orientation == 'V':
-            vRange = v1-v0
-            iso = face.Surface.vIso(v0 + 1.*selfobj.Parameter*vRange / 100.0) 
+            iso = face.Surface.vIso(selfobj.Parameter) 
             e = Part.Edge(iso)
-            w = self.split(e,u0,u1)
+            w = self.split(e,self.u0,self.u1)
         selfobj.Shape = w
 
     def onChanged(self, selfobj, prop):
+        if prop == 'Face':
+            face = self.getFace(selfobj)
+            if selfobj.Orientation == "U":
+                self.p0 = self.u0
+                self.p1 = self.u1
+            else:
+                self.p0 = self.v0
+                self.p1 = self.v1
         if prop == 'Parameter':
-            if   selfobj.Parameter  < 0.0:
-                 selfobj.Parameter  = 0.0
-            elif selfobj.Parameter  > 100.0:
-                 selfobj.Parameter  = 100.0
+            if   selfobj.Parameter  < self.p0:
+                 selfobj.Parameter  = self.p0
+            elif selfobj.Parameter  > self.p1:
+                 selfobj.Parameter  = self.p1
             selfobj.Proxy.execute(selfobj)
         if prop == 'Orientation':
+            if selfobj.Orientation == "U":
+                self.p0 = self.u0
+                self.p1 = self.u1
+            else:
+                self.p0 = self.v0
+                self.p1 = self.v1
             selfobj.Proxy.execute(selfobj)
 
 class ViewProviderIsoCurve:
