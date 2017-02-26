@@ -12,19 +12,19 @@ class makeSpline:
     def __init__(self, obj , edge):
         ''' Add the properties '''
         FreeCAD.Console.PrintMessage("\Spline class Init\n")
-        obj.addProperty("App::PropertyIntegerConstraint",      "Degree", "General",   "Degree")
-        obj.addProperty("App::PropertyInteger",      "Pole", "Poles",   "Pole number").Pole = 1
-        obj.addProperty("App::PropertyFloat",        "X",    "Poles",   "X coordinate of the selected pole").X=0.0
-        obj.addProperty("App::PropertyFloat",        "Y",    "Poles",   "Y coordinate of the selected pole").Y=0.0
-        obj.addProperty("App::PropertyFloat",        "Z",    "Poles",   "Z coordinate of the selected pole").Z=0.0
-        obj.addProperty("App::PropertyFloatConstraint",        "W",    "Poles",   "Weight of the selected pole")
-        obj.addProperty("App::PropertyVectorList",   "Poles",     "General",   "Poles")
-        obj.addProperty("App::PropertyVectorList",   "KnotPoints","General",   "KnotPoints")
-        obj.addProperty("App::PropertyFloatList",    "Weights",   "General",   "Weights")
-        obj.addProperty("App::PropertyFloatList",    "Knots",     "General",   "Knots")
-        obj.addProperty("App::PropertyFloatList",    "Mults",     "General",   "Mults")
-        obj.addProperty("App::PropertyVectorList",   "CurvePts",  "General",   "CurvePts")
-
+        obj.addProperty("App::PropertyIntegerConstraint", "Degree",    "General", "Degree")
+        obj.addProperty("App::PropertyInteger",           "Pole",      "Poles",   "Pole number").Pole = 1
+        obj.addProperty("App::PropertyFloat",             "X",         "Poles",   "X coordinate of the selected pole").X=0.0
+        obj.addProperty("App::PropertyFloat",             "Y",         "Poles",   "Y coordinate of the selected pole").Y=0.0
+        obj.addProperty("App::PropertyFloat",             "Z",         "Poles",   "Z coordinate of the selected pole").Z=0.0
+        obj.addProperty("App::PropertyFloatConstraint",   "W",         "Poles",   "Weight of the selected pole")
+        obj.addProperty("App::PropertyVectorList",        "Poles",     "General", "Poles")
+        obj.addProperty("App::PropertyVectorList",        "KnotPoints","General", "KnotPoints")
+        obj.addProperty("App::PropertyFloatList",         "Weights",   "General", "Weights")
+        obj.addProperty("App::PropertyFloatList",         "Knots",     "General", "Knots")
+        obj.addProperty("App::PropertyFloatList",         "Mults",     "General", "Mults")
+        obj.addProperty("App::PropertyVectorList",        "CurvePts",  "General", "CurvePts")
+        obj.addProperty("Part::PropertyPartShape",        "Shape",     "General", "Shape")
         obj.Proxy = self
         self.curve = edge.Curve.copy()
         obj.Poles = self.curve.getPoles()
@@ -51,7 +51,7 @@ class makeSpline:
     def execute(self, obj):
         FreeCAD.Console.PrintMessage("\n* Spline : execute *\n")
         obj.CurvePts = self.curve.discretize(100)
-        #obj.Shape = self.curve.toShape()
+        obj.Shape = self.curve.toShape()
 
     def onChanged(self, fp, prop):
         if (prop == "Degree"):
@@ -176,10 +176,22 @@ class SplineVP:
 
         self.curveDM.addChild(self.curvePts)
         self.curveDM.addChild(self.curveSep)
+        
+        self.selectionNode = coin.SoType.fromName("SoFCSelection").createInstance()
+        self.selectionNode.documentName.setValue(FreeCAD.ActiveDocument.Name)
+        self.selectionNode.objectName.setValue(obj.Object.Name) # here obj is the ViewObject, we need its associated App Object
+        self.selectionNode.subElementName.setValue("Curve")
+        self.selectionNode.addChild(self.curveDM)
 
-        self.curvePolesDM.addChild(self.curveDM)
+        self.curvePolesDM.addChild(self.selectionNode)
         self.curvePolesDM.addChild(self.polesDM)
-        obj.addDisplayMode(self.curveDM,"Curve")
+
+        #self.curveDM.addChild(self.selectionNode)        
+        #self.curvePolesDM.addChild(self.selectionNode)  
+        
+        
+        
+        obj.addDisplayMode(self.selectionNode,"Curve")
         obj.addDisplayMode(self.curvePolesDM,"Curve + Poles")
 
     def updateData(self, fp, prop):

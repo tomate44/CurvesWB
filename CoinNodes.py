@@ -262,7 +262,7 @@ class multiTextNode(colorNode):
         self.textSep = coin.SoSeparator()
         #self.transNode = coin.SoTransform()
         self.nodeList = []
-        self._data = [[],[]]
+        self._data = []
         self.addChild(self.fontNode)
         self.addChild(self.textSep)
         #self.addChild(self.transNode)
@@ -296,11 +296,11 @@ class multiTextNode(colorNode):
 
     @data.setter
     def data(self, datarr):
-        if not len(self._data) == len(datarr[0]): # lenghts of the 2 arrays are different. Wipe the Separator and populate it.
+        if not ((len(self._data) == len(datarr[0])) & (len(self._data) == len(datarr[1]))): # lenghts of the 2 arrays are different. Wipe the Separator and populate it.
             self.nodeList = []
             self._data = []
             self.textSep.removeAllChildren()
-            for i in range(len(datarr[0])):
+            for i in range(min(len(datarr[0]),len(datarr[1]))):
                 #trans = coin.SoTransform()
                 #text = coin.SoText2()
                 sep = coin.SoSeparator()
@@ -314,10 +314,12 @@ class multiTextNode(colorNode):
                 self.nodeList.append((textpos,text))
                 self._data.append((datarr[0][i],datarr[1][i]))
         else:
-            for i in range(len(datarr[0])):
+            for i in range(min(len(datarr[0]),len(datarr[1]))):
                 #trans = coin.SoTransform()
                 #text = coin.SoText2()
                 #datum = self.nodeList[i]
+                print(range(min(len(datarr[0]),len(datarr[1]))))
+                print(self.nodeList[i][0])
                 self.nodeList[i][0].translation.setValue([datarr[0][i][0]+self.offset[0],datarr[0][i][1]+self.offset[1],datarr[0][i][2]+self.offset[2]])
                 #text = coin.SoText2()
                 self.nodeList[i][1].string = datarr[1][i]
