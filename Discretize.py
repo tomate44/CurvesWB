@@ -7,24 +7,40 @@ from pivy import coin
 path_curvesWB = os.path.dirname(dummy.__file__)
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 
+DEBUG = 1
+
+def debug(string):
+    if DEBUG:
+        FreeCAD.Console.PrintMessage(string)
+        FreeCAD.Console.PrintMessage("\n")
+
+
 class Discretization:
     def __init__(self, obj , edge):
         ''' Add the properties '''
-        FreeCAD.Console.PrintMessage("\nDiscretization class Init\n")
+        debug("\nDiscretization class Init\n")
         obj.addProperty("App::PropertyLinkSub",      "Edge",      "Discretization",   "Edge").Edge = edge
-        obj.addProperty("App::PropertyEnumeration",  "Algorithm",    "Method",   "Discretization Method").Algorithm=["Number","Distance","Deflection"]
+        obj.addProperty("App::PropertyEnumeration",  "Target",    "Discretization",   "Tool target").Target=["Edge","Wire"]
+        obj.addProperty("App::PropertyEnumeration",  "Algorithm", "Method",   "Discretization Method").Algorithm=["Number","QuasiNumber","Distance","Deflection","QuasiDeflection","Angular-Curvature"]
         obj.addProperty("App::PropertyInteger",      "Number",    "Method",   "Number of edge points").Number = 10
         obj.addProperty("App::PropertyFloat",        "Distance",  "Method",   "Distance between edge points").Distance=1.0
         obj.addProperty("App::PropertyFloat",        "Deflection","Method",   "Distance for deflection Algorithm").Deflection=1.0
+        obj.addProperty("App::PropertyFloat",        "Angular",   "Method",   "Angular value for Angular-Curvature Algorithm").Angular=0.1
+        obj.addProperty("App::PropertyFloat",        "Curvature", "Method",   "Curvature value for Angular-Curvature Algorithm").Curvature=0.1
+        obj.addProperty("App::PropertyInteger",      "Minimum",   "Method",   "Minimum Number of points").Minimum = 2
         obj.addProperty("App::PropertyFloat",        "ParameterFirst",     "Parameters",   "Start parameter")
         obj.addProperty("App::PropertyFloat",        "ParameterLast",      "Parameters",   "End parameter")
         obj.addProperty("App::PropertyVectorList",   "Points",    "Discretization",   "Points")
+        #obj.addProperty("App::PropertyVectorList",   "Tangents",   "Discretization",   "Tangents")
+        #obj.addProperty("App::PropertyVectorList",   "Normals",    "Discretization",   "Normals")
         obj.addProperty("Part::PropertyPartShape",   "Shape",     "Discretization",   "Shape")
         obj.Proxy = self
-        #obj.Samples = (20,2,1000,10)
         obj.Points = []
         obj.Algorithm = "Number"
+        obj.Target = "Edge"
         self.edge = None
+        self.wire = None
+        self.target = None
         self.setEdge(obj)
         obj.ParameterFirst = self.edge.FirstParameter
         obj.ParameterLast = self.edge.LastParameter
@@ -44,8 +60,8 @@ class Discretization:
                             objs.append((o.Object,el))
         if objs:
             obj.Edge = objs
-            FreeCAD.Console.PrintMessage(str(edge) + "\n")
-            FreeCAD.Console.PrintMessage(str(obj.Edge) + "\n")
+            debug(str(edge) + "\n")
+            debug(str(obj.Edge) + "\n")
 
 
     def setEdge( self, obj):
@@ -53,65 +69,153 @@ class Discretization:
         e = obj.Edge[1][0]
         n = eval(e.lstrip('Edge'))
         self.edge = o.Shape.Edges[n-1]
-        obj.ParameterFirst = obj.ParameterFirst #self.edge.FirstParameter
-        obj.ParameterLast = obj.ParameterLast   #self.edge.LastParameter
+        self.target = self.edge
+        obj.setEditorMode("Target", 2)
+        for w in o.Shape.Wires:
+            for e in w.Edges:
+                if self.edge.isSame(e):
+                    debug("found matching edge")
+                    debug("wire has %d edges"%len(w.Edges))
+                    self.wire = w
+                    obj.setEditorMode("Target", 0)
+                    #if obj.Target == "Wire":
+                        #self.target = self.wire
+        #obj.ParameterFirst = obj.ParameterFirst
+        #obj.ParameterLast = obj.ParameterLast
 
     def buildPoints(self, obj):
-        if   obj.Algorithm == "Number":
-            obj.Points = self.edge.discretize( Number = obj.Number,         First = obj.ParameterFirst, Last = obj.ParameterLast)
-        elif obj.Algorithm == "Distance":
-            obj.Points = self.edge.discretize( Distance = obj.Distance,     First = obj.ParameterFirst, Last = obj.ParameterLast)
-        elif obj.Algorithm == "Deflection":
-            obj.Points = self.edge.discretize( Deflection = obj.Deflection, First = obj.ParameterFirst, Last = obj.ParameterLast)
-        #FreeCAD.Console.PrintMessage(str(len(obj.CombPoints))+" Comb points\n")   #+str(obj.CombPoints)+"\n\n")
+        if obj.Target == "Wire":
+            self.target = self.wire
+            if   obj.Algorithm == "Number":
+                obj.Points = self.target.discretize( Number = obj.Number)
+            elif obj.Algorithm == "QuasiNumber":
+                obj.Points = self.target.discretize( QuasiNumber = obj.Number)
+            elif obj.Algorithm == "Distance":
+                obj.Points = self.target.discretize( Distance = obj.Distance)
+            elif obj.Algorithm == "Deflection":
+                obj.Points = self.target.discretize( Deflection = obj.Deflection)
+            elif obj.Algorithm == "QuasiDeflection":
+                obj.Points = self.target.discretize( QuasiDeflection = obj.Deflection)
+            elif obj.Algorithm == "Angular-Curvature":
+                obj.Points = self.target.discretize( Angular = obj.Angular, Curvature = obj.Curvature, Minimum = obj.Minimum)
+        else:
+            self.target = self.edge
+            if   obj.Algorithm == "Number":
+                obj.Points = self.target.discretize( Number = obj.Number,         First = obj.ParameterFirst, Last = obj.ParameterLast)
+            elif obj.Algorithm == "QuasiNumber":
+                obj.Points = self.target.discretize( QuasiNumber = obj.Number,    First = obj.ParameterFirst, Last = obj.ParameterLast)
+            elif obj.Algorithm == "Distance":
+                obj.Points = self.target.discretize( Distance = obj.Distance,     First = obj.ParameterFirst, Last = obj.ParameterLast)
+            elif obj.Algorithm == "Deflection":
+                obj.Points = self.target.discretize( Deflection = obj.Deflection, First = obj.ParameterFirst, Last = obj.ParameterLast)
+            elif obj.Algorithm == "QuasiDeflection":
+                obj.Points = self.target.discretize( QuasiDeflection = obj.Deflection, First = obj.ParameterFirst, Last = obj.ParameterLast)
+            elif obj.Algorithm == "Angular-Curvature":
+                obj.Points = self.target.discretize( Angular = obj.Angular, Curvature = obj.Curvature, Minimum = obj.Minimum, First = obj.ParameterFirst, Last = obj.ParameterLast)
+
+    #def tangentsAndNormals(self, obj):
+        #t = []
+        #n = []
+        #for v in obj.Shape.Vertexes:
+            #p = v.distToShape(self.edge)[2][0][5]   #self.edge.parameterAt(v)
+            #debug(str(p)+"\n")
+            #try:
+                #t.append(self.edge.tangentAt(p))
+            #except:
+                #debug("\n* tangentAt Error *\n")
+            #try:
+                #n.append(obj.Edge[0].Proxy.normalAt(obj.Edge[0],p))
+            #except:
+                #n.append(self.edge.normalAt(p))
+            
+        #debug(str(len(obj.CombPoints))+" Comb points\n")   #+str(obj.CombPoints)+"\n\n")
 
     def execute(self, obj):
-        FreeCAD.Console.PrintMessage("\n* Discretization : execute *\n")
+        debug("\n* Discretization : execute *\n")
         self.setEdge( obj)
         self.buildPoints( obj)
         obj.Shape = Part.Compound([Part.Vertex(i) for i in obj.Points])
+        #self.tangentsAndNormals(obj)
 
     def onChanged(self, fp, prop):
         #print fp
         if not fp.Edge:
             return
         if prop == "Edge":
-            FreeCAD.Console.PrintMessage("Discretization : Edge changed\n")
+            debug("Discretization : Edge changed\n")
             self.setEdge( fp)
+        if prop == "Target":
+            debug("Discretization : Target changed\n")
+            self.setEdge( fp)
+            if fp.Target == "Wire":
+                fp.setEditorMode("ParameterFirst", 2)
+                fp.setEditorMode("ParameterLast", 2)
+            else:
+                fp.setEditorMode("ParameterFirst", 0)
+                fp.setEditorMode("ParameterLast", 0)
+                
         if prop == "Algorithm":
-            FreeCAD.Console.PrintMessage("Discretization : Algorithm changed\n")
-            if fp.Algorithm == "Number":
+            debug("Discretization : Algorithm changed\n")
+            if fp.Algorithm in ("Number","QuasiNumber"):
                 fp.setEditorMode("Number", 0)
                 fp.setEditorMode("Distance", 2)
                 fp.setEditorMode("Deflection", 2)
+                fp.setEditorMode("Angular", 2)
+                fp.setEditorMode("Curvature", 2)
+                fp.setEditorMode("Minimum", 2)
             elif fp.Algorithm == "Distance":
                 fp.setEditorMode("Number", 2)
                 fp.setEditorMode("Distance", 0)
                 fp.setEditorMode("Deflection", 2)
-            elif fp.Algorithm == "Deflection":
+                fp.setEditorMode("Angular", 2)
+                fp.setEditorMode("Curvature", 2)
+                fp.setEditorMode("Minimum", 2)
+            elif fp.Algorithm in ("Deflection","QuasiDeflection"):
                 fp.setEditorMode("Number", 2)
                 fp.setEditorMode("Distance", 2)
                 fp.setEditorMode("Deflection", 0)
+                fp.setEditorMode("Angular", 2)
+                fp.setEditorMode("Curvature", 2)
+                fp.setEditorMode("Minimum", 2)
+            elif fp.Algorithm == "Angular-Curvature":
+                fp.setEditorMode("Number", 2)
+                fp.setEditorMode("Distance", 2)
+                fp.setEditorMode("Deflection", 2)
+                fp.setEditorMode("Angular", 0)
+                fp.setEditorMode("Curvature", 0)
+                fp.setEditorMode("Minimum", 0)
         if prop == "Number":
             if fp.Number <= 1:
                 fp.Number = 2
-            FreeCAD.Console.PrintMessage("Discretization : Number changed to "+str(fp.Number)+"\n")
+            debug("Discretization : Number changed to "+str(fp.Number)+"\n")
         if prop == "Distance":
             if fp.Distance <= 0.0:
                 fp.Distance = 0.001
-            FreeCAD.Console.PrintMessage("Discretization : Distance changed to "+str(fp.Distance)+"\n")
+            debug("Discretization : Distance changed to "+str(fp.Distance)+"\n")
         if prop == "Deflection":
             if fp.Deflection <= 0.0:
                 fp.Deflection = 0.001
-            FreeCAD.Console.PrintMessage("Discretization : Deflection changed to "+str(fp.Deflection)+"\n")
+            debug("Discretization : Deflection changed to "+str(fp.Deflection)+"\n")
+        if prop == "Angular":
+            if fp.Angular <= 0.0:
+                fp.Angular = 0.001
+            debug("Discretization : Angular changed to "+str(fp.Angular)+"\n")
+        if prop == "Curvature":
+            if fp.Curvature <= 0.0:
+                fp.Curvature = 0.001
+            debug("Discretization : Curvature changed to "+str(fp.Curvature)+"\n")
+        if prop == "Minimum":
+            if fp.Minimum < 2:
+                fp.Minimum = 2
+            debug("Discretization : Minimum changed to "+str(fp.Minimum)+"\n")
         if prop == "ParameterFirst":
             if fp.ParameterFirst < self.edge.FirstParameter:
                 fp.ParameterFirst = self.edge.FirstParameter
-            FreeCAD.Console.PrintMessage("Discretization : ParameterFirst changed to "+str(fp.ParameterFirst)+"\n")
+            debug("Discretization : ParameterFirst changed to "+str(fp.ParameterFirst)+"\n")
         if prop == "ParameterLast":
             if fp.ParameterLast > self.edge.LastParameter:
                 fp.ParameterLast = self.edge.LastParameter
-            FreeCAD.Console.PrintMessage("Discretization : ParameterLast changed to "+str(fp.ParameterLast)+"\n")
+            debug("Discretization : ParameterLast changed to "+str(fp.ParameterLast)+"\n")
         #self.execute(fp) # Infinite loop
             
     def __getstate__(self):
@@ -136,19 +240,10 @@ class discretize:
     def Activated(self):
         s = FreeCADGui.Selection.getSelectionEx()
         edges = self.parseSel(s)
-        #FreeCAD.Console.PrintMessage(str(edges) + "\n")
-        #combSelected = self.findComb(s)
-        #if not combSelected:
-            #obj=FreeCAD.ActiveDocument.addObject("App::FeaturePython","Comb") #add object to document
-            #Comb(obj,edges)
-            #ViewProviderComb(obj.ViewObject)
-        #else:
-            #self.appendEdges(combSelected, edges)
-        obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Discretized_Curve") #add object to document
+        obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Discretized_Edge") #add object to document
         Discretization(obj,edges)
         obj.ViewObject.Proxy = 0
-        obj.ViewObject.PointSize = 4.00000
-        #ViewProviderDiscretization(obj.ViewObject)
+        obj.ViewObject.PointSize = 3.00000
         FreeCAD.ActiveDocument.recompute()
             
     def GetResources(self):
