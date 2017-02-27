@@ -7,6 +7,13 @@ from pivy import coin
 path_curvesWB = os.path.dirname(dummy.__file__)
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 
+DEBUG = 0
+
+def debug(string):
+    if DEBUG:
+        FreeCAD.Console.PrintMessage(string)
+        FreeCAD.Console.PrintMessage("\n")
+
 
 def getEdgeParamList(edge, start = None, end = None, num = 64):
     res = []
@@ -42,7 +49,7 @@ def getEdgeNormalList(edge, paramList):
         try:
             res.append(edge.normalAt(p))
         except:
-            FreeCAD.Console.PrintMessage("Normal error\n")
+            debug("Normal error")
             res.append(FreeCAD.Vector(1e-3,1e-3,1e-3))
     return res
 
@@ -104,7 +111,7 @@ def getCurveCoords(fp):
 class Comb:
     def __init__(self, obj , edge):
         ''' Add the properties '''
-        FreeCAD.Console.PrintMessage("\nComb class Init\n")
+        debug("Comb class Init")
         obj.addProperty("App::PropertyLinkSubList","Edge","Comb","Edge").Edge = edge
         #obj.addProperty("App::PropertyEnumeration","Type","Comb","Comb Type").Type=["Curvature","Unit Normal"]
         obj.addProperty("App::PropertyFloat","Scale","Comb","Scale (%). 0 for AutoScale").Scale=0.0
@@ -139,24 +146,24 @@ class Comb:
                             objs.append((o.Object,el))
         if objs:
             obj.Edge = objs
-            FreeCAD.Console.PrintMessage(str(edge) + "\n")
-            FreeCAD.Console.PrintMessage(str(obj.Edge) + "\n")
+            debug(str(edge) + "")
+            debug(str(obj.Edge) + "")
 
     def computeTotalLength(self, obj):
         totalLength = 0.0
         for e in obj.Edge:
             o = e[0]
-            FreeCAD.Console.PrintMessage(str(o) + " - ")
+            debug(str(o) + " - ")
             for f in e[1]:
                 if 'Edge' in f:
                     n = eval(f.lstrip('Edge'))
-                    FreeCAD.Console.PrintMessage(str(n) + "\n")
+                    debug(str(n) + "")
                     if o.Shape.Edges:
                         g = o.Shape.Edges[n-1]
                         totalLength += g.Length
                 elif 'Face' in f:
                     n = eval(f.lstrip('Face'))
-                    FreeCAD.Console.PrintMessage(str(n) + "\n")
+                    debug(str(n) + "")
                     if o.Shape.Faces:
                         g = o.Shape.Faces[n-1]
                         try:
@@ -170,29 +177,29 @@ class Comb:
                                 iso = g.Surface.vIso(midParam).toShape()
                             totalLength += iso.Length
                         except:
-                            FreeCAD.Console.PrintMessage("Surface Error\n")
+                            debug("Surface Error")
  
  
         self.TotalLength = totalLength
-        FreeCAD.Console.PrintMessage("Total Length : " + str(self.TotalLength) + "\n")
+        debug("Total Length : " + str(self.TotalLength) + "")
 
     def setEdgeList( self, obj):
         edgeList = []
-        FreeCAD.Console.PrintMessage(str(obj.Edge) + "\n")
+        debug(str(obj.Edge) + "")
         for e in obj.Edge:
             o = e[0]
-            FreeCAD.Console.PrintMessage(str(o.Name) + " - ")
+            debug(str(o.Name) + " - ")
             for f in e[1]:
                 if 'Edge' in f:
                     n = eval(f.lstrip('Edge'))
-                    FreeCAD.Console.PrintMessage('Edge ' + str(n) + "\n")
-                    FreeCAD.Console.PrintMessage(str(o.Shape) + "\n")
+                    debug('Edge ' + str(n) + "")
+                    debug(str(o.Shape) + "")
                     if o.Shape.Edges:
                         edgeList.append(o.Shape.Edges[n-1])
                 elif 'Face' in f:
                     n = eval(f.lstrip('Face'))
-                    FreeCAD.Console.PrintMessage('Face ' + str(n) + "\n")
-                    FreeCAD.Console.PrintMessage(str(o.Shape) + "\n")
+                    debug('Face ' + str(n) + "")
+                    debug(str(o.Shape) + "")
                     if o.Shape.Faces:
                         g = o.Shape.Faces[n-1]
                         #try:
@@ -202,7 +209,7 @@ class Comb:
                             iso = self.getvIsoEdges(g,obj.SurfaceSamples)
                         edgeList += iso
                         #except:
-                            #FreeCAD.Console.PrintMessage("Surface Error\n")
+                            #debug("Surface Error")
         self.edges = edgeList
  
  
@@ -222,8 +229,8 @@ class Comb:
             n.append(bounds[1])
         for t in n:
             res.append(face.Surface.uIso(t).toShape())
-        FreeCAD.Console.PrintMessage("U Iso curves :\n")
-        FreeCAD.Console.PrintMessage(str(res))
+        debug("U Iso curves :")
+        debug(str(res))
         return res
 
 
@@ -243,8 +250,8 @@ class Comb:
             n.append(bounds[3])
         for t in n:
             res.append(face.Surface.vIso(t).toShape())
-        FreeCAD.Console.PrintMessage("V Iso curves :\n")
-        FreeCAD.Console.PrintMessage(str(res))
+        debug("V Iso curves :")
+        debug(str(res))
         return res
     
     
@@ -256,7 +263,7 @@ class Comb:
             m = max(cl)
             if self.maxCurv < m:
                 self.maxCurv = m
-        FreeCAD.Console.PrintMessage("max curvature : "+str(self.maxCurv)+"\n")
+        debug("max curvature : "+str(self.maxCurv)+"")
                 
     def getCurvFactor(self, obj):
         self.factor = 1.0
@@ -268,7 +275,7 @@ class Comb:
         #if hasattr(obj, "ScaleAuto"):
             #if obj.ScaleAuto:
                 #self.factor = 0.5 * self.TotalLength / self.maxCurv
-        FreeCAD.Console.PrintMessage("Curvature Factor : "+str(self.factor)+"\n")
+        debug("Curvature Factor : "+str(self.factor)+"")
 
     def buildPoints(self, obj):
         obj.CombPoints = []
@@ -278,38 +285,38 @@ class Comb:
             data = getEdgeData(e, pl)
             pts += getSoPoints(data , self.factor)
         obj.CombPoints = pts
-        FreeCAD.Console.PrintMessage(str(len(obj.CombPoints))+" Comb points\n")   #+str(obj.CombPoints)+"\n\n")
+        debug(str(len(obj.CombPoints))+" Comb points")   #+str(obj.CombPoints)+"")
 
     def execute(self, obj):
-        FreeCAD.Console.PrintMessage("\n***** execute *****\n")
+        debug("***** execute *****")
         #self.selectedEdgesToProperty( obj, edge)
         self.setEdgeList( obj)
         self.computeTotalLength( obj)
         self.getMaxCurv( obj)
         self.getCurvFactor( obj)
         self.buildPoints( obj)
-        FreeCAD.Console.PrintMessage("\n----- execute -----\n")
+        debug("----- execute -----")
 
     def onChanged(self, fp, prop):
         #print fp
         if not fp.Edge:
             return
         if prop == "Edge":
-            FreeCAD.Console.PrintMessage("\nComb : Edge changed\n")
+            debug("Comb : Edge changed")
             #self.setEdgeList( fp)
             self.execute(fp)
         if prop == "Type":
-            FreeCAD.Console.PrintMessage("\nComb : Type Property changed\n")
+            debug("Comb : Type Property changed")
         if prop == "Scale":
             if fp.Scale <= 0.0:
                 self.factor = 0.5 * self.TotalLength / self.maxCurv
                 fp.Scale = self.factor
-            FreeCAD.Console.PrintMessage("\nComb : Scale Property changed to "+str(fp.Scale)+"\n")
+            debug("Comb : Scale Property changed to "+str(fp.Scale)+"")
         if prop == "Samples":
-            FreeCAD.Console.PrintMessage("\nComb : Samples Property changed\n")
+            debug("Comb : Samples Property changed")
             self.execute(fp)
         #if prop == "ScaleAuto":
-            #FreeCAD.Console.PrintMessage("\nComb : ScaleAuto Property changed\n")
+            #debug("Comb : ScaleAuto Property changed")
             #if fp.ScaleAuto:
                 #self.execute(fp)
                 #fp.Scale = self.factor * 100
@@ -340,7 +347,7 @@ class ViewProviderComb:
                 self.wireframe.addChild(node)
 
     def attach(self, obj):
-        #FreeCAD.Console.PrintMessage("\nComb : ViewProviderComb.attach \n")
+        #debug("Comb : ViewProviderComb.attach ")
 
         self.wireframe = coin.SoGroup()
 
@@ -378,11 +385,11 @@ class ViewProviderComb:
         
         i1 = getCombCoords(fp)
         self.combLines.coordIndex.setValues(0,len(i1),i1)
-        #FreeCAD.Console.PrintMessage("\n\n"+str(i1)+"\n")
+        #debug(""+str(i1)+"")
         
         i2 = getCurveCoords(fp)
         self.curveLines.coordIndex.setValues(0,len(i2),i2)
-        #FreeCAD.Console.PrintMessage("\n\n"+str(i2)+"\n")
+        #debug(""+str(i2)+"")
 
     def getDisplayModes(self,obj):
          "Return a list of display modes."
@@ -400,7 +407,7 @@ class ViewProviderComb:
     def onChanged(self, vp, prop):
         "Here we can do something when a single property got changed"
         if prop == "Edge":
-            FreeCAD.Console.PrintMessage("\n\n\nvp detected a Edge change\n\n\n")
+            debug("vp detected a Edge change")
         if prop == "CurveColor":
             self.curveColor.rgb = (vp.CurveColor[0],vp.CurveColor[1],vp.CurveColor[2])
         elif prop == "CombColor":
@@ -448,14 +455,14 @@ class ParametricComb:
         res = None
         module = None
         for obj in sel:
-            FreeCAD.Console.PrintMessage("\n-- Parsing Object : "+str(obj.Object.Label)+"\n")
+            debug("-- Parsing Object : "+str(obj.Object.Label)+"")
             try:
                 module = obj.Object.Proxy.__module__
                 if module == 'ParametricComb':
                     res = obj.Object
-                    FreeCAD.Console.PrintMessage("Found active Comb : "+str(res.Label)+"\n\n")
+                    debug("Found active Comb : "+str(res.Label)+"")
             except:
-                FreeCAD.Console.PrintMessage("No module found\n")
+                debug("No module found")
 
         return res
     
@@ -467,7 +474,7 @@ class ParametricComb:
     def Activated(self):
         s = FreeCADGui.Selection.getSelectionEx()
         edges = self.parseSel(s)
-        #FreeCAD.Console.PrintMessage(str(edges) + "\n")
+        #debug(str(edges) + "")
         combSelected = self.findComb(s)
         if not combSelected:
             obj=FreeCAD.ActiveDocument.addObject("App::FeaturePython","Comb") #add object to document
