@@ -152,7 +152,6 @@ class Approximate:
                 elif fp.Continuity in ['G1','G2','C2']:
                     if fp.DegreeMax < 5:
                         fp.DegreeMax = 5
-            # TODO change continuity according to DegreeMax
             debug("Approximate : Continuity changed to "+str(fp.Continuity))
 
         if prop == "DegreeMin":
@@ -165,8 +164,8 @@ class Approximate:
         if prop == "DegreeMax":
             if fp.DegreeMax < fp.DegreeMin:
                 fp.DegreeMax = fp.DegreeMin
-            elif fp.DegreeMax > 8:
-                fp.DegreeMax = 8
+            elif fp.DegreeMax > 14:
+                fp.DegreeMax = 14
             if fp.Method == "Smoothing Algorithm":
                 if fp.Continuity in ['G1','G2','C2']:
                     if fp.DegreeMax < 5:
