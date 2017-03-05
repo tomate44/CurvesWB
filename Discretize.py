@@ -232,18 +232,19 @@ class discretize:
             if obj.HasSubObjects:
                 subobj = obj.SubObjects[0]
                 if issubclass(type(subobj),Part.Edge):
-                    res=(obj.Object,[obj.SubElementNames[0]])
+                    res.append((obj.Object,[obj.SubElementNames[0]]))
             else:
-                res=(obj.Object,["Edge1"])
+                res.append((obj.Object,["Edge1"]))
         return res
 
     def Activated(self):
         s = FreeCADGui.Selection.getSelectionEx()
         edges = self.parseSel(s)
-        obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Discretized_Edge") #add object to document
-        Discretization(obj,edges)
-        obj.ViewObject.Proxy = 0
-        obj.ViewObject.PointSize = 3.00000
+        for e in edges:
+            obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Discretized_Edge") #add object to document
+            Discretization(obj,e)
+            obj.ViewObject.Proxy = 0
+            obj.ViewObject.PointSize = 3.00000
         FreeCAD.ActiveDocument.recompute()
             
     def GetResources(self):

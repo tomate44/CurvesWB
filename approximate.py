@@ -208,8 +208,11 @@ class approx:
         res = []
         for obj in selectionObject:
             if len(obj.Object.Shape.Vertexes) > 1:
-                return obj.Object
-        FreeCAD.Console.PrintMessage("\nPlease select an object that has at least 2 vertexes")
+                res.append(obj.Object)
+        if res:
+            return(res)
+        else:
+            FreeCAD.Console.PrintMessage("\nPlease select an object that has at least 2 vertexes")
         return None
 
     def Activated(self):
@@ -217,9 +220,10 @@ class approx:
         source = self.parseSel(s)
         if not source:
             return False
-        obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Approximation_Curve") #add object to document
-        Approximate(obj,source)
-        obj.ViewObject.Proxy = 0
+        for s in source:
+            obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Approximation_Curve") #add object to document
+            Approximate(obj,s)
+            obj.ViewObject.Proxy = 0
         FreeCAD.ActiveDocument.recompute()
             
     def GetResources(self):
