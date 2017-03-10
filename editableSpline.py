@@ -219,7 +219,7 @@ class SplineVP:
                 self.knotsnode.points = fp.KnotPoints
                 self.multStr = []
                 for m in fp.Mults:
-                    self.multStr.append("%0.2f"%m)
+                    self.multStr.append("%d"%m)
                 #self.polySep.vertices = self.polesnode.points
                 self.multSep.data = (self.knotsnode.points,self.multStr)
         if prop == "Mults":
@@ -227,7 +227,7 @@ class SplineVP:
                 #self.polesnode.points = fp.Poles
                 self.multStr = []
                 for m in fp.Mults:
-                    self.multStr.append("%0.2f"%m)
+                    self.multStr.append("%d"%m)
                 #self.polySep.vertices = self.polesnode.points
                 self.multSep.data = (self.knotsnode.points,self.multStr)
         if prop == "Pole":
