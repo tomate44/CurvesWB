@@ -32,12 +32,12 @@ class makeSpline:
         if isinstance(self.curve,Part.BSplineCurve):
             obj.Knots = self.curve.getKnots()
             self.getKnotPoints(obj)
-            obj.Mults = self.curve.getMultiplicities()
+            obj.Mults = [int(i) for i in self.curve.getMultiplicities()]
         else:
             obj.Knots = []
             obj.KnotPoints = []
             obj.Mults = []
-        obj.Degree = (self.curve.Degree,1,8,1)
+        obj.Degree = (int(self.curve.Degree),1,8,1)
         obj.W = (1.0,0.0001,1000.0,0.1)
         self.execute(obj)
 
@@ -55,23 +55,23 @@ class makeSpline:
 
     def onChanged(self, fp, prop):
         if (prop == "Degree"):
-            if fp.Degree > self.curve.Degree:
+            if fp.Degree > int(self.curve.Degree):
                 if isinstance(self.curve,Part.BezierCurve):
                     self.curve.increase(fp.Degree)
                 elif isinstance(self.curve,Part.BSplineCurve):
                     self.curve.increaseDegree(fp.Degree)
-            elif fp.Degree < self.curve.Degree:
+            elif fp.Degree < int(self.curve.Degree):
                 pts = self.curve.discretize(Number = 100)
                 bscurve = Part.BSplineCurve() #self.curve.approximateBSpline(0.1,12,fp.Degree,'C2')
                 bscurve.approximate(Points = pts, DegMin = fp.Degree, DegMax = fp.Degree, Tolerance = 0.1)
                 self.curve = bscurve
-                fp.Degree = self.curve.Degree
+                fp.Degree = int(self.curve.Degree)
             fp.Poles = self.curve.getPoles()
             fp.Weights = self.curve.getWeights()
             if isinstance(self.curve,Part.BSplineCurve):
                 fp.Knots = self.curve.getKnots()
                 self.getKnotPoints(fp)
-                fp.Mults = self.curve.getMultiplicities()
+                fp.Mults = [int(i) for i in self.curve.getMultiplicities()]
             fp.Pole = fp.Pole
             fp.CurvePts = self.curve.discretize(100)
             FreeCAD.Console.PrintMessage("Spline : Degree changed to "+str(fp.Degree)+"\n")
@@ -109,7 +109,7 @@ class makeSpline:
         if (prop == "Knots"):
             if fp.Knots:
                 self.getKnotPoints(fp)
-            #fp.Mults = self.curve.getMultiplicities()
+            #fp.Mults = [int(i) for i in self.curve.getMultiplicities()]
             FreeCAD.Console.PrintMessage("Spline : Knots changed\n")
         if (prop == "Mults"):
             #fp.Knots = self.curve.getKnots()
@@ -140,7 +140,7 @@ class SplineVP:
         # *** Set the Poles view nodes *** 
         self.polesnode = CoinNodes.coordinate3Node()
         self.weightStr = []
-        self.polySep = CoinNodes.polygonNode((0,0,0),1,1)
+        self.polySep = CoinNodes.polygonNode((0,0,0),1)
         self.markerSep = CoinNodes.markerSetNode((1,0,0),coin.SoMarkerSet.DIAMOND_FILLED_7_7)
         self.weightSep = CoinNodes.multiTextNode((1,0,0),"osiFont,FreeSans,sans",16,(0,0,2))
 
@@ -163,7 +163,7 @@ class SplineVP:
 
         # *** Set the curve view node *** 
         self.curvePts = CoinNodes.coordinate3Node()
-        self.curveSep = CoinNodes.polygonNode((0,0,0),1,1)
+        self.curveSep = CoinNodes.polygonNode((0,0,0),1)
 
         self.polesDM.addChild(self.polesnode)
         self.polesDM.addChild(self.polySep)

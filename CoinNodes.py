@@ -156,13 +156,12 @@ class styleNode(colorNode):
 
 
 class polygonNode(styleNode):
-    def __init__(self, color = (0.,0.,0.), lineWidth = 1.0, pointSize = 1.0):
+    def __init__(self, color = (0.,0.,0.), lineWidth = 1.0):
         super(polygonNode, self).__init__()
         self.lines = coin.SoIndexedLineSet()
         self.addChild(self.lines)
         self.color = color
         self.lineWidth = lineWidth
-        self.pointSize = pointSize
         self._numVertices = []
 
     @property
@@ -173,8 +172,60 @@ class polygonNode(styleNode):
     def vertices(self, arr):
         a = range(len(arr))
         a.append(-1)
+        self.lines.coordIndex.setValue(0)
         self.lines.coordIndex.setValues(0, len(a), a)
         self._numVertices = a
+
+class sensorPolyNode(styleNode):
+    def __init__(self, color = (0.,0.,0.), lineWidth = 1.0):
+        super(sensorPolyNode, self).__init__()
+        self.lines = coin.SoIndexedLineSet()
+        self.addChild(self.lines)
+        self.color = color
+        self.lineWidth = lineWidth
+
+    def linkTo(self, node):
+        self.sensor = coin.SoFieldSensor(self.updateCB, node)
+        #self.sensor.setFunction(self.updateCB)
+        #self.Sensor.setData(node)
+        self.sensor.setPriority(0)
+        self.sensor.attach(node.point)
+        
+    def unlink(self):
+        self.sensor.detach()
+
+class combComb(sensorPolyNode):
+    def __init__(self, color = (0.,0.7,0.), lineWidth = 1.0):
+        super(combComb, self).__init__(color, lineWidth)
+
+    def updateCB(self, *args):
+        points = self.sensor.getTriggerField()
+        #points = self.sensor.getAttachedField()
+        a = []
+        l = len(points)
+        for i in range(l/2):
+            a.append(2*i)
+            a.append(2*i+1)
+            a.append(-1)
+        self.lines.coordIndex.setValue(0)
+        self.lines.coordIndex.setValues(0, len(a), a)
+        #print("combComb : %d"%len(self.lines.coordIndex.getValues()))
+
+class combCurve(sensorPolyNode):
+    def __init__(self, color = (0.7,0.,0.), lineWidth = 1.0):
+        super(combCurve, self).__init__(color, lineWidth)
+
+    def updateCB(self, *args):
+        points = self.sensor.getTriggerField()
+        #points = self.sensor.getAttachedField()
+        a = []
+        l = len(points)
+        for i in range(l/2):
+            a.append(2*i+1)
+        a.append(-1)
+        self.lines.coordIndex.setValue(0)
+        self.lines.coordIndex.setValues(0, len(a), a)
+        #print("combCurve : %d"%len(self.lines.coordIndex.getValues()))
 
 class coordinate3Node(coin.SoCoordinate3):
     def __init__(self, points = []):
@@ -190,7 +241,9 @@ class coordinate3Node(coin.SoCoordinate3):
 
     @points.setter
     def points(self, pts):
+        self.point.setValue(0,0,0)
         self.point.setValues(0, len(pts), pts)
+        #print("coordinate3Node : %d"%len(self.point.getValues()))
 
 class markerSetNode(colorNode):
     def __init__(self, color = (0.,0.,0.), marker = 0):

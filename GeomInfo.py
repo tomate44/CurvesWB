@@ -47,7 +47,7 @@ def curveNode(cur):
     for w in weights:
         weightStr.append("%0.2f"%w)
 
-    polySep = coinNodes.polygonNode((0,0,0),1,1)
+    polySep = coinNodes.polygonNode((0,0,0),1)
     polySep.vertices = poles
 
     # *** Set markers ***    
