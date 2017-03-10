@@ -128,7 +128,6 @@ class colorNode(coin.SoSeparator):
     def color(self, color):
         self.coinColor.rgb = (color[0], color[1], color[2])
 
-
 class styleNode(colorNode):
     def __init__(self, color = (0.,0.,0.), lineWidth = 1.0, pointSize = 1.0):
         super(styleNode, self).__init__()
@@ -153,7 +152,6 @@ class styleNode(colorNode):
     @lineWidth.setter
     def lineWidth(self, lineWidth):
         self.drawStyle.lineWidth = lineWidth
-
 
 class polygonNode(styleNode):
     def __init__(self, color = (0.,0.,0.), lineWidth = 1.0):
@@ -313,19 +311,14 @@ class multiTextNode(colorNode):
         super(multiTextNode, self).__init__()
         self.fontNode = coin.SoFont()
         self.textSep = coin.SoSeparator()
-        #self.transNode = coin.SoTransform()
         self.nodeList = []
         self._data = []
         self.addChild(self.fontNode)
         self.addChild(self.textSep)
-        #self.addChild(self.transNode)
-        #self.addChild(self.textNodes)
         self.color = color
         self.font = font
         self.size = size
         self.offset = offset
-        #self.trans = trans
-        #self.text = text
 
     @property
     def font(self):
@@ -354,8 +347,6 @@ class multiTextNode(colorNode):
             self._data = []
             self.textSep.removeAllChildren()
             for i in range(min(len(datarr[0]),len(datarr[1]))):
-                #trans = coin.SoTransform()
-                #text = coin.SoText2()
                 sep = coin.SoSeparator()
                 textpos = coin.SoTransform()
                 textpos.translation.setValue([datarr[0][i][0]+self.offset[0],datarr[0][i][1]+self.offset[1],datarr[0][i][2]+self.offset[2]])
@@ -368,27 +359,11 @@ class multiTextNode(colorNode):
                 self._data.append((datarr[0][i],datarr[1][i]))
         else:
             for i in range(min(len(datarr[0]),len(datarr[1]))):
-                #trans = coin.SoTransform()
-                #text = coin.SoText2()
-                #datum = self.nodeList[i]
                 print(range(min(len(datarr[0]),len(datarr[1]))))
                 print(self.nodeList[i][0])
                 self.nodeList[i][0].translation.setValue([datarr[0][i][0]+self.offset[0],datarr[0][i][1]+self.offset[1],datarr[0][i][2]+self.offset[2]])
-                #text = coin.SoText2()
                 self.nodeList[i][1].string = datarr[1][i]
                 self._data[i] = (datarr[0][i],datarr[1][i])
-
-
-
-
-    #@property
-    #def texts(self):
-        #return self.textNode.string.getValues()
-
-    #@texts.setter
-    #def texts(self, textArray):
-        #self.textNode.string = text
-
 
 
 #c = coordinate3Node([(0,1,0),(1,1,0),(2,2,1)])
