@@ -29,7 +29,7 @@ def beautify(shp):
 def getString(weights):
     weightStr = []
     for w in weights:
-        if w == 1.0:
+        if abs(w-1.0) < 0.001:
             weightStr.append("")
         elif w.is_integer():
             weightStr.append(" %d"%int(w))
@@ -162,14 +162,7 @@ def surfNode(surf):
 
     # *** Set weights ***    
     flatW = to1D(weights)
-    weightStr = []
-    for w in flatW:
-        if w == 1.0:
-            weightStr.append("")
-        elif w.is_integer():
-            weightStr.append(" %d"%int(w))
-        else:
-            weightStr.append(" %0.2f"%w)
+    weightStr = getString(flatW)
 
     polyRowSep = coinNodes.rowNode((0.5,0,0),1)
     polyRowSep.vertices=(nbU,nbV)
@@ -196,9 +189,21 @@ def surfNode(surf):
             for p in epts:
                 uknotPoints.append((p.x,p.y,p.z))
         
-        knotsnode = coinNodes.coordinate3Node(uknotPoints)
-        uCurves = coinNodes.rowNode((1,0,0),3)
-        uCurves.vertices=(100,len(uknots))
+        uknotsnode = coinNodes.coordinate3Node(uknotPoints)
+        uCurves = coinNodes.rowNode((0.5,0,0),3)
+        uCurves.vertices=(len(uknots),100)
+        #debug(str(uCurves.vertices))
+        
+        vknotPoints = []
+        for k in vknots:
+            vIso = surf.vIso(k)
+            epts = vIso.toShape().discretize(100)
+            for p in epts:
+                vknotPoints.append((p.x,p.y,p.z))
+        
+        vknotsnode = coinNodes.coordinate3Node(vknotPoints)
+        vCurves = coinNodes.rowNode((0,0,0.5),3)
+        vCurves.vertices=(len(vknots),100)
         
         ## *** Set texts ***        
         #multStr = []
@@ -219,8 +224,10 @@ def surfNode(surf):
     if rational:
         vizSep.addChild(weightSep)
     if bspline:
-        vizSep.addChild(knotsnode)
+        vizSep.addChild(uknotsnode)
         vizSep.addChild(uCurves)
+        vizSep.addChild(vknotsnode)
+        vizSep.addChild(vCurves)
         #vizSep.addChild(knotMarkerSep)
         #vizSep.addChild(multSep)
     return vizSep
@@ -245,7 +252,7 @@ class GeomInfo:
             self.cam.viewportMapping = coin.SoCamera.LEAVE_ALONE
 
             self.trans = coin.SoTranslation()
-            self.trans.translation = (-0.95,0.95,0)
+            self.trans.translation = (-0.98,0.90,0)
 
             self.myFont = coin.SoFont()
             self.myFont.name = "osiFont,FreeSans,sans"
