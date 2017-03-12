@@ -174,6 +174,36 @@ class polygonNode(styleNode):
         self.lines.coordIndex.setValues(0, len(a), a)
         self._numVertices = a
 
+class rowNode(polygonNode):
+    def __init__(self, color = (0.,0.,0.), lineWidth = 1.0):
+        super(rowNode, self).__init__(color, lineWidth)
+
+    @polygonNode.vertices.setter
+    def vertices(self, uv):
+        a = []
+        for u in range(uv[0]):
+            for v in range(uv[1]):
+                a.append(uv[1] * u + v)
+            a.append(-1)
+        self.lines.coordIndex.setValue(0)
+        self.lines.coordIndex.setValues(0, len(a), a)
+        self._numVertices = a
+
+class colNode(polygonNode):
+    def __init__(self, color = (0.,0.,0.), lineWidth = 1.0):
+        super(colNode, self).__init__(color, lineWidth)
+
+    @polygonNode.vertices.setter
+    def vertices(self, uv):
+        a = []
+        for v in range(uv[1]):
+            for u in range(uv[0]):
+                a.append(uv[1] * u + v)
+            a.append(-1)
+        self.lines.coordIndex.setValue(0)
+        self.lines.coordIndex.setValues(0, len(a), a)
+        self._numVertices = a
+
 class sensorPolyNode(styleNode):
     def __init__(self, color = (0.,0.,0.), lineWidth = 1.0):
         super(sensorPolyNode, self).__init__()
@@ -307,7 +337,7 @@ class text2dNode(colorNode):
         self.textNode.string = text
 
 class multiTextNode(colorNode):
-    def __init__(self, color = (0.,0.,0.), font = 'sans', size = 16, offset = (0,0,2)):
+    def __init__(self, color = (0.,0.,0.), font = 'sans', size = 16, offset = 0):
         super(multiTextNode, self).__init__()
         self.fontNode = coin.SoFont()
         self.textSep = coin.SoSeparator()
@@ -349,9 +379,10 @@ class multiTextNode(colorNode):
             for i in range(min(len(datarr[0]),len(datarr[1]))):
                 sep = coin.SoSeparator()
                 textpos = coin.SoTransform()
-                textpos.translation.setValue([datarr[0][i][0]+self.offset[0],datarr[0][i][1]+self.offset[1],datarr[0][i][2]+self.offset[2]])
+                textpos.translation.setValue([datarr[0][i][0],datarr[0][i][1],datarr[0][i][2]])
                 text = coin.SoText2()
-                text.string = datarr[1][i]
+                field = [""]*self.offset + [datarr[1][i]]
+                text.string.setValues(0,len(field),field)
                 sep.addChild(textpos)
                 sep.addChild(text)
                 self.textSep.addChild(sep)
@@ -361,8 +392,9 @@ class multiTextNode(colorNode):
             for i in range(min(len(datarr[0]),len(datarr[1]))):
                 print(range(min(len(datarr[0]),len(datarr[1]))))
                 print(self.nodeList[i][0])
-                self.nodeList[i][0].translation.setValue([datarr[0][i][0]+self.offset[0],datarr[0][i][1]+self.offset[1],datarr[0][i][2]+self.offset[2]])
-                self.nodeList[i][1].string = datarr[1][i]
+                self.nodeList[i][0].translation.setValue([datarr[0][i][0],datarr[0][i][1],datarr[0][i][2]])
+                field = [""]*self.offset + [datarr[1][i]]
+                self.nodeList[i][1].string.setValues(0,len(field),field)
                 self._data[i] = (datarr[0][i],datarr[1][i])
 
 

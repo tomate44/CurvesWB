@@ -8,6 +8,17 @@ import CoinNodes
 path_curvesWB = os.path.dirname(dummy.__file__)
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 
+def getString(weights):
+    weightStr = []
+    for w in weights:
+        if w == 1.0:
+            weightStr.append("")
+        elif w.is_integer():
+            weightStr.append(" %d"%int(w))
+        else:
+            weightStr.append(" %0.2f"%w)
+    return(weightStr)
+
 class makeSpline:
     def __init__(self, obj , edge):
         ''' Add the properties '''
@@ -63,7 +74,7 @@ class makeSpline:
             elif fp.Degree < int(self.curve.Degree):
                 pts = self.curve.discretize(Number = 100)
                 bscurve = Part.BSplineCurve() #self.curve.approximateBSpline(0.1,12,fp.Degree,'C2')
-                bscurve.approximate(Points = pts, DegMin = fp.Degree, DegMax = fp.Degree, Tolerance = 0.1)
+                bscurve.approximate(Points = pts, DegMin = fp.Degree, DegMax = fp.Degree, Tolerance = 0.01)
                 self.curve = bscurve
                 fp.Degree = int(self.curve.Degree)
             fp.Poles = self.curve.getPoles()
@@ -140,9 +151,9 @@ class SplineVP:
         # *** Set the Poles view nodes *** 
         self.polesnode = CoinNodes.coordinate3Node()
         self.weightStr = []
-        self.polySep = CoinNodes.polygonNode((0,0,0),1)
+        self.polySep = CoinNodes.polygonNode((0.5,0.5,0.5),1)
         self.markerSep = CoinNodes.markerSetNode((1,0,0),coin.SoMarkerSet.DIAMOND_FILLED_7_7)
-        self.weightSep = CoinNodes.multiTextNode((1,0,0),"osiFont,FreeSans,sans",16,(0,0,2))
+        self.weightSep = CoinNodes.multiTextNode((1,0,0),"osiFont,FreeSans,sans",16,0)
 
         # *** Set knots ***
         #knotPoints = []
@@ -154,7 +165,7 @@ class SplineVP:
         self.knotsnode = CoinNodes.coordinate3Node() #knotPoints)      
         self.multStr = []
         self.knotMarkerSep = CoinNodes.markerSetNode((0,0,1),coin.SoMarkerSet.CIRCLE_FILLED_7_7)      
-        self.multSep = CoinNodes.multiTextNode((0,0,1),"osiFont,FreeSans,sans",16,(0,0,-2))
+        self.multSep = CoinNodes.multiTextNode((0,0,1),"osiFont,FreeSans,sans",16,1)
 
         # *** Set the active pole view nodes *** 
         self.activePole = CoinNodes.markerSetNode((1,1,0),coin.SoMarkerSet.CIRCLE_LINE_9_9)
@@ -198,18 +209,14 @@ class SplineVP:
         FreeCAD.Console.PrintMessage("updateData : "+str(prop)+"\n")
         if prop == "Poles":
             self.polesnode.points = fp.Poles
-            self.weightStr = []
-            for w in fp.Weights:
-                self.weightStr.append("%0.2f"%w)
+            self.weightStr = getString(fp.Weights)
             self.polySep.vertices = self.polesnode.points
             FreeCAD.Console.PrintMessage("--- "+str(len(self.weightStr))+"\n")
             FreeCAD.Console.PrintMessage("--- "+str(len(self.polesnode.points))+"\n")
             self.weightSep.data = (self.polesnode.points,self.weightStr)
         if prop == "Weights":
             self.polesnode.points = fp.Poles
-            self.weightStr = []
-            for w in fp.Weights:
-                self.weightStr.append("%0.2f"%w)
+            self.weightStr = getString(fp.Weights)
             FreeCAD.Console.PrintMessage("--- "+str(len(self.weightStr))+"\n")
             FreeCAD.Console.PrintMessage("--- "+str(len(self.polesnode.points))+"\n")
             #self.polySep.vertices = self.polesnode.points

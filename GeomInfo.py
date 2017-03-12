@@ -9,6 +9,13 @@ reload(coinNodes)
 path_curvesWB = os.path.dirname(dummy.__file__)
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 
+DEBUG = 1
+
+def debug(string):
+    if DEBUG:
+        FreeCAD.Console.PrintMessage(string)
+        FreeCAD.Console.PrintMessage("\n")
+
 def beautify(shp):
     if not shp:
         return ""
@@ -19,11 +26,41 @@ def beautify(shp):
         else:
             return shp
 
+def getString(weights):
+    weightStr = []
+    for w in weights:
+        if w == 1.0:
+            weightStr.append("")
+        elif w.is_integer():
+            weightStr.append(" %d"%int(w))
+        else:
+            weightStr.append(" %0.2f"%w)
+    return(weightStr)
+
+def cleanString(arr):
+    strArr = ""
+    for w in arr:
+        if isinstance(w,long):
+            strArr += "%d, "%int(w)
+        #elif w.is_integer():
+            #strArr += "%d, "%int(w)
+        else:
+            strArr += "%0.2f, "%w
+    return(strArr[:-2])
+
 def removeDecim(arr):
     r = []
     for fl in arr:
         r.append("%0.2f"%fl)
     return r
+
+def to1D(arr):
+    array = []
+    for row in arr:
+        for el in row:
+            array.append(el)
+    return array
+
 
 def curveNode(cur):
     bspline = False
@@ -49,9 +86,7 @@ def curveNode(cur):
     polesnode = coinNodes.coordinate3Node(poles)
 
     # *** Set weights ***    
-    weightStr = []
-    for w in weights:
-        weightStr.append("%0.2f"%w)
+    weightStr = getString(weights)
 
     polySep = coinNodes.polygonNode((0.5,0.5,0.5),1)
     polySep.vertices = poles
@@ -61,7 +96,7 @@ def curveNode(cur):
 
     if rational:
         # *** Set weight text ***
-        weightSep = coinNodes.multiTextNode((1,0,0),"osiFont,FreeSans,sans",16,(0,0,2))
+        weightSep = coinNodes.multiTextNode((1,0,0),"osiFont,FreeSans,sans",16,0)
         weightSep.data = (poles,weightStr)
 
     if bspline:
@@ -77,12 +112,12 @@ def curveNode(cur):
         # *** Set texts ***        
         multStr = []
         for m in mults:
-            multStr.append("%d"%m)
+            multStr.append("\n%d"%m)
         
         knotMarkerSep = coinNodes.markerSetNode((0,0,1),coin.SoMarkerSet.CIRCLE_FILLED_9_9)
 
         # *** Set mult text ***        
-        multSep = coinNodes.multiTextNode((0,0,1),"osiFont,FreeSans,sans",16,(0,0,-2))
+        multSep = coinNodes.multiTextNode((0,0,1),"osiFont,FreeSans,sans",16,1)
         multSep.data = (knotPoints,multStr)
 
     vizSep = coin.SoSeparator()
@@ -97,8 +132,102 @@ def curveNode(cur):
         vizSep.addChild(multSep)
     return vizSep
 
+def surfNode(surf):
+    bspline = False
+    rational = False
+    try:
+        poles = surf.getPoles()
+        weights = surf.getWeights()
+        nbU = int(surf.NbUPoles)
+        nbV = int(surf.NbVPoles)
+    except:
+        return False
+    try:
+        rational = surf.isURational() or surf.isVRational()
+    except:
+        pass
+    try:
+        uknots = surf.getUKnots()
+        umults = surf.getUMultiplicities()
+        vknots = surf.getVKnots()
+        vmults = surf.getVMultiplicities()
+        bspline = True
+    except:
+        bspline = False
+
+
+    # *** Set poles ***    
+    flatPoles = to1D(poles)
+    polesnode = coinNodes.coordinate3Node(flatPoles)
+
+    # *** Set weights ***    
+    flatW = to1D(weights)
+    weightStr = []
+    for w in flatW:
+        if w == 1.0:
+            weightStr.append("")
+        elif w.is_integer():
+            weightStr.append(" %d"%int(w))
+        else:
+            weightStr.append(" %0.2f"%w)
+
+    polyRowSep = coinNodes.rowNode((0.5,0,0),1)
+    polyRowSep.vertices=(nbU,nbV)
+    #debug(str(polyRowSep.vertices))
+    polyColSep = coinNodes.colNode((0,0,0.5),1)
+    polyColSep.vertices=(nbU,nbV)
+    #debug(str(polyColSep.vertices))
+
+    # *** Set markers ***    
+    markerSep = coinNodes.markerSetNode((1,0,0),coin.SoMarkerSet.DIAMOND_FILLED_7_7)
+
+    if rational:
+        # *** Set weight text ***
+        weightSep = coinNodes.multiTextNode((1,0,0),"osiFont,FreeSans,sans",16,0)
+        weightSep.data = (flatPoles,weightStr)
+
+    if bspline:
+
+        # *** Set knots ***
+        uknotPoints = []
+        for k in uknots:
+            uIso = surf.uIso(k)
+            epts = uIso.toShape().discretize(100)
+            for p in epts:
+                uknotPoints.append((p.x,p.y,p.z))
+        
+        knotsnode = coinNodes.coordinate3Node(uknotPoints)
+        uCurves = coinNodes.rowNode((1,0,0),3)
+        uCurves.vertices=(100,len(uknots))
+        
+        ## *** Set texts ***        
+        #multStr = []
+        #for m in mults:
+            #multStr.append("%d"%m)
+        
+        #knotMarkerSep = coinNodes.markerSetNode((0,0,1),coin.SoMarkerSet.CIRCLE_FILLED_9_9)
+
+        ## *** Set mult text ***        
+        #multSep = coinNodes.multiTextNode((0,0,1),"osiFont,FreeSans,sans",16,1)
+        #multSep.data = (knotPoints,multStr)
+
+    vizSep = coin.SoSeparator()
+    vizSep.addChild(polesnode)
+    vizSep.addChild(polyRowSep)
+    vizSep.addChild(polyColSep)
+    vizSep.addChild(markerSep)
+    if rational:
+        vizSep.addChild(weightSep)
+    if bspline:
+        vizSep.addChild(knotsnode)
+        vizSep.addChild(uCurves)
+        #vizSep.addChild(knotMarkerSep)
+        #vizSep.addChild(multSep)
+    return vizSep
+
+
 class GeomInfo:
-    "this class displays info about the geometry of the selected topology"
+    "this class displays info about the geometry of the selected shape"
     def Activated(self,index=0):
 
         if index == 1:
@@ -199,7 +328,7 @@ class GeomInfo:
             for i in funct:
                 r = i[0]()
                 if r:
-                    s = str(i[1]) + " : " + str(r)
+                    s = str(i[1]) + " : " + cleanString(r)
                     ret.append(s)
             #FreeCAD.Console.PrintMessage(ret)
             return ret
@@ -220,10 +349,10 @@ class GeomInfo:
                 if i[0]():
                     ret.append(i[1])
             r = curve.getKnots()
-            s = "Knots : " + str(removeDecim(r))
+            s = "Knots : " + cleanString(r)
             ret.append(s)
             r = curve.getMultiplicities()
-            s = "Mults : " + str(r)
+            s = "Mults : " + cleanString(r)
             ret.append(s)
             return ret
         except:
@@ -241,6 +370,14 @@ class GeomInfo:
                     surf = ss.Surface
                     t = self.getSurfInfo(surf)
                     self.SoText2.string.setValues(0,len(t),t)
+                    if self.viz:
+                        self.root.removeChild(self.node)
+                        self.viz = False
+                    self.root = sel0.Object.ViewObject.RootNode
+                    self.node = surfNode(surf)
+                    if self.node:
+                        self.root.insertChild(self.node,0)
+                        self.viz = True
                 elif ss.ShapeType == 'Edge':
                     #FreeCAD.Console.PrintMessage("Edge detected"+ "\n")
                     cur = ss.Curve
