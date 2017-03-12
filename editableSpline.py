@@ -131,11 +131,11 @@ class SplineVP:
     def attach(self, obj):
         FreeCAD.Console.PrintMessage("\nSplineVP.attach \n")
 
-        self.curveDM = coin.SoGroup()
-        self.polesDM = coin.SoGroup()
+        self.curveDM = coin.SoSeparator()
+        self.polesDM = coin.SoSeparator()
         self.polesDM.setName("Poles")
         self.curveDM.setName("Curve")
-        self.curvePolesDM = coin.SoGroup()
+        self.curvePolesDM = coin.SoSeparator()
         
         # *** Set the Poles view nodes *** 
         self.polesnode = CoinNodes.coordinate3Node()
@@ -289,7 +289,7 @@ class editableSpline:
         s = FreeCADGui.Selection.getSelectionEx()
         edges = self.parseSel(s)
 
-        obj=FreeCAD.ActiveDocument.addObject("App::FeaturePython","Spline") #add object to document
+        obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Spline") #add object to document
         makeSpline(obj,edges)
         SplineVP(obj.ViewObject)
         obj.ViewObject.DisplayMode = "Curve + Poles"

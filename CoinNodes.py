@@ -116,17 +116,17 @@ def removeDecim(arr):
 class colorNode(coin.SoSeparator):
     def __init__(self, color = (0.,0.,0.)):
         super(colorNode, self).__init__()
-        self.coinColor = coin.SoBaseColor()
+        self.coinColor = coin.SoMaterial()
         self.addChild(self.coinColor)
         self.color = color
 
     @property
     def color(self):
-        return self.coinColor.rgb.getValues()[0].getValue()
+        return self.coinColor.diffuseColor.getValues()[0].getValue()
 
     @color.setter
     def color(self, color):
-        self.coinColor.rgb = (color[0], color[1], color[2])
+        self.coinColor.diffuseColor = (color[0], color[1], color[2])
 
 class styleNode(colorNode):
     def __init__(self, color = (0.,0.,0.), lineWidth = 1.0, pointSize = 1.0):

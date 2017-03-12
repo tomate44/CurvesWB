@@ -26,11 +26,17 @@ def removeDecim(arr):
     return r
 
 def curveNode(cur):
+    bspline = False
+    rational = False
     try:
         poles = cur.getPoles()
         weights = cur.getWeights()
     except:
         return False
+    try:
+        rational = cur.isRational()
+    except:
+        pass
     try:
         knots = cur.getKnots()
         mults = cur.getMultiplicities()
@@ -47,15 +53,16 @@ def curveNode(cur):
     for w in weights:
         weightStr.append("%0.2f"%w)
 
-    polySep = coinNodes.polygonNode((0,0,0),1)
+    polySep = coinNodes.polygonNode((0.5,0.5,0.5),1)
     polySep.vertices = poles
 
     # *** Set markers ***    
     markerSep = coinNodes.markerSetNode((1,0,0),coin.SoMarkerSet.DIAMOND_FILLED_7_7)
 
-    # *** Set weight text ***
-    weightSep = coinNodes.multiTextNode((1,0,0),"osiFont,FreeSans,sans",16,(0,0,2))
-    weightSep.data = (poles,weightStr)
+    if rational:
+        # *** Set weight text ***
+        weightSep = coinNodes.multiTextNode((1,0,0),"osiFont,FreeSans,sans",16,(0,0,2))
+        weightSep.data = (poles,weightStr)
 
     if bspline:
 
@@ -82,7 +89,8 @@ def curveNode(cur):
     vizSep.addChild(polesnode)
     vizSep.addChild(polySep)
     vizSep.addChild(markerSep)
-    vizSep.addChild(weightSep)
+    if rational:
+        vizSep.addChild(weightSep)
     if bspline:
         vizSep.addChild(knotsnode)
         vizSep.addChild(knotMarkerSep)
@@ -172,8 +180,8 @@ class GeomInfo:
         ret = []
         ret.append(beautify(str(surf)))
         try:
-            ret.append("Poles  : " + str(surf.NbUPoles) + " x " + str(surf.NbVPoles))
             ret.append("Degree : " + str(surf.UDegree) + " x " + str(surf.VDegree))
+            ret.append("Poles  : " + str(surf.NbUPoles) + " x " + str(surf.NbVPoles))
             ret.append("Continuity : " + surf.Continuity)
             funct = [(surf.isURational,"U Rational"),
                     (surf.isVRational, "V Rational"),
@@ -202,8 +210,8 @@ class GeomInfo:
         ret = []
         ret.append(beautify(str(curve)))
         try:
-            ret.append("Poles  : " + str(curve.NbPoles))
             ret.append("Degree : " + str(curve.Degree))
+            ret.append("Poles  : " + str(curve.NbPoles))
             ret.append("Continuity : " + curve.Continuity)
             funct = [(curve.isRational,"Rational"),
                     (curve.isPeriodic, "Periodic"),
@@ -244,7 +252,7 @@ class GeomInfo:
                     self.root = sel0.Object.ViewObject.RootNode
                     self.node = curveNode(cur)
                     if self.node:
-                        self.root.addChild(self.node)
+                        self.root.insertChild(self.node,0)
                         self.viz = True
 
     def GetResources(self):
