@@ -205,8 +205,12 @@ def run():
         try:
             App.ActiveDocument.openTransaction("Macro IsoCurve")
             selfobj = makeIsoCurveFeature()
+            so = sel[0].SubObjects[0]
+            p = sel[0].PickedPoints[0]
+            poe = so.distToShape(Part.Vertex(p))
+            par = poe[2][0][2]
             selfobj.Face = [sel[0].Object,sel[0].SubElementNames]
-            # set parameter here
+            selfobj.Parameter = par[0]
             selfobj.Proxy.execute(selfobj)
         finally:
             App.ActiveDocument.commitTransaction()
