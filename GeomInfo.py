@@ -9,7 +9,7 @@ reload(coinNodes)
 path_curvesWB = os.path.dirname(dummy.__file__)
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 
-DEBUG = 1
+DEBUG = 0
 
 def debug(string):
     if DEBUG:
@@ -248,13 +248,14 @@ class GeomInfo:
     def Activated(self,index=0):
 
         if index == 1:
-            print "GeomInfo activated"
-            self.view = FreeCADGui.ActiveDocument.ActiveView
+            debug("GeomInfo activated")
+            #self.activeDoc = FreeCADGui.ActiveDocument
+            #self.view = self.activeDoc.ActiveView
             self.stack = []
             FreeCADGui.Selection.addObserver(self)    # installe la fonction en mode resident
             #FreeCADGui.Selection.addObserver(self.getTopo)
             self.active = True
-            self.sg = self.view.getSceneGraph()
+            #self.sg = self.view.getSceneGraph()
             self.textSep = coin.SoSeparator()
             
             self.cam = coin.SoOrthographicCamera()
@@ -283,45 +284,68 @@ class GeomInfo:
             #self.Active = False
             #self.sg.addChild(self.textSep)
             
-            self.viewer=self.view.getViewer()
-            self.render=self.viewer.getSoRenderManager()
-            self.sup = self.render.addSuperimposition(self.textSep)
-            self.sg.touch()
+            #self.viewer=self.view.getViewer()
+            #self.render=self.viewer.getSoRenderManager()
+            #self.sup = self.render.addSuperimposition(self.textSep)
+            #self.sg.touch()
             #self.cam2 = coin.SoPerspectiveCamera()
             #self.sg.addChild(self.cam2)
+            
+            self.addHUD()
             
             self.Active = True
             self.viz = False
             self.getTopo()
+
         elif (index == 0) and self.Active:
-            print "GeomInfo off"
-            self.render.removeSuperimposition(self.sup)
-            if self.viz:
-                self.root.removeChild(self.node)
-                self.viz = False
-            self.sg.touch()
+            debug("GeomInfo off")
+            self.removeHUD()
             self.Active = False
-        #else:
-            #print "Else ....."
-            #self.sg.addChild(self.textSep)
+
+    def addHUD(self):
+        self.activeDoc = FreeCADGui.ActiveDocument
+        self.view = self.activeDoc.ActiveView
+        self.sg = self.view.getSceneGraph()
+        self.viewer=self.view.getViewer()
+        self.render=self.viewer.getSoRenderManager()
+        self.sup = self.render.addSuperimposition(self.textSep)
+        self.sg.touch()
+
+    def removeHUD(self):
+        self.render.removeSuperimposition(self.sup)
+        self.removeGrid()
+        self.sg.touch()
+
+    def removeGrid(self):
+        if self.viz:
+            self.root.removeChild(self.node)
+            self.viz = False
+    def insertGrid(self):
+        if self.node:
+            self.root.insertChild(self.node,0)
+            self.viz = True
+
+# ------ Selection Observer --------
 
     def addSelection(self,doc,obj,sub,pnt):   # Selection
         if self.Active:
+            if not doc == self.activeDoc:
+                self.removeHUD()
+                self.addHUD()                
             self.getTopo()
     def removeSelection(self,doc,obj,sub):    # Effacer l'objet selectionne
         if self.Active:
             self.SoText2.string = ""
-            if self.viz:
-                self.root.removeChild(self.node)
-                self.viz = False
+            self.removeGrid()
     def setPreselection(self, doc, obj, sub):
         pass
     def clearSelection(self,doc):             # Si clic sur l'ecran, effacer la selection
         if self.Active:
             self.SoText2.string = ""
-            if self.viz:
-                self.root.removeChild(self.node)
-                self.viz = False
+            self.removeGrid()
+
+# ------ get info about shape --------
+
     def getSurfInfo(self,surf):
         ret = []
         ret.append(beautify(str(surf)))
@@ -381,33 +405,28 @@ class GeomInfo:
             
             sel0 = sel[0]
             if sel0.HasSubObjects:
-                ss = sel0.SubObjects[-1]
+                try:
+                    ss = sel0.SubObjects[-1]
+                except:
+                    return
                 if ss.ShapeType == 'Face':
                     #FreeCAD.Console.PrintMessage("Face detected"+ "\n")
                     surf = ss.Surface
                     t = self.getSurfInfo(surf)
                     self.SoText2.string.setValues(0,len(t),t)
-                    if self.viz:
-                        self.root.removeChild(self.node)
-                        self.viz = False
+                    self.removeGrid()
                     self.root = sel0.Object.ViewObject.RootNode
                     self.node = surfNode(surf)
-                    if self.node:
-                        self.root.insertChild(self.node,0)
-                        self.viz = True
+                    self.insertGrid()
                 elif ss.ShapeType == 'Edge':
                     #FreeCAD.Console.PrintMessage("Edge detected"+ "\n")
                     cur = ss.Curve
                     t = self.getCurvInfo(cur)
                     self.SoText2.string.setValues(0,len(t),t)
-                    if self.viz:
-                        self.root.removeChild(self.node)
-                        self.viz = False
+                    self.removeGrid()
                     self.root = sel0.Object.ViewObject.RootNode
                     self.node = curveNode(cur)
-                    if self.node:
-                        self.root.insertChild(self.node,0)
-                        self.viz = True
+                    self.insertGrid()
 
     def GetResources(self):
         #return {'Pixmap'  : 'python', 'MenuText': 'Toggle command', 'ToolTip': 'Example toggle command', 'Checkable': True}
