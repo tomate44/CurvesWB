@@ -8,6 +8,13 @@ import CoinNodes
 path_curvesWB = os.path.dirname(dummy.__file__)
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 
+DEBUG = 1
+
+def debug(string):
+    if DEBUG:
+        FreeCAD.Console.PrintMessage(string)
+        FreeCAD.Console.PrintMessage("\n")
+
 def getString(weights):
     weightStr = []
     for w in weights:
@@ -22,7 +29,7 @@ def getString(weights):
 class makeSpline:
     def __init__(self, obj , edge):
         ''' Add the properties '''
-        FreeCAD.Console.PrintMessage("\Spline class Init\n")
+        debug("\Spline class Init\n")
         obj.addProperty("App::PropertyIntegerConstraint", "Degree",    "General", "Degree")
         obj.addProperty("App::PropertyInteger",           "Pole",      "Poles",   "Pole number").Pole = 1
         obj.addProperty("App::PropertyFloat",             "X",         "Poles",   "X coordinate of the selected pole").X=0.0
@@ -60,7 +67,7 @@ class makeSpline:
         obj.KnotPoints = knotPoints
 
     def execute(self, obj):
-        FreeCAD.Console.PrintMessage("\n* Spline : execute *\n")
+        debug("\n* Spline : execute *\n")
         obj.CurvePts = self.curve.discretize(100)
         obj.Shape = self.curve.toShape()
 
@@ -85,7 +92,7 @@ class makeSpline:
                 fp.Mults = [int(i) for i in self.curve.getMultiplicities()]
             fp.Pole = fp.Pole
             fp.CurvePts = self.curve.discretize(100)
-            FreeCAD.Console.PrintMessage("Spline : Degree changed to "+str(fp.Degree)+"\n")
+            debug("Spline : Degree changed to "+str(fp.Degree)+"\n")
         if prop == "Pole":
             if fp.Pole < 1:
                 fp.Pole = 1
@@ -100,31 +107,31 @@ class makeSpline:
             #fp.Poles = self.curve.getPoles()
             #fp.Weights = self.curve.getWeights()
             #fp.touch()
-            FreeCAD.Console.PrintMessage("Spline : Pole changed to "+str(fp.Pole)+"\n")
+            debug("Spline : Pole changed to "+str(fp.Pole)+"\n")
         if (prop == "X") | (prop == "Y") | (prop == "Z"):
             v = FreeCAD.Vector(fp.X,fp.Y,fp.Z)
             self.curve.setPole(fp.Pole,v)
             fp.Poles = self.curve.getPoles()
-            FreeCAD.Console.PrintMessage("Spline : Coordinate changed\n")
+            debug("Spline : Coordinate changed\n")
         if (prop == "W"):
             #v = FreeCAD.Vector(fp.X,fp.Y,fp.Z)
             self.curve.setWeight(fp.Pole,fp.W)
             fp.Weights = self.curve.getWeights()
-            FreeCAD.Console.PrintMessage("Spline : Weight changed\n")
+            debug("Spline : Weight changed\n")
         if (prop == "Poles"):
             #fp.Weights = self.curve.getWeights()
-            FreeCAD.Console.PrintMessage("Spline : Poles changed\n")
+            debug("Spline : Poles changed\n")
         if (prop == "Weights"):
             #fp.Poles = self.curve.getPoles()
-            FreeCAD.Console.PrintMessage("Spline : Weights changed\n")
+            debug("Spline : Weights changed\n")
         if (prop == "Knots"):
             if fp.Knots:
                 self.getKnotPoints(fp)
             #fp.Mults = [int(i) for i in self.curve.getMultiplicities()]
-            FreeCAD.Console.PrintMessage("Spline : Knots changed\n")
+            debug("Spline : Knots changed\n")
         if (prop == "Mults"):
             #fp.Knots = self.curve.getKnots()
-            FreeCAD.Console.PrintMessage("Spline : Mults changed\n")
+            debug("Spline : Mults changed\n")
         
 
     def __getstate__(self):
@@ -137,10 +144,11 @@ class makeSpline:
 class SplineVP:
     def __init__(self, obj ):
         ''' Add the properties '''
+        self.oldDM = 'Wireframe'
         obj.Proxy = self
 
     def attach(self, obj):
-        FreeCAD.Console.PrintMessage("\nSplineVP.attach \n")
+        debug("\nSplineVP.attach \n")
 
         self.curveDM = coin.SoSeparator()
         self.polesDM = coin.SoSeparator()
@@ -206,19 +214,19 @@ class SplineVP:
         obj.addDisplayMode(self.curvePolesDM,"Poles")
 
     def updateData(self, fp, prop):
-        FreeCAD.Console.PrintMessage("updateData : "+str(prop)+"\n")
+        debug("updateData : "+str(prop)+"\n")
         if prop == "Poles":
             self.polesnode.points = fp.Poles
             self.weightStr = getString(fp.Weights)
             self.polySep.vertices = self.polesnode.points
-            FreeCAD.Console.PrintMessage("--- "+str(len(self.weightStr))+"\n")
-            FreeCAD.Console.PrintMessage("--- "+str(len(self.polesnode.points))+"\n")
+            debug("--- "+str(len(self.weightStr))+"\n")
+            debug("--- "+str(len(self.polesnode.points))+"\n")
             self.weightSep.data = (self.polesnode.points,self.weightStr)
         if prop == "Weights":
             self.polesnode.points = fp.Poles
             self.weightStr = getString(fp.Weights)
-            FreeCAD.Console.PrintMessage("--- "+str(len(self.weightStr))+"\n")
-            FreeCAD.Console.PrintMessage("--- "+str(len(self.polesnode.points))+"\n")
+            debug("--- "+str(len(self.weightStr))+"\n")
+            debug("--- "+str(len(self.polesnode.points))+"\n")
             #self.polySep.vertices = self.polesnode.points
             self.weightSep.data = (self.polesnode.points,self.weightStr)
         if prop == "Knots":
@@ -259,15 +267,24 @@ class SplineVP:
 
     def onChanged(self, vp, prop):
         '''Here we can do something when a single property got changed'''
-        FreeCAD.Console.PrintMessage("\nonChanged : "+str(prop)+"\n")
+        debug("\nonChanged : "+str(prop)+"\n")
         #if prop == "Edge":
-            #FreeCAD.Console.PrintMessage("\n\n\nvp detected a Edge change\n\n\n")
+            #debug("\n\n\nvp detected a Edge change\n\n\n")
         #if prop == "CurveColor":
             #self.curveColor.rgb = (vp.CurveColor[0],vp.CurveColor[1],vp.CurveColor[2])
         #elif prop == "CombColor":
             #self.combColor.rgb  = (vp.CombColor[0],vp.CombColor[1],vp.CombColor[2])
         return
-        
+
+    def doubleClicked(self,vobj):
+        debug("Double-clicked")
+        if not vobj.DisplayMode == "Poles":
+            self.oldDM = vobj.DisplayMode
+            vobj.DisplayMode = "Poles"
+        else:
+            vobj.DisplayMode = self.oldDM
+        return True
+
     def getIcon(self):
         return (path_curvesWB_icons+'/editableSpline.svg')
 
