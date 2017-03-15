@@ -188,13 +188,13 @@ class SplineVP:
         self.curveDM.addChild(self.curvePts)
         self.curveDM.addChild(self.curveSep)
         
-        self.selectionNode = coin.SoType.fromName("SoFCSelection").createInstance()
-        self.selectionNode.documentName.setValue(FreeCAD.ActiveDocument.Name)
-        self.selectionNode.objectName.setValue(obj.Object.Name) # here obj is the ViewObject, we need its associated App Object
-        self.selectionNode.subElementName.setValue("Curve")
-        self.selectionNode.addChild(self.curveDM)
+        #self.selectionNode = coin.SoType.fromName("SoFCSelection").createInstance()
+        #self.selectionNode.documentName.setValue(FreeCAD.ActiveDocument.Name)
+        #self.selectionNode.objectName.setValue(obj.Object.Name) # here obj is the ViewObject, we need its associated App Object
+        #self.selectionNode.subElementName.setValue("Curve")
+        #self.selectionNode.addChild(self.curveDM)
 
-        self.curvePolesDM.addChild(self.selectionNode)
+        self.curvePolesDM.addChild(self.curveDM)
         self.curvePolesDM.addChild(self.polesDM)
 
         #self.curveDM.addChild(self.selectionNode)        
@@ -202,8 +202,8 @@ class SplineVP:
         
         
         
-        obj.addDisplayMode(self.selectionNode,"Curve")
-        obj.addDisplayMode(self.curvePolesDM,"Curve + Poles")
+        #obj.addDisplayMode(self.curveDM,"Curve")
+        obj.addDisplayMode(self.curvePolesDM,"Poles")
 
     def updateData(self, fp, prop):
         FreeCAD.Console.PrintMessage("updateData : "+str(prop)+"\n")
@@ -246,13 +246,13 @@ class SplineVP:
     def getDisplayModes(self,obj):
          "Return a list of display modes."
          modes=[]
-         modes.append("Curve")
-         modes.append("Curve + Poles")
+         #modes.append("Curve")
+         modes.append("Poles")
          return modes
 
     def getDefaultDisplayMode(self):
          '''Return the name of the default display mode. It must be defined in getDisplayModes.'''
-         return "Curve"
+         return "Wireframe"
 
     def setDisplayMode(self,mode):
          return mode
@@ -299,7 +299,7 @@ class editableSpline:
         obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Spline") #add object to document
         makeSpline(obj,edges)
         SplineVP(obj.ViewObject)
-        obj.ViewObject.DisplayMode = "Curve + Poles"
+        obj.ViewObject.DisplayMode = "Poles"
         #obj.ViewObject.Proxy = 0
         #obj.ViewObject.PointSize = 4.0
         #obj.ViewObject.ControlPoints = True
