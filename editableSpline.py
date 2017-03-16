@@ -42,7 +42,7 @@ class makeSpline:
         obj.addProperty("App::PropertyFloatList",         "Knots",     "General", "Knots")
         obj.addProperty("App::PropertyFloatList",         "Mults",     "General", "Mults")
         obj.addProperty("App::PropertyVectorList",        "CurvePts",  "General", "CurvePts")
-        obj.addProperty("Part::PropertyPartShape",        "Shape",     "General", "Shape")
+        #obj.addProperty("Part::PropertyPartShape",        "Shape",     "General", "Shape")
         obj.Proxy = self
         self.curve = edge.Curve.copy()
         obj.Poles = self.curve.getPoles()
@@ -57,6 +57,7 @@ class makeSpline:
             obj.Mults = []
         obj.Degree = (int(self.curve.Degree),1,8,1)
         obj.W = (1.0,0.0001,1000.0,0.1)
+        obj.setEditorMode("Weights", 2)
         self.execute(obj)
 
     def getKnotPoints(self, obj):
@@ -72,6 +73,10 @@ class makeSpline:
         obj.Shape = self.curve.toShape()
 
     def onChanged(self, fp, prop):
+        try:
+            curve = self.curve
+        except:
+            return
         if (prop == "Degree"):
             if fp.Degree > int(self.curve.Degree):
                 if isinstance(self.curve,Part.BezierCurve):
@@ -170,7 +175,7 @@ class SplineVP:
             #knotPoints.append((p.x,p.y,p.z))
         
         # *** Set the knots view nodes *** 
-        self.knotsnode = CoinNodes.coordinate3Node() #knotPoints)      
+        self.knotsnode = CoinNodes.coordinate3Node() #knotPoints)
         self.multStr = []
         self.knotMarkerSep = CoinNodes.markerSetNode((0,0,1),coin.SoMarkerSet.CIRCLE_FILLED_7_7)      
         self.multSep = CoinNodes.multiTextNode((0,0,1),"osiFont,FreeSans,sans",16,1)
@@ -214,7 +219,7 @@ class SplineVP:
         obj.addDisplayMode(self.curvePolesDM,"Poles")
 
     def updateData(self, fp, prop):
-        debug("updateData : "+str(prop)+"\n")
+        #debug("updateData : "+str(prop)+"\n")
         if prop == "Poles":
             self.polesnode.points = fp.Poles
             self.weightStr = getString(fp.Weights)
@@ -237,6 +242,12 @@ class SplineVP:
                     self.multStr.append("%d"%m)
                 #self.polySep.vertices = self.polesnode.points
                 self.multSep.data = (self.knotsnode.points,self.multStr)
+            #elif fp.Poles:
+                #self.knotsnode.points = [fp.Poles[0]]
+                #self.multStr = [""]
+                #self.multSep.data = (self.knotsnode.points,self.multStr)
+            #else:
+                #debug("%s"%str(fp.Poles[0]))
         if prop == "Mults":
             if fp.Mults:
                 #self.polesnode.points = fp.Poles

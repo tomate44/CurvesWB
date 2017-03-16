@@ -9,9 +9,11 @@ path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 class CurvesWorkbench (Workbench):
    MenuText = "Curves"
    def Initialize(self):
-       import line
        import bezierCurve
        import editableSpline
+       import JoinCurves
+       import Discretize
+       import approximate
        import ParametricBlendCurve
        import ParametricComb
        import ZebraTool
@@ -20,11 +22,9 @@ class CurvesWorkbench (Workbench):
        import ExtractShapes
        import IsoCurve
        import Sketch_On_Surface
-       import JoinCurves
-       import Discretize
-       import approximate
+       import Sw2R
 
-       commandslist = ["line","bezierCurve","editableSpline","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","GeomInfo","extract","IsoCurve","SoS","join","Discretize","Approximate"]
+       commandslist = ["bezierCurve","editableSpline","join","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","GeomInfo","extract","IsoCurve","SoS","sw2r"]
        #FreeCADGui.addIconPath( ':/CurvesWB/icons' )
        self.appendToolbar("Curves",commandslist)
 Gui.addWorkbench(CurvesWorkbench())
