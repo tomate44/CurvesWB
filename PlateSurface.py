@@ -30,10 +30,10 @@ def linkSubList_convertToOldStyle(references):
             result.append(tup)
     return result
 
-class sw2r:
+class plateSurfFP:
     def __init__(self, obj):
         ''' Add the properties '''
-        debug("\nsw2r class init\n")
+        debug("\nplateSurfFP class init\n")
         
         # List of constraint objects
         obj.addProperty("App::PropertyLinkList",           "Objects",      "PlateSurface", "List of constraint objects")
@@ -61,7 +61,8 @@ class sw2r:
         obj.Iterations  = ( 1, 1, 12, 1)
         obj.MaxDegree   = ( 3, 3, 25, 1)
         obj.MaxSegments = ( 3, 1, 50, 1)
-        obj.CritOrder   = (-1,-1,  1, 1)
+        obj.CritOrder   = ( 0,-1,  1, 1)
+        obj.Continuity  = 'C1'
         
 
     def getShape(self, link):
@@ -80,7 +81,7 @@ class sw2r:
     def getSurface(self, obj):
         for l in obj.Objects:
             if l.Shape.Faces:
-                return(l.Shape.Faces[0])
+                return(l.Shape.Faces[0].Surface)
         return(None)
 
     def getPoints(self, obj):
@@ -93,13 +94,13 @@ class sw2r:
         return(pts)
 
     def execute(self, obj):
-        Surf = self.getSurface(obj)
+        self.Surf = self.getSurface(obj)
         pts =  self.getPoints(obj)
 
-        cleanpts = []
+        self.cleanpts = []
         for p in pts:
-            if not p in cleanpts:
-                cleanpts.append(p)
+            if not p in self.cleanpts:
+                self.cleanpts.append(p)
 
     #static char* kwds_Parameter[] = {"Surface","Points","Curves","Degree",
         #"NbPtsOnCur","NbIter","Tol2d","Tol3d","TolAng","TolCurv","Anisotropie",NULL};
@@ -116,13 +117,13 @@ class sw2r:
     #double TolCurv = 0.1;
     #PyObject* Anisotropie = Py_False;
 
-        if Surf:
-            plate = Part.PlateSurface( Surface = Surf, Points = cleanpts, Degree = obj.PlateDegree, NbIter = obj.Iterations, Tol2d = obj.Tol2d, Tol3d = obj.Tol3d, TolAng = obj.TolAngular, TolCurv = obj.TolCurvature, Anisotropie = obj.Anisotropie)
+        if self.Surf:
+            self.plate = Part.PlateSurface( Surface = self.Surf, Points = self.cleanpts, Degree = obj.PlateDegree, NbIter = obj.Iterations, Tol2d = obj.Tol2d, Tol3d = obj.Tol3d, TolAng = obj.TolAngular, TolCurv = obj.TolCurvature, Anisotropie = obj.Anisotropie)
         else:
-            plate = Part.PlateSurface( Points = cleanpts, Degree = obj.PlateDegree, NbIter = obj.Iterations, Tol2d = obj.Tol2d, Tol3d = obj.Tol3d, TolAng = obj.TolAngular, TolCurv = obj.TolCurvature, Anisotropie = obj.Anisotropie)
+            self.plate = Part.PlateSurface( Points = self.cleanpts, Degree = obj.PlateDegree, NbIter = obj.Iterations, Tol2d = obj.Tol2d, Tol3d = obj.Tol3d, TolAng = obj.TolAngular, TolCurv = obj.TolCurvature, Anisotropie = obj.Anisotropie)
         #"Tol3d","MaxSegments","MaxDegree","MaxDistance","CritOrder","Continuity","EnlargeCoeff"
-        su = plate.makeApprox( Tol3d = obj.Tolerance, MaxSegments = obj.MaxSegments, MaxDegree = obj.MaxDegree, MaxDistance = obj.MaxDistance, CritOrder = obj.CritOrder, Continuity = obj.Continuity, EnlargeCoeff = obj.EnlargeCoeff)
-        sh = su.toShape()
+        self.su = self.plate.makeApprox( Tol3d = obj.Tolerance, MaxSegments = obj.MaxSegments, MaxDegree = obj.MaxDegree, MaxDistance = obj.MaxDistance, CritOrder = obj.CritOrder, Continuity = obj.Continuity, EnlargeCoeff = obj.EnlargeCoeff)
+        sh = self.su.toShape()
         obj.Shape = sh
 
         return
@@ -138,42 +139,28 @@ class sw2r:
         return None
 
 
-class sweep2R:
+class Plate:
     def parseSel(self, selectionObject):
         res = []
         for obj in selectionObject:
-            if obj.HasSubObjects:
-                i = 0
-                for subobj in obj.SubObjects:
-                    if issubclass(type(subobj),Part.Edge):
-                        res.append((obj.Object,[obj.SubElementNames[i]]))
-                        #res.append(obj.SubElementNames[i])
-                    i += 1
-            else:
-                res.append((obj.Object,['']))
+            res.append(obj)
         return res
 
     def Activated(self):
-        selection = FreeCADGui.Selection.getSelectionEx()
-        rails = self.parseSel(selection)[0:2]
-        profiles = self.parseSel(selection)[2:]
-        print(rails)
-        print(profiles)
+        selection = FreeCADGui.Selection.getSelection()
+        objs = self.parseSel(selection)
 
-        obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Sweep2Rails")
-        sw2r(obj)
-        #sw2rVP(obj.ViewObject)
+        obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Plate Surface")
+        plateSurfFP(obj)
+        obj.Objects = objs
         obj.ViewObject.Proxy=0
-        obj.setEditorMode("MaxError", 1)
+        #obj.setEditorMode("MaxError", 1)
 
-        obj.Rails = rails
-        obj.Profiles = profiles
-
-        FreeCAD.ActiveDocument.recompute()
+        #FreeCAD.ActiveDocument.recompute()
 
 
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/sw2r.svg', 'MenuText': 'Sweep 2 rails', 'ToolTip': 'Sweep profiles on 2 rails'}
+        return {'Pixmap' : path_curvesWB_icons+'/sw2r.svg', 'MenuText': 'Plate Surface', 'ToolTip': 'Plate Surface'}
 
-FreeCADGui.addCommand('sw2r', sweep2R())
+FreeCADGui.addCommand('Plate', Plate())
 
