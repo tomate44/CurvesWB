@@ -36,25 +36,25 @@ class plateSurfFP:
         debug("\nplateSurfFP class init\n")
         
         # List of constraint objects
-        obj.addProperty("App::PropertyLinkList",           "Objects",      "PlateSurface", "List of constraint objects")
+        obj.addProperty("App::PropertyLinkList",           "Objects",      "Plate", "List of constraint objects")
         
         # Arguments of the PlateSurface algorithm
         obj.addProperty("App::PropertyIntegerConstraint",  "PlateDegree",  "Plate",        "Plate degree")
         obj.addProperty("App::PropertyIntegerConstraint",  "Iterations",   "Plate",        "Number of iterations")
-        obj.addProperty("App::PropertyFloat",              "Tol2d",        "Plate",        "2D Tolerance").Tol2d = 0.00001
-        obj.addProperty("App::PropertyFloat",              "Tol3d",        "Plate",        "3D Tolerance").Tol3d = 0.0001
-        obj.addProperty("App::PropertyFloat",              "TolAngular",   "Plate",        "Angular Tolerance").TolAngular = 0.01
+        obj.addProperty("App::PropertyFloat",              "Tol2d",        "Plate",        "2D Tolerance")
+        obj.addProperty("App::PropertyFloat",              "Tol3d",        "Plate",        "3D Tolerance")
+        obj.addProperty("App::PropertyFloat",              "TolAngular",   "Plate",        "Angular Tolerance").TolAngular = 0.1
         obj.addProperty("App::PropertyFloat",              "TolCurvature", "Plate",        "Curvature Tolerance").TolCurvature = 0.1
         obj.addProperty("App::PropertyBool",               "Anisotropie",  "Plate",        "Anisotropie").Anisotropie = False
         
         # Arguments of the BSpline approximation
-        obj.addProperty("App::PropertyIntegerConstraint",  "MaxDegree",    "Bspline",      "Max degree of Bspline approximation")
-        obj.addProperty("App::PropertyIntegerConstraint",  "MaxSegments",  "Bspline",      "Max Number of surface segments")
-        obj.addProperty("App::PropertyFloat",              "MaxDistance",  "Bspline",      "Max Distance to plate surface").MaxDistance = 0.0001
-        obj.addProperty("App::PropertyFloat",              "Tolerance",    "Bspline",      "3D Tolerance of Bspline approximation").Tolerance = 0.01
-        obj.addProperty("App::PropertyIntegerConstraint",  "CritOrder",    "Bspline",      "Criterion Order")
-        obj.addProperty("App::PropertyEnumeration",        "Continuity",   "Bspline",      "Desired continuity of the surface").Continuity=["C0","C1","G1","C2","G2","C3","CN"]
-        obj.addProperty("App::PropertyFloat",              "EnlargeCoeff", "Bspline",      "Enlarge Coefficient").EnlargeCoeff = 1.1
+        obj.addProperty("App::PropertyIntegerConstraint",  "MaxDegree",    "SurfaceApproximation",      "Max degree of Bspline approximation")
+        obj.addProperty("App::PropertyIntegerConstraint",  "MaxSegments",  "SurfaceApproximation",      "Max Number of surface segments")
+        obj.addProperty("App::PropertyFloat",              "MaxDistance",  "SurfaceApproximation",      "Max Distance to plate surface").MaxDistance = 0.001
+        obj.addProperty("App::PropertyFloat",              "Tolerance",    "SurfaceApproximation",      "3D Tolerance of Bspline approximation").Tolerance = 0.01
+        obj.addProperty("App::PropertyIntegerConstraint",  "CritOrder",    "SurfaceApproximation",      "Criterion Order")
+        obj.addProperty("App::PropertyEnumeration",        "Continuity",   "SurfaceApproximation",      "Desired continuity of the surface").Continuity=["C0","C1","C2"]
+        obj.addProperty("App::PropertyFloat",              "EnlargeCoeff", "SurfaceApproximation",      "Enlarge Coefficient").EnlargeCoeff = 1.1
 
         obj.Proxy = self
         obj.PlateDegree = ( 3, 3, 25, 1)
@@ -62,21 +62,10 @@ class plateSurfFP:
         obj.MaxDegree   = ( 3, 3, 25, 1)
         obj.MaxSegments = ( 3, 1, 50, 1)
         obj.CritOrder   = ( 0,-1,  1, 1)
-        obj.Continuity  = 'C1'
+        obj.Continuity  = "C1"
+        obj.Tol2d = 0.00001
+        obj.Tol3d = 0.0001
         
-
-    def getShape(self, link):
-        if 'Edge' in link[1]:
-            n = eval(link[1].lstrip('Edge'))
-            r = link[0].Shape.Edges[n-1]
-            print(r)
-            return (r)
-        elif link[1] == '':
-            if link[0].Shape.Wires:
-                return (link[0].Shape.Wires[0])
-            elif link[0].Shape.Edges:
-                return (link[0].Shape.Edges[0])
-            
 
     def getSurface(self, obj):
         for l in obj.Objects:
@@ -90,7 +79,8 @@ class plateSurfFP:
             try:
                 pts += l.Points
             except:
-                pts += [v.Point for v in obj.Shape.Vertexes]
+                pts += [v.Point for v in l.Shape.Vertexes]
+        debug("Found %d points"%(len(pts)))
         return(pts)
 
     def execute(self, obj):
@@ -118,10 +108,14 @@ class plateSurfFP:
     #PyObject* Anisotropie = Py_False;
 
         if self.Surf:
-            self.plate = Part.PlateSurface( Surface = self.Surf, Points = self.cleanpts, Degree = obj.PlateDegree, NbIter = obj.Iterations, Tol2d = obj.Tol2d, Tol3d = obj.Tol3d, TolAng = obj.TolAngular, TolCurv = obj.TolCurvature, Anisotropie = obj.Anisotropie)
-        else:
-            self.plate = Part.PlateSurface( Points = self.cleanpts, Degree = obj.PlateDegree, NbIter = obj.Iterations, Tol2d = obj.Tol2d, Tol3d = obj.Tol3d, TolAng = obj.TolAngular, TolCurv = obj.TolCurvature, Anisotropie = obj.Anisotropie)
+            debug("Found surface : %s"%str(self.Surf))
+            self.plate = Part.PlateSurface( Surface = self.Surf, Points = self.cleanpts, Degree = obj.PlateDegree, NbIter = obj.Iterations, Tol2d = obj.Tol2d, Tol3d = obj.Tol3d)# TolAng = obj.TolAngular, TolCurv = obj.TolCurvature, Anisotropie = obj.Anisotropie
+            #self.plate = Part.PlateSurface( Surface = self.Surf, Points = self.cleanpts)
+        elif self.cleanpts:
+            debug("No surface")
+            self.plate = Part.PlateSurface( Points = self.cleanpts, Degree = obj.PlateDegree, NbIter = obj.Iterations) #, Tol2d = obj.Tol2d) #, Tol3d = obj.Tol3d) #, TolAng = obj.TolAngular, TolCurv = obj.TolCurvature, Anisotropie = obj.Anisotropie)
         #"Tol3d","MaxSegments","MaxDegree","MaxDistance","CritOrder","Continuity","EnlargeCoeff"
+        debug("makeApprox")
         self.su = self.plate.makeApprox( Tol3d = obj.Tolerance, MaxSegments = obj.MaxSegments, MaxDegree = obj.MaxDegree, MaxDistance = obj.MaxDistance, CritOrder = obj.CritOrder, Continuity = obj.Continuity, EnlargeCoeff = obj.EnlargeCoeff)
         sh = self.su.toShape()
         obj.Shape = sh
@@ -129,8 +123,14 @@ class plateSurfFP:
         return
 
     def onChanged(self, fp, prop):
-        debug("\n"+str(prop)+" changed")
-        return
+        debug("%s changed"%(str(prop)))
+        if prop == "Continuity":
+            debug(fp.Continuity)
+            if (fp.Continuity == "C2") and (fp.MaxDegree < 5):
+                fp.MaxDegree = 5
+        if prop == "Tol3d":
+            if fp.Tol3d > 0.002:
+                fp.Tol3d = 0.002
 
     def __getstate__(self):
         return None

@@ -35,6 +35,7 @@ class Discretization:
         #obj.addProperty("App::PropertyVectorList",   "Normals",    "Discretization",   "Normals")
         obj.addProperty("Part::PropertyPartShape",   "Shape",     "Discretization",   "Shape")
         obj.Proxy = self
+        self.obj = obj
         obj.Points = []
         obj.Algorithm = "Number"
         obj.Target = "Edge"
@@ -68,6 +69,8 @@ class Discretization:
         o = obj.Edge[0]
         e = obj.Edge[1][0]
         n = eval(e.lstrip('Edge'))
+        debug(str(obj.Edge))
+        debug(str(o.Shape.Edges))
         self.edge = o.Shape.Edges[n-1]
         self.target = self.edge
         obj.setEditorMode("Target", 2)
@@ -219,9 +222,22 @@ class Discretization:
         #self.execute(fp) # Infinite loop
             
     def __getstate__(self):
-        return None
+        o = self.obj.Edge[0]
+        e = self.obj.Edge[1][0]
+        n = eval(e.lstrip('Edge'))
+        out = {"name": self.obj.Name,
+               "edge": o.Name,
+               "num": n}
+        #out = (o.Name,n)
+        return out
 
     def __setstate__(self,state):
+        self.obj = FreeCAD.ActiveDocument.getObject(state["name"])
+        debug(str(FreeCAD.ActiveDocument.getObject(state["edge"])))
+        debug("Edge"+str(state["num"]))
+        self.obj.Edge = (FreeCAD.ActiveDocument.getObject(state["edge"]),["Edge"+str(state["num"])])
+        debug(str(self.obj.Edge))
+        #self.edge = state
         return None
 
 
