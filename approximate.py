@@ -41,7 +41,7 @@ path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 #it conflicts with other parameters ( especially DegMax ).    parametrization
 
 
-DEBUG = 0
+DEBUG = 1
 
 def debug(string):
     if DEBUG:
@@ -64,10 +64,11 @@ class Approximate:
         obj.addProperty("App::PropertyFloatConstraint",        "CurvatureWeight", "Parameters",       "Weight of curve curvature for smoothing algorithm").CurvatureWeight=1.0
         obj.addProperty("App::PropertyFloatConstraint",        "TorsionWeight",   "Parameters",       "Weight of curve torsion for smoothing algorithm").TorsionWeight=1.0
         obj.addProperty("App::PropertyInteger",      "FirstIndex",    "Range",   "Index of first point").FirstIndex = 0
-        obj.addProperty("App::PropertyInteger",      "LastIndex",     "Range",   "Index of last point").LastIndex = 10
+        obj.addProperty("App::PropertyInteger",      "LastIndex",     "Range",   "Index of last point")
         #obj.addProperty("App::PropertyVectorList",   "Points",    "Approximate",   "Points")
-        obj.addProperty("Part::PropertyPartShape",   "Shape",     "Approximate",   "Shape")
+        #obj.addProperty("Part::PropertyPartShape",   "Shape",     "Approximate",   "Shape")
         obj.Proxy = self
+        self.obj = obj
         self.Points = []
         obj.LengthWeight =    (1.0,0.01,10.0,0.1)
         obj.CurvatureWeight = (1.0,0.01,10.0,0.1)
@@ -79,23 +80,6 @@ class Approximate:
         #obj.FirstIndex = 0
         obj.LastIndex = len(self.Points)-1
         self.execute(obj)
-
-        
-    #def selectedEdgesToProperty(self, obj, edge):
-        #objs = []
-        #for o in edge:
-            #if isinstance(o,tuple) or isinstance(o,list):
-                #if o[0].Name != obj.Name:
-                    #objs.append(tuple(o))
-            #else:
-                #for el in o.SubElementNames:
-                    #if "Edge" in el:
-                        #if o.Object.Name != obj.Name:
-                            #objs.append((o.Object,el))
-        #if objs:
-            #obj.Edge = objs
-            #debug(str(edge) + "\n")
-            #debug(str(obj.Edge) + "\n")
 
 
     def getPoints( self, obj):
@@ -126,8 +110,8 @@ class Approximate:
         if prop == "PointObject":
             debug("Approximate : PointObject changed\n")
             self.getPoints( fp)
-            fp.FirstIndex = 0
-            fp.LastIndex = len(self.Points)-1
+            #fp.FirstIndex = 0
+            #fp.LastIndex = len(self.Points)-1
                 
         if prop == "Method":
             debug("Approximate : Method changed\n")
@@ -197,10 +181,53 @@ class Approximate:
 
             
     def __getstate__(self):
+        out = {"name": self.obj.Name,
+               "Method": self.obj.Method}
+        return out
+
+    def __setstate__(self,state):
+        self.obj = FreeCAD.ActiveDocument.getObject(state["name"])
+        if not "Method" in self.obj.PropertiesList:
+            self.obj.addProperty("App::PropertyEnumeration",  "Method",       "General",     "Approximation method").Method=["Parametrization","Smoothing Algorithm"]
+        if not "TorsionWeight" in self.obj.PropertiesList:
+            self.obj.addProperty("App::PropertyFloatConstraint",        "TorsionWeight",   "Parameters",       "Weight of curve torsion for smoothing algorithm")
+        self.obj.Method = state["Method"]
+        return None
+
+class ViewProviderApp:
+    def __init__(self,vobj):
+        vobj.Proxy = self
+       
+    def getIcon(self):
+        return (path_curvesWB_icons+'/approximate.svg')
+
+    def attach(self, vobj):
+        self.ViewObject = vobj
+        self.Object = vobj.Object
+  
+    def setEdit(self,vobj,mode):
+        return False
+    
+    def unsetEdit(self,vobj,mode):
+        return
+
+    def __getstate__(self):
         return None
 
     def __setstate__(self,state):
         return None
+
+    def claimChildren(self):
+        return [self.Object.PointObject]
+        
+    def onDelete(self, feature, subelements): # subelements is a tuple of strings
+        try:
+            self.Object.PointObject.ViewObject.Visibility=True
+            #self.Object.Tool.ViewObject.show()
+        except Exception as err:
+            App.Console.PrintError("Error in onDelete: " + err.message)
+        return True
+
 
 
 class approx:
@@ -223,7 +250,8 @@ class approx:
         for s in source:
             obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Approximation_Curve") #add object to document
             Approximate(obj,s)
-            obj.ViewObject.Proxy = 0
+            ViewProviderApp(obj.ViewObject)
+            s.ViewObject.Visibility=False
         FreeCAD.ActiveDocument.recompute()
             
     def GetResources(self):
