@@ -44,98 +44,110 @@ class makeSpline:
         obj.addProperty("App::PropertyVectorList",        "CurvePts",  "General", "CurvePts")
         #obj.addProperty("Part::PropertyPartShape",        "Shape",     "General", "Shape")
         obj.Proxy = self
-        self.curve = edge.Curve.copy()
-        obj.Poles = self.curve.getPoles()
-        obj.Weights = self.curve.getWeights()
-        if isinstance(self.curve,Part.BSplineCurve):
-            obj.Knots = self.curve.getKnots()
+        curve = edge.Curve.copy()
+        obj.Poles = curve.getPoles()
+        obj.Weights = curve.getWeights()
+        if isinstance(curve,Part.BSplineCurve):
+            obj.Knots = curve.getKnots()
             self.getKnotPoints(obj)
-            obj.Mults = [int(i) for i in self.curve.getMultiplicities()]
+            obj.Mults = [int(i) for i in curve.getMultiplicities()]
         else:
             obj.Knots = []
             obj.KnotPoints = []
             obj.Mults = []
-        obj.Degree = (int(self.curve.Degree),1,8,1)
+        obj.Degree = (int(curve.Degree),1,8,1)
         obj.W = (1.0,0.0001,1000.0,0.1)
         obj.setEditorMode("Weights", 2)
         self.execute(obj)
 
+    def curve(self, obj):
+        if obj.Knots:
+            bs = Part.BSplineCurve()
+            bs.buildFromPolesMultsKnots(obj.Poles, obj.Mults, obj.Knots, False, obj.Degree, obj.Weights)
+        else:
+            bs = Part.BezierCurve()
+            bs.increase(obj.Degree)
+            bs.setPoles(obj.Poles)
+            for i in range(len(obj.Weights)):
+                bs.setWeight(i+1,obj.Weights[i])
+        return(bs)
+
     def getKnotPoints(self, obj):
         knotPoints = []
         for k in obj.Knots:
-            p = self.curve.value(k)
+            p = self.curve(obj).value(k)
             knotPoints.append((p.x,p.y,p.z))
         obj.KnotPoints = knotPoints
 
     def execute(self, obj):
         debug("\n* Spline : execute *\n")
-        obj.CurvePts = self.curve.discretize(100)
-        obj.Shape = self.curve.toShape()
+        obj.CurvePts = self.curve(obj).discretize(100)
+        obj.Shape = self.curve(obj).toShape()
 
     def onChanged(self, fp, prop):
         try:
-            curve = self.curve
+            curve = self.curve(obj)
         except:
             return
         if (prop == "Degree"):
-            if fp.Degree > int(self.curve.Degree):
-                if isinstance(self.curve,Part.BezierCurve):
-                    self.curve.increase(fp.Degree)
-                elif isinstance(self.curve,Part.BSplineCurve):
-                    self.curve.increaseDegree(fp.Degree)
-            elif fp.Degree < int(self.curve.Degree):
-                pts = self.curve.discretize(Number = 100)
-                bscurve = Part.BSplineCurve() #self.curve.approximateBSpline(0.1,12,fp.Degree,'C2')
+            if fp.Degree > int(self.curve(obj).Degree):
+                if isinstance(self.curve(obj),Part.BezierCurve):
+                    self.curve(obj).increase(fp.Degree)
+                elif isinstance(self.curve(obj),Part.BSplineCurve):
+                    self.curve(obj).increaseDegree(fp.Degree)
+            elif fp.Degree < int(self.curve(obj).Degree):
+                pts = self.curve(obj).discretize(Number = 100)
+                bscurve = Part.BSplineCurve() #self.curve(obj).approximateBSpline(0.1,12,fp.Degree,'C2')
                 bscurve.approximate(Points = pts, DegMin = fp.Degree, DegMax = fp.Degree, Tolerance = 0.01)
-                self.curve = bscurve
-                fp.Degree = int(self.curve.Degree)
-            fp.Poles = self.curve.getPoles()
-            fp.Weights = self.curve.getWeights()
-            if isinstance(self.curve,Part.BSplineCurve):
-                fp.Knots = self.curve.getKnots()
+                #self.curve(obj) = bscurve
+                fp.Degree = int(bscurve.Degree)
+            fp.Poles = bscurve.getPoles()
+            fp.Weights = bscurve.getWeights()
+            if isinstance(bscurve,Part.BSplineCurve):
+                fp.Knots = bscurve.getKnots()
                 self.getKnotPoints(fp)
-                fp.Mults = [int(i) for i in self.curve.getMultiplicities()]
+                fp.Mults = [int(i) for i in bscurve.getMultiplicities()]
             fp.Pole = fp.Pole
-            fp.CurvePts = self.curve.discretize(100)
+            fp.CurvePts = bscurve.discretize(100)
             debug("Spline : Degree changed to "+str(fp.Degree)+"\n")
         if prop == "Pole":
             if fp.Pole < 1:
                 fp.Pole = 1
-            elif fp.Pole > len(self.curve.getPoles()):
-                fp.Pole = len(self.curve.getPoles())
-            v = self.curve.getPole(fp.Pole)
-            w = self.curve.getWeight(fp.Pole)
+            elif fp.Pole > len(self.curve(obj).getPoles()):
+                fp.Pole = len(self.curve(obj).getPoles())
+            v = self.curve(obj).getPole(fp.Pole)
+            w = self.curve(obj).getWeight(fp.Pole)
             fp.X = v.x
             fp.Y = v.y
             fp.Z = v.z
             fp.W = w
-            #fp.Poles = self.curve.getPoles()
-            #fp.Weights = self.curve.getWeights()
+            #fp.Poles = self.curve(obj).getPoles()
+            #fp.Weights = self.curve(obj).getWeights()
             #fp.touch()
             debug("Spline : Pole changed to "+str(fp.Pole)+"\n")
         if (prop == "X") | (prop == "Y") | (prop == "Z"):
             v = FreeCAD.Vector(fp.X,fp.Y,fp.Z)
-            self.curve.setPole(fp.Pole,v)
-            fp.Poles = self.curve.getPoles()
+            self.curve(obj).setPole(fp.Pole,v)
+            fp.Poles = self.curve(obj).getPoles()
             debug("Spline : Coordinate changed\n")
         if (prop == "W"):
             #v = FreeCAD.Vector(fp.X,fp.Y,fp.Z)
-            self.curve.setWeight(fp.Pole,fp.W)
-            fp.Weights = self.curve.getWeights()
+            self.curve(obj).setWeight(fp.Pole,fp.W)
+            fp.Weights = self.curve(obj).getWeights()
             debug("Spline : Weight changed\n")
         if (prop == "Poles"):
-            #fp.Weights = self.curve.getWeights()
+            #fp.Weights = self.curve(obj).getWeights()
             debug("Spline : Poles changed\n")
         if (prop == "Weights"):
-            #fp.Poles = self.curve.getPoles()
+            #fp.Poles = self.curve(obj).getPoles()
             debug("Spline : Weights changed\n")
         if (prop == "Knots"):
             if fp.Knots:
                 self.getKnotPoints(fp)
-            #fp.Mults = [int(i) for i in self.curve.getMultiplicities()]
+            #fp.Mults = [int(i) for i in self.curve(obj).getMultiplicities()]
             debug("Spline : Knots changed\n")
         if (prop == "Mults"):
-            #fp.Knots = self.curve.getKnots()
+            #fp.Knots = self.curve(obj).getKnots()
             debug("Spline : Mults changed\n")
         
 
