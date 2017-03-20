@@ -107,6 +107,51 @@ def getCurveCoords(fp):
         coords.append(-1)
     return coords
 
+class isoEdge:
+    def __init__(self, surf, ori, param):
+        self.surf = surf
+        self.face = surf.toShape()
+        self.ori = ori
+        self.param = param
+        self.u0, self.u1, self.v0, self.v1 = surf.bounds()
+        if self.ori == 'U':
+            p0 = Base.Vector2d(param, self.v0)
+            p1 = Base.Vector2d(param, self.v1)
+            self.edge3d = surf.uIso(param).toShape()
+        else:
+            p0 = Base.Vector2d(self.u0, param)
+            p1 = Base.Vector2d(self.u1, param)
+            self.edge3d = surf.vIso(param).toShape()
+        self.line2d = Part.Geom2d.Line2dSegment(p0,p1)
+        self.Length = self.edge3d.Length
+        self.FirstParameter = self.edge3d.FirstParameter
+        self.LastParameter = self.edge3d.LastParameter
+
+    def valueAt(self, p):
+        return self.edge3d.valueAt(p)
+
+    def normalAt(self, p):
+        p3d = self.valueAt(p)
+        p2d = self.surf.parameter(p3d)
+        n = self.face.normalAt(p2d[0], p2d[1])
+        #c = self.curvatureAt(p, 
+        return n.negative()
+
+    def curvatureAt(self, p, curvType = "Tangent"):
+        if curvType == "Tangent":
+            return self.edge3d.curvatureAt(p)
+        p3d = self.valueAt(p)
+        p2d = self.surf.parameter(p3d)
+        curv = self.face.curvatureAt(p2d[0], p2d[1])
+        if curvType == "Min":
+            return curv[0]
+        elif curvType == "Max":
+            return curv[1]
+        elif curvType == "Mean":
+            return (curv[0] + curv[1])/2
+        elif curvType == "Gauss":
+            # TODO : get the Gaussian curvature formula
+            return curv[0]
 
 class Comb:
     def __init__(self, obj , edge):
@@ -117,8 +162,8 @@ class Comb:
         obj.addProperty("App::PropertyFloat","Scale","Comb","Scale (%). 0 for AutoScale").Scale=0.0
         #obj.addProperty("App::PropertyBool","ScaleAuto","Comb","Automatic Scale").ScaleAuto = True
         obj.addProperty("App::PropertyIntegerConstraint","Samples","Comb","Number of samples").Samples = 64
-        obj.addProperty("App::PropertyInteger","SurfaceSamples","Comb","Number of surface samples").SurfaceSamples = 3
-        obj.addProperty("App::PropertyEnumeration","SurfaceOrientation","Comb","Surface Comb Orientation").SurfaceOrientation=["U","V"]
+        obj.addProperty("App::PropertyInteger","Number","Surface","Number of surface samples").Number = 3
+        obj.addProperty("App::PropertyEnumeration","Orientation","Surface","Surface Comb Orientation").Orientation=["U","V"]
         #obj.addProperty("App::PropertyFloat","TotalLength","Comb","Total length of edges")
         obj.addProperty("App::PropertyVectorList","CombPoints","Comb","CombPoints")
         obj.addProperty("Part::PropertyPartShape","Shape","Comb", "Shape of comb plot")
@@ -167,14 +212,14 @@ class Comb:
                     if o.Shape.Faces:
                         g = o.Shape.Faces[n-1]
                         try:
-                            if obj.SurfaceOrientation == 'U':
+                            if obj.Orientation == 'U':
                                 bounds = g.Surface.bounds()
                                 midParam = bounds[0] + (bounds[1] - bounds[0]) / 2
-                                iso = g.Surface.uIso(midParam).toShape()
+                                iso = isoEdge(g.Surface,'U',midParam)       #g.Surface.uIso(midParam).toShape()
                             else:
                                 bounds = g.Surface.bounds()
                                 midParam = bounds[2] + (bounds[3] - bounds[2]) / 2
-                                iso = g.Surface.vIso(midParam).toShape()
+                                iso = isoEdge(g.Surface,'V',midParam)    #g.Surface.vIso(midParam).toShape()
                             totalLength += iso.Length
                         except:
                             debug("Surface Error")
@@ -203,10 +248,10 @@ class Comb:
                     if o.Shape.Faces:
                         g = o.Shape.Faces[n-1]
                         #try:
-                        if obj.SurfaceOrientation == 'U':
-                            iso = self.getuIsoEdges(g,obj.SurfaceSamples)
+                        if obj.Orientation == 'U':
+                            iso = self.getuIsoEdges(g,obj.Number)
                         else:
-                            iso = self.getvIsoEdges(g,obj.SurfaceSamples)
+                            iso = self.getvIsoEdges(g,obj.Number)
                         edgeList += iso
                         #except:
                             #debug("Surface Error")
@@ -228,7 +273,7 @@ class Comb:
                 n.append(bounds[0] + brange*i/(samples-1))
             n.append(bounds[1])
         for t in n:
-            res.append(face.Surface.uIso(t).toShape())
+            res.append(isoEdge(face.Surface,'U',t))        #(face.Surface.uIso(t).toShape())
         debug("U Iso curves :")
         debug(str(res))
         return res
@@ -249,7 +294,7 @@ class Comb:
                 n.append(bounds[2] + brange*i/(samples-1))
             n.append(bounds[3])
         for t in n:
-            res.append(face.Surface.vIso(t).toShape())
+            res.append(isoEdge(face.Surface,'V',t))   #(face.Surface.vIso(t).toShape())
         debug("V Iso curves :")
         debug(str(res))
         return res
