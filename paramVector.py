@@ -31,10 +31,10 @@ class paramVector:
         else:
             v0 = obj.Origin
         if not hasattr(obj,"Direction"):
-            v1 = FreeCAD.Vector(0,0,-1)
+            v1 = FreeCAD.Vector(0,0,-10)
         else:
-            v1 = obj.Direction
-        v2 = v0.add(v1).multiply(10)
+            v1 = obj.Direction.multiply(10)
+        v2 = v0.add(v1)
         line = Part.Edge(Part.LineSegment(v0,v2))
         cone = Part.makeCone(1,0,3,v2,v1,360)
         circle = Part.makeCircle(10,v0,v1)
