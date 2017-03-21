@@ -13,7 +13,7 @@
    height="68.26667"
    id="svg2963"
    sodipodi:version="0.32"
-   inkscape:version="0.92.0 unknown"
+   inkscape:version="0.92.1 r15371"
    sodipodi:docname="joincurve.svg"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
    version="1.1">
@@ -45,15 +45,15 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="5.4999999"
-     inkscape:cx="-9.54525"
-     inkscape:cy="10.16887"
+     inkscape:zoom="9.5039998"
+     inkscape:cx="50.617403"
+     inkscape:cy="32.000083"
      inkscape:current-layer="layer1"
      showgrid="true"
      inkscape:document-units="px"
      inkscape:grid-bbox="true"
      inkscape:window-width="1920"
-     inkscape:window-height="1005"
+     inkscape:window-height="1015"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:snap-bbox="true"
@@ -136,9 +136,9 @@
        id="circle89"
        style="opacity:1;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:2;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none" />
     <path
-       style="opacity:1;fill:#00ff00;fill-opacity:1;stroke:#000000;stroke-width:1.88976378;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none"
-       d="M 37.064086,26.229074 V 31.13923 H 25.347921 V 36.957589 H 37.064086 V 41.865792 L 44.811927,34.047433 Z"
-       id="rect91"
+       style="fill:#00ff00;stroke:#000000;stroke-width:1.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 25.347921,32.27045 h 11.716166 v -3.659175 l 8.335598,5.867492 -8.335598,6.247077 V 37.06667 H 25.347921 Z"
+       id="path66"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cccccccc" />
   </g>

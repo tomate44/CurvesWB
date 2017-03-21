@@ -13,7 +13,7 @@
    height="68.26667"
    id="svg2963"
    sodipodi:version="0.32"
-   inkscape:version="0.92.0 unknown"
+   inkscape:version="0.92.1 r15371"
    sodipodi:docname="discretize.svg"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
    version="1.1">
@@ -53,7 +53,7 @@
      inkscape:document-units="px"
      inkscape:grid-bbox="true"
      inkscape:window-width="1920"
-     inkscape:window-height="1005"
+     inkscape:window-height="1015"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:snap-bbox="false"
@@ -72,7 +72,8 @@
      inkscape:snap-page="true"
      inkscape:window-maximized="1"
      inkscape:snap-others="true"
-     inkscape:snap-nodes="true" />
+     inkscape:snap-nodes="true"
+     inkscape:snap-global="false" />
   <metadata
      id="metadata2968">
     <rdf:RDF>
@@ -81,7 +82,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -103,32 +104,26 @@
        style="opacity:1;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:2;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none" />
     <circle
        style="opacity:1;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:2;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none"
-       id="circle78"
-       cx="46.45916"
-       cy="53.352833"
-       r="4" />
-    <circle
-       style="opacity:1;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:2;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none"
        id="circle80"
-       cx="50.557007"
-       cy="42.948357"
+       cx="46.500435"
+       cy="52.695473"
        r="4" />
     <circle
        style="opacity:1;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:2;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none"
        id="circle82"
-       cx="50.130371"
-       cy="32.009781"
+       cx="50.398144"
+       cy="40.519218"
        r="4" />
     <circle
        style="opacity:1;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:2;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none"
        id="circle84"
-       cx="49.252125"
-       cy="21.790398"
+       cx="49.036312"
+       cy="27.230343"
        r="4" />
     <circle
        r="4"
-       cy="12.482488"
-       cx="53.781605"
+       cy="15.114979"
+       cx="51.219112"
        id="circle77"
        style="opacity:1;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:2;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none" />
     <circle
@@ -140,19 +135,19 @@
     <circle
        style="opacity:1;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:2;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none"
        id="circle83"
-       cx="38.859444"
+       cx="38.475124"
        cy="61.790066"
        r="4" />
     <circle
        r="4"
        cy="6.3048005"
-       cx="62.741898"
+       cx="62.357578"
        id="circle89"
        style="opacity:1;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:2;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none" />
     <path
-       style="opacity:1;fill:#00ff00;fill-opacity:1;stroke:#000000;stroke-width:1.88976383;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none"
-       d="M 36.064165,26.229074 V 31.13923 H 24.348 V 36.957589 H 36.064165 V 41.865792 L 43.812006,34.047433 Z"
-       id="rect91"
+       style="fill:#00ff00;stroke:#000000;stroke-width:1.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 25.347921,32.27045 h 11.716166 v -3.659175 l 8.335598,5.867492 -8.335598,6.247077 V 37.06667 H 25.347921 Z"
+       id="path66"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cccccccc" />
   </g>
