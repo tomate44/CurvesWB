@@ -26,6 +26,22 @@ class paramVector:
 
     def execute(self, obj):
         debug("\n* paramVector : execute *\n")
+        if not hasattr(obj,"Origin"):
+            v0 = FreeCAD.Vector(0,0,0)
+        else:
+            v0 = obj.Origin
+        if not hasattr(obj,"Direction"):
+            v1 = FreeCAD.Vector(0,0,-1)
+        else:
+            v1 = obj.Direction
+        v2 = v0.add(v1).multiply(10)
+        line = Part.Edge(Part.LineSegment(v0,v2))
+        cone = Part.makeCone(1,0,3,v2,v1,360)
+        circle = Part.makeCircle(10,v0,v1)
+        face = Part.makeFace(circle,"Part::FaceMakerSimple")
+        comp = Part.Compound([line,cone,face])
+        obj.Shape = comp
+        obj.ViewObject.Transparency = 50
 
     def onChanged(self, fp, prop):
         pass
@@ -52,7 +68,7 @@ class paramVectorVP:
         vobj.Proxy = self
        
     def getIcon(self):
-        return (path_curvesWB_icons+'/discretize.svg')
+        return (path_curvesWB_icons+'/vector.svg')
 
     def attach(self, vobj):
         self.ViewObject = vobj
@@ -62,12 +78,18 @@ class paramVectorVP:
         if (prop == "Origin") or (prop == "Direction"):
             # update coordinates
             pass
+
+    def doubleClicked(self,vobj):
+        if hasattr(self.Object,"Direction"):
+            d = self.Object.Direction
+            FreeCADGui.ActiveDocument.ActiveView.setViewDirection((d.x,d.y,d.z))
+            return True
   
-    def setEdit(self,vobj,mode):
-        return False
+    #def setEdit(self,vobj,mode):
+        #return False
     
-    def unsetEdit(self,vobj,mode):
-        return
+    #def unsetEdit(self,vobj,mode):
+        #return
 
     def __getstate__(self):
         return None
@@ -98,7 +120,7 @@ class vector:
         FreeCAD.ActiveDocument.recompute()
             
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/discretize.svg', 'MenuText': 'Direction Vector', 'ToolTip': 'Creates a direction vector'}
+        return {'Pixmap' : path_curvesWB_icons+'/vector.svg', 'MenuText': 'Direction Vector', 'ToolTip': 'Creates a direction vector'}
 
 FreeCADGui.addCommand('Vector', vector())
 
