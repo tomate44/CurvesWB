@@ -75,11 +75,18 @@ class IsoCurve:
         else:
             return e
 
+    def getBounds(self, obj):
+        face = self.getFace(obj)
+        self.u0, self.u1, self.v0, self.v1 = face.ParameterRange
+
     def getFace(self, obj):
-        n = eval(obj.Face[1][0].lstrip('Face'))
-        self.face = obj.Face[0].Shape.Faces[n-1]
-        self.u0, self.u1, self.v0, self.v1 = self.face.ParameterRange
-        #return self.face
+        try:
+            n = eval(obj.Face[1][0].lstrip('Face'))
+            face = obj.Face[0].Shape.Faces[n-1]
+            #self.u0, self.u1, self.v0, self.v1 = self.face.ParameterRange
+            return face
+        except:
+            return None
 
     def tangentAt(self, selfobj, p):
         if selfobj.Orientation == 'U':
@@ -94,35 +101,39 @@ class IsoCurve:
                 App.Console.PrintError("Parameter out of range (%f, %f)\n"%(self.u0,self.u1))
 
     def normalAt(self, selfobj, p):
-        self.getFace(selfobj)
+        face = self.getFace(selfobj)
         if selfobj.Orientation == 'U':
             if (p >= self.v0) & (p <= self.v1):
-                return self.face.normalAt(selfobj.Parameter, p)
+                return face.normalAt(selfobj.Parameter, p)
             else:
                 App.Console.PrintError("Parameter out of range (%f, %f)\n"%(self.v0,self.v1))
         if selfobj.Orientation == 'V':
             if (p >= self.u0) & (p <= self.u1):
-                return self.face.normalAt(p, selfobj.Parameter)
+                return face.normalAt(p, selfobj.Parameter)
             else:
                 App.Console.PrintError("Parameter out of range (%f, %f)\n"%(self.u0,self.u1))
 
     def execute(self,selfobj):
 
-        self.getFace(selfobj)
-        #u0,u1,v0,v1 = self.face.ParameterRange
-        if selfobj.Orientation == 'U':
-            iso = self.face.Surface.uIso(selfobj.Parameter)
-            e = Part.Edge(iso)
-            w = self.split(e,self.v0,self.v1)
-        elif selfobj.Orientation == 'V':
-            iso = self.face.Surface.vIso(selfobj.Parameter) 
-            e = Part.Edge(iso)
-            w = self.split(e,self.u0,self.u1)
-        selfobj.Shape = w
+        face = self.getFace(selfobj)
+        #u0,u1,v0,v1 = face.ParameterRange
+        if face:
+            if selfobj.Orientation == 'U':
+                iso = face.Surface.uIso(selfobj.Parameter)
+                e = Part.Edge(iso)
+                w = self.split(e,self.v0,self.v1)
+            elif selfobj.Orientation == 'V':
+                iso = face.Surface.vIso(selfobj.Parameter) 
+                e = Part.Edge(iso)
+                w = self.split(e,self.u0,self.u1)
+            selfobj.Shape = w
+        else:
+            return False
 
     def onChanged(self, selfobj, prop):
         if prop == 'Face':
-            self.getFace(selfobj)
+            face = self.getFace(selfobj)
+            self.getBounds(selfobj)
             if selfobj.Orientation == "U":
                 self.p0 = self.u0
                 self.p1 = self.u1
@@ -136,6 +147,7 @@ class IsoCurve:
                  selfobj.Parameter  = self.p1
             selfobj.Proxy.execute(selfobj)
         if prop == 'Orientation':
+            self.getBounds(selfobj)
             if selfobj.Orientation == "U":
                 self.p0 = self.u0
                 self.p1 = self.u1

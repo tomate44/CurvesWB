@@ -10,6 +10,7 @@ class CurvesWorkbench (Workbench):
    MenuText = "Curves"
    def Initialize(self):
        import bezierCurve
+       import paramVector
        import editableSpline
        import JoinCurves
        import Discretize
@@ -25,7 +26,7 @@ class CurvesWorkbench (Workbench):
        import Sw2R
        import PlateSurface
 
-       commandslist = ["bezierCurve","editableSpline","join","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","GeomInfo","extract","IsoCurve","SoS","sw2r","Plate"]
+       commandslist = ["bezierCurve","Vector","editableSpline","join","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","GeomInfo","extract","IsoCurve","SoS","sw2r","Plate"]
        #FreeCADGui.addIconPath( ':/CurvesWB/icons' )
        self.appendToolbar("Curves",commandslist)
 Gui.addWorkbench(CurvesWorkbench())
