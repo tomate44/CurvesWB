@@ -33,7 +33,7 @@ class paramVector:
         if not hasattr(obj,"Direction"):
             v1 = FreeCAD.Vector(0,0,-10)
         else:
-            v1 = obj.Direction.multiply(10)
+            v1 = obj.Direction.normalize().multiply(10)
         v2 = v0.add(v1)
         line = Part.Edge(Part.LineSegment(v0,v2))
         cone = Part.makeCone(1,0,3,v2,v1,360)

@@ -19,6 +19,7 @@ class CurvesWorkbench (Workbench):
        import ParametricComb
        import ZebraTool
        import SurfaceEdit
+       import TrimFace
        import GeomInfo
        import ExtractShapes
        import IsoCurve
@@ -26,7 +27,7 @@ class CurvesWorkbench (Workbench):
        import Sw2R
        import PlateSurface
 
-       commandslist = ["bezierCurve","Vector","editableSpline","join","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","GeomInfo","extract","IsoCurve","SoS","sw2r","Plate"]
+       commandslist = ["bezierCurve","Vector","editableSpline","join","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","Trim","GeomInfo","extract","IsoCurve","SoS","sw2r","Plate"]
        #FreeCADGui.addIconPath( ':/CurvesWB/icons' )
        self.appendToolbar("Curves",commandslist)
 Gui.addWorkbench(CurvesWorkbench())
