@@ -43,6 +43,22 @@ class trimFace:
                 return(o.Shape.Faces[n-1])
         return(None)
 
+    def getVector( self, obj):
+        if hasattr(obj,"DirVector"):
+            if obj.DirVector:
+                v = FreeCAD.Vector(obj.DirVector.Direction)
+                debug("choosing DirVector : %s"%str(v))
+                if v.Length > 1e-6:
+                    return(v)
+        if hasattr(obj,"Direction"):
+            if obj.Direction:
+                v = FreeCAD.Vector(obj.Direction)
+                debug("choosing Direction : %s"%str(v))
+                if v.Length > 1e-6:
+                    return(v)
+        debug("choosing (0,0,-1)")
+        return(FreeCAD.Vector(0,0,-1))
+
     def execute(self, obj):
         debug("* trimFace execute *")
         if not obj.Tool:
@@ -58,22 +74,16 @@ class trimFace:
             debug("No Direction")
             return
         scale = 10000
-        v = FreeCAD.Vector(0,0,-1)
-        if hasattr(obj,"DirVector"):
-            if obj.DirVector:
-                v = FreeCAD.Vector(obj.DirVector.Direction)
-        elif hasattr(obj,"Direction"):
-            if obj.Direction:
-                v = FreeCAD.Vector(obj.Direction)
-        if v.Length < 1e-6:
-            v = FreeCAD.Vector(0,0,-1)
-        v.normalize().multiply(-scale)
+        
+        v = self.getVector(obj)
+        v.normalize().multiply(scale)
         debug("Vector : %s"%str(v))
         edge = self.getShape(obj.Tool)
         edge.translate(v)
         cuttool = edge.extrude(v.multiply(-2))
         #Part.show(cuttool)
         face = self.getShape(obj.Face)
+        #return
         bf = BOPTools.SplitAPI.slice(face, [cuttool], "Split", 1e-6)
         debug("shape has %d faces"%len(bf.Faces))
         vert = Part.Vertex(obj.PickedPoint)

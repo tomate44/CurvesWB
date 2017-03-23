@@ -37,7 +37,7 @@ class paramVector:
         v2 = v0.add(v1)
         line = Part.Edge(Part.LineSegment(v0,v2))
         cone = Part.makeCone(1,0,3,v2,v1,360)
-        circle = Part.makeCircle(10,v0,v1)
+        circle = Part.makeCircle(10,v0,v1.negative())
         face = Part.makeFace(circle,"Part::FaceMakerSimple")
         comp = Part.Compound([line,cone,face])
         obj.Shape = comp
