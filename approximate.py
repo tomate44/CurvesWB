@@ -54,6 +54,7 @@ class Approximate:
         ''' Add the properties '''
         debug("\nApproximate class Init\n")
         obj.addProperty("App::PropertyLink",         "PointObject",  "Approximate", "Object containing the points to approximate").PointObject = source
+        obj.addProperty("App::PropertyBool",         "ClampEnds",    "General",     "Clamp endpoints").ClampEnds = True
         obj.addProperty("App::PropertyInteger",      "DegreeMin",    "General",     "Minimum degree of the curve").DegreeMin = 3
         obj.addProperty("App::PropertyInteger",      "DegreeMax",    "General",     "Maximum degree of the curve").DegreeMax = 8
         obj.addProperty("App::PropertyFloat",        "ApproxTolerance",    "General",     "Approximation tolerance").ApproxTolerance = 0.05
@@ -95,6 +96,9 @@ class Approximate:
             bs.approximate(Points = pts, DegMin = obj.DegreeMin, DegMax = obj.DegreeMax, Tolerance = obj.ApproxTolerance, Continuity = obj.Continuity, ParamType = obj.Parametrization)
         elif obj.Method == "Smoothing Algorithm":
             bs.approximate(Points = pts, DegMin = obj.DegreeMin, DegMax = obj.DegreeMax, Tolerance = obj.ApproxTolerance, Continuity = obj.Continuity, LengthWeight = obj.LengthWeight, CurvatureWeight = obj.CurvatureWeight , TorsionWeight = obj.TorsionWeight)
+        if obj.ClampEnds:
+            bs.setPole(1,self.Points[0])
+            bs.setPole(int(bs.NbPoles),self.Points[-1])
         self.curve = bs
 
     def execute(self, obj):
