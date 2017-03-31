@@ -83,10 +83,16 @@ class Approximate:
 
 
     def getPoints( self, obj):
-        try:
-            self.Points = obj.PointObject.Points
-        except:
-            self.Points = [v.Point for v in obj.PointObject.Shape.Vertexes]
+        if hasattr(obj.PointObject,'Group'):
+            a = []
+            for o in obj.PointObject.Group:
+                a.append(o.Points)
+            self.Points = a
+        else:
+            try:
+                self.Points = obj.PointObject.Points
+            except:
+                self.Points = [v.Point for v in obj.PointObject.Shape.Vertexes]
 
     def buildCurve(self, obj):
         pts = self.Points[obj.FirstIndex:obj.LastIndex+1]
@@ -96,11 +102,27 @@ class Approximate:
         elif obj.Method == "Smoothing Algorithm":
             bs.approximate(Points = pts, DegMin = obj.DegreeMin, DegMax = obj.DegreeMax, Tolerance = obj.ApproxTolerance, Continuity = obj.Continuity, LengthWeight = obj.LengthWeight, CurvatureWeight = obj.CurvatureWeight , TorsionWeight = obj.TorsionWeight)
         self.curve = bs
+        
+    def buildSurf(self, obj):
+        bs = Part.BSplineSurface()
+        cont = 0
+        if obj.Continuity == 'C1':
+            cont = 1
+        elif obj.Continuity == 'C2':
+            cont = 2
+        if obj.Method == "Parametrization":
+            bs.approximate(Points = self.Points, DegMin = obj.DegreeMin, DegMax = obj.DegreeMax, Tolerance = obj.ApproxTolerance, Continuity = cont, ParamType = obj.Parametrization)
+        elif obj.Method == "Smoothing Algorithm":
+            bs.approximate(Points = self.Points, DegMin = obj.DegreeMin, DegMax = obj.DegreeMax, Tolerance = obj.ApproxTolerance, Continuity = cont, LengthWeight = obj.LengthWeight, CurvatureWeight = obj.CurvatureWeight , TorsionWeight = obj.TorsionWeight)
+        self.curve = bs
 
     def execute(self, obj):
         debug("\n* Approximate : execute *\n")
         self.getPoints( obj)
-        self.buildCurve( obj)
+        if isinstance(self.Points[0],list):
+            self.buildSurf( obj)
+        else:
+            self.buildCurve( obj)
         obj.Shape = self.curve.toShape()
 
     def onChanged(self, fp, prop):
@@ -234,6 +256,8 @@ class approx:
     def parseSel(self, selectionObject):
         res = []
         for obj in selectionObject:
+            if hasattr(obj.Object,'Group'):
+                return(obj.Object)
             if len(obj.Object.Shape.Vertexes) > 1:
                 res.append(obj.Object)
         if res:
@@ -247,6 +271,11 @@ class approx:
         source = self.parseSel(s)
         if not source:
             return False
+        if not isinstance(source,list):
+            obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Approximation_Surface") #add object to document
+            Approximate(obj,source)
+            ViewProviderApp(obj.ViewObject)
+            s.ViewObject.Visibility=False
         for s in source:
             obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Approximation_Curve") #add object to document
             Approximate(obj,s)
