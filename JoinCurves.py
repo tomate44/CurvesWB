@@ -36,7 +36,13 @@ class join:
                 edges += selobj.SubObjects
             else:
                 edges += selobj.Object.Shape.Edges
-        curves = [e.Curve for e in edges]
+        curves = []
+        for e in edges:
+            c = e.Curve
+            if not isinstance(c,Part.BSplineCurve):
+                c = e.Curve.toBSpline()
+            c.segment(e.FirstParameter,e.LastParameter)
+            curves.append(c)
 
         #print(curves)
         success = True
