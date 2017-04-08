@@ -58,7 +58,10 @@ class IsoCurve:
     def __init__(self,selfobj):
         selfobj.addProperty("App::PropertyLinkSub","Face","IsoCurve","Input face")
         selfobj.addProperty("App::PropertyFloat","Parameter","IsoCurve","IsoCurve parameter").Parameter=0.
+        selfobj.addProperty("App::PropertyInteger","Number","IsoCurve","Number of IsoCurve").Number=3
+        selfobj.addProperty("App::PropertyEnumeration","Multi","IsoCurve","Number of IsoCurve").Multi=["Single","Multi"]
         selfobj.addProperty("App::PropertyEnumeration","Orientation","IsoCurve","Curve Orientation").Orientation=["U","V"]
+        selfobj.Multi = "Single"
         selfobj.Proxy = self
 
     def split(self, e, t0, t1):
@@ -113,19 +116,75 @@ class IsoCurve:
             else:
                 App.Console.PrintError("Parameter out of range (%f, %f)\n"%(self.u0,self.u1))
 
+    def getuIsoEdges(self, face, samples):
+        res = []
+        n = []
+        #bounds = face.Surface.bounds()
+        if samples <= 1:
+            midParam = self.u0 + (self.u1 - self.u0) / 2
+            n = [midParam]
+        elif samples == 2:
+            n = [self.u0,self.u1]
+        else :
+            brange = self.u1 - self.u0
+            for  i in range(samples-1):
+                n.append(self.u0 + brange*i/(samples-1))
+            n.append(self.u1)
+        for t in n:
+            res.append(face.Surface.uIso(t).toShape())
+        return res
+
+
+    def getvIsoEdges(self, face, samples):
+        res = []
+        n = []
+        #bounds = face.Surface.bounds()
+        if samples <= 1:
+            midParam = self.v0 + (self.v1 - self.v0) / 2
+            n = [midParam]
+        elif samples == 2:
+            n = [self.v0, self.v1]
+        else :
+            brange = self.v1 - self.v0
+            for  i in range(samples-1):
+                n.append(self.v0 + brange*i/(samples-1))
+            n.append(self.v1)
+        for t in n:
+            res.append(face.Surface.vIso(t).toShape())
+        return res
+
+
     def execute(self,selfobj):
 
         face = self.getFace(selfobj)
         #u0,u1,v0,v1 = face.ParameterRange
         if face:
             if selfobj.Orientation == 'U':
-                iso = face.Surface.uIso(selfobj.Parameter)
-                e = Part.Edge(iso)
-                w = self.split(e,self.v0,self.v1)
+                if selfobj.Multi == "Multi":
+                    isos = self.getuIsoEdges( face, selfobj.Number)
+                    edges = []
+                    for i in isos:
+                        e = Part.Edge(i)
+                        s = self.split(e,self.v0,self.v1)
+                        edges.append(s)
+                    w = Part.Compound(edges)
+                else:
+                    iso = face.Surface.uIso(selfobj.Parameter)
+                    e = Part.Edge(iso)
+                    w = self.split(e,self.v0,self.v1)
             elif selfobj.Orientation == 'V':
-                iso = face.Surface.vIso(selfobj.Parameter) 
-                e = Part.Edge(iso)
-                w = self.split(e,self.u0,self.u1)
+                if selfobj.Multi == "Multi":
+                    isos = self.getvIsoEdges( face, selfobj.Number)
+                    edges = []
+                    for i in isos:
+                        e = Part.Edge(i)
+                        s = self.split(e,self.u0,self.u1)
+                        edges.append(s)
+                    w = Part.Compound(edges)
+                else:
+                    iso = face.Surface.vIso(selfobj.Parameter) 
+                    e = Part.Edge(iso)
+                    w = self.split(e,self.u0,self.u1)
             selfobj.Shape = w
         else:
             return False
@@ -140,11 +199,25 @@ class IsoCurve:
             else:
                 self.p0 = self.v0
                 self.p1 = self.v1
+        if prop == 'Multi':
+            if selfobj.Multi  == "Single":
+                selfobj.setEditorMode("Parameter", 0)
+                selfobj.setEditorMode("Number", 2)
+            elif selfobj.Multi  == "Multi":
+                selfobj.setEditorMode("Parameter", 2)
+                selfobj.setEditorMode("Number", 0)
+            selfobj.Proxy.execute(selfobj)
         if prop == 'Parameter':
-            if   selfobj.Parameter  < self.p0:
-                 selfobj.Parameter  = self.p0
+            if  selfobj.Parameter  < self.p0:
+                selfobj.Parameter  = self.p0
             elif selfobj.Parameter  > self.p1:
-                 selfobj.Parameter  = self.p1
+                selfobj.Parameter  = self.p1
+            selfobj.Proxy.execute(selfobj)
+        if prop == 'Number':
+            if  selfobj.Number  < 1:
+                selfobj.Number  = 1
+            elif selfobj.Number  > 100:
+                selfobj.Number  = 100
             selfobj.Proxy.execute(selfobj)
         if prop == 'Orientation':
             self.getBounds(selfobj)
