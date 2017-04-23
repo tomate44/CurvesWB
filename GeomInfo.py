@@ -291,6 +291,9 @@ class GeomInfo:
             #self.cam2 = coin.SoPerspectiveCamera()
             #self.sg.addChild(self.cam2)
             
+            self.sensor = coin.SoNodeSensor(self.updateCB, [])
+            #self.sensor.setPriority(0)
+            
             self.addHUD()
             
             self.Active = True
@@ -316,14 +319,20 @@ class GeomInfo:
         self.removeGrid()
         self.sg.touch()
 
+    def updateCB(self, *args):
+        return(True)
+        #self.getTopo()
+
     def removeGrid(self):
         if self.viz:
             self.root.removeChild(self.node)
             self.viz = False
+            #self.sensor.detach()
     def insertGrid(self):
         if self.node:
             self.root.insertChild(self.node,0)
             self.viz = True
+            #self.sensor.attach(self.root)
 
 # ------ Selection Observer --------
 
@@ -418,6 +427,8 @@ class GeomInfo:
                     self.root = sel0.Object.ViewObject.RootNode
                     self.node = surfNode(surf)
                     self.insertGrid()
+                    #self.sensor.detach()
+                    self.sensor.attach(self.root)
                 elif ss.ShapeType == 'Edge':
                     #FreeCAD.Console.PrintMessage("Edge detected"+ "\n")
                     cur = ss.Curve
@@ -427,6 +438,8 @@ class GeomInfo:
                     self.root = sel0.Object.ViewObject.RootNode
                     self.node = curveNode(cur)
                     self.insertGrid()
+                    #self.sensor.detach()
+                    self.sensor.attach(self.root)
 
     def GetResources(self):
         #return {'Pixmap'  : 'python', 'MenuText': 'Toggle command', 'ToolTip': 'Example toggle command', 'Checkable': True}
