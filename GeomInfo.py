@@ -291,8 +291,9 @@ class GeomInfo:
             #self.cam2 = coin.SoPerspectiveCamera()
             #self.sg.addChild(self.cam2)
             
-            self.sensor = coin.SoNodeSensor(self.updateCB, [])
-            #self.sensor.setPriority(0)
+            self.sensor = coin.SoFieldSensor(self.updateCB, None)
+            #self.sensor.setData(self.sensor)
+            self.sensor.setPriority(0)
             
             self.addHUD()
             
@@ -320,8 +321,8 @@ class GeomInfo:
         self.sg.touch()
 
     def updateCB(self, *args):
-        return(True)
-        #self.getTopo()
+        #return(True)
+        self.getTopo()
 
     def removeGrid(self):
         if self.viz:
@@ -415,31 +416,33 @@ class GeomInfo:
             sel0 = sel[0]
             if sel0.HasSubObjects:
                 try:
-                    ss = sel0.SubObjects[-1]
+                    self.ss = sel0.SubObjects[-1]
                 except:
                     return
-                if ss.ShapeType == 'Face':
-                    #FreeCAD.Console.PrintMessage("Face detected"+ "\n")
-                    surf = ss.Surface
-                    t = self.getSurfInfo(surf)
-                    self.SoText2.string.setValues(0,len(t),t)
-                    self.removeGrid()
-                    self.root = sel0.Object.ViewObject.RootNode
-                    self.node = surfNode(surf)
-                    self.insertGrid()
-                    #self.sensor.detach()
-                    self.sensor.attach(self.root)
-                elif ss.ShapeType == 'Edge':
-                    #FreeCAD.Console.PrintMessage("Edge detected"+ "\n")
-                    cur = ss.Curve
-                    t = self.getCurvInfo(cur)
-                    self.SoText2.string.setValues(0,len(t),t)
-                    self.removeGrid()
-                    self.root = sel0.Object.ViewObject.RootNode
-                    self.node = curveNode(cur)
-                    self.insertGrid()
-                    #self.sensor.detach()
-                    self.sensor.attach(self.root)
+            if self.ss.ShapeType == 'Face':
+                #FreeCAD.Console.PrintMessage("Face detected"+ "\n")
+                surf = self.ss.Surface
+                t = self.getSurfInfo(surf)
+                self.SoText2.string.setValues(0,len(t),t)
+                self.removeGrid()
+                self.root = sel0.Object.ViewObject.RootNode
+                coord = self.root.getChild(1)
+                self.node = surfNode(surf)
+                self.insertGrid()
+                self.sensor.detach()
+                self.sensor.attach(coord.point)
+            elif self.ss.ShapeType == 'Edge':
+                #FreeCAD.Console.PrintMessage("Edge detected"+ "\n")
+                cur = self.ss.Curve
+                t = self.getCurvInfo(cur)
+                self.SoText2.string.setValues(0,len(t),t)
+                self.removeGrid()
+                self.root = sel0.Object.ViewObject.RootNode
+                coord = self.root.getChild(1)
+                self.node = curveNode(cur)
+                self.insertGrid()
+                self.sensor.detach()
+                self.sensor.attach(coord.point)
 
     def GetResources(self):
         #return {'Pixmap'  : 'python', 'MenuText': 'Toggle command', 'ToolTip': 'Example toggle command', 'Checkable': True}
