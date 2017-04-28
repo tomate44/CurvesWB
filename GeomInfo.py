@@ -9,7 +9,7 @@ reload(coinNodes)
 path_curvesWB = os.path.dirname(dummy.__file__)
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 
-DEBUG = 0
+DEBUG = 1
 
 def debug(string):
     if DEBUG:
@@ -338,18 +338,21 @@ class GeomInfo:
 # ------ Selection Observer --------
 
     def addSelection(self,doc,obj,sub,pnt):   # Selection
+        debug("addSelection %s %s"%(obj,str(sub)))
         if self.Active:
             if not doc == self.activeDoc:
                 self.removeHUD()
                 self.addHUD()                
             self.getTopo()
     def removeSelection(self,doc,obj,sub):    # Effacer l'objet selectionne
+        debug("removeSelection %s %s"%(obj,str(sub)))
         if self.Active:
             self.SoText2.string = ""
             self.removeGrid()
     def setPreselection(self, doc, obj, sub):
         pass
     def clearSelection(self,doc):             # Si clic sur l'ecran, effacer la selection
+        debug("clearSelection")
         if self.Active:
             self.SoText2.string = ""
             self.removeGrid()
@@ -417,6 +420,7 @@ class GeomInfo:
             if sel0.HasSubObjects:
                 try:
                     self.ss = sel0.SubObjects[-1]
+                    self.so = sel0.Object
                 except:
                     return
             if self.ss.ShapeType == 'Face':
@@ -425,24 +429,24 @@ class GeomInfo:
                 t = self.getSurfInfo(surf)
                 self.SoText2.string.setValues(0,len(t),t)
                 self.removeGrid()
-                self.root = sel0.Object.ViewObject.RootNode
-                coord = self.root.getChild(1)
+                self.root = self.so.ViewObject.RootNode
+                self.coord = self.root.getChild(1)
                 self.node = surfNode(surf)
                 self.insertGrid()
                 self.sensor.detach()
-                self.sensor.attach(coord.point)
+                self.sensor.attach(self.coord.point)
             elif self.ss.ShapeType == 'Edge':
                 #FreeCAD.Console.PrintMessage("Edge detected"+ "\n")
                 cur = self.ss.Curve
                 t = self.getCurvInfo(cur)
                 self.SoText2.string.setValues(0,len(t),t)
                 self.removeGrid()
-                self.root = sel0.Object.ViewObject.RootNode
-                coord = self.root.getChild(1)
+                self.root = self.so.ViewObject.RootNode
+                self.coord = self.root.getChild(1)
                 self.node = curveNode(cur)
                 self.insertGrid()
                 self.sensor.detach()
-                self.sensor.attach(coord.point)
+                self.sensor.attach(self.coord.point)
 
     def GetResources(self):
         #return {'Pixmap'  : 'python', 'MenuText': 'Toggle command', 'ToolTip': 'Example toggle command', 'Checkable': True}

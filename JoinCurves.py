@@ -7,6 +7,9 @@ path_curvesWB = os.path.dirname(dummy.__file__)
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 
 DEBUG = 1
+Tol = 0.001
+BreakOnBadTangents = True
+BreakOnBadContinuity = True
 
 def debug(string):
     if DEBUG:
@@ -14,17 +17,26 @@ def debug(string):
         FreeCAD.Console.PrintMessage("\n")
 
 def increaseContinuity(c,tol):
-    oc = c.Continuity
+    #oc = c.Continuity
     mults = [int(m) for m in c.getMultiplicities()]
-    knots = c.getKnots()
+    #knots = c.getKnots()
     for i in range(len(mults))[1:-1]:
-        c.removeKnot(i+1,mults[i]-1,tol)
-    if not oc == c.Continuity:
-        debug("Continuity increased from %s to %s"%(oc,c.Continuity))
+        rk = c.removeKnot(i+1,mults[i]-1,tol)
+    return(c.Continuity)    
+
+def alignedTangents(c0,c1):
+    t0 = c0.tangent(c0.LastParameter)[0]
+    t1 = c1.tangent(c1.FirstParameter)[0]
+    t0.normalize()
+    t1.negative()
+    t1.normalize()
+    v = t0.sub(t1)
+    if v.Length < Tol:
+        return(True)
     else:
-        debug("Failed to increase Continuity")
-    return
+        return(False)
     
+
 
 class join:
     "joins the selected edges into a single BSpline Curve"
@@ -45,21 +57,41 @@ class join:
             curves.append(c)
 
         #print(curves)
-        success = True
+        #success = True
         c0 = curves[0].copy()
         if not isinstance(c0,Part.BSplineCurve):
             #FreeCAD.Console.PrintMessage("\nConverting c0 to BSplineCurve\n")
             c0 = c0.toBSpline()
+        outcurves = []
         for c in curves[1:]:
-            r = c0.join(c.toBSpline())
-            if not r:
-                success = False
-                FreeCAD.Console.PrintMessage("Failed to join edge #"+str(curves[1:].index(c)+2)+"\n")
-
-        if success:
-            increaseContinuity(c0,1e-3)
+            i = False
+            tempCurve = c0.copy()
+            tan = alignedTangents(c0,c)
+            if (tan is False) & BreakOnBadTangents:
+                outcurves.append(c0)
+                c0 = c.copy()
+                debug("No tangency on edge #"+str(curves[1:].index(c)+2)+"\n")
+            else:
+                r = c0.join(c) #.toBSpline())
+                if r is False:  #  join operation failed
+                    outcurves.append(c0)
+                    c0 = c.copy()
+                    debug("Failed to join edge #"+str(curves[1:].index(c)+2)+"\n")
+                else:
+                    i = increaseContinuity(c0,Tol)
+                    if (not (i == 'C1')) & BreakOnBadContinuity:
+                        outcurves.append(tempCurve)
+                        c0 = c.copy()
+                        debug("Failed to smooth edge #"+str(curves[1:].index(c)+2)+"\n")
+            #success = False
+            #FreeCAD.Console.PrintMessage("Failed to join edge #"+str(curves[1:].index(c)+2)+"\n")
+        outcurves.append(c0)
+            #c0 = c.copy()
+        if 1:
+            #increaseContinuity(c0,1e-3)
             obj = FreeCAD.ActiveDocument.addObject("Part::Spline","Spline")
-            obj.Shape = c0.toShape()
+            outEdges = [Part.Edge(c) for c in outcurves]
+            obj.Shape = Part.Wire(outEdges)
             for selobj in sel:
                 if selobj.Object:                
                     selobj.Object.ViewObject.Visibility = False
