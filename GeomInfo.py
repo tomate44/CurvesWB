@@ -331,28 +331,28 @@ class GeomInfo:
             #self.sensor.detach()
     def insertGrid(self):
         if self.node:
-            self.root.insertChild(self.node,0)
+            self.root.addChild(self.node)
             self.viz = True
             #self.sensor.attach(self.root)
 
 # ------ Selection Observer --------
 
     def addSelection(self,doc,obj,sub,pnt):   # Selection
-        debug("addSelection %s %s"%(obj,str(sub)))
+        FreeCAD.Console.PrintMessage("addSelection %s %s\n"%(obj,str(sub)))
         if self.Active:
             if not doc == self.activeDoc:
                 self.removeHUD()
                 self.addHUD()                
             self.getTopo()
     def removeSelection(self,doc,obj,sub):    # Effacer l'objet selectionne
-        debug("removeSelection %s %s"%(obj,str(sub)))
+        FreeCAD.Console.PrintMessage("removeSelection %s %s\n"%(obj,str(sub)))
         if self.Active:
             self.SoText2.string = ""
             self.removeGrid()
     def setPreselection(self, doc, obj, sub):
         pass
     def clearSelection(self,doc):             # Si clic sur l'ecran, effacer la selection
-        debug("clearSelection")
+        FreeCAD.Console.PrintMessage("clearSelection\n")
         if self.Active:
             self.SoText2.string = ""
             self.removeGrid()
@@ -423,6 +423,8 @@ class GeomInfo:
                     self.so = sel0.Object
                 except:
                     return
+            else:
+                return
             if self.ss.ShapeType == 'Face':
                 #FreeCAD.Console.PrintMessage("Face detected"+ "\n")
                 surf = self.ss.Surface

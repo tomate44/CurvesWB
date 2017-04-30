@@ -4,6 +4,7 @@ import os, dummy, FreeCADGui
 from FreeCAD import Base
 from pivy import coin
 import CoinNodes
+import selFilter
 
 path_curvesWB = os.path.dirname(dummy.__file__)
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
@@ -40,11 +41,14 @@ class makeSpline:
         obj.addProperty("App::PropertyVectorList",        "KnotPoints","General", "KnotPoints")
         obj.addProperty("App::PropertyFloatList",         "Weights",   "General", "Weights")
         obj.addProperty("App::PropertyFloatList",         "Knots",     "General", "Knots")
-        obj.addProperty("App::PropertyIntegerList",         "Mults",     "General", "Mults")
+        obj.addProperty("App::PropertyIntegerList",       "Mults",     "General", "Mults")
         obj.addProperty("App::PropertyVectorList",        "CurvePts",  "General", "CurvePts")
         #obj.addProperty("Part::PropertyPartShape",        "Shape",     "General", "Shape")
         obj.Proxy = self
-        self.curve = edge.Curve.copy()
+        try:
+            self.curve = edge.Curve.toBSpline()
+        except:
+            self.curve = edge.toNurbs().Edges[0].Curve.toBSpline()
         obj.Poles = self.curve.getPoles()
         obj.Weights = self.curve.getWeights()
         if isinstance(self.curve,Part.BSplineCurve):
@@ -325,31 +329,24 @@ class SplineVP:
 
 
 class editableSpline:
-    def parseSel(self, selectionObject):
-        res = []
-        for obj in selectionObject:
-            if obj.HasSubObjects:
-                subobj = obj.SubObjects[0]
-                if issubclass(type(subobj),Part.Edge):
-                    res=subobj
-                    obj.Object.ViewObject.Visibility = False
-            else:
-                res=obj.Object.Shape.Edges[0]
-                obj.Object.ViewObject.Visibility = False
-        return res
 
     def Activated(self):
         s = FreeCADGui.Selection.getSelectionEx()
-        edges = self.parseSel(s)
-
-        obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Spline") #add object to document
-        makeSpline(obj,edges)
-        SplineVP(obj.ViewObject)
-        obj.ViewObject.DisplayMode = "Poles"
-        #obj.ViewObject.Proxy = 0
-        #obj.ViewObject.PointSize = 4.0
-        #obj.ViewObject.ControlPoints = True
-        #ViewProviderDiscretization(obj.ViewObject)
+        f = selFilter.selFilter(s)
+        edges = f.getEdgeShapes()
+        vertexes = f.getVertexShapes()
+        for i in range(0,len(vertexes)-1,2):
+            pts = [vertexes[i].Point,vertexes[i+1].Point]
+            bez = Part.BezierCurve()
+            bez.setPoles(pts)
+            print(bez)
+            edges.append(bez.toShape())
+        for e in edges:
+            obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Spline") #add object to document
+            makeSpline(obj,e)
+            SplineVP(obj.ViewObject)
+            obj.ViewObject.DisplayMode = "Poles"
+        f.hideAll()
         FreeCAD.ActiveDocument.recompute()
             
     def GetResources(self):
