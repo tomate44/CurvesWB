@@ -7,29 +7,31 @@ sys.path.append(path_curvesWB + '/Gui')
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 
 class CurvesWorkbench (Workbench):
-   MenuText = "Curves"
-   def Initialize(self):
-       import bezierCurve
-       import paramVector
-       import editableSpline
-       import JoinCurves
-       import Discretize
-       import approximate
-       import ParametricBlendCurve
-       import ParametricComb
-       import ZebraTool
-       import SurfaceEdit
-       import TrimFace
-       import GeomInfo
-       import ExtractShapes
-       import IsoCurve
-       import Sketch_On_Surface
-       import Sw2R
-       import PlateSurface
+    MenuText = "Curves"
+    def Initialize(self):
+        import bezierCurve
+        import paramVector
+        import editableSpline
+        import JoinCurves
+        import Discretize
+        import approximate
+        import ParametricBlendCurve
+        import ParametricComb
+        import ZebraTool
+        import SurfaceEdit
+        import TrimFace
+        import GeomInfo
+        import ExtractShapes
+        import IsoCurve
+        import Sketch_On_Surface
+        import Sw2R
+        import PlateSurface
 
-       commandslist = ["bezierCurve","Vector","editableSpline","join","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","Trim","GeomInfo","extract","IsoCurve","SoS","sw2r","Plate"]
-       #FreeCADGui.addIconPath( ':/CurvesWB/icons' )
-       self.appendToolbar("Curves",commandslist)
+        stablelist = ["bezierCurve","editableSpline","join","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","Trim","GeomInfo","extract","IsoCurve","SoS"]
+        devellist = ["Vector","sw2r","Plate"]
+        #FreeCADGui.addIconPath( ':/CurvesWB/icons' )
+        self.appendToolbar("Curves",stablelist)
+        self.appendToolbar("Devel",devellist)
 Gui.addWorkbench(CurvesWorkbench())
 
 

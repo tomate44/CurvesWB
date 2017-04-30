@@ -54,7 +54,7 @@ class Approximate:
         ''' Add the properties '''
         debug("\nApproximate class Init\n")
         obj.addProperty("App::PropertyLink",         "PointObject",  "Approximate", "Object containing the points to approximate").PointObject = source
-        obj.addProperty("App::PropertyBool",         "ClampEnds",    "General",     "Clamp endpoints").ClampEnds = True
+        obj.addProperty("App::PropertyBool",         "ClampEnds",    "General",     "Clamp endpoints").ClampEnds = False
         obj.addProperty("App::PropertyInteger",      "DegreeMin",    "General",     "Minimum degree of the curve").DegreeMin = 3
         obj.addProperty("App::PropertyInteger",      "DegreeMax",    "General",     "Maximum degree of the curve").DegreeMax = 8
         obj.addProperty("App::PropertyFloat",        "ApproxTolerance",    "General",     "Approximation tolerance").ApproxTolerance = 0.05
@@ -122,7 +122,11 @@ class Approximate:
 
     def execute(self, obj):
         debug("\n* Approximate : execute *\n")
+        num = len(self.Points)
+        diff = num - obj.LastIndex -1
         self.getPoints( obj)
+        #obj.FirstIndex = 0
+        obj.LastIndex = len(self.Points)-diff-1
         if isinstance(self.Points[0],list):
             self.buildSurf( obj)
         else:
@@ -135,9 +139,11 @@ class Approximate:
             return
         if prop == "PointObject":
             debug("Approximate : PointObject changed\n")
+            num = len(self.Points)
+            diff = num - fp.LastIndex -1
             self.getPoints( fp)
             #fp.FirstIndex = 0
-            #fp.LastIndex = len(self.Points)-1
+            fp.LastIndex = len(self.Points)-diff
                 
         if prop == "Method":
             debug("Approximate : Method changed\n")
