@@ -132,7 +132,7 @@ class BlendCurve:
         p = IntersectionPoint(polese1[-1],polese1[-2],polese2[-1],polese2[-2])
         chordLength = p.sub(polese1[-1]).Length + p.sub(polese2[-1]).Length
         #chord = poles[-1].sub(poles[0])
-        segmentLength = chordLength * 0.5 / self.blendDegree
+        segmentLength = 1.0 * chordLength / self.blendDegree
         
         if self.cont1 > 0:
             e1d1 = self.edge1.derivative1At(self.param1)
