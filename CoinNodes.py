@@ -222,6 +222,14 @@ class sensorPolyNode(styleNode):
     def unlink(self):
         self.sensor.detach()
 
+    def updateCB(self, *args):
+        points = self.sensor.getTriggerField()
+        l = len(points)
+        a = range(l)
+        a.append(-1)
+        self.lines.coordIndex.setValue(0)
+        self.lines.coordIndex.setValues(0, len(a), a)
+
 class combComb(sensorPolyNode):
     def __init__(self, color = (0.,0.7,0.), lineWidth = 1.0):
         super(combComb, self).__init__(color, lineWidth)
@@ -271,7 +279,11 @@ class coordinate3Node(coin.SoCoordinate3):
     def points(self, pts):
         self.point.setValue(0,0,0)
         self.point.setValues(0, len(pts), pts)
-        #print("coordinate3Node : %d"%len(self.point.getValues()))
+
+    def add(self, pt):
+        pts = self.points
+        pts.append(pt)
+        self.points = pts
 
 class markerSetNode(colorNode):
     def __init__(self, color = (0.,0.,0.), marker = 0):
@@ -399,7 +411,7 @@ class multiTextNode(colorNode):
 
 
 #c = coordinate3Node([(0,1,0),(1,1,0),(2,2,1)])
-#p = polygonNode((0.5,0.9,0.1),2,3)
+#p = polygonNode((0.5,0.9,0.1),2)
 #m = markerSetNode((1,0.35,0.8),1)
 #t = text2dNode((0.2,0.9,0.9),'osiFont',15,(10,15,20),'blabla')
 #mt = multiTextNode((0.2,0.9,0.9),'osiFont',15,(10,15,20))
