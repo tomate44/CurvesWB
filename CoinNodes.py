@@ -285,6 +285,11 @@ class coordinate3Node(coin.SoCoordinate3):
         pts.append(pt)
         self.points = pts
 
+    def pop(self, i):
+        pts = self.points
+        pts.pop(i)
+        self.points = pts
+
 class markerSetNode(colorNode):
     def __init__(self, color = (0.,0.,0.), marker = 0):
         super(markerSetNode, self).__init__()
