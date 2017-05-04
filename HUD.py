@@ -13,8 +13,48 @@ def debug(string):
     if DEBUG:
         FreeCAD.Console.PrintMessage("%s\n"%string)
 
+class textArea(coin.SoSeparator):
+    """Creates a text area node for HUD"""
+    def __init__(self):
+        super(textArea, self).__init__()
+        
+        self.trans = coin.SoTranslation()
+        self.trans.translation = (-0.98,0.90,0)
+
+        self.font = coin.SoFont()
+        self.font.name = "osiFont,FreeSans,sans"
+        self.font.size.setValue(16.0)
+        
+        self.text  = coin.SoText2()
+        self.text.string = ""
+
+        self.color = coin.SoBaseColor()
+        self.color.rgb = (0,0,0)
+        
+        self.addChild(self.trans)
+        self.addChild(self.color)
+        self.addChild(self.font)
+        self.addChild(self.text)
+        
+    @property
+    def fontColor(self):
+        return self.color.rgb.getValue()
+
+    @fontColor.setter
+    def fontColor(self, color):
+        self.color.rgb = (color[0], color[1], color[2])
+        
+    @property
+    def fontName(self):
+        self.font.name.getValue()
+
+    @fontName.setter
+    def fontName(self, name):
+        self.font.name = name
+
+
 class HUD:
-    "Creates a static Head-Up-Display in the 3D view"
+    """Creates a static Head-Up-Display in the 3D view"""
     def __init__(self):
         debug("HUD init")
 
@@ -24,24 +64,10 @@ class HUD:
         self.cam.aspectRatio = 1
         self.cam.viewportMapping = coin.SoCamera.LEAVE_ALONE
 
-        self.trans = coin.SoTranslation()
-        self.trans.translation = (-0.98,0.90,0)
 
-        self.myFont = coin.SoFont()
-        self.myFont.name = "osiFont,FreeSans,sans"
-        self.myFont.size.setValue(16.0)
-        
-        self.SoText2  = coin.SoText2()
-        self.SoText2.string = ""
-
-        self.color = coin.SoBaseColor()
-        self.color.rgb = (0,0,0)
 
         self.HUDNode.addChild(self.cam)
-        self.HUDNode.addChild(self.trans)
-        self.HUDNode.addChild(self.color)
-        self.HUDNode.addChild(self.myFont)
-        self.HUDNode.addChild(self.SoText2)
+
 
     def add(self):
         self.activeDoc = FreeCADGui.ActiveDocument
