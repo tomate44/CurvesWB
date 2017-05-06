@@ -128,6 +128,14 @@ class colorNode(coin.SoSeparator):
     def color(self, color):
         self.coinColor.diffuseColor = (color[0], color[1], color[2])
 
+    @property
+    def transparency(self):
+        return self.coinColor.transparency.getValues()[0].getValue()
+
+    @transparency.setter
+    def transparency(self, tr):
+        self.coinColor.transparency = tr
+
 class styleNode(colorNode):
     def __init__(self, color = (0.,0.,0.), lineWidth = 1.0, pointSize = 1.0):
         super(styleNode, self).__init__()
