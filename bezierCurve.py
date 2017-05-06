@@ -128,9 +128,10 @@ class bezierCurve:
             self.updateCurve()
 
     def accept(self):
-        self.stack.pop(-1)
-        self.mults.pop(-2)
-        self.knots.pop(-1)
+        # discards the last moving pole
+        #self.stack.pop(-1)
+        #self.mults.pop(-2)
+        #self.knots.pop(-1)
         self.updateCurve()
 
     def finish(self):
