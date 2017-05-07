@@ -109,8 +109,14 @@ class gridNode(coin.SoSeparator):
         self.buildGrid()
 
     def buildGrid(self):
-        r =  range( self._subDim,  self._mainDim,  self._subDim) + [self._mainDim]
-        nr = range(-self._subDim, -self._mainDim, -self._subDim) + [-self._mainDim]
+        n = int(1.0 * self._mainDim / self._subDim)
+        r = []
+        nr = []
+        for i in range(1,n):
+            r.append(  1.0 * self._subDim * i)
+            nr.append(-1.0 * self._subDim * i)
+        r.append(  self._mainDim)
+        nr.append(-self._mainDim)
         nr.reverse()
         fullRange = nr + r
         pts = []
@@ -146,7 +152,7 @@ class sensorGridNode(gridNode):
         self.factor = 1.0
 
     def linkTo(self, cam):
-        self.sensor = coin.SoFieldSensor(self.updateCB, cam)
+        self.sensor = coin.SoFieldSensor(self.updateCB, None)
         self.sensor.setPriority(0)
         self.sensor.attach(cam.orientation)
         
@@ -205,11 +211,11 @@ class gridVP:
         self.cam = FreeCADGui.ActiveDocument.ActiveView.getCameraNode()
     
         self.xy.linkTo(self.cam)
-        self.xy.factor = 2
+        self.xy.factor = 1
         self.xz.linkTo(self.cam)
-        self.xz.factor = 5
+        self.xz.factor = 50
         self.yz.linkTo(self.cam)
-        self.yz.factor = 5
+        self.yz.factor = 50
 
         self.grid = coin.SoSeparator()
 
@@ -220,17 +226,17 @@ class gridVP:
 
     def onChanged(self, vp, prop):
         if prop == 'Total':
-            if int(vp.Total) >= int(vp.Subdivision):
-                self.xy.mainDim = int(vp.Total)
-                self.xz.mainDim = int(vp.Total)
-                self.yz.mainDim = int(vp.Total)
+            if float(vp.Total) >= float(vp.Subdivision):
+                self.xy.mainDim = float(vp.Total)
+                self.xz.mainDim = float(vp.Total)
+                self.yz.mainDim = float(vp.Total)
             else:
                 vp.Total = vp.Subdivision
         if prop == 'Subdivision':
-            if int(vp.Total) >= int(vp.Subdivision):
-                self.xy.subDim = int(vp.Subdivision)
-                self.xz.subDim = int(vp.Subdivision)
-                self.yz.subDim = int(vp.Subdivision)
+            if float(vp.Total) >= float(vp.Subdivision):
+                self.xy.subDim = float(vp.Subdivision)
+                self.xz.subDim = float(vp.Subdivision)
+                self.yz.subDim = float(vp.Subdivision)
             else:
                 vp.Subdivision = vp.Total
         if prop == 'XYAttenuation':
