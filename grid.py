@@ -29,6 +29,7 @@ class gridNode(coin.SoSeparator):
 
         self._mainDim = 100
         self._subDim = 10
+        self.maxviz = 1.0
         
         self._numGridLines = 4
         self.material1.diffuseColor = coin.SbColor(1,0,0)
@@ -42,8 +43,8 @@ class gridNode(coin.SoSeparator):
 
     @transparency.setter
     def transparency(self, tr):
-        self.material3.transparency = tr
-        self.material2.transparency = tr
+#        self.material3.transparency = tr
+#        self.material2.transparency = tr
         self.material3.transparency = tr
 
     @property
@@ -166,7 +167,7 @@ class sensorGridNode(gridNode):
         viewdir.normalize()
         self.normal.normalize()
         val = viewdir.dot(self.normal)
-        self.transparency = 1 - math.pow(abs(val),self.factor)
+        self.transparency = 1 - self.maxviz * math.pow(abs(val),self.factor)
 
 class gridObject:
     def __init__(self, obj):
@@ -176,9 +177,12 @@ class gridVP:
     def __init__(self, obj ):
         obj.addProperty("App::PropertyDistance",  "Total",         "Size",   "Size of a grid quadrant").Total = '100mm'
         obj.addProperty("App::PropertyDistance",  "Subdivision",   "Size",   "Size of subdivisions").Subdivision = '10mm'
-        obj.addProperty("App::PropertyFloat",     "XYAttenuation", "View",   "XY plane attenuation").XYAttenuation = 1.0
-        obj.addProperty("App::PropertyFloat",     "XZAttenuation", "View",   "XZ plane attenuation").XZAttenuation = 50.0
-        obj.addProperty("App::PropertyFloat",     "YZAttenuation", "View",   "YZ plane attenuation").YZAttenuation = 50.0
+        obj.addProperty("App::PropertyFloat",     "XY_Attenuation", "View",   "XY plane attenuation").XY_Attenuation = 1.0
+        obj.addProperty("App::PropertyFloat",     "XZ_Attenuation", "View",   "XZ plane attenuation").XZ_Attenuation = 50.0
+        obj.addProperty("App::PropertyFloat",     "YZ_Attenuation", "View",   "YZ plane attenuation").YZ_Attenuation = 50.0
+        obj.addProperty("App::PropertyFloat",     "XY_Visibility",  "View",   "XY plane max visibility").XY_Visibility = 1.0
+        obj.addProperty("App::PropertyFloat",     "XZ_Visibility",  "View",   "XZ plane max visibility").XZ_Visibility = 0.5
+        obj.addProperty("App::PropertyFloat",     "YZ_Visibility",  "View",   "YZ plane max visibility").YZ_Visibility = 0.5
         obj.addProperty("App::PropertyColor",     "GridColor",     "Color",  "Grid Color").GridColor = (0.5,0.5,0.5)
         obj.Proxy = self
 
@@ -190,6 +194,7 @@ class gridVP:
         self.xy.vector2color = (0,1,0)
         self.xy.mainDim = 100
         self.xy.subDim = 10
+        self.xy.maxviz = 1.0
     
         self.xz = sensorGridNode()
         self.xz.vector1dir = (1,0,0)
@@ -198,6 +203,7 @@ class gridVP:
         self.xz.vector2color = (0,0,1)
         self.xz.mainDim = 100
         self.xz.subDim = 10
+        self.xz.maxviz = 0.5
     
         self.yz = sensorGridNode()
         self.yz.vector1dir = (0,1,0)
@@ -206,16 +212,17 @@ class gridVP:
         self.yz.vector2color = (0,0,1)
         self.yz.mainDim = 100
         self.yz.subDim = 10
+        self.yz.maxviz = 0.5
     
         self.sg = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
         self.cam = FreeCADGui.ActiveDocument.ActiveView.getCameraNode()
     
         self.xy.linkTo(self.cam)
-        self.xy.factor = 1
+        self.xy.factor = 1.
         self.xz.linkTo(self.cam)
-        self.xz.factor = 50
+        self.xz.factor = 50.
         self.yz.linkTo(self.cam)
-        self.yz.factor = 50
+        self.yz.factor = 50.
 
         self.grid = coin.SoSeparator()
 
@@ -239,24 +246,42 @@ class gridVP:
                 self.yz.subDim = float(vp.Subdivision)
             else:
                 vp.Subdivision = vp.Total
-        if prop == 'XYAttenuation':
-            if vp.XYAttenuation < 0.1:
-                vp.XYAttenuation = 0.1
-            elif vp.XYAttenuation > 100:
-                vp.XYAttenuation = 100
-            self.xy.factor = vp.XYAttenuation
-        if prop == 'XZAttenuation':
-            if vp.XZAttenuation < 0.1:
-                vp.XZAttenuation = 0.1
-            elif vp.XZAttenuation > 100:
-                vp.XZAttenuation = 100
-            self.xz.factor = vp.XZAttenuation
-        if prop == 'YZAttenuation':
-            if vp.YZAttenuation < 0.1:
-                vp.YZAttenuation = 0.1
-            elif vp.YZAttenuation > 100:
-                vp.YZAttenuation = 100
-            self.yz.factor = vp.YZAttenuation
+        if prop == 'XY_Attenuation':
+            if vp.XY_Attenuation < 0.1:
+                vp.XY_Attenuation = 0.1
+            elif vp.XY_Attenuation > 100:
+                vp.XY_Attenuation = 100
+            self.xy.factor = vp.XY_Attenuation
+        if prop == 'XZ_Attenuation':
+            if vp.XZ_Attenuation < 0.1:
+                vp.XZ_Attenuation = 0.1
+            elif vp.XZ_Attenuation > 100:
+                vp.XZ_Attenuation = 100
+            self.xz.factor = vp.XZ_Attenuation
+        if prop == 'YZ_Attenuation':
+            if vp.YZ_Attenuation < 0.1:
+                vp.YZ_Attenuation = 0.1
+            elif vp.YZ_Attenuation > 100:
+                vp.YZ_Attenuation = 100
+            self.yz.factor = vp.YZ_Attenuation
+        if prop == 'XY_Visibility':
+            if vp.XY_Visibility < 0.0:
+                vp.XY_Visibility = 0.0
+            elif vp.XY_Visibility > 1.0:
+                vp.XY_Visibility = 1.0
+            self.xy.maxviz = vp.XY_Visibility
+        if prop == 'XZ_Visibility':
+            if vp.XZ_Visibility < 0.0:
+                vp.XZ_Visibility = 0.0
+            elif vp.XZ_Visibility > 1.0:
+                vp.XZ_Visibility = 1.0
+            self.xz.maxviz = vp.XZ_Visibility
+        if prop == 'YZ_Visibility':
+            if vp.YZ_Visibility < 0.0:
+                vp.YZ_Visibility = 0.0
+            elif vp.YZ_Visibility > 1.0:
+                vp.YZ_Visibility = 1.0
+            self.yz.maxviz = vp.YZ_Visibility
         if prop == 'GridColor':
             self.xy.gridcolor = vp.GridColor
             self.xz.gridcolor = vp.GridColor
