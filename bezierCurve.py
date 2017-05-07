@@ -38,8 +38,8 @@ class bezierCurve:
         self.sg = self.view.getSceneGraph()
         self.coord = CoinNodes.coordinate3Node([(0,0,0)])
         self.markers = CoinNodes.markerSetNode((1,0.35,0.8),70)
-        self.polygon = CoinNodes.sensorPolyNode((0.5,0.9,0.1),2)
-        self.polygon.transparency = 0.5
+        self.polygon = CoinNodes.sensorPolyNode((0.0,0.5,0.0),1)
+        self.polygon.transparency = 0.7
         self.polygon.linkTo(self.coord)
         self.sg.addChild(self.coord)
         self.sg.addChild(self.markers)
