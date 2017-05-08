@@ -231,7 +231,14 @@ class gridVP:
         self.grid.addChild(self.yz)
         self.sg.addChild(self.grid)
 
+    def updateCam(self):
+        self.cam = FreeCADGui.ActiveDocument.ActiveView.getCameraNode()
+        self.xy.linkTo(self.cam)
+        self.xz.linkTo(self.cam)
+        self.yz.linkTo(self.cam)
+
     def onChanged(self, vp, prop):
+        self.updateCam()
         if prop == 'Total':
             if float(vp.Total) >= float(vp.Subdivision):
                 self.xy.mainDim = float(vp.Total)
