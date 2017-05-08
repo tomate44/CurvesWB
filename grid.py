@@ -7,6 +7,20 @@ class gridNode(coin.SoSeparator):
     def __init__(self):
         super(gridNode, self).__init__()
 
+        self.vec = coin.SoTransformVec3f()
+        #self.vec.matrix.connectFrom(cam.orientation)
+        self.vec.vector = coin.SbVec3f(0,0,-1)
+
+        self.calc = coin.SoCalculator()
+        self.calc.A.connectFrom(vec.direction)
+        self.calc.expression.set1Value(0,"ta=0.5") # maxviz
+        self.calc.expression.set1Value(1,"tb=20.0") # factor
+        self.calc.expression.set1Value(2,"tA=vec3f(1,0,0)") # plane normal
+        self.calc.expression.set1Value(3,"tc=dot(A,tA)")
+        self.calc.expression.set1Value(4,"td=fabs(tc)")
+        self.calc.expression.set1Value(5,"oa=1.0-ta*pow(td,tb)")
+        self.calc.expression.set1Value(6,"oA=vec3f(oa,0,0)")
+
         self.material1 = coin.SoMaterial()
         self.material2 = coin.SoMaterial()
         self.material3 = coin.SoMaterial()
@@ -30,6 +44,7 @@ class gridNode(coin.SoSeparator):
         self._mainDim = 100
         self._subDim = 10
         self.maxviz = 1.0
+        self.factor = 1.0
         
         self._numGridLines = 4
         self.material1.diffuseColor = coin.SbColor(1,0,0)
@@ -108,6 +123,11 @@ class gridNode(coin.SoSeparator):
     def subDim(self, n):
         self._subDim = n
         self.buildGrid()
+
+    def linkTo(self, cam):
+        self.sensor = coin.SoFieldSensor(self.updateCB, None)
+        self.sensor.setPriority(0)
+        self.sensor.attach(cam.orientation)
 
     def buildGrid(self):
         n = int(1.0 * self._mainDim / self._subDim)
