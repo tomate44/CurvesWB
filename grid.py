@@ -147,6 +147,48 @@ class gridNode(coin.SoSeparator):
     def linkTo(self, cam):
         self.vec.matrix.connectFrom(cam.orientation)
 
+    def updateTransformedNormal(self):
+#          // First get hold of an SoPath through the scenegraph down to the
+#          // node ("mynode") you want to query about its current world space
+#          // transformation(s).
+#        
+#          SoSearchAction * searchaction = new SoSearchAction;
+#          searchaction->setNode(mynode);
+#          searchaction->apply(myscenegraphroot);
+#        
+#          SoPath * path = searchaction->getPath();
+#          assert(path != NULL);
+#        
+#          // Then apply the SoGetMatrixAction to get the full transformation
+#          // matrix from world space.
+#        
+#          const SbViewportRegion vpr = myviewer->getViewportRegion();
+#          SoGetMatrixAction * getmatrixaction = new SoGetMatrixAction(vpr);
+#          getmatrixaction->apply(path);
+#        
+#          SbMatrix transformation = getmatrixaction->getMatrix();
+#        
+#          // And if you want to access the individual transformation
+#          // components of the matrix:
+#        
+#          SbVec3f translation;
+#          SbRotation rotation;
+#          SbVec3f scalevector;
+#          SbRotation scaleorientation;
+#        
+#          transformation.getTransform(translation, rotation, scalevector, scaleorientation);
+        searchaction = coin.SoSearchAction()
+        searchaction.setNode(self)
+        searchaction.apply(FreeCADGui.ActiveDocument.ActiveView.getSceneGraph())
+        path = searchaction.getPath()
+        vpr = FreeCADGui.ActiveDocument.ActiveView.getViewer().getViewportRegion()
+        getmatrixaction = coin.SoGetMatrixAction(vpr)
+        getmatrixaction.apply(path)
+        transformation = getmatrixaction.getMatrix()
+        self.transformedNormal = transformation.multVecMatrix(self.normal)
+        self.calc.expression.set1Value(2,"tA=vec3f(%f,%f,%f)"%(self.transformedNormal.getValue()[0],self.transformedNormal.getValue()[1],self.transformedNormal.getValue()[2]))
+        return()
+
     def buildGrid(self):
         n = int(1.0 * self._mainDim / self._subDim)
         r = []
@@ -189,7 +231,17 @@ class gridNode(coin.SoSeparator):
 class gridObject:
     def __init__(self, obj):
         obj.Proxy = self
-
+        obj.addProperty("App::PropertyPlacement",  "Placement",   "Base",   "Placement")
+    def execute(self, obj):
+        return()
+    def onChanged(self, fp, prop):
+        if prop == 'Placement':
+            FreeCAD.Console.PrintMessage('Placement udpate\n')
+            tr = fp.Placement.Base
+            ro = fp.Placement.Rotation.Q
+            fp.ViewObject.Proxy.trans.translation = coin.SbVec3f(tr.x,tr.y,tr.z)
+            fp.ViewObject.Proxy.trans.rotation = coin.SbRotation(ro[0],ro[1],ro[2],ro[3])
+    
 class gridVP:
     def __init__(self, obj ):
         obj.addProperty("App::PropertyDistance",  "Total",         "Size",   "Size of a grid quadrant").Total = '100mm'
@@ -204,6 +256,9 @@ class gridVP:
         obj.Proxy = self
 
     def attach(self, obj):
+
+        self.trans = coin.SoTransform()
+
         self.xy = gridNode()
         self.xy.vector1dir = (1,0,0)
         self.xy.vector1color = (1,0,0)
@@ -241,18 +296,25 @@ class gridVP:
         self.yz.linkTo(self.cam)
         self.yz.factor = 50.
 
-        self.grid = coin.SoSeparator()
+        self.grid = coin.SoGroup()
 
+        self.grid.addChild(self.trans)
         self.grid.addChild(self.xy)
         self.grid.addChild(self.xz)
         self.grid.addChild(self.yz)
         obj.addDisplayMode(self.grid,"Wireframe")
 
-    def updateCam(self):
-        self.cam = FreeCADGui.ActiveDocument.ActiveView.getCameraNode()
-        self.xy.linkTo(self.cam)
-        self.xz.linkTo(self.cam)
-        self.yz.linkTo(self.cam)
+        self.ViewObject = obj
+        self.Object = obj.Object
+
+#    def updateCam(self):
+#        self.cam = FreeCADGui.ActiveDocument.ActiveView.getCameraNode()
+#        self.xy.linkTo(self.cam)
+#        self.xz.linkTo(self.cam)
+#        self.yz.linkTo(self.cam)
+
+    def getIcon(self):
+        return (":/icons/Draft_Grid.svg")
 
     def getDisplayModes(self,obj):
          "Return a list of display modes."
@@ -329,6 +391,16 @@ class gridVP:
             self.xy.gridcolor = vp.GridColor
             self.xz.gridcolor = vp.GridColor
             self.yz.gridcolor = vp.GridColor
+        if prop == 'Placement':
+            FreeCAD.Console.PrintMessage('Placement udpate\n')
+            tr = vp.Object.Placement.Base
+            ro = vp.Object.Placement.Rotation.Q
+            self.trans.translation = coin.SbVec3f(tr.x,tr.y,tr.z)
+            self.trans.rotation = coin.SbRotation(ro[0],ro[1],ro[2],ro[3])
+            self.xy.updateTransformedNormal()
+            self.xz.updateTransformedNormal()
+            self.yz.updateTransformedNormal()
+
 
     def onDelete(self, feature, subelements):
         self.sg.removeChild(self.grid)
