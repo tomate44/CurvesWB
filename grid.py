@@ -12,7 +12,7 @@ class gridNode(coin.SoSeparator):
         self.vec.vector = coin.SbVec3f(0,0,-1)
 
         self.calc = coin.SoCalculator()
-        self.calc.A.connectFrom(vec.direction)
+        self.calc.A.connectFrom(self.vec.direction)
         self.calc.expression.set1Value(0,"ta=0.5") # maxviz
         self.calc.expression.set1Value(1,"tb=20.0") # factor
         self.calc.expression.set1Value(2,"tA=vec3f(1,0,0)") # plane normal
@@ -36,21 +36,21 @@ class gridNode(coin.SoSeparator):
         self.addChild(self.line2)
         self.addChild(self.material3)
         self.addChild(self.lineSet)
-        
+       
         self._vector1 = coin.SbVec3f(1,0,0)
         self._vector2 = coin.SbVec3f(0,1,0)
         self.normal = self._vector1.cross(self._vector2)
 
         self._mainDim = 100
         self._subDim = 10
-        self.maxviz = 1.0
-        self.factor = 1.0
-        
+        self._maxviz = 1.0
+        self._factor = 1.0
+       
         self._numGridLines = 4
         self.material1.diffuseColor = coin.SbColor(1,0,0)
         self.material2.diffuseColor = coin.SbColor(0,1,0)
         self.material3.diffuseColor = coin.SbColor(0.5,0.5,0.5)
-        self.material3.transparency = 0.5
+        self.material3.transparency.connectFrom(self.calc.oa)
 
     @property
     def transparency(self):
@@ -94,6 +94,7 @@ class gridNode(coin.SoSeparator):
     def vector1dir(self, vec):
         self._vector1 = coin.SbVec3f(vec)
         self.normal = self._vector1.cross(self._vector2)
+        self.calc.expression.set1Value(2,"tA=vec3f(%f,%f,%f)"%(self.normal.getValue()[0],self.normal.getValue()[1],self.normal.getValue()[2]))
         self.buildGrid()
 
     @property
@@ -104,6 +105,7 @@ class gridNode(coin.SoSeparator):
     def vector2dir(self, vec):
         self._vector2 = coin.SbVec3f(vec)
         self.normal = self._vector1.cross(self._vector2)
+        self.calc.expression.set1Value(2,"tA=vec3f(%f,%f,%f)"%(self.normal.getValue()[0],self.normal.getValue()[1],self.normal.getValue()[2]))
         self.buildGrid()
 
     @property
@@ -114,7 +116,7 @@ class gridNode(coin.SoSeparator):
     def mainDim(self, n):
         self._mainDim = n
         self.buildGrid()
-        
+       
     @property
     def subDim(self):
         return self._subDim
@@ -124,10 +126,26 @@ class gridNode(coin.SoSeparator):
         self._subDim = n
         self.buildGrid()
 
+    @property
+    def maxviz(self):
+        return self._maxviz
+
+    @maxviz.setter
+    def maxviz(self, n):
+        self._maxviz = n
+        self.calc.expression.set1Value(0,"ta=%f"%n) # maxviz
+
+    @property
+    def factor(self):
+        return self._factor
+
+    @factor.setter
+    def factor(self, n):
+        self._factor = n
+        self.calc.expression.set1Value(1,"tb=%f"%n) # factor
+
     def linkTo(self, cam):
-        self.sensor = coin.SoFieldSensor(self.updateCB, None)
-        self.sensor.setPriority(0)
-        self.sensor.attach(cam.orientation)
+        self.vec.matrix.connectFrom(cam.orientation)
 
     def buildGrid(self):
         n = int(1.0 * self._mainDim / self._subDim)
@@ -167,27 +185,6 @@ class gridNode(coin.SoSeparator):
         self.lineSet.coordIndex.setValue(0)
         self.lineSet.coordIndex.setValues(0, len(a), a)
 
-class sensorGridNode(gridNode):
-    def __init__(self):
-        super(sensorGridNode, self).__init__()
-        self.factor = 1.0
-
-    def linkTo(self, cam):
-        self.sensor = coin.SoFieldSensor(self.updateCB, None)
-        self.sensor.setPriority(0)
-        self.sensor.attach(cam.orientation)
-        
-    def unlink(self):
-        self.sensor.detach()
-
-    def updateCB(self, *args):
-        ori = self.sensor.getTriggerField().getValue()
-        lookat = coin.SbVec3f(0, 0, -1)
-        viewdir = ori.multVec(lookat)  #ori.getAxisAngle()[0]
-        viewdir.normalize()
-        self.normal.normalize()
-        val = viewdir.dot(self.normal)
-        self.transparency = 1 - self.maxviz * math.pow(abs(val),self.factor)
 
 class gridObject:
     def __init__(self, obj):
@@ -207,7 +204,7 @@ class gridVP:
         obj.Proxy = self
 
     def attach(self, obj):
-        self.xy = sensorGridNode()
+        self.xy = gridNode()
         self.xy.vector1dir = (1,0,0)
         self.xy.vector1color = (1,0,0)
         self.xy.vector2dir = (0,1,0)
@@ -215,8 +212,8 @@ class gridVP:
         self.xy.mainDim = 100
         self.xy.subDim = 10
         self.xy.maxviz = 1.0
-    
-        self.xz = sensorGridNode()
+   
+        self.xz = gridNode()
         self.xz.vector1dir = (1,0,0)
         self.xz.vector1color = (1,0,0)
         self.xz.vector2dir = (0,0,1)
@@ -224,8 +221,8 @@ class gridVP:
         self.xz.mainDim = 100
         self.xz.subDim = 10
         self.xz.maxviz = 0.5
-    
-        self.yz = sensorGridNode()
+   
+        self.yz = gridNode()
         self.yz.vector1dir = (0,1,0)
         self.yz.vector1color = (0,1,0)
         self.yz.vector2dir = (0,0,1)
@@ -233,10 +230,10 @@ class gridVP:
         self.yz.mainDim = 100
         self.yz.subDim = 10
         self.yz.maxviz = 0.5
-    
+   
         self.sg = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
         self.cam = FreeCADGui.ActiveDocument.ActiveView.getCameraNode()
-    
+   
         self.xy.linkTo(self.cam)
         self.xy.factor = 1.
         self.xz.linkTo(self.cam)
@@ -249,7 +246,26 @@ class gridVP:
         self.grid.addChild(self.xy)
         self.grid.addChild(self.xz)
         self.grid.addChild(self.yz)
-        self.sg.addChild(self.grid)
+        obj.addDisplayMode(self.grid,"Wireframe")
+
+    def updateCam(self):
+        self.cam = FreeCADGui.ActiveDocument.ActiveView.getCameraNode()
+        self.xy.linkTo(self.cam)
+        self.xz.linkTo(self.cam)
+        self.yz.linkTo(self.cam)
+
+    def getDisplayModes(self,obj):
+         "Return a list of display modes."
+         modes=[]
+         modes.append("Wireframe")
+         return modes
+
+    def getDefaultDisplayMode(self):
+         "Return the name of the default display mode. It must be defined in getDisplayModes."
+         return "Wireframe"
+
+    def setDisplayMode(self,mode):
+         return mode
 
     def updateCam(self):
         self.cam = FreeCADGui.ActiveDocument.ActiveView.getCameraNode()
@@ -327,3 +343,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
