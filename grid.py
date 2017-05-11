@@ -21,14 +21,38 @@ class gridNode(coin.SoSeparator):
         self.calc.expression.set1Value(5,"oa=1.0-ta*pow(td,tb)")
         self.calc.expression.set1Value(6,"oA=vec3f(oa,0,0)")
 
+        self.scaleEngine = coin.SoCalculator()
+        #self.scaleEngine.a.connectFrom(cam.height)
+        self.scaleEngine.expression.set1Value(0,"ta=floor(log10(a/10))")
+        self.scaleEngine.expression.set1Value(1,"tb=pow(10,ta)")
+        self.scaleEngine.expression.set1Value(2,"oA=vec3f(tb,tb,tb)")
+        self.scaleEngine.expression.set1Value(3,"oa=0.01*a/tb")
+
+        self.calc2 = coin.SoCalculator()
+        self.calc2.a.connectFrom(self.scaleEngine.oa)
+        self.calc2.b.connectFrom(self.calc.oa)
+        self.calc2.expression.set1Value(0,"ta=pow(a,0.3)")
+        self.calc2.expression.set1Value(1,"oa=(b>ta)?b:ta")
+
+
         self.material1 = coin.SoMaterial()
         self.material2 = coin.SoMaterial()
         self.material3 = coin.SoMaterial()
+        self.material4 = coin.SoMaterial()
         self.coord = coin.SoCoordinate3()
+        self.coord2= coin.SoCoordinate3()
         self.line1 = coin.SoIndexedLineSet()
         self.line2 = coin.SoIndexedLineSet()
         self.lineSet = coin.SoIndexedLineSet()
+        self.lineSet2= coin.SoIndexedLineSet()
 
+        self.miniscale = coin.SoScale()
+        self.miniscale.scaleFactor = coin.SbVec3f(0.1,0.1,0.1)
+
+        self.mainscale = coin.SoScale()
+        self.mainscale.scaleFactor.connectFrom(self.scaleEngine.oA)
+
+        self.addChild(self.mainscale)
         self.addChild(self.coord)
         self.addChild(self.material1)
         self.addChild(self.line1)
@@ -36,6 +60,10 @@ class gridNode(coin.SoSeparator):
         self.addChild(self.line2)
         self.addChild(self.material3)
         self.addChild(self.lineSet)
+        self.addChild(self.miniscale)
+        self.addChild(self.material4)
+        self.addChild(self.coord2)
+        self.addChild(self.lineSet2)
        
         self._vector1 = coin.SbVec3f(1,0,0)
         self._vector2 = coin.SbVec3f(0,1,0)
@@ -50,7 +78,10 @@ class gridNode(coin.SoSeparator):
         self.material1.diffuseColor = coin.SbColor(1,0,0)
         self.material2.diffuseColor = coin.SbColor(0,1,0)
         self.material3.diffuseColor = coin.SbColor(0.5,0.5,0.5)
+        self.material4.diffuseColor = coin.SbColor(0.5,0.5,0.5)
         self.material3.transparency.connectFrom(self.calc.oa)
+        self.material4.transparency.connectFrom(self.calc2.oa)
+
 
     @property
     def transparency(self):
@@ -85,6 +116,7 @@ class gridNode(coin.SoSeparator):
     @gridcolor.setter
     def gridcolor(self, color):
         self.material3.diffuseColor = (color[0], color[1], color[2])
+        self.material4.diffuseColor = (color[0], color[1], color[2])
 
     @property
     def vector1dir(self):
@@ -146,6 +178,7 @@ class gridNode(coin.SoSeparator):
 
     def linkTo(self, cam):
         self.vec.matrix.connectFrom(cam.orientation)
+        self.scaleEngine.a.connectFrom(cam.height)
 
     def updateTransformedNormal(self):
 #          // First get hold of an SoPath through the scenegraph down to the
@@ -189,8 +222,8 @@ class gridNode(coin.SoSeparator):
         self.calc.expression.set1Value(2,"tA=vec3f(%f,%f,%f)"%(self.transformedNormal.getValue()[0],self.transformedNormal.getValue()[1],self.transformedNormal.getValue()[2]))
         return()
 
-    def buildGrid(self):
-        n = int(1.0 * self._mainDim / self._subDim)
+    def gridPts(self, t, s):
+        n = t*s
         r = []
         nr = []
         for i in range(1,n):
@@ -201,19 +234,30 @@ class gridNode(coin.SoSeparator):
         nr.reverse()
         fullRange = nr + r
         pts = []
+        for i in fullRange:
+            pts.append(1*i * self._vector2 - s*self._mainDim * self._vector1)
+            pts.append(1*i * self._vector2 + s*self._mainDim * self._vector1)
+            pts.append(1*i * self._vector1 - s*self._mainDim * self._vector2)
+            pts.append(1*i * self._vector1 + s*self._mainDim * self._vector2)
+        return(pts)
+
+    def buildGrid(self):
+        n = int(1.0 * self._mainDim / self._subDim)
+        
+        pts = []
         pts.append(-self._mainDim * self._vector1)
         pts.append( self._mainDim * self._vector1)
         pts.append(-self._mainDim * self._vector2)
         pts.append( self._mainDim * self._vector2)
-        for i in fullRange:
-            pts.append(i * self._vector2 - self._mainDim * self._vector1)
-            pts.append(i * self._vector2 + self._mainDim * self._vector1)
-            pts.append(i * self._vector1 - self._mainDim * self._vector2)
-            pts.append(i * self._vector1 + self._mainDim * self._vector2)
+        
+        pts += self.gridPts(n,1)
         self.coord.point.setValues(0,len(pts),pts)
-        self._numGridLines = len(fullRange) * 2
-        #self.gridcolor = self.gridcolor
-        #self.transparency = self.transparency
+        self._numGridLines = len(pts) / 2.0
+
+        pts2 = self.gridPts(n,10)
+        self.coord2.point.setValues(0,len(pts2),pts2)
+        #self._numGridLines = len(pts) / 2.0
+
         a = []
         l = len(pts)-4
         for i in range(l/2):
@@ -226,6 +270,15 @@ class gridNode(coin.SoSeparator):
         self.line2.coordIndex.setValues(0, 3, [2,3,-1])
         self.lineSet.coordIndex.setValue(0)
         self.lineSet.coordIndex.setValues(0, len(a), a)
+
+        a2 = []
+        l = len(pts2)
+        for i in range(l/2):
+            a2.append(2*i)
+            a2.append(2*i + 1)
+            a2.append(-1)
+        self.lineSet2.coordIndex.setValue(0)
+        self.lineSet2.coordIndex.setValues(0, len(a2), a2)
 
 
 class gridObject:
@@ -246,7 +299,7 @@ class gridVP:
     def __init__(self, obj ):
         obj.addProperty("App::PropertyDistance",  "Total",         "Size",   "Size of a grid quadrant").Total = '100mm'
         obj.addProperty("App::PropertyDistance",  "Subdivision",   "Size",   "Size of subdivisions").Subdivision = '10mm'
-        obj.addProperty("App::PropertyFloat",     "XY_Attenuation", "View",   "XY plane attenuation").XY_Attenuation = 1.0
+        obj.addProperty("App::PropertyFloat",     "XY_Attenuation", "View",   "XY plane attenuation").XY_Attenuation = 2.0
         obj.addProperty("App::PropertyFloat",     "XZ_Attenuation", "View",   "XZ plane attenuation").XZ_Attenuation = 50.0
         obj.addProperty("App::PropertyFloat",     "YZ_Attenuation", "View",   "YZ plane attenuation").YZ_Attenuation = 50.0
         obj.addProperty("App::PropertyFloat",     "XY_Visibility",  "View",   "XY plane max visibility").XY_Visibility = 1.0
@@ -261,27 +314,27 @@ class gridVP:
 
         self.xy = gridNode()
         self.xy.vector1dir = (1,0,0)
-        self.xy.vector1color = (1,0,0)
+        self.xy.vector1color = (0.827,0.149,0.149) # red (X)
         self.xy.vector2dir = (0,1,0)
-        self.xy.vector2color = (0,1,0)
+        self.xy.vector2color = (0.400,0.590,0.200) # green (Y)
         self.xy.mainDim = 100
         self.xy.subDim = 10
         self.xy.maxviz = 1.0
    
         self.xz = gridNode()
         self.xz.vector1dir = (1,0,0)
-        self.xz.vector1color = (1,0,0)
+        self.xz.vector1color = (0.827,0.149,0.149) # red (X)
         self.xz.vector2dir = (0,0,1)
-        self.xz.vector2color = (0,0,1)
+        self.xz.vector2color = (0.133,0.490,0.882) # blue (Z)
         self.xz.mainDim = 100
         self.xz.subDim = 10
         self.xz.maxviz = 0.5
    
         self.yz = gridNode()
         self.yz.vector1dir = (0,1,0)
-        self.yz.vector1color = (0,1,0)
+        self.yz.vector1color = (0.400,0.590,0.200) # green (Y)
         self.yz.vector2dir = (0,0,1)
-        self.yz.vector2color = (0,0,1)
+        self.yz.vector2color = (0.133,0.490,0.882) # blue (Z)
         self.yz.mainDim = 100
         self.yz.subDim = 10
         self.yz.maxviz = 0.5
