@@ -87,7 +87,10 @@ class Approximate:
         if hasattr(obj.PointObject,'Group'):
             a = []
             for o in obj.PointObject.Group:
-                a.append(o.Points)
+                if hasattr(o,'Points'):
+                    a.append(o.Points)
+                else:
+                    a.append([v.Point for v in o.Shape.Vertexes])
             self.Points = a
         else:
             try:
@@ -108,6 +111,7 @@ class Approximate:
         self.curve = bs
         
     def buildSurf(self, obj):
+        pts = self.Points[obj.FirstIndex:obj.LastIndex+1]
         bs = Part.BSplineSurface()
         cont = 0
         if obj.Continuity == 'C1':
@@ -115,9 +119,9 @@ class Approximate:
         elif obj.Continuity == 'C2':
             cont = 2
         if obj.Method == "Parametrization":
-            bs.approximate(Points = self.Points, DegMin = obj.DegreeMin, DegMax = obj.DegreeMax, Tolerance = obj.ApproxTolerance, Continuity = cont, ParamType = obj.Parametrization)
+            bs.approximate(Points = pts, DegMin = obj.DegreeMin, DegMax = obj.DegreeMax, Tolerance = obj.ApproxTolerance, Continuity = cont, ParamType = obj.Parametrization)
         elif obj.Method == "Smoothing Algorithm":
-            bs.approximate(Points = self.Points, DegMin = obj.DegreeMin, DegMax = obj.DegreeMax, Tolerance = obj.ApproxTolerance, Continuity = cont, LengthWeight = obj.LengthWeight, CurvatureWeight = obj.CurvatureWeight , TorsionWeight = obj.TorsionWeight)
+            bs.approximate(Points = pts, DegMin = obj.DegreeMin, DegMax = obj.DegreeMax, Tolerance = obj.ApproxTolerance, Continuity = cont, LengthWeight = obj.LengthWeight, CurvatureWeight = obj.CurvatureWeight , TorsionWeight = obj.TorsionWeight)
         self.curve = bs
 
     def execute(self, obj):
