@@ -43,15 +43,15 @@ class sweep2rails:
         return(out1, out2)
 
     def interpolate(self, pts):
-        v = [FreeCAD.Vector(0,0.5,0)] * len(pts[0])
+        v = [FreeCAD.Vector(0,0.1,0)] * len(pts[0])
         b = [False] * len(pts[0])
-        b[0] = True
-        b[-1] = True
+        #b[0] = True
+        #b[-1] = True
         c1 = Part.BSplineCurve()
         FreeCAD.Console.PrintMessage('interpolate\n%s\n%s\n'%(pts[0],self.knots1))
-        c1.interpolate(Points = pts[0], Parameters = self.knots1, Tangents = v, TangentFlags = b)
+        c1.interpolate(Points = pts[0], Parameters = self.knots1) #, Tangents = v, TangentFlags = b)
         c2 = Part.BSplineCurve()
-        c2.interpolate(Points = pts[1], Parameters = self.knots2, Tangents = v, TangentFlags = b)
+        c2.interpolate(Points = pts[1], Parameters = self.knots2) #, Tangents = v, TangentFlags = b)
         return(c1,c2)        
 
     def discretize(self, obj, c):
