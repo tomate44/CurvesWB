@@ -12,16 +12,99 @@ class sweep2rails:
         obj.addProperty("App::PropertyEnumeration","Blending",      "Base",   "Blending method").Blending = ["Average","Blend","Rail1","Rail2"]
         obj.addProperty("App::PropertyInteger",    "ProfileSamples","Base",   "Profile Samples")
         obj.addProperty("App::PropertyInteger",    "RailSamples",   "Base",   "Profile Samples")
-        obj.Blending = "Blend"
+        obj.Blending = "Average"
         obj.ProfileSamples = 20
         obj.RailSamples = 20
         self.birail = None
         self.profiles = None
 
+    def getProfPoints(self, obj, i):
+        pts = []
+        for p in self.profiles:
+            v0 = p.FirstParameter
+            v1 = p.LastParameter
+            pRange = v1-v0
+            t = v0 + 1.0 * pRange * i / (obj.ProfileSamples-1)
+            pts.append(p.valueAt(t))
+        return(pts)
+
+    def localCoords(self, pts):
+        out1 = []
+        out2 = []
+        for i,p in enumerate(pts):
+            m1 = self.birail.Proxy.matrix1At(self.knots1[i])
+            m2 = self.birail.Proxy.matrix2At(self.knots2[i])
+            p1 = m1.inverse().multiply(p)
+            p2 = m2.inverse().multiply(p)
+            p3 = FreeCAD.Vector(p1.x, p1.y+self.knots1[i], p1.z)
+            p4 = FreeCAD.Vector(p2.x, p2.y+self.knots2[i], p2.z)
+            out1.append(p3)
+            out2.append(p4)
+        return(out1, out2)
+
+    def interpolate(self, pts):
+        v = [FreeCAD.Vector(0,0.5,0)] * len(pts[0])
+        b = [False] * len(pts[0])
+        b[0] = True
+        b[-1] = True
+        c1 = Part.BSplineCurve()
+        FreeCAD.Console.PrintMessage('interpolate\n%s\n%s\n'%(pts[0],self.knots1))
+        c1.interpolate(Points = pts[0], Parameters = self.knots1, Tangents = v, TangentFlags = b)
+        c2 = Part.BSplineCurve()
+        c2.interpolate(Points = pts[1], Parameters = self.knots2, Tangents = v, TangentFlags = b)
+        return(c1,c2)        
+
+    def discretize(self, obj, c):
+        pts1 = []
+        pts2 = []
+        for i in range(obj.RailSamples):
+            v0 = self.knots1[0]
+            v1 = self.knots1[-1]
+            pRange1 = v1-v0
+            t1 = v0 + 1.0 * pRange1 * i / (obj.RailSamples-1)
+            v2 = self.knots2[0]
+            v3 = self.knots2[-1]
+            pRange2 = v3-v2
+            t2 = v2 + 1.0 * pRange2 * i / (obj.RailSamples-1)
+            pt1 = Part.Edge(c[0]).valueAt(t1)
+            m1 = self.birail.Proxy.matrix1At(t1)
+            pts1.append(m1.multiply(FreeCAD.Vector(pt1.x, pt1.y-t1, pt1.z)))
+            pt2 = Part.Edge(c[1]).valueAt(t2)
+            m2 = self.birail.Proxy.matrix2At(t2)
+            pts2.append(m2.multiply(FreeCAD.Vector(pt2.x, pt2.y-t2, pt2.z)))
+        return(pts1,pts2)
+
     def execute(self, obj):
-        return()
-        self.ruledSurface()
-        obj.Shape = self.ruled
+        pts1 = []
+        pts2 = []
+        interpo1 = []
+        interpo2 = []
+        #self.pointArray = []
+        for ri in range(obj.ProfileSamples):
+            pts = self.getProfPoints(obj, ri)
+            localpts = self.localCoords(pts)
+            interpoCurves = self.interpolate(localpts)
+            interpo1.append(Part.Edge(interpoCurves[0]))
+            interpo2.append(Part.Edge(interpoCurves[1]))
+            dis = self.discretize(obj, interpoCurves)
+            #worldpts = self.worldCoords(pts)
+            pts1 += dis[0] #pts1.append(dis[0])
+            pts2 += dis[1] #pts2.append(dis[1])
+        finalpts = []
+        if   obj.Blending == "Rail1":
+            finalpts = pts1
+        elif obj.Blending == "Rail2":
+            finalpts = pts2
+        elif obj.Blending == "Average":
+            for i in range(len(pts1)):
+                finalpts.append((pts1[i]+pts2[i]).multiply(0.5))
+        elif obj.Blending == "Blend":
+            for i in range(len(pts1)):
+                finalpts.append((pts1[i]+pts2[i]).multiply(0.5))
+        v = [Part.Vertex(p) for p in finalpts]
+        c = Part.Compound(v) #+interpo1+interpo2)
+        obj.Shape = c
+                
 
     def onChanged(self, fp, prop):
         FreeCAD.Console.PrintMessage('%s changed\n'%prop)

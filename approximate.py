@@ -92,6 +92,20 @@ class Approximate:
                 else:
                     a.append([v.Point for v in o.Shape.Vertexes])
             self.Points = a
+        elif hasattr(obj.PointObject,'Birail'):
+            debug("Birail object detected")
+            debug("%d points"%len(obj.PointObject.Shape.Vertexes))
+            n = obj.PointObject.RailSamples
+            a = []
+            r = []
+            for i in range(len(obj.PointObject.Shape.Vertexes)):
+                r.append(obj.PointObject.Shape.Vertexes[i].Point)
+                if (not i == 0) and ((i+1)%n == 0):
+                    a.append(r)
+                    r = []
+            #a.append(r)
+            self.Points = a
+            debug("Array : %d x %d"%(len(a),len(a[0])))
         else:
             try:
                 self.Points = obj.PointObject.Points

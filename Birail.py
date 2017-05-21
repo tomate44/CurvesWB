@@ -8,6 +8,7 @@ class birail:
         obj.Proxy = self
         obj.addProperty("App::PropertyLinkSub",  "Edge1",   "Base",   "Edge1")
         obj.addProperty("App::PropertyLinkSub",  "Edge2",   "Base",   "Edge2")
+        obj.addProperty("App::PropertyBool",  "Untwist",   "Base",   "Untwist surface" ).Untwist = False
         obj.addProperty("App::PropertyBool",  "NormalizeTangent",   "Normalize",   "Normalize tangent" ).NormalizeTangent = False
         obj.addProperty("App::PropertyBool",  "NormalizeNormal",    "Normalize",   "Normalize normal"  ).NormalizeNormal = False
         obj.addProperty("App::PropertyBool",  "NormalizeBinormal",  "Normalize",   "Normalize binormal").NormalizeBinormal = False
@@ -28,6 +29,9 @@ class birail:
             self.ruledSurface()
         if prop == "Edge2":
             self.edge2 = self.getEdge(fp.Edge2)
+            self.ruledSurface()
+        if prop == "Untwist":
+            self.edge2.reverse()
             self.ruledSurface()
         if prop == "NormalizeTangent":
             self.normTan = fp.NormalizeTangent
