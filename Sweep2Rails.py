@@ -4,6 +4,9 @@ import FreeCADGui
 import math
 from pivy import coin
 
+fac = 1.0
+DEBUG = False
+
 class sweep2rails:
     def __init__(self, obj):
         obj.Proxy = self
@@ -36,21 +39,26 @@ class sweep2rails:
             m2 = self.birail.Proxy.matrix2At(self.knots2[i])
             p1 = m1.inverse().multiply(p)
             p2 = m2.inverse().multiply(p)
-            p3 = FreeCAD.Vector(p1.x, p1.y+self.knots1[i], p1.z)
-            p4 = FreeCAD.Vector(p2.x, p2.y+self.knots2[i], p2.z)
+            p3 = FreeCAD.Vector(p1.x, p1.y+self.knots1[i]*fac, p1.z)
+            p4 = FreeCAD.Vector(p2.x, p2.y+self.knots2[i]*fac, p2.z)
             out1.append(p3)
             out2.append(p4)
         return(out1, out2)
 
     def interpolate(self, pts):
-        v = [FreeCAD.Vector(0,0.1,0)] * len(pts[0])
-        b = [False] * len(pts[0])
-        #b[0] = True
-        #b[-1] = True
+        v = [FreeCAD.Vector(0,1,0)] * len(pts[0])
+        b = [True] * len(pts[0])
+        b[0] = True
+        b[-1] = True
         c1 = Part.BSplineCurve()
         FreeCAD.Console.PrintMessage('interpolate\n%s\n%s\n'%(pts[0],self.knots1))
+        #m = [1]*len(self.knots1)
+        #m[0]  = 2
+        #m[-1] = 2
+        #c1.buildFromPolesMultsKnots(pts[0],m,self.knots1,False,1)
         c1.interpolate(Points = pts[0], Parameters = self.knots1) #, Tangents = v, TangentFlags = b)
         c2 = Part.BSplineCurve()
+        #c2.buildFromPolesMultsKnots(pts[1],m,self.knots2,False,1)
         c2.interpolate(Points = pts[1], Parameters = self.knots2) #, Tangents = v, TangentFlags = b)
         return(c1,c2)        
 
@@ -68,10 +76,10 @@ class sweep2rails:
             t2 = v2 + 1.0 * pRange2 * i / (obj.RailSamples-1)
             pt1 = Part.Edge(c[0]).valueAt(t1)
             m1 = self.birail.Proxy.matrix1At(t1)
-            pts1.append(m1.multiply(FreeCAD.Vector(pt1.x, pt1.y-t1, pt1.z)))
+            pts1.append(m1.multiply(FreeCAD.Vector(pt1.x, pt1.y-t1*fac, pt1.z)))
             pt2 = Part.Edge(c[1]).valueAt(t2)
             m2 = self.birail.Proxy.matrix2At(t2)
-            pts2.append(m2.multiply(FreeCAD.Vector(pt2.x, pt2.y-t2, pt2.z)))
+            pts2.append(m2.multiply(FreeCAD.Vector(pt2.x, pt2.y-t2*fac, pt2.z)))
         return(pts1,pts2)
 
     def execute(self, obj):
@@ -100,9 +108,15 @@ class sweep2rails:
                 finalpts.append((pts1[i]+pts2[i]).multiply(0.5))
         elif obj.Blending == "Blend":
             for i in range(len(pts1)):
-                finalpts.append((pts1[i]+pts2[i]).multiply(0.5))
+                f = 1.0*(i/obj.RailSamples)/obj.ProfileSamples
+                finalpts.append(pts1[i].multiply(1.0-f)+pts2[i].multiply(f))
         v = [Part.Vertex(p) for p in finalpts]
         c = Part.Compound(v) #+interpo1+interpo2)
+        if DEBUG:
+            dc1 = Part.Compound(interpo1)
+            dc2 = Part.Compound(interpo2)
+            Part.show(dc1)
+            Part.show(dc2)
         obj.Shape = c
                 
 

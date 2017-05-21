@@ -64,27 +64,30 @@ class birail:
         else:
             return((self.rail1.derivative1At(p), self.rail2.derivative1At(p)))
     def normalsAt(self, p):
+        n1 = self.ruled.normalAt(p,0).negative()
+        n2 = self.ruled.normalAt(p,1).negative()
         if self.normNor:
-            return((self.ruled.normalAt(p,0).normalize(), self.ruled.normalAt(p,1).normalize()))
-        else:
-            return((self.ruled.normalAt(p,0), self.ruled.normalAt(p,1)))
-    def binormalAt(self, p):
+            n1.normalize()
+            n2.normalize()
+        return((n1, n2))
+    def binormalsAt(self, p):
         # TODO check for 0-length vector
         v1 = self.rail1.valueAt(p)
         v2 = self.rail2.valueAt(p)
         v = v2.sub(v1)
         if self.normBin:
-            return(v.normalize())
-        else:
-            return(v)
+            v.normalize()
+        return((v, v.negative()))
     def frame1At(self, p):
         t = self.tangentsAt(p)[0]
-        b = self.binormalAt(p)
-        return((b, t, self.ruled.normalAt(p,0)))
+        b = self.binormalsAt(p)[0]
+        n = self.normalsAt(p)[0]
+        return((b, t, n))
     def frame2At(self, p):
         t = self.tangentsAt(p)[1]
-        b = self.binormalAt(p)
-        return((b, t, self.ruled.normalAt(p,1)))
+        b = self.binormalsAt(p)[1]
+        n = self.normalsAt(p)[1]
+        return((b, t, n))
     def matrix1At(self, p):
         t = self.rail1.valueAt(p)
         u,v,w = self.frame1At(p)
