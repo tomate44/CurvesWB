@@ -1,7 +1,14 @@
+import math
+import os
+import dummy
 import FreeCAD
 import FreeCADGui
-import math
+import Part
 from pivy import coin
+
+path_curvesWB = os.path.dirname(dummy.__file__)
+path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
+
 
 class birail:
     def __init__(self, obj):
@@ -10,12 +17,12 @@ class birail:
         obj.addProperty("App::PropertyLinkSub",  "Edge2",   "Base",   "Edge2")
         obj.addProperty("App::PropertyBool",  "Untwist",   "Base",   "Untwist surface" ).Untwist = False
         obj.addProperty("App::PropertyBool",  "NormalizeTangent",   "Normalize",   "Normalize tangent" ).NormalizeTangent = False
-        obj.addProperty("App::PropertyBool",  "NormalizeNormal",    "Normalize",   "Normalize normal"  ).NormalizeNormal = False
+        obj.addProperty("App::PropertyBool",  "NormalizeNormal",    "Normalize",   "Normalize normal"  ).NormalizeNormal = True
         obj.addProperty("App::PropertyBool",  "NormalizeBinormal",  "Normalize",   "Normalize binormal").NormalizeBinormal = False
         self.edge1 = None
         self.edge2 = None
         self.normTan = False
-        self.normNor = False
+        self.normNor = True
         self.normBin = False
 
     def execute(self, obj):
@@ -110,8 +117,8 @@ class birailVP:
     def __init__(self, obj):
         obj.Proxy = self
         
-    #def getIcon(self):
-        #return (path_curvesWB_icons+'/isocurve.svg')
+    def getIcon(self):
+        return (path_curvesWB_icons+'/birail.svg')
 
     def attach(self, vobj):
         self.ViewObject = vobj
@@ -130,7 +137,8 @@ class birailVP:
         return None
 
     def claimChildren(self):
-        return([self.Object.Edge1[0], self.Object.Edge2[0]])
+        #return([self.Object.Edge1[0], self.Object.Edge2[0]])
+        return()
         
     def onDelete(self, feature, subelements): # subelements is a tuple of strings
         try:
@@ -140,38 +148,37 @@ class birailVP:
             App.Console.PrintError("Error in onDelete: " + err.message)
         return True
 
-def parseSel(selectionObject):
-    res = []
-    for obj in selectionObject:
-        if obj.HasSubObjects:
-            subobj = obj.SubObjects[0]
-            if issubclass(type(subobj),Part.Edge):
-                res.append((obj.Object,[obj.SubElementNames[0]]))
-        else:
-            res.append((obj.Object,["Edge1"]))
-    return res
-
-myBirail = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Birail")
-birail(myBirail)
-birailVP(myBirail.ViewObject)
-
-s = FreeCADGui.Selection.getSelectionEx()
-myBirail.Edge1 = parseSel(s)[0]
-myBirail.Edge2 = parseSel(s)[1]
-myBirail.Edge1[0].ViewObject.Visibility = False
-myBirail.Edge2[0].ViewObject.Visibility = False
 
 
-#g=FreeCAD.ActiveDocument.addObject("App::DocumentObjectGroup","Groupe")
 
-#for m in mm:
-    #out = []
-    #for p in outpts:
-        #out.append(m.multiply(p))
-    #c = Part.Compound([Part.Vertex(pt) for pt in out])
-    #o = FreeCAD.ActiveDocument.addObject("Part::Feature","pro")
-    #o.Shape = c
-    #g.addObject(o)
+class birailcommand:
+    def parseSel(self, selectionObject):
+        res = []
+        for obj in selectionObject:
+            if obj.HasSubObjects:
+                for i,sobj in enumerate(obj.SubObjects):
+                    if issubclass(type(sobj),Part.Edge):
+                        res.append((obj.Object,[obj.SubElementNames[i]]))
+            else:
+                res.append((obj.Object,["Edge1"]))
+        return res
+
+    def Activated(self):
+        myBirail = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Birail")
+        birail(myBirail)
+        birailVP(myBirail.ViewObject)
+
+        s = FreeCADGui.Selection.getSelectionEx()
+        myBirail.Edge1 = self.parseSel(s)[0]
+        myBirail.Edge2 = self.parseSel(s)[1]
+        myBirail.Edge1[0].ViewObject.Visibility = False
+        myBirail.Edge2[0].ViewObject.Visibility = False
+        FreeCAD.ActiveDocument.recompute()
+            
+    def GetResources(self):
+        return {'Pixmap' : path_curvesWB_icons+'/birail.svg', 'MenuText': 'Birail', 'ToolTip': 'Birail object to use with Sweep on 2 rails tool'}
+
+FreeCADGui.addCommand('Birail', birailcommand())
 
 
 

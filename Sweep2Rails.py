@@ -24,8 +24,12 @@ class sweep2rails:
     def getProfPoints(self, obj, i):
         pts = []
         for p in self.profiles:
-            v0 = p.FirstParameter
-            v1 = p.LastParameter
+            if p.Orientation == "Forward":
+                v0 = p.FirstParameter
+                v1 = p.LastParameter
+            else:
+                v1 = p.FirstParameter
+                v0 = p.LastParameter
             pRange = v1-v0
             t = v0 + 1.0 * pRange * i / (obj.ProfileSamples-1)
             pts.append(p.valueAt(t))
@@ -109,7 +113,7 @@ class sweep2rails:
         elif obj.Blending == "Blend":
             for i in range(len(pts1)):
                 f = 1.0*(i/obj.RailSamples)/obj.ProfileSamples
-                finalpts.append(pts1[i].multiply(1.0-f)+pts2[i].multiply(f))
+                finalpts.append(pts1[i].multiply(f)+pts2[i].multiply(1.0-f))
         v = [Part.Vertex(p) for p in finalpts]
         c = Part.Compound(v) #+interpo1+interpo2)
         if DEBUG:
