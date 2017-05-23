@@ -98,7 +98,7 @@ class birail:
     def matrix1At(self, p):
         t = self.rail1.valueAt(p)
         u,v,w = self.frame1At(p)
-        m=App.Matrix( u.x,v.x,w.x,t.x,
+        m=FreeCAD.Matrix( u.x,v.x,w.x,t.x,
                       u.y,v.y,w.y,t.y,
                       u.z,v.z,w.z,t.z,
                       0.0,0.0,0.0,1.0)
@@ -106,7 +106,7 @@ class birail:
     def matrix2At(self, p):
         t = self.rail2.valueAt(p)
         u,v,w = self.frame2At(p)
-        m=App.Matrix( u.x,v.x,w.x,t.x,
+        m=FreeCAD.Matrix( u.x,v.x,w.x,t.x,
                       u.y,v.y,w.y,t.y,
                       u.z,v.z,w.z,t.z,
                       0.0,0.0,0.0,1.0)

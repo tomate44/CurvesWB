@@ -3,6 +3,7 @@ import FreeCAD
 import FreeCADGui
 import math
 from pivy import coin
+from FreeCAD import App
 
 fac = 1.0
 DEBUG = False
