@@ -4,7 +4,7 @@ import math
 from pivy import coin
 
 fac = 1.0
-DEBUG = False
+DEBUG = True
 
 class sweep2rails:
     def __init__(self, obj):
@@ -23,7 +23,7 @@ class sweep2rails:
     def getProfPoints(self, obj, i):
         pts = []
         for p in self.profiles:
-            if p.Orientation == "Forward":
+            if True: #p.Orientation == "Forward":
                 v0 = p.FirstParameter
                 v1 = p.LastParameter
             else:
@@ -54,7 +54,7 @@ class sweep2rails:
         b[0] = True
         b[-1] = True
         c1 = Part.BSplineCurve()
-        FreeCAD.Console.PrintMessage('interpolate\n%s\n%s\n'%(pts[0],self.knots1))
+        #FreeCAD.Console.PrintMessage('interpolate\n%s\n%s\n'%(pts[0],self.knots1))
         #m = [1]*len(self.knots1)
         #m[0]  = 2
         #m[-1] = 2
@@ -154,11 +154,19 @@ class sweep2rails:
         if self.birail and self.profiles:
             self.knots1, self.knots2 = [],[]
             for pro in self.profiles:
-                sols1 = pro.distToShape(self.birail.Shape.Edges[0])[1][0]
-                sols2 = pro.distToShape(self.birail.Shape.Edges[2])[1][0]
-                FreeCAD.Console.PrintMessage("%s\n"%str(sols1))
+                dts1 = pro.distToShape(self.birail.Shape.Edges[0])
+                dts2 = pro.distToShape(self.birail.Shape.Edges[2])
+                FreeCAD.Console.PrintMessage('Profile :\n%s\n%s'%(str(dts1),str(dts2)))
+                sols1 = dts1[1][0]
+                sols2 = dts2[1][0]
+                #FreeCAD.Console.PrintMessage("%s\n"%str(sols1))
                 self.knots1.append(self.birail.Shape.Edges[0].Curve.parameter(sols1[1]))
                 self.knots2.append(self.birail.Shape.Edges[2].Curve.parameter(sols2[1]))
+            if self.knots1[-1] < self.knots1[0]:
+                self.knots1.reverse()
+                self.knots2.reverse()
+                self.profiles.reverse()
+
 
 class sweep2railsVP:
     def __init__(self, obj):
@@ -217,6 +225,8 @@ myS2R.Profiles = parseSel(s)[1]
 myS2R.Birail.ViewObject.Visibility = False
 for p in myS2R.Profiles:
     p.ViewObject.Visibility = False
+
+FreeCAD.ActiveDocument.recompute()
 
 
 #g=FreeCAD.ActiveDocument.addObject("App::DocumentObjectGroup","Groupe")
