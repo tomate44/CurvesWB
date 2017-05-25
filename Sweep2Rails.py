@@ -4,7 +4,7 @@ import math
 from pivy import coin
 
 fac = 1.0
-DEBUG = True
+DEBUG = False
 
 class sweep2rails:
     def __init__(self, obj):
@@ -86,6 +86,9 @@ class sweep2rails:
         return(pts1,pts2)
 
     def execute(self, obj):
+        self.birail = obj.Birail
+        self.setProfiles(obj.Profiles)
+        self.setParams()
         pts1 = []
         pts2 = []
         interpo1 = []
@@ -226,6 +229,7 @@ myS2R.Birail.ViewObject.Visibility = False
 for p in myS2R.Profiles:
     p.ViewObject.Visibility = False
 
+myS2R.ViewObject.PointSize = 2.00000
 FreeCAD.ActiveDocument.recompute()
 
 

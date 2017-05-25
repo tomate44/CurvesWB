@@ -24,24 +24,32 @@ class trimFace:
         debug("\ntrimFace init")
         obj.addProperty("App::PropertyLinkSub",    "Face",          "TrimFace",   "Input face")
         obj.addProperty("App::PropertyVector",     "PickedPoint",   "TrimFace",   "Picked point")
-        obj.addProperty("App::PropertyLinkSub",    "Tool",          "TrimFace",   "Trimming curve")
+        obj.addProperty("App::PropertyLinkSubList","Tool",          "TrimFace",   "Trimming curve")
         obj.addProperty("App::PropertyLink",       "DirVector",     "TrimFace",   "Trimming Vector")
         obj.addProperty("App::PropertyVector",     "Direction",     "TrimFace",   "Trimming direction")
         obj.Proxy = self
 
-    def getShape( self, link):
+    def getFace( self, link):
         o = link[0]
         shapelist = link[1]
         for s in shapelist:
-            if 'Edge' in s:
-                n = eval(s.lstrip('Edge'))
-                debug("Edge %d"%n)
-                return(o.Shape.Edges[n-1])
-            elif 'Face' in s:
+            if 'Face' in s:
                 n = eval(s.lstrip('Face'))
                 debug("Face %d"%n)
                 return(o.Shape.Faces[n-1])
         return(None)
+
+    def getEdges( self, link):
+        res = []
+        for l in link:
+            o = l[0]
+            shapelist = l[1]
+            for s in shapelist:
+                if 'Edge' in s:
+                    n = eval(s.lstrip('Edge'))
+                    debug("Edge %d"%n)
+                    res.append(o.Shape.Edges[n-1])
+        return(res)
 
     def getVector( self, obj):
         if hasattr(obj,"DirVector"):
@@ -78,13 +86,19 @@ class trimFace:
         v = self.getVector(obj)
         v.normalize().multiply(scale)
         debug("Vector : %s"%str(v))
-        edge = self.getShape(obj.Tool)
-        edge.translate(v)
-        cuttool = edge.extrude(v.multiply(-2))
+        try:
+            edges = [Part.Wire(self.getEdges(obj.Tool))]
+            debug("Wire upgrade success")
+        except:
+            edges = self.getEdges(obj.Tool)
+        cuttool = []
+        for edge in edges:
+            edge.translate(v)
+            cuttool.append(edge.extrude(v.multiply(-2)))
         #Part.show(cuttool)
-        face = self.getShape(obj.Face)
+        face = self.getFace(obj.Face)
         #return
-        bf = BOPTools.SplitAPI.slice(face, [cuttool], "Split", 1e-6)
+        bf = BOPTools.SplitAPI.slice(face, cuttool, "Split", 1e-6)
         debug("shape has %d faces"%len(bf.Faces))
         vert = Part.Vertex(obj.PickedPoint)
         min = 1e6
@@ -179,16 +193,16 @@ class trim:
         return(None,selectionObject)
 
     def findCurve(self, selectionObject):
-        res = selectionObject[:]
-        i = 0
+        res = []
         for obj in selectionObject:
             if obj.HasSubObjects:
+                i = 0
                 for subobj in obj.SubObjects:
                     if issubclass(type(subobj),Part.Edge):
-                        res.pop(i)
-                        return((obj.Object,obj.SubElementNames[i]),res)
-            i += 1
-        return(None,selectionObject)
+                        #res.pop(i)
+                        res.append((obj.Object,obj.SubElementNames[i]))
+                    i += 1
+        return(res,selectionObject)
 
     def findFaces(self, selectionObject):
         res = []
@@ -214,7 +228,7 @@ class trim:
                 obj.Face[0].ViewObject.Visibility=False
                 obj.PickedPoint = f[1]
                 obj.Tool = trimmingCurve
-                obj.Tool[0].ViewObject.Visibility=False
+                #obj.Tool[0].ViewObject.Visibility=False
                 if vector:
                     obj.DirVector = vector
                     obj.DirVector.ViewObject.Visibility=False

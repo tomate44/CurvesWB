@@ -83,13 +83,20 @@ class makeSpline:
             knotPoints.append((p.x,p.y,p.z))
         obj.KnotPoints = knotPoints
 
+    def checkCurve(self, obj):
+        try:
+            c = self.curve
+        except:
+            self.curve = obj.Shape.Curve
+
     def execute(self, obj):
         debug("\n* Spline : execute *\n")
+        self.checkCurve(obj)
         obj.CurvePts = self.curve.discretize(100)
         obj.Shape = self.curve.toShape()
 
     def onChanged(self, fp, prop):
-
+        self.checkCurve(fp)
         if (prop == "Degree"):
             if fp.Degree > int(self.curve.Degree):
                 if isinstance(self.curve,Part.BezierCurve):
