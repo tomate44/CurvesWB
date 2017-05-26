@@ -12,12 +12,12 @@ This workbench can be installed with FreeCAD's addon manager (name : "Curves")
 
   OR
 
-go in your personal FreeCAD folder ( usually ~/.FreeCAD on Linux )
-cd ./Mod ( or create this folder if it doesn't exist )
-git clone https://github.com/tomate44/CurvesWB
-start FreeCAD
-if you're lucky, you should see a "Curves" workbench in the workbench dropdown list.
+- go in your personal FreeCAD folder ( usually ~/.FreeCAD on Linux )
+- cd ./Mod ( or create this folder if it doesn't exist )
+- git clone https://github.com/tomate44/CurvesWB
+- start FreeCAD
 
+if you're lucky, you should see a "Curves" workbench in the workbench dropdown list.
 
 Available tools :
 
