@@ -6,10 +6,12 @@ This is a python workbench, with a collection of tools for Nurbs curves and surf
 I am a very bad programer, and this workbench is full of dirty, crappy code ;-)
 Please don't use these tools for any serious work.
 
+This workbench is developped with FreeCAD Master ( currently 0.17 ) and OCC 7.1. 
+Some tools may not work with earlier versions.
+
 How to install :
 
-For FreeCAD version 0.17 or higher:
-This workbench can be installed with FreeCAD's addon manager (name : "Curves")
+For FreeCAD version 0.17 or higher, this workbench can be installed with FreeCAD's addon manager (name : "Curves")
 
   OR
 
