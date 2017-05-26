@@ -8,6 +8,7 @@ Please don't use these tools for any serious work.
 
 How to install :
 
+For FreeCAD version 0.17 or higher:
 This workbench can be installed with FreeCAD's addon manager (name : "Curves")
 
   OR
