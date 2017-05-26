@@ -305,6 +305,7 @@ class GeomInfo:
             debug("GeomInfo off")
             self.removeHUD()
             self.Active = False
+            FreeCADGui.Selection.removeObserver(self)
 
     def addHUD(self):
         self.activeDoc = FreeCADGui.ActiveDocument
