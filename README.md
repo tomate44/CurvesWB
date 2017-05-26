@@ -13,7 +13,7 @@ This workbench can also be installed with FreeCAD's addon manager (name : "Curve
 
 Available tools :
 
-![Create a B-Spline curve](https://github.com/tomate44/CurvesWB/blob/master/Resources/icons/bezier.svg?raw=false)   
+![Create a B-Spline curve](https://github.com/tomate44/CurvesWB/blob/master/Resources/icons/bezier.svg?raw=true)   
 - Blend Curve : creates a parametric blend curve between 2 input edges, with G2 continuity
 - Comb Plot : creates a parametric comb plot for input edges, to visualize edge curvature
 - Zebra Tool : creates zebra stripes environment texture for surface inspection
