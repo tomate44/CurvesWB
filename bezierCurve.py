@@ -16,7 +16,7 @@ class bezierCurve:
         self.oldRadius = self.viewer.getPickRadius()
         self.viewer.setPickRadius(25.0)
         
-        self.obj = FreeCAD.ActiveDocument.addObject("Part::Spline","BezierCurve")
+        self.obj = FreeCAD.ActiveDocument.addObject("Part::Spline","BSplineCurve")
 
         self.stack = [FreeCAD.Vector(0,0,0)]
         self.markerPos = None
