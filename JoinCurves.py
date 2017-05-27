@@ -7,9 +7,6 @@ path_curvesWB = os.path.dirname(dummy.__file__)
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 
 DEBUG = 1
-Tol = 0.001
-BreakOnBadTangents = True
-BreakOnBadContinuity = True
 
 def debug(string):
     if DEBUG:
@@ -24,7 +21,7 @@ def increaseContinuity(c,tol):
         rk = c.removeKnot(i+1,mults[i]-1,tol)
     return(c.Continuity)    
 
-def alignedTangents(c0,c1):
+def alignedTangents(c0, c1, Tol):
     t0 = c0.tangent(c0.LastParameter)[0]
     t1 = c1.tangent(c1.FirstParameter)[0]
     t0.normalize()
@@ -40,14 +37,26 @@ def alignedTangents(c0,c1):
 
 class join:
     "joins the selected edges into a single BSpline Curve"
-    def Activated(self):
-        edges = []
-        sel = FreeCADGui.Selection.getSelectionEx()
-        for selobj in sel:
-            if selobj.HasSubObjects:                
-                edges += selobj.SubObjects
-            else:
-                edges += selobj.Object.Shape.Edges
+    def __init__(self, obj):
+        ''' Add the properties '''
+        obj.addProperty("App::PropertyLinkSubList",  "Edges",        "Join",   "Edges")
+        obj.addProperty("App::PropertyFloat",        "Tolerance",    "Join",   "Tolerance").Tolerance=0.001
+        obj.addProperty("App::PropertyBool",         "CornerBreak",  "Join",   "Break on corners").CornerBreak = False
+        #obj.addProperty("App::PropertyBool",         "BadContinuity","Join",   "Break On Bad C0 Continuity").BadContinuity = False
+        obj.Proxy = self
+
+    def getEdges(self, obj):
+        res = []
+        if hasattr(obj, "Edges"):
+            for l in obj.Edges:
+                o = l[0]
+                for ss in l[1]:
+                    n = eval(ss.lstrip('Edge'))
+                    res.append(o.Shape.Edges[n-1])
+        return(res)
+
+    def execute(self, obj):
+        edges = self.getEdges(obj)
         curves = []
         for e in edges:
             c = e.Curve
@@ -56,8 +65,6 @@ class join:
             c.segment(e.FirstParameter,e.LastParameter)
             curves.append(c)
 
-        #print(curves)
-        #success = True
         c0 = curves[0].copy()
         if not isinstance(c0,Part.BSplineCurve):
             #FreeCAD.Console.PrintMessage("\nConverting c0 to BSplineCurve\n")
@@ -66,8 +73,8 @@ class join:
         for c in curves[1:]:
             i = False
             tempCurve = c0.copy()
-            tan = alignedTangents(c0,c)
-            if (tan is False) & BreakOnBadTangents:
+            tan = alignedTangents(c0,c,obj.Tolerance)
+            if (tan is False) & obj.CornerBreak:
                 outcurves.append(c0)
                 c0 = c.copy()
                 debug("No tangency on edge #"+str(curves[1:].index(c)+2)+"\n")
@@ -78,26 +85,55 @@ class join:
                     c0 = c.copy()
                     debug("Failed to join edge #"+str(curves[1:].index(c)+2)+"\n")
                 else:
-                    i = increaseContinuity(c0,Tol)
-                    if (not (i == 'C1')) & BreakOnBadContinuity:
+                    i = increaseContinuity(c0,obj.Tolerance)
+                    if (not (i == 'C1')) & obj.CornerBreak:
                         outcurves.append(tempCurve)
                         c0 = c.copy()
                         debug("Failed to smooth edge #"+str(curves[1:].index(c)+2)+"\n")
-            #success = False
-            #FreeCAD.Console.PrintMessage("Failed to join edge #"+str(curves[1:].index(c)+2)+"\n")
+
         outcurves.append(c0)
-            #c0 = c.copy()
-        if 1:
-            #increaseContinuity(c0,1e-3)
-            obj = FreeCAD.ActiveDocument.addObject("Part::Spline","Spline")
-            outEdges = [Part.Edge(c) for c in outcurves]
-            obj.Shape = Part.Wire(outEdges)
-            for selobj in sel:
-                if selobj.Object:                
-                    selobj.Object.ViewObject.Visibility = False
-        else:
-            FreeCAD.Console.PrintMessage("Join operation failed !\n")
+
+        outEdges = [Part.Edge(c) for c in outcurves]
+        obj.Shape = Part.Wire(outEdges)
+        #for selobj in sel:
+            #if selobj.Object:                
+                #selobj.Object.ViewObject.Visibility = False
+
+
+
+class joinCommand:
+    "joins the selected edges into a single BSpline Curve"
+    def Activated(self):
+        edges = []
+        sel = FreeCADGui.Selection.getSelectionEx()
+        if sel == []:
+            FreeCAD.Console.PrintError("Select the edges to join first !\n")
+        for selobj in sel:
+            if selobj.HasSubObjects:
+                for i in range(len(selobj.SubObjects)):
+                    if isinstance(selobj.SubObjects[i], Part.Edge):
+                        edges.append((selobj.Object, selobj.SubElementNames[i]))
+            else:
+                for i in range(len(selobj.Object.Shape.Edges)):
+                    name = "Edge%d"%(i+1)
+                    edges.append((selobj.Object, name))
+        
+        joinCurve = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","JoinCurve")
+        join(joinCurve)
+        joinCurve.ViewObject.Proxy=0
+        joinCurve.Edges = edges
+        FreeCAD.ActiveDocument.recompute()
+        
+        
+        #curves = []
+        #for e in edges:
+            #c = e.Curve
+            #if not isinstance(c,Part.BSplineCurve):
+                #c = e.Curve.toBSpline()
+            #c.segment(e.FirstParameter,e.LastParameter)
+            #curves.append(c)
 
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/joincurve.svg', 'MenuText': 'Join Curves', 'ToolTip': 'Joins the selected edges into a single BSpline Curve'}
-FreeCADGui.addCommand('join', join())
+        return {'Pixmap' : path_curvesWB_icons+'/joincurve.svg', 'MenuText': 'Join Curves', 'ToolTip': 'Joins the selected edges into BSpline Curves'}
+
+FreeCADGui.addCommand('join', joinCommand())
