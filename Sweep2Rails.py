@@ -14,9 +14,9 @@ class sweep2rails:
         obj.addProperty("App::PropertyEnumeration","Blending",      "Base",   "Blending method").Blending = ["Average","Blend","Rail1","Rail2"]
         obj.addProperty("App::PropertyInteger",    "ProfileSamples","Base",   "Profile Samples")
         obj.addProperty("App::PropertyInteger",    "RailSamples",   "Base",   "Profile Samples")
-        obj.Blending = "Average"
+        obj.Blending = "Blend"
         obj.ProfileSamples = 20
-        obj.RailSamples = 20
+        obj.RailSamples = 40
         self.birail = None
         self.profiles = None
 
@@ -159,7 +159,7 @@ class sweep2rails:
             for pro in self.profiles:
                 dts1 = pro.distToShape(self.birail.Shape.Edges[0])
                 dts2 = pro.distToShape(self.birail.Shape.Edges[2])
-                FreeCAD.Console.PrintMessage('Profile :\n%s\n%s'%(str(dts1),str(dts2)))
+                FreeCAD.Console.PrintMessage('\nProfile :\n%s\n%s'%(str(dts1),str(dts2)))
                 sols1 = dts1[1][0]
                 sols2 = dts2[1][0]
                 #FreeCAD.Console.PrintMessage("%s\n"%str(sols1))

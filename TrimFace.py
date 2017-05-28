@@ -208,9 +208,13 @@ class trim:
         res = []
         for obj in selectionObject:
             if obj.HasSubObjects:
-                f = (obj.Object ,[obj.SubElementNames[0]])
-                p = obj.PickedPoints[0]
-                res.append((f,p))
+                i = 0
+                for subobj in obj.SubObjects:
+                    if issubclass(type(subobj),Part.Face):
+                        f = (obj.Object ,[obj.SubElementNames[i]])
+                        p = obj.PickedPoints[i]
+                        res.append((f,p))
+                    i += 1
         return(res)
 
     def Activated(self):
