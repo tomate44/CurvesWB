@@ -1,7 +1,11 @@
-import FreeCAD
-import FreeCADGui
-import math
-from pivy import coin
+from __future__ import division # allows floating point division from integers
+import FreeCAD, Part, math
+import os, dummy, FreeCADGui
+from FreeCAD import Base
+
+
+path_curvesWB = os.path.dirname(dummy.__file__)
+path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 
 fac = 1.0
 DEBUG = False
@@ -208,41 +212,39 @@ class sweep2railsVP:
             App.Console.PrintError("Error in onDelete: " + err.message)
         return True
 
-def parseSel(selectionObject):
-    birail = None
-    profs = []
-    for obj in selectionObject:
-        if hasattr(obj,"NormalizeBinormal"): #if isinstance(obj.Proxy, birail):
-            birail = obj
-        else:
-            profs.append(obj)
-    return((birail,profs))
+class s2rCommand:
+    def parseSel(self, selectionObject):
+        birail = None
+        profs = []
+        for obj in selectionObject:
+            if hasattr(obj,"NormalizeBinormal"): #if isinstance(obj.Proxy, birail):
+                birail = obj
+            else:
+                profs.append(obj)
+        return((birail,profs))
 
-myS2R = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Sweep 2 rails")
-sweep2rails(myS2R)
-sweep2railsVP(myS2R.ViewObject)
+    def Activated(self):
+        myS2R = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Sweep 2 rails")
+        sweep2rails(myS2R)
+        sweep2railsVP(myS2R.ViewObject)
 
-s = FreeCADGui.Selection.getSelection()
-myS2R.Birail   = parseSel(s)[0]
-myS2R.Profiles = parseSel(s)[1]
-myS2R.Birail.ViewObject.Visibility = False
-for p in myS2R.Profiles:
-    p.ViewObject.Visibility = False
+        s = FreeCADGui.Selection.getSelection()
+        myS2R.Birail   = self.parseSel(s)[0]
+        myS2R.Profiles = self.parseSel(s)[1]
+        myS2R.Birail.ViewObject.Visibility = False
+        for p in myS2R.Profiles:
+            p.ViewObject.Visibility = False
 
-myS2R.ViewObject.PointSize = 2.00000
-FreeCAD.ActiveDocument.recompute()
+        myS2R.ViewObject.PointSize = 2.00000
+        FreeCAD.ActiveDocument.recompute()
 
 
-#g=FreeCAD.ActiveDocument.addObject("App::DocumentObjectGroup","Groupe")
+    def GetResources(self):
+        return {'Pixmap' : path_curvesWB_icons+'/sw2r.svg', 'MenuText': 'Sweep2Rails', 'ToolTip': 'Sweep profiles on 2 rails'}
 
-#for m in mm:
-    #out = []
-    #for p in outpts:
-        #out.append(m.multiply(p))
-    #c = Part.Compound([Part.Vertex(pt) for pt in out])
-    #o = FreeCAD.ActiveDocument.addObject("Part::Feature","pro")
-    #o.Shape = c
-    #g.addObject(o)
+FreeCADGui.addCommand('sw2r', s2rCommand())
+
+
 
 
 

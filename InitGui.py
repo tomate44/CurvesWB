@@ -25,15 +25,16 @@ class CurvesWorkbench (Workbench):
         import ExtractShapes
         import IsoCurve
         import Sketch_On_Surface
-        import Sw2R
+        #import Sw2R
         import PlateSurface
         import Birail
+        import Sweep2Rails
 
-        stablelist = ["bezierCurve","editableSpline","join","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","Trim","GeomInfo","extract","IsoCurve","SoS","Birail"]
-        devellist = ["Vector","sw2r","Plate"]
+        stablelist = ["bezierCurve","editableSpline","join","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","Trim","GeomInfo","extract","IsoCurve","SoS","Birail","sw2r"]
+        #devellist = ["Vector","Plate"]
         #FreeCADGui.addIconPath( ':/CurvesWB/icons' )
         self.appendToolbar("Curves",stablelist)
-        self.appendToolbar("Devel",devellist)
+        #self.appendToolbar("Devel",devellist)
 
     def Activated(self):
         "This function is executed when the workbench is activated"

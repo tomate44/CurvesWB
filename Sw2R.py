@@ -187,4 +187,4 @@ class sweep2R:
     def GetResources(self):
         return {'Pixmap' : path_curvesWB_icons+'/sw2r.svg', 'MenuText': 'Sweep 2 rails', 'ToolTip': 'Sweep profiles on 2 rails'}
 
-FreeCADGui.addCommand('sw2r', sweep2R())
+FreeCADGui.addCommand('sw2r2', sweep2R())
