@@ -12,26 +12,92 @@ DEBUG = False
 EXTEND = True
 
 class SweepOn2Rails:
+    
     def __init__(self):
         self.rail1 = None
         self.rail2 = None
         self.profiles = []
         self.extend = False
-    def setRails(self, r1, r2):
+        self.profileSamples = 20
+        self.railSamples = 40
+        
+    def setRails(self, ruledSurf):
         # TODO: Check for twisted Ruled Surface
-        self.ruled = Part.makeRuledSurface(r1, r2)
-        self.rail1 = self.ruled.Edges[0]
-        self.rail2 = self.ruled.Edges[2]
+        #self.ruled = Part.makeRuledSurface(r1, r2)
+        self.rail1 = ruledSurf.Edges[0]
+        self.rail2 = ruledSurf.Edges[2]
+        
     def setProfiles(self, proflist):
         if len(proflist) == 1:
             self.extend = True
-        self.profiles = 
+        self.sortProfiles(proflist)
+        
+    def sortProfiles(self, plist):
+        data = []
+        self.knots1, self.knots2 = [],[]
+        for pro in plist:
+            dts1 = pro.distToShape(self.rail1)
+            dts2 = pro.distToShape(self.rail2)
+            FreeCAD.Console.PrintMessage('\nProfile :\n%s\n%s\n'%(str(dts1),str(dts2)))
+            sols1 = dts1[1][0]
+            sols2 = dts2[1][0]
+            #FreeCAD.Console.PrintMessage("%s\n"%str(sols1))
+            k1 = self.rail1.Curve.parameter(sols1[1])
+            k2 = self.rail2.Curve.parameter(sols2[1])
+            data.append((k1,k2,pro))
+        sortedProfs = sorted(data,key=itemgetter(0))
+        self.profiles = []
+        for datum in sortedProfs:
+            self.knots1.append(datum[0])
+            self.knots2.append(datum[1])
+            self.profiles.append(datum[2])
+        FreeCAD.Console.PrintMessage('\nProfiles sorted\n')
+            
     def railsInfo(self):
+        FreeCAD.Console.PrintMessage('\nInfo Rail 1\n')
+        FreeCAD.Console.PrintMessage('knots : %s\n'%(str(self.knots1)))
+        FreeCAD.Console.PrintMessage('\nInfo Rail 2\n')
+        FreeCAD.Console.PrintMessage('knots : %s\n'%(str(self.knots2)))
         
     def profilesInfo(self):
-        
+        pass
     
-
+    def build(self):
+        pts1 = []
+        pts2 = []
+        interpo1 = []
+        interpo2 = []
+        #self.pointArray = []
+        for ri in range(self.profileSamples):
+            pts = self.getProfPoints(obj, ri)
+            localpts = self.localCoords(pts)
+            interpoCurves = self.interpolate(localpts)
+            interpo1.append(Part.Edge(interpoCurves[0]))
+            interpo2.append(Part.Edge(interpoCurves[1]))
+            dis = self.discretize(obj, interpoCurves)
+            #worldpts = self.worldCoords(pts)
+            pts1 += dis[0] #pts1.append(dis[0])
+            pts2 += dis[1] #pts2.append(dis[1])
+        finalpts = []
+        if   obj.Blending == "Rail1":
+            finalpts = pts1
+        elif obj.Blending == "Rail2":
+            finalpts = pts2
+        elif obj.Blending == "Average":
+            for i in range(len(pts1)):
+                finalpts.append((pts1[i]+pts2[i]).multiply(0.5))
+        elif obj.Blending == "Blend":
+            for i in range(len(pts1)):
+                f = 1.0*(i/obj.RailSamples)/obj.ProfileSamples
+                finalpts.append(pts1[i].multiply(f)+pts2[i].multiply(1.0-f))
+        v = [Part.Vertex(p) for p in finalpts]
+        c = Part.Compound(v) #+interpo1+interpo2)
+        if DEBUG:
+            dc1 = Part.Compound(interpo1)
+            dc2 = Part.Compound(interpo2)
+            Part.show(dc1)
+            Part.show(dc2)
+        obj.Shape = c
 
 
 
