@@ -266,8 +266,8 @@ class GeomInfo:
             self.trans.translation = (-0.98,0.90,0)
 
             self.myFont = coin.SoFont()
-            self.myFont.name = "osiFont,FreeSans,sans"
-            self.myFont.size.setValue(16.0)
+            self.myFont.name = "FreeMono,FreeSans,sans"
+            self.myFont.size.setValue(14.0)
             #self.trans = coin.SoTranslation()
             self.SoText2  = coin.SoText2()
             #self.trans.translation.setValue(.25,.0,1.25)
@@ -364,9 +364,9 @@ class GeomInfo:
         ret = []
         ret.append(beautify(str(surf)))
         try:
-            ret.append("Degree : " + str(surf.UDegree) + " x " + str(surf.VDegree))
-            ret.append("Poles  : " + str(surf.NbUPoles) + " x " + str(surf.NbVPoles))
-            ret.append("Continuity : " + surf.Continuity)
+            ret.append("Degree : %d x %d"%(surf.UDegree, surf.VDegree))
+            ret.append("Poles  : %d x %d (%d)"%(surf.NbUPoles, surf.NbVPoles, surf.NbUPoles * surf.NbVPoles))
+            ret.append("Continuity : %s"%surf.Continuity)
             funct = [(surf.isURational,"U Rational"),
                     (surf.isVRational, "V Rational"),
                     (surf.isUPeriodic, "U Periodic"),
