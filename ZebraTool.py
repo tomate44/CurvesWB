@@ -44,13 +44,13 @@ class zebra(QtGui.QWidget):
         #self.zebraWidget.show()
 
     def coinSetUp(self):
-        print "coinSetUp"
+        #print "coinSetUp"
         self.TexW = 10
         self.TexH = 100
 
         self.sg = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
-        print str( FreeCADGui.ActiveDocument.Document.Label )
-        print str( self.sg )
+        #print str( FreeCADGui.ActiveDocument.Document.Label )
+        #print str( self.sg )
         
 
         self.stripes = coin.SoTexture2()
@@ -77,13 +77,13 @@ class zebra(QtGui.QWidget):
         self.sg.insertChild(self.tc,2)
 
     def coinQuit(self):
-        print "coinQuit"
+        #print "coinQuit"
         self.sg.removeChild(self.tc)
         self.sg.removeChild(self.transTexture)
         self.sg.removeChild(self.stripes)
 
     def changeSlide_1(self, value):
-        print "Stripes width : "+str(value)
+        #print "Stripes width : "+str(value)
         self.StripeWidth = value
         self.string = '\xff' * 50 + '\x00' * self.StripeWidth
         self.chars = self.string * self.TexW * self.TexH
@@ -92,7 +92,7 @@ class zebra(QtGui.QWidget):
         self.stripes.image = self.img
 
     def changeSlide_2(self, value):
-        print "scale : "+str(value)
+        #print "scale : "+str(value)
         self.Scale = value
         if self.Scale < 20 :
             scale = 1. * self.Scale / 20
@@ -101,12 +101,12 @@ class zebra(QtGui.QWidget):
         self.transTexture.scaleFactor.setValue(scale, scale)
 
     def changeSlide_3(self, value):
-        print "Rotation : "+str(value)
+        #print "Rotation : "+str(value)
         self.Rotation = value
         self.transTexture.rotation.setValue(1. * self.Rotation / 100)
 
     def quit(self):
-        print "Quit ..."
+        #print "Quit ..."
         self.coinQuit()
         self.close() #zebraWidget.close()
         self.comboview.removeTab(self.tabIndex)
@@ -148,7 +148,7 @@ class ZebraTool:
             self.tab2.show()
             ZebraTool.active = True
         else:
-            FreeCAD.Console.PrintMessage("Tool already active\n")
+            FreeCAD.Console.PrintMessage("Zebra already active\n")
         
 
 

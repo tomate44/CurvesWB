@@ -41,7 +41,7 @@ path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 #it conflicts with other parameters ( especially DegMax ).    parametrization
 
 
-DEBUG = 1
+DEBUG = 0
 
 def debug(string):
     if DEBUG:
@@ -53,19 +53,19 @@ class Approximate:
     def __init__(self, obj , source):
         ''' Add the properties '''
         debug("\nApproximate class Init\n")
-        obj.addProperty("App::PropertyLink",         "PointObject",  "Approximate", "Object containing the points to approximate").PointObject = source
-        obj.addProperty("App::PropertyBool",         "ClampEnds",    "General",     "Clamp endpoints").ClampEnds = False
-        obj.addProperty("App::PropertyInteger",      "DegreeMin",    "General",     "Minimum degree of the curve").DegreeMin = 3
-        obj.addProperty("App::PropertyInteger",      "DegreeMax",    "General",     "Maximum degree of the curve").DegreeMax = 8
-        obj.addProperty("App::PropertyFloat",        "ApproxTolerance",    "General",     "Approximation tolerance").ApproxTolerance = 0.05
-        obj.addProperty("App::PropertyEnumeration",  "Continuity",   "General",     "Desired continuity of the curve").Continuity=["C0","C1","G1","C2","G2","C3","CN"]
-        obj.addProperty("App::PropertyEnumeration",  "Method",       "General",     "Approximation method").Method=["Parametrization","Smoothing Algorithm"]
-        obj.addProperty("App::PropertyEnumeration",  "Parametrization", "Parameters", "Parametrization type").Parametrization=["ChordLength","Centripetal","Uniform"]
-        obj.addProperty("App::PropertyFloatConstraint",        "LengthWeight",    "Parameters",       "Weight of curve length for smoothing algorithm").LengthWeight=1.0
-        obj.addProperty("App::PropertyFloatConstraint",        "CurvatureWeight", "Parameters",       "Weight of curve curvature for smoothing algorithm").CurvatureWeight=1.0
-        obj.addProperty("App::PropertyFloatConstraint",        "TorsionWeight",   "Parameters",       "Weight of curve torsion for smoothing algorithm").TorsionWeight=1.0
-        obj.addProperty("App::PropertyInteger",      "FirstIndex",    "Range",   "Index of first point").FirstIndex = 0
-        obj.addProperty("App::PropertyInteger",      "LastIndex",     "Range",   "Index of last point")
+        obj.addProperty("App::PropertyLink",           "PointObject",    "Approximate","Object containing the points to approximate").PointObject = source
+        obj.addProperty("App::PropertyBool",           "ClampEnds",      "General",    "Clamp endpoints").ClampEnds = False
+        obj.addProperty("App::PropertyInteger",        "DegreeMin",      "General",    "Minimum degree of the curve").DegreeMin = 3
+        obj.addProperty("App::PropertyInteger",        "DegreeMax",      "General",    "Maximum degree of the curve").DegreeMax = 8
+        obj.addProperty("App::PropertyFloat",          "ApproxTolerance","General",    "Approximation tolerance").ApproxTolerance = 0.05
+        obj.addProperty("App::PropertyEnumeration",    "Continuity",     "General",    "Desired continuity of the curve").Continuity=["C0","C1","G1","C2","G2","C3","CN"]
+        obj.addProperty("App::PropertyEnumeration",    "Method",         "General",    "Approximation method").Method=["Parametrization","Smoothing Algorithm"]
+        obj.addProperty("App::PropertyEnumeration",    "Parametrization","Parameters", "Parametrization type").Parametrization=["ChordLength","Centripetal","Uniform"]
+        obj.addProperty("App::PropertyFloatConstraint","LengthWeight",   "Parameters", "Weight of curve length for smoothing algorithm").LengthWeight=1.0
+        obj.addProperty("App::PropertyFloatConstraint","CurvatureWeight","Parameters", "Weight of curve curvature for smoothing algorithm").CurvatureWeight=1.0
+        obj.addProperty("App::PropertyFloatConstraint","TorsionWeight",  "Parameters", "Weight of curve torsion for smoothing algorithm").TorsionWeight=1.0
+        obj.addProperty("App::PropertyInteger",        "FirstIndex",     "Range",      "Index of first point").FirstIndex = 0
+        obj.addProperty("App::PropertyInteger",        "LastIndex",      "Range",      "Index of last point")
         #obj.addProperty("App::PropertyVectorList",   "Points",    "Approximate",   "Points")
         #obj.addProperty("Part::PropertyPartShape",   "Shape",     "Approximate",   "Shape")
         obj.Proxy = self
@@ -242,6 +242,7 @@ class Approximate:
         if not "TorsionWeight" in self.obj.PropertiesList:
             self.obj.addProperty("App::PropertyFloatConstraint",        "TorsionWeight",   "Parameters",       "Weight of curve torsion for smoothing algorithm")
         self.obj.Method = state["Method"]
+        self.getPoints(self.obj)
         return None
 
 class ViewProviderApp:

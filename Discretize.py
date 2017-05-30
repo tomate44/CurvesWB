@@ -7,7 +7,7 @@ from pivy import coin
 path_curvesWB = os.path.dirname(dummy.__file__)
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 
-DEBUG = 1
+DEBUG = 0
 
 def debug(string):
     if DEBUG:
