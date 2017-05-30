@@ -11,9 +11,69 @@ fac = 1.0
 DEBUG = False
 EXTEND = True
 
+class profile:
+    
+    def __init__(self, curve):
+        self.realCurve = curve
+        self.localCurve1 = None
+        self.localCurve2 = None
+        self.Rail1Param = 0.0
+        self.Rail2Param = 0.0
+
+class birail:
+    
+    def __init__(self, ruledSurf):
+        self.ruled = ruledSurf
+        self.rails = (ruledSurf.Edges[0], ruledSurf.Edges[2])
+        self.normTan = False
+        self.normBin = False
+        self.normNor = True
+
+    def tangentAt(self, p, i):
+        if self.normTan:
+            return(self.rails[i].tangentAt(p))
+        else:
+            return(self.rails[i].derivative1At(p))
+        
+    def normalAt(self, p, i):
+        v = self.ruled.ParameterRange[2:]
+        n = self.ruled.normalAt(p,v[i]).negative()
+        if self.normNor:
+            n.normalize()
+        return(n)
+    
+    def binormalAt(self, p, i):
+        # TODO check for 0-length vector
+        v1 = self.rails[0].valueAt(p)
+        v2 = self.rails[1].valueAt(p)
+        v = v2.sub(v1)
+        if self.normBin:
+            v.normalize()
+        if i == 0:
+            return(v)
+        elif i == 1:
+            return(v.negative())
+
+    def frameAt(self, p, i):
+        t = self.tangentAt(p,i)
+        b = self.binormalAt(p,i)
+        n = self.normalAt(p,i)
+        return((b, t, n))
+
+    def matrixAt(self, p, i):
+        t = self.rails[i].valueAt(p)
+        u,v,w = self.frameAt(p,i)
+        m = FreeCAD.Matrix( u.x, v.x, w.x, t.x,
+                            u.y, v.y, w.y, t.y,
+                            u.z, v.z, w.z, t.z,
+                            0.0, 0.0, 0.0, 1.0)
+        return(m)
+    
+
 class SweepOn2Rails:
     
     def __init__(self):
+        self.birail = None
         self.rail1 = None
         self.rail2 = None
         self.profiles = []
@@ -24,35 +84,78 @@ class SweepOn2Rails:
     def setRails(self, ruledSurf):
         # TODO: Check for twisted Ruled Surface
         #self.ruled = Part.makeRuledSurface(r1, r2)
-        self.rail1 = ruledSurf.Edges[0]
-        self.rail2 = ruledSurf.Edges[2]
+        self.birail = birail(ruledSurf)
+        #self.rail1 = ruledSurf.Edges[0]
+        #self.rail2 = ruledSurf.Edges[2]
         
-    def setProfiles(self, proflist):
-        if len(proflist) == 1:
-            self.extend = True
-        self.sortProfiles(proflist)
-        
-    def sortProfiles(self, plist):
+    def setProfiles(self, plist):
         data = []
         self.knots1, self.knots2 = [],[]
         for pro in plist:
-            dts1 = pro.distToShape(self.rail1)
-            dts2 = pro.distToShape(self.rail2)
+            dts1 = pro.realCurve.distToShape(self.birail.rails[0])
+            dts2 = pro.realCurve.distToShape(self.birail.rails[1])
             FreeCAD.Console.PrintMessage('\nProfile :\n%s\n%s\n'%(str(dts1),str(dts2)))
             sols1 = dts1[1][0]
             sols2 = dts2[1][0]
             #FreeCAD.Console.PrintMessage("%s\n"%str(sols1))
-            k1 = self.rail1.Curve.parameter(sols1[1])
-            k2 = self.rail2.Curve.parameter(sols2[1])
+            k1 = self.birail.rails[0].Curve.parameter(sols1[1])
+            k2 = self.birail.rails[1].Curve.parameter(sols2[1])
             data.append((k1,k2,pro))
         sortedProfs = sorted(data,key=itemgetter(0))
         self.profiles = []
         for datum in sortedProfs:
             self.knots1.append(datum[0])
             self.knots2.append(datum[1])
-            self.profiles.append(datum[2])
+            p = profile(datum[2])
+            p.Rail1Param = datum[0]
+            p.Rail2Param = datum[1]
+            self.profiles.append(p)
+        if len(plist) == 1:
+            self.extend = True
         FreeCAD.Console.PrintMessage('\nProfiles sorted\n')
-            
+
+    def getLocalProfile(self, pro):
+        m1 = self.birail.matrixAt(pro.Rail1Param,0)
+        m2 = self.birail.matrixAt(pro.Rail1Param,1)
+        pts = pro.realCurve.Curve.getPoles()
+        c1 = pro.realCurve.Curve.copy()
+        c2 = pro.realCurve.Curve.copy()
+        for i in range(len(pts)):
+            #np = m1.inverse().multiply(p)
+            c1.setPole(i+1, m1.inverse().multiply(p))
+            c2.setPole(i+1, m2.inverse().multiply(p))
+        pro.localCurve1 = Part.Edge(c1, pro.realCurve.FirstParameter, pro.realCurve.LastParameter)
+        pro.localCurve2 = Part.Edge(c2, pro.realCurve.FirstParameter, pro.realCurve.LastParameter)
+
+    def getLocalProfiles(self):
+        for pro in self.profiles:
+            self.getLocalProfile(pro)
+
+    def extendProfiles(self):
+        p0 = self.profiles[0]
+        p1 = self.profiles[-1]
+        if (not p0.Rail1Param == self.birail.rails[0].FirstParameter) and (not p0.Rail2Param == self.birail.rails[1].FirstParameter):
+            p = profile(p0.realCurve)
+            p.Rail1Param = self.birail.rails[0].FirstParameter
+            p.Rail2Param = self.birail.rails[1].FirstParameter
+            p.localCurve1 = p0.localCurve1
+            p.localCurve2 = p0.localCurve2
+            # Warning : p.realCurve is wrong here
+            self.profiles.insert(0,p)
+        if (not p1.Rail1Param == self.birail.rails[0].LastParameter) and (not p1.Rail2Param == self.birail.rails[1].LastParameter):
+            p = profile(p1.realCurve)
+            p.Rail1Param = self.birail.rails[0].LastParameter
+            p.Rail2Param = self.birail.rails[1].LastParameter
+            p.localCurve1 = p1.localCurve1
+            p.localCurve2 = p1.localCurve2
+            # Warning : p.realCurve is wrong here
+            self.profiles.append(p)
+
+    def translateLocalProfiles(self, vec):
+        for pro in self.profiles:
+            pro.localCurve1.translate(vec)
+            pro.localCurve2.translate(vec)
+
     def railsInfo(self):
         FreeCAD.Console.PrintMessage('\nInfo Rail 1\n')
         FreeCAD.Console.PrintMessage('knots : %s\n'%(str(self.knots1)))
@@ -63,6 +166,11 @@ class SweepOn2Rails:
         pass
     
     def build(self):
+        self.getLocalProfiles()
+        if self.extend:
+            self.extendProfiles()
+        self.translateLocalProfiles(FreeCAD.Vector(0,1,0))
+        
         pts1 = []
         pts2 = []
         interpo1 = []
