@@ -60,6 +60,7 @@ class bezierCurve:
 
     def getGeomPoint(self):
         obj = FreeCAD.getDocument(self.snapShape[0]).getObject(self.snapShape[1])
+        FreeCAD.Console.PrintMessage('%s\n'%str(self.snapShape[2]))
         if 'Vertex' in self.snapShape[2]:
             n = eval(self.snapShape[2].lstrip('Vertex'))
             shape = obj.Shape.Vertexes[n-1]

@@ -295,6 +295,7 @@ class gridObject:
             fp.ViewObject.Proxy.trans.translation = coin.SbVec3f(tr.x,tr.y,tr.z)
             fp.ViewObject.Proxy.trans.rotation = coin.SbRotation(ro[0],ro[1],ro[2],ro[3])
     
+
 class gridVP:
     def __init__(self, obj ):
         obj.addProperty("App::PropertyDistance",  "Total",         "Size",   "Size of a grid quadrant").Total = '100mm'

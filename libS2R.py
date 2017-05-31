@@ -74,8 +74,7 @@ class SweepOn2Rails:
     
     def __init__(self):
         self.birail = None
-        self.rail1 = None
-        self.rail2 = None
+        self.interpoCurves = []
         self.profiles = []
         self.extend = False
         self.profileSamples = 20
@@ -83,10 +82,7 @@ class SweepOn2Rails:
         
     def setRails(self, ruledSurf):
         # TODO: Check for twisted Ruled Surface
-        #self.ruled = Part.makeRuledSurface(r1, r2)
         self.birail = birail(ruledSurf)
-        #self.rail1 = ruledSurf.Edges[0]
-        #self.rail2 = ruledSurf.Edges[2]
         
     def setProfiles(self, plist):
         data = []
@@ -152,9 +148,12 @@ class SweepOn2Rails:
             self.profiles.append(p)
 
     def translateLocalProfiles(self, vec):
-        for pro in self.profiles:
-            pro.localCurve1.translate(vec)
-            pro.localCurve2.translate(vec)
+        for i in range(len(self.profiles)):
+            pro = self.profiles[i]
+            v = FreeCAD.Vector(vec)
+            v.multiply(i)
+            pro.localCurve1.translate(v)
+            pro.localCurve2.translate(v)
 
     def railsInfo(self):
         FreeCAD.Console.PrintMessage('\nInfo Rail 1\n')
@@ -170,6 +169,8 @@ class SweepOn2Rails:
         if self.extend:
             self.extendProfiles()
         self.translateLocalProfiles(FreeCAD.Vector(0,1,0))
+        self.buildInterpoCurves()
+        
         
         pts1 = []
         pts2 = []
