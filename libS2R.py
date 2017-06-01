@@ -286,7 +286,7 @@ class SweepOn2Rails:
                 p2 = FreeCAD.Vector(pt2[i])
                 p1.multiply(0.5)
                 p2.multiply(0.5)
-                pt.append(pt1.add(pt2))
+                pt.append(p1.add(p2))
             self.result = pt
         
     def shape(self):

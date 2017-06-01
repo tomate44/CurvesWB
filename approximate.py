@@ -57,7 +57,7 @@ class Approximate:
         obj.addProperty("App::PropertyBool",           "ClampEnds",      "General",    "Clamp endpoints").ClampEnds = False
         obj.addProperty("App::PropertyInteger",        "DegreeMin",      "General",    "Minimum degree of the curve").DegreeMin = 3
         obj.addProperty("App::PropertyInteger",        "DegreeMax",      "General",    "Maximum degree of the curve").DegreeMax = 8
-        obj.addProperty("App::PropertyFloat",          "ApproxTolerance","General",    "Approximation tolerance").ApproxTolerance = 0.05
+        obj.addProperty("App::PropertyFloat",          "ApproxTolerance","General",    "Approximation tolerance")
         obj.addProperty("App::PropertyEnumeration",    "Continuity",     "General",    "Desired continuity of the curve").Continuity=["C0","C1","G1","C2","G2","C3","CN"]
         obj.addProperty("App::PropertyEnumeration",    "Method",         "General",    "Approximation method").Method=["Parametrization","Smoothing Algorithm"]
         obj.addProperty("App::PropertyEnumeration",    "Parametrization","Parameters", "Parametrization type").Parametrization=["ChordLength","Centripetal","Uniform"]
@@ -78,7 +78,8 @@ class Approximate:
         obj.Parametrization = "ChordLength"
         obj.Continuity = 'C2'
         self.getPoints(obj)
-        #obj.FirstIndex = 0
+        # TODO set tolerance to boundbox maxDimension / 1000
+        obj.ApproxTolerance = 0.05
         obj.LastIndex = len(self.Points)-1
         self.execute(obj)
 

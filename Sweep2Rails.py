@@ -13,22 +13,26 @@ DEBUG = False
 class sweep2rails:
     def __init__(self, obj):
         obj.Proxy = self
-        obj.addProperty("App::PropertyLink",       "Birail",        "Base",   "Birail object")
-        obj.addProperty("App::PropertyLinkList",   "Profiles",      "Base",   "List of profiles")
-        obj.addProperty("App::PropertyEnumeration","Blending",      "Base",   "Blending method").Blending = ["Average","Blend","Rail1","Rail2"]
-        obj.addProperty("App::PropertyInteger",    "ProfileSamples","Base",   "Profile Samples")
-        obj.addProperty("App::PropertyInteger",    "RailSamples",   "Base",   "Profile Samples")
+        obj.addProperty("App::PropertyLink",       "Birail",         "Base",   "Birail object")
+        obj.addProperty("App::PropertyLinkList",   "Profiles",       "Base",   "List of profiles")
+        obj.addProperty("App::PropertyEnumeration","Blending",       "Base",   "Blending method").Blending = ["Average","Blend","Rail1","Rail2"]
+        obj.addProperty("App::PropertyFloat",      "Parametrization","Base",   "Parametrization of interpolating curves")
+        obj.addProperty("App::PropertyInteger",    "ProfileSamples", "Base",   "Profile Samples")
+        obj.addProperty("App::PropertyInteger",    "RailSamples",    "Base",   "Profile Samples")
+        obj.addProperty("App::PropertyBool",       "Extend",         "Base",   "Extend to rail limits")
         obj.Blending = "Average"
         obj.ProfileSamples = 20
         obj.RailSamples = 40
+        obj.Parametrization = 0.0
+        obj.Extend = False
 
 
     def execute(self, obj):
         if hasattr(obj,"Birail") and hasattr(obj,"Profiles"):
             if (not obj.Birail == None) and (not obj.Profiles == []):
                 s2r = libS2R.SweepOn2Rails()
-                s2r.parametrization = 0.5
-                s2r.extend = False
+                s2r.parametrization = obj.Parametrization
+                s2r.extend = obj.Extend
                 s2r.profileSamples = obj.ProfileSamples
                 s2r.railSamples = obj.RailSamples
                 s2r.setRails(obj.Birail.Shape.Face1)
