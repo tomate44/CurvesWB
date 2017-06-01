@@ -88,7 +88,10 @@ class SweepOn2Rails:
     def setProfiles(self, plist):
         data = []
         self.knots1, self.knots2 = [],[]
+        bslist = []
         for pro in plist:
+            bslist.append(Part.Edge(pro.Curve.toBSpline(), pro.FirstParameter, pro.LastParameter))
+        for pro in bslist:
             dts1 = pro.distToShape(self.birail.rails[0])
             dts2 = pro.distToShape(self.birail.rails[1])
             #FreeCAD.Console.PrintMessage('\nProfile :\n%s\n%s\n'%(str(dts1),str(dts2)))

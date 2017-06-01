@@ -87,7 +87,8 @@ class makeSpline:
         try:
             c = self.curve
         except:
-            self.curve = obj.Shape.Curve
+            if hasattr(obj.Shape,'Curve'):
+                self.curve = obj.Shape.Curve
 
     def execute(self, obj):
         debug("\n* Spline : execute *\n")

@@ -78,11 +78,17 @@ class Approximate:
         obj.Parametrization = "ChordLength"
         obj.Continuity = 'C2'
         self.getPoints(obj)
-        # TODO set tolerance to boundbox maxDimension / 1000
-        obj.ApproxTolerance = 0.05
+        self.setTolerance(obj)
+        #obj.ApproxTolerance = 0.05
         obj.LastIndex = len(self.Points)-1
         self.execute(obj)
 
+    def setTolerance(self, obj):
+        try:
+            l = obj.PointObject.Shape.BoundBox.DiagonalLength
+            obj.ApproxTolerance = l / 1000.0
+        except:
+            obj.ApproxTolerance = 0.001
 
     def getPoints( self, obj):
         if hasattr(obj.PointObject,'Group'):
@@ -105,8 +111,11 @@ class Approximate:
                     a.append(r)
                     r = []
             #a.append(r)
-            self.Points = a
-            debug("Array : %d x %d"%(len(a),len(a[0])))
+            if not a == []:
+                self.Points = a
+                debug("Array : %d x %d"%(len(a),len(a[0])))
+            else:
+                self.Points = []
         else:
             try:
                 self.Points = obj.PointObject.Points
