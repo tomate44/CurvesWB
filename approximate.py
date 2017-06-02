@@ -102,7 +102,7 @@ class Approximate:
         elif hasattr(obj.PointObject,'Birail'):
             debug("Birail object detected")
             debug("%d points"%len(obj.PointObject.Shape.Vertexes))
-            n = obj.PointObject.RailSamples
+            n = len(obj.PointObject.Shape.Vertexes) / obj.PointObject.ProfileSamples
             a = []
             r = []
             for i in range(len(obj.PointObject.Shape.Vertexes)):

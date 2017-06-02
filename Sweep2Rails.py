@@ -35,6 +35,7 @@ class sweep2rails:
                 s2r.extend = obj.Extend
                 s2r.profileSamples = obj.ProfileSamples
                 s2r.railSamples = obj.RailSamples
+                
                 s2r.setRails(obj.Birail.Shape.Face1)
                 s2r.setProfiles(self.setProfiles(obj.Profiles)) #((e1,e2,e3))
                 s2r.build()
@@ -63,6 +64,9 @@ class sweep2rails:
                 fp.RailSamples = 2
             elif fp.RailSamples > 1000:
                 fp.RailSamples = 1000
+            #n = len(fp.Profiles) - 1
+            #gr = int(1.0 * fp.RailSamples / n) + 1
+            #fp.RailSamples = gr * n
             
     def setProfiles(self, prop):
         a = []

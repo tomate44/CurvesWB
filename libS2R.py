@@ -11,6 +11,7 @@ fac = 1.0
 DEBUG = False
 EXTEND = True
 
+
 class profile:
     
     def __init__(self, curve):
@@ -28,6 +29,8 @@ class birail:
         self.normTan = False
         self.normBin = False
         self.normNor = True
+        self.profileKnots = []
+        self.paramCurves = []
 
     def tangentAt(self, p, i):
         if self.normTan:
@@ -80,28 +83,34 @@ class SweepOn2Rails:
         self.profileSamples = 20
         self.railSamples = 40
         self.parametrization = 0.5
+        self.transvec = FreeCAD.Vector(0,1,0)
+        self.fac = 10
         
     def setRails(self, ruledSurf):
         # TODO: Check for twisted Ruled Surface
         self.birail = birail(ruledSurf)
-        
+
+    def getContactParams(self, pro):
+        dts1 = pro.distToShape(self.birail.rails[0])
+        dts2 = pro.distToShape(self.birail.rails[1])
+        #FreeCAD.Console.PrintMessage('\nProfile :\n%s\n%s\n'%(str(dts1),str(dts2)))
+        sols1 = dts1[1][0]
+        sols2 = dts2[1][0]
+        #FreeCAD.Console.PrintMessage("%s\n"%str(sols1))
+        rail1ContactParam = self.birail.rails[0].Curve.parameter(sols1[1])
+        rail2ContactParam = self.birail.rails[1].Curve.parameter(sols2[1])
+        pro1ContactParam = pro.Curve.parameter(sols1[0])
+        pro2ContactParam = pro.Curve.parameter(sols2[0])
+        # TODO Check and reverse profile here
+        return((rail1ContactParam, rail2ContactParam, pro))
+            
     def setProfiles(self, plist):
         data = []
         self.knots1, self.knots2 = [],[]
-        bslist = []
         for pro in plist:
-            bslist.append(Part.Edge(pro.Curve.toBSpline(), pro.FirstParameter, pro.LastParameter))
-        for pro in bslist:
-            dts1 = pro.distToShape(self.birail.rails[0])
-            dts2 = pro.distToShape(self.birail.rails[1])
-            #FreeCAD.Console.PrintMessage('\nProfile :\n%s\n%s\n'%(str(dts1),str(dts2)))
-            sols1 = dts1[1][0]
-            sols2 = dts2[1][0]
-            #FreeCAD.Console.PrintMessage("%s\n"%str(sols1))
-            k1 = self.birail.rails[0].Curve.parameter(sols1[1])
-            k2 = self.birail.rails[1].Curve.parameter(sols2[1])
-            data.append((k1,k2,pro))
-        sortedProfs = sorted(data,key=itemgetter(0))
+            bs = Part.Edge(pro.Curve.toBSpline(), pro.FirstParameter, pro.LastParameter)
+            data.append(self.getContactParams(bs))
+        sortedProfs = sorted(data,key=itemgetter(0)) # Sort profiles on rail1ContactParam
         self.profiles = []
         for datum in sortedProfs:
             self.knots1.append(datum[0])
@@ -109,12 +118,28 @@ class SweepOn2Rails:
             p = profile(datum[2])
             p.Rail1Param = datum[0]
             p.Rail2Param = datum[1]
+            self.getLocalProfile(p)
             self.profiles.append(p)
             FreeCAD.Console.PrintMessage("\n Profile : %f - %f\n"%(p.Rail1Param,p.Rail2Param))
         if len(plist) == 1:
             self.extend = True
             FreeCAD.Console.PrintMessage('\n1 Profile given\n')
         FreeCAD.Console.PrintMessage('\nProfiles sorted\n')
+
+    def setBirailParametrization(self):
+        pts1 = []
+        pts2 = []
+        kts = []
+        for i in range(len(self.knots1)):
+            FreeCAD.Console.PrintMessage("\n param : %f - %f\n"%(self.knots1[i],self.knots2[i]))
+            pts1.append(Base.Vector2d(i, self.knots1[i]))
+            pts2.append(Base.Vector2d(i, self.knots2[i]))
+            kts.append(i)
+        bs1 = Part.Geom2d.BSplineCurve2d()
+        bs1.interpolate(Points = pts1, Parameters = kts)
+        bs2 = Part.Geom2d.BSplineCurve2d()
+        bs2.interpolate(Points = pts2, Parameters = kts)
+        self.birail.paramCurves = (bs1, bs2)            
 
     def getLocalProfile(self, pro):
         m1 = self.birail.matrixAt(pro.Rail1Param,0)
@@ -162,11 +187,11 @@ class SweepOn2Rails:
         for p in self.profiles:
             FreeCAD.Console.PrintMessage("\n Profile : %f - %f\n"%(p.Rail1Param,p.Rail2Param))
 
-    def translateLocalProfiles(self, vec):
+    def translateLocalProfiles(self):
         for i in range(len(self.profiles)):
             pro = self.profiles[i]
-            v = FreeCAD.Vector(vec)
-            v.multiply(i)
+            v = FreeCAD.Vector(self.transvec)
+            v.multiply(i * self.fac)
             pro.localCurve1.translate(v)
             pro.localCurve2.translate(v)
 
@@ -200,6 +225,7 @@ class SweepOn2Rails:
     def buildInterpoCurves(self):
         c1 = []
         c2 = []
+        k = range(len(self.profiles))
         for i in range(self.profileSamples):
             pts1 = []
             pts2 = []
@@ -210,14 +236,14 @@ class SweepOn2Rails:
                 t = fp + 1.0 * prange * i / (self.profileSamples - 1)
                 pts1.append(pro.localCurve1.valueAt(t))
                 pts2.append(pro.localCurve2.valueAt(t))
-            k1 = self.parameterization(pts1, self.parametrization, False)
-            k2 = self.parameterization(pts2, self.parametrization, False)
-            FreeCAD.Console.PrintMessage('\nParameters : %s\n'%str(k1))
+            #k1 = self.parameterization(pts1, self.parametrization, False)
+            #k2 = self.parameterization(pts2, self.parametrization, False)
+            #FreeCAD.Console.PrintMessage('\nParameters : %s\n'%str(k))
             ic1 = Part.BSplineCurve()
-            ic1.interpolate(Points = pts1, Parameters = k1) #, Tangents = v, TangentFlags = b)
+            ic1.interpolate(Points = pts1, Parameters = k) #, Tangents = v, TangentFlags = b)
             ic2 = Part.BSplineCurve()
             #c2.buildFromPolesMultsKnots(pts[1],m,self.knots2,False,1)
-            ic2.interpolate(Points = pts2, Parameters = k2) #, Tangents = v, TangentFlags = b)
+            ic2.interpolate(Points = pts2, Parameters = k) #, Tangents = v, TangentFlags = b)
             c1.append(ic1)
             c2.append(ic2)
         self.interpoCurves = (c1,c2)
@@ -232,39 +258,47 @@ class SweepOn2Rails:
     def discretize(self):
         p1 = []
         p2 = []
+        n = len(self.profiles) - 1
+        gr = int(1.0 * self.railSamples / n) + 1
+        self.railSamples = gr * n
         for ri in range(self.profileSamples):
             pts1 = []
             pts2 = []
             for i in range(self.railSamples):
                 # TODO Add a method that matches the samples to self.knots1, self.knots2 contents
                 # Get the good matrices from the birail
-                v0 = self.knots1[0]
-                v1 = self.knots1[-1]
-                pRange1 = v1-v0
-                t1 = v0 + 1.0 * pRange1 * i / (self.railSamples-1)
-                v2 = self.knots2[0]
-                v3 = self.knots2[-1]
-                pRange2 = v3-v2
-                t2 = v2 + 1.0 * pRange2 * i / (self.railSamples-1)
+                t = 1.0 * n * i / (self.railSamples - 1)
+                #v0 = self.knots1[0]
+                #v1 = self.knots1[-1]
+                #pRange1 = v1-v0
+                #t1 = v0 + 1.0 * pRange1 * i / (self.railSamples-1)
+                #v2 = self.knots2[0]
+                #v3 = self.knots2[-1]
+                #pRange2 = v3-v2
+                #t2 = v2 + 1.0 * pRange2 * i / (self.railSamples-1)
+                t1 = self.birail.paramCurves[0].value(t).y
+                t2 = self.birail.paramCurves[1].value(t).y
                 m1 = self.birail.matrixAt(t1,0)
                 m2 = self.birail.matrixAt(t2,1)
                 # Pick a point on interpolating curves
                 e1 = Part.Edge(self.interpoCurves[0][ri])
-                w0 = e1.FirstParameter
-                w1 = e1.LastParameter
-                qRange1 = w1-w0
-                u1 = w0 + 1.0 * qRange1 * i / (self.railSamples-1)
-                pt1 = e1.valueAt(u1)
+                #w0 = e1.FirstParameter
+                #w1 = e1.LastParameter
+                #qRange1 = w1-w0
+                #u1 = w0 + 1.0 * qRange1 * i / (self.railSamples-1)
+                pt1 = e1.valueAt(t) #u1)
                 
                 e2 = Part.Edge(self.interpoCurves[1][ri])
-                w2 = e2.FirstParameter
-                w3 = e2.LastParameter
-                qRange2 = w3-w2
-                u2 = w2 + 1.0 * qRange2 * i / (self.railSamples-1)
-                pt2 = e2.valueAt(u2)
+                #w2 = e2.FirstParameter
+                #w3 = e2.LastParameter
+                #qRange2 = w3-w2
+                #u2 = w2 + 1.0 * qRange2 * i / (self.railSamples-1)
+                pt2 = e2.valueAt(t) #u2)
                 
-                pts1.append(m1.multiply(FreeCAD.Vector(pt1.x, pt1.y-(1.0*(len(self.profiles)-1) * i / (self.railSamples-1)), pt1.z)))
-                pts2.append(m2.multiply(FreeCAD.Vector(pt2.x, pt2.y-(1.0*(len(self.profiles)-1) * i / (self.railSamples-1)), pt2.z)))
+                v = FreeCAD.Vector(self.transvec)
+                v.multiply(- t * self.fac)
+                pts1.append(m1.multiply(pt1.add(v)))
+                pts2.append(m2.multiply(pt2.add(v)))
             p1.append(pts1)
             p2.append(pts2)
         self.results = (p1,p2)
@@ -298,10 +332,11 @@ class SweepOn2Rails:
         return(c)
  
     def build(self):
-        self.getLocalProfiles()
+        #self.getLocalProfiles()
         if self.extend:
             self.extendProfiles()
-        self.translateLocalProfiles(FreeCAD.Vector(0,1,0))
+        self.setBirailParametrization()
+        self.translateLocalProfiles()
         self.buildInterpoCurves()
         self.discretize()
 
@@ -323,6 +358,8 @@ def main():
     
     s2r = SweepOn2Rails()
     s2r.parametrization = 1.0
+    s2r.fac = 1.0
+    s2r.profileSamples = 100
     s2r.extend = True
     s2r.setRails(face)
     s2r.setProfiles([e1,e2,e3]) #((e1,e2,e3))
