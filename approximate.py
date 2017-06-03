@@ -56,7 +56,7 @@ class Approximate:
         obj.addProperty("App::PropertyLink",           "PointObject",    "Approximate","Object containing the points to approximate").PointObject = source
         obj.addProperty("App::PropertyBool",           "ClampEnds",      "General",    "Clamp endpoints").ClampEnds = False
         obj.addProperty("App::PropertyInteger",        "DegreeMin",      "General",    "Minimum degree of the curve").DegreeMin = 3
-        obj.addProperty("App::PropertyInteger",        "DegreeMax",      "General",    "Maximum degree of the curve").DegreeMax = 8
+        obj.addProperty("App::PropertyInteger",        "DegreeMax",      "General",    "Maximum degree of the curve").DegreeMax = 5
         obj.addProperty("App::PropertyFloat",          "ApproxTolerance","General",    "Approximation tolerance")
         obj.addProperty("App::PropertyEnumeration",    "Continuity",     "General",    "Desired continuity of the curve").Continuity=["C0","C1","G1","C2","G2","C3","CN"]
         obj.addProperty("App::PropertyEnumeration",    "Method",         "General",    "Approximation method").Method=["Parametrization","Smoothing Algorithm"]
@@ -86,7 +86,7 @@ class Approximate:
     def setTolerance(self, obj):
         try:
             l = obj.PointObject.Shape.BoundBox.DiagonalLength
-            obj.ApproxTolerance = l / 1000.0
+            obj.ApproxTolerance = l / 10000.0
         except:
             obj.ApproxTolerance = 0.001
 
@@ -100,14 +100,15 @@ class Approximate:
                     a.append([v.Point for v in o.Shape.Vertexes])
             self.Points = a
         elif hasattr(obj.PointObject,'Birail'):
+            numVert = len(obj.PointObject.Shape.Vertexes) 
             debug("Birail object detected")
-            debug("%d points"%len(obj.PointObject.Shape.Vertexes))
-            n = len(obj.PointObject.Shape.Vertexes) / obj.PointObject.ProfileSamples
+            debug("%d points"%numVert)
+            n = numVert / obj.PointObject.ProfileSamples
             a = []
             r = []
-            for i in range(len(obj.PointObject.Shape.Vertexes)):
+            for i in range(numVert):
                 r.append(obj.PointObject.Shape.Vertexes[i].Point)
-                if (not i == 0) and ((i+1)%n == 0):
+                if (not i == 0) and ((i+1)%obj.PointObject.ProfileSamples == 0):
                     a.append(r)
                     r = []
             #a.append(r)

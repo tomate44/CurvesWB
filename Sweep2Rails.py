@@ -110,7 +110,7 @@ class sweep2railsVP:
             for p in self.Object.Profiles:
                 p.ViewObject.show()
         except Exception as err:
-            App.Console.PrintError("Error in onDelete: " + err.message)
+            FreeCAD.Console.PrintError("Error in onDelete: " + err.message)
         return True
 
 class s2rCommand:
@@ -125,11 +125,15 @@ class s2rCommand:
         return((birail,profs))
 
     def Activated(self):
+        s = FreeCADGui.Selection.getSelection()
+        if s == []:
+            FreeCAD.Console.PrintError("Select a ruled surface and a list of profile edges\n")
+            return
+            
         myS2R = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Sweep 2 rails")
         sweep2rails(myS2R)
         sweep2railsVP(myS2R.ViewObject)
 
-        s = FreeCADGui.Selection.getSelection()
         myS2R.Birail   = self.parseSel(s)[0]
         myS2R.Profiles = self.parseSel(s)[1]
         myS2R.Birail.ViewObject.Visibility = False
