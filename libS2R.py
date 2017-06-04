@@ -119,7 +119,10 @@ class SweepOn2Rails:
         data = []
         self.knots1, self.knots2 = [],[]
         for pro in plist:
-            bs = Part.Edge(pro.Curve.toBSpline(), pro.FirstParameter, pro.LastParameter)
+            pts = pro.discretize(100)
+            bspline = Part.BSplineCurve()
+            bspline.approximate(Points = pts, ParamType = 'Chordlength') # 'Uniform' 'Centripetal'
+            bs = Part.Edge(bspline) #, pro.FirstParameter, pro.LastParameter)
             data.append(self.getContactParams(bs))
         sortedProfs = sorted(data,key=itemgetter(0)) # Sort profiles on rail1ContactParam
         self.profiles = []
@@ -260,9 +263,11 @@ class SweepOn2Rails:
             #FreeCAD.Console.PrintMessage('\nParameters : %s\n'%str(k))
             ic1 = Part.BSplineCurve()
             ic1.interpolate(Points = pts1, Parameters = k) #, Tangents = v, TangentFlags = b)
+            #ic1.approximate(Points = pts1, DegMin = 1, DegMax = 1, Tolerance = 1.0, Parameters = k)
             ic2 = Part.BSplineCurve()
             #c2.buildFromPolesMultsKnots(pts[1],m,self.knots2,False,1)
             ic2.interpolate(Points = pts2, Parameters = k) #, Tangents = v, TangentFlags = b)
+            #ic2.approximate(Points = pts2, DegMin = 1, DegMax = 1, Tolerance = 1.0, Parameters = k)
             c1.append(ic1)
             c2.append(ic2)
         self.interpoCurves = (c1,c2)
@@ -323,13 +328,23 @@ class SweepOn2Rails:
             self.result = pt1
         elif method == "Rail2":
             self.result = pt2
-        else: #elif method == "Average":
+        elif method == "Average":
             pt = []
             for i in range(len(pt1)):
                 p1 = FreeCAD.Vector(pt1[i])
                 p2 = FreeCAD.Vector(pt2[i])
                 p1.multiply(0.5)
                 p2.multiply(0.5)
+                pt.append(p1.add(p2))
+            self.result = pt
+        elif method == "Blend":
+            pt = []
+            l = len(pt1)-1
+            for i in range(len(pt1)):
+                p1 = FreeCAD.Vector(pt1[i])
+                p2 = FreeCAD.Vector(pt2[i])
+                p1.multiply(1.0*(l-i)/l)
+                p2.multiply(1.0*i/l)
                 pt.append(p1.add(p2))
             self.result = pt
         
