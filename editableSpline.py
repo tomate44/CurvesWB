@@ -47,8 +47,11 @@ class makeSpline:
         obj.Proxy = self
         try:
             self.curve = edge.Curve.toBSpline()
+            self.curve.segment(edge.FirstParameter,edge.LastParameter)
         except:
-            self.curve = edge.toNurbs().Edges[0].Curve.toBSpline()
+            e = edge.toNurbs().Edges[0]
+            self.curve = e.Curve.toBSpline()
+            self.curve.segment(e.FirstParameter,e.LastParameter)
         obj.Poles = self.curve.getPoles()
         obj.Weights = self.curve.getWeights()
         if isinstance(self.curve,Part.BSplineCurve):

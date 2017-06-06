@@ -80,8 +80,8 @@ class sweep2railsVP:
     def __init__(self, obj):
         obj.Proxy = self
         
-    #def getIcon(self):
-        #return (path_curvesWB_icons+'/isocurve.svg')
+    def getIcon(self):
+        return (path_curvesWB_icons+'/sw2r.svg')
 
     def attach(self, vobj):
         self.ViewObject = vobj
