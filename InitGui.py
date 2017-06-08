@@ -29,8 +29,9 @@ class CurvesWorkbench (Workbench):
         import PlateSurface
         #import Birail
         import Sweep2Rails
+        import hooks
 
-        stablelist = ["bezierCurve","editableSpline","join","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","Trim","GeomInfo","extract","IsoCurve","SoS","sw2r"]
+        stablelist = ["bezierCurve","editableSpline","join","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","Trim","GeomInfo","extract","IsoCurve","SoS","sw2r","hook"]
         #devellist = ["Vector","Plate"]
         #FreeCADGui.addIconPath( ':/CurvesWB/icons' )
         self.appendToolbar("Curves",stablelist)
