@@ -315,42 +315,62 @@ class SweepOn2Rails:
             
         self.results = (p1,p2)
  
+    def downgradeArray(self):
+        pt1 = []
+        for row in self.result:
+            pt1 += row
+        return(pt1)
+
     def mix(self, method = "Rail1"):
         # mix the 2 sets of points here
-        pt1 = []
-        for row in self.results[0]:
-            pt1 += row
-        pt2 = []
-        for row in self.results[1]:
-            pt2 += row
+        #pt1 = []
+        #for row in self.results[0]:
+            #pt1 += row
+        #pt2 = []
+        #for row in self.results[1]:
+            #pt2 += row
 
         if method == "Rail1":
-            self.result = pt1
+            self.result = self.results[0]
         elif method == "Rail2":
-            self.result = pt2
-        elif method == "Average":
-            pt = []
-            for i in range(len(pt1)):
-                p1 = FreeCAD.Vector(pt1[i])
-                p2 = FreeCAD.Vector(pt2[i])
-                p1.multiply(0.5)
-                p2.multiply(0.5)
-                pt.append(p1.add(p2))
-            self.result = pt
-        elif method == "Blend":
-            pt = []
-            l = len(pt1)-1
-            for i in range(len(pt1)):
-                p1 = FreeCAD.Vector(pt1[i])
-                p2 = FreeCAD.Vector(pt2[i])
-                p1.multiply(1.0*(l-i)/l)
-                p2.multiply(1.0*i/l)
-                pt.append(p1.add(p2))
-            self.result = pt
+            self.result = self.results[1]
+        elif method in ["Average","Blend"]:
+            arr2d = []
+            l = len(self.results[0][0])-1
+            for i in range(len(self.results[0])):
+                row = []
+                for j in range(len(self.results[0][0])):
+                    p1 = FreeCAD.Vector(self.results[0][i][j])
+                    p2 = FreeCAD.Vector(self.results[1][i][j])
+                    if method == "Average":
+                        p1.multiply(0.5)
+                        p2.multiply(0.5)
+                    else:
+                        p1.multiply(1.0*(l-j)/l)
+                        p2.multiply(1.0*j/l)
+                    row.append(p1.add(p2))
+                arr2d.append(row)
+            self.result = arr2d
         
-    def shape(self):
-        v = [Part.Vertex(p) for p in self.result]
+    def shapeCloud(self):
+        v = []
+        for row in self.result:
+            for pt in row:
+                v.append(Part.Vertex(pt))
         c = Part.Compound(v)
+        return(c)
+
+    def shapeGrid(self):
+        poly = []
+        #polyV = []
+        for row in self.result:
+            poly.append(Part.makePolygon(row))
+        for i in range(len(self.result[0])):
+            row = []
+            for j in range(len(self.result)):
+                row.append(self.result[j][i])
+            poly.append(Part.makePolygon(row))
+        c = Part.Compound(poly)
         return(c)
  
     def build(self):
