@@ -60,7 +60,7 @@ class Approximate:
         obj.addProperty("App::PropertyFloat",          "ApproxTolerance","General",    "Approximation tolerance")
         obj.addProperty("App::PropertyEnumeration",    "Continuity",     "General",    "Desired continuity of the curve").Continuity=["C0","C1","G1","C2","G2","C3","CN"]
         obj.addProperty("App::PropertyEnumeration",    "Method",         "General",    "Approximation method").Method=["Parametrization","Smoothing Algorithm"]
-        obj.addProperty("App::PropertyEnumeration",    "Parametrization","Parameters", "Parametrization type").Parametrization=["ChordLength","Centripetal","Uniform"]
+        obj.addProperty("App::PropertyEnumeration",    "Parametrization","Parameters", "Parametrization type").Parametrization=["ChordLength","Centripetal","Uniform","Curvilinear"]
         obj.addProperty("App::PropertyFloatConstraint","LengthWeight",   "Parameters", "Weight of curve length for smoothing algorithm").LengthWeight=1.0
         obj.addProperty("App::PropertyFloatConstraint","CurvatureWeight","Parameters", "Weight of curve curvature for smoothing algorithm").CurvatureWeight=1.0
         obj.addProperty("App::PropertyFloatConstraint","TorsionWeight",  "Parameters", "Weight of curve torsion for smoothing algorithm").TorsionWeight=1.0
@@ -126,7 +126,17 @@ class Approximate:
     def buildCurve(self, obj):
         pts = self.Points[obj.FirstIndex:obj.LastIndex+1]
         bs = Part.BSplineCurve()
-        if obj.Method == "Parametrization":
+        if (obj.Method == "Parametrization") and (obj.Parametrization == "Curvilinear") and (hasattr(obj.PointObject,"Distance")):
+            params = []
+            try:
+                dis = obj.PointObject.Distance
+            except:
+                dis = 1.0
+            for i in range(len(pts)):
+                params.append(1.0 * i * dis)
+            bs.interpolate(Points = pts, Parameters = params, Tolerance = obj.ApproxTolerance)
+
+        elif obj.Method == "Parametrization":
             bs.approximate(Points = pts, DegMin = obj.DegreeMin, DegMax = obj.DegreeMax, Tolerance = obj.ApproxTolerance, Continuity = obj.Continuity, ParamType = obj.Parametrization)
         elif obj.Method == "Smoothing Algorithm":
             bs.approximate(Points = pts, DegMin = obj.DegreeMin, DegMax = obj.DegreeMax, Tolerance = obj.ApproxTolerance, Continuity = obj.Continuity, LengthWeight = obj.LengthWeight, CurvatureWeight = obj.CurvatureWeight , TorsionWeight = obj.TorsionWeight)
@@ -173,7 +183,20 @@ class Approximate:
             self.getPoints( fp)
             #fp.FirstIndex = 0
             fp.LastIndex = len(self.Points)-diff
-                
+
+        if prop == "Parametrization":
+            debug("Approximate : Parametrization changed\n")
+            props = ["ClampEnds","DegreeMin","DegreeMax","Continuity"]
+            if fp.Parametrization == "Curvilinear":
+                if hasattr(fp.PointObject,"Distance"):
+                    for p in props:
+                        fp.setEditorMode(p, 2)
+                else:
+                    fp.Parametrization == "ChordLength"
+            else:
+                for p in props:
+                    fp.setEditorMode(p, 0)   
+
         if prop == "Method":
             debug("Approximate : Method changed\n")
             if fp.Method == "Parametrization":
@@ -200,8 +223,8 @@ class Approximate:
             debug("Approximate : Continuity changed to "+str(fp.Continuity))
 
         if prop == "DegreeMin":
-            if fp.DegreeMin < 2:
-                fp.DegreeMin = 2
+            if fp.DegreeMin < 1:
+                fp.DegreeMin = 1
             elif fp.DegreeMin > fp.DegreeMax:
                 fp.DegreeMin = fp.DegreeMax
             #fp.DegreeMax = fp.DegreeMax
