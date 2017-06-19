@@ -133,7 +133,8 @@ class sweep2railsVP:
         vobj.addDisplayMode(self.ProfDM,"Profiles")
         vobj.addDisplayMode(self.railDM,"Rails")
         #self.onChanged(vobj,"DisplayMode")
-        vobj.DisplayMode = "Wireframe"
+        #if "Wireframe" in vobj.listDisplayModes():
+            #vobj.DisplayMode = "Wireframe"
 
     def updateData(self, fp, prop):
         if len(fp.Points) == fp.RailSamples * fp.ProfileSamples :
