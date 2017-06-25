@@ -33,7 +33,7 @@ from FreeCAD import Base
 
 class curveOnSurface:
     
-    def __init__(self, face = None, edge = None):
+    def __init__(self, edge = None, face = None):
         self.face = face
         self.edge = edge
         self.curve2D = None
@@ -41,18 +41,28 @@ class curveOnSurface:
         self.reverseTangent  = False
         self.reverseNormal   = False
         self.reverseBinormal = False
+        self.validate()
 
     def setEdge(self, edge):
         self.edge = edge
+        self.validate()
 
     def setFace(self, face):
         self.face = face
+        self.validate()
 
     def validate(self):
         if (not self.edge == None) and (not self.face == None):
             self.curve2D = self.face.curveOnSurface(self.edge)
-            if not isinstance(self.curve2D,list):
-                self.curve2D = None
+            if not isinstance(self.curve2D,tuple):
+                newedge = self.face.project([self.edge]).Edges[0]
+                self.curve2D = self.face.curveOnSurface(newedge)
+            if isinstance(self.curve2D,tuple):
+                return(True)
+            else:
+                return(False)
+        else:
+            return(False)
 
     def valueAt(self, t):
         if self.edge:
