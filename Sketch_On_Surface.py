@@ -48,7 +48,7 @@ def debug(string):
 def Points2D(pts):
     if isinstance(pts,FreeCAD.Vector):
         return Base.Vector2d(pts.x,pts.y)
-    elif isinstance(pts,list):
+    elif isinstance(pts,(list,tuple)):
         l = []
         for p in pts:
             l.append(Base.Vector2d(p.x,p.y))

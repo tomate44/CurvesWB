@@ -37,6 +37,7 @@ class curveOnSurface:
         self.face = face
         self.edge = edge
         self.curve2D = None
+        self.edgeOnFace = None
         self.validate()
         self.reverseTangent  = False
         self.reverseNormal   = False
@@ -51,13 +52,20 @@ class curveOnSurface:
         self.face = face
         self.validate()
 
+    #def edgeOnFace(self):
+        #if self.validate():
+            #return( self.curve2D[0].toShape(self.face, self.curve2D[1], self.curve2D[2]))
+
     def validate(self):
         if (not self.edge == None) and (not self.face == None):
             self.curve2D = self.face.curveOnSurface(self.edge)
+            #self.edgeOnFace = self.curve2D[0].toShape(self.face, self.curve2D[1], self.curve2D[2])
             if not isinstance(self.curve2D,tuple):
                 newedge = self.face.project([self.edge]).Edges[0]
                 self.curve2D = self.face.curveOnSurface(newedge)
+                #self.edgeOnFace = self.curve2D[0].toShape(self.face, self.curve2D[1], self.curve2D[2])
             if isinstance(self.curve2D,tuple):
+                self.edgeOnFace = self.curve2D[0].toShape(self.face, self.curve2D[1], self.curve2D[2])
                 return(True)
             else:
                 return(False)
@@ -65,26 +73,28 @@ class curveOnSurface:
             return(False)
 
     def valueAt(self, t):
-        if self.edge:
-            return(self.edge.valueAt(t))
+        if self.edgeOnFace:
+            return(self.edgeOnFace.valueAt(t))
         else:
             return(None)
 
     def tangentAt(self, t):
-        if self.edge:
+        if self.edgeOnFace:
             if self.reverseTangent:
-                return(self.edge.tangentAt(t).negative())
+                return(self.edgeOnFace.tangentAt(t).negative().normalize())
             else:
-                return(self.edge.tangentAt(t))
+                return(self.edgeOnFace.tangentAt(t).normalize())
         else:
             return(None)
 
     def normalAt(self, t):
-        if self.edge:
+        if self.edgeOnFace:
             vec = None
             if self.face:
                 if self.curve2D:
+                    #print("%s at %f"%(str(self.curve2D[0]),t))
                     p = self.curve2D[0].value(t)
+                    #print("%d - %d"%(p.x,p.y))
                     vec = self.face.normalAt(p.x,p.y)
                 else:
                     # TODO Try to get self.face normal using distToShape
@@ -93,22 +103,22 @@ class curveOnSurface:
                     # if info[0]:
                     pass
             else:
-                vec = self.edge.normalAt(t)
+                vec = self.edgeOnFace.normalAt(t)
             if self.reverseNormal:
-                return(vec.negative())
+                return(vec.negative().normalize())
             else:
-                return(vec)
+                return(vec.normalize())
         else:
             return(None)
 
     def binormalAt(self, t):
-        t = self.tangentAt(t)
+        ta = self.tangentAt(t)
         n = self.normalAt(t)
-        if (not t == None) and (not n == None):
+        if (not ta == None) and (not n == None):
             if self.reverseBinormal:
-                return(t.cross(n).negative())
+                return(ta.cross(n).negative().normalize())
             else:
-                return(t.cross(n))
+                return(ta.cross(n).normalize())
         else:
             return(None)
 
