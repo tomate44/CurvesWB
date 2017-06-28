@@ -38,10 +38,12 @@ class curveOnSurface:
         self.edge = edge
         self.curve2D = None
         self.edgeOnFace = None
-        self.validate()
+        self.firstParameter = 0.0
+        self.lastParameter = 1.0
         self.reverseTangent  = False
         self.reverseNormal   = False
         self.reverseBinormal = False
+        self.isValid = False
         self.validate()
 
     def setEdge(self, edge):
@@ -52,34 +54,34 @@ class curveOnSurface:
         self.face = face
         self.validate()
 
-    #def edgeOnFace(self):
-        #if self.validate():
-            #return( self.curve2D[0].toShape(self.face, self.curve2D[1], self.curve2D[2]))
-
     def validate(self):
+        c2d = None
         if (not self.edge == None) and (not self.face == None):
-            self.curve2D = self.face.curveOnSurface(self.edge)
-            #self.edgeOnFace = self.curve2D[0].toShape(self.face, self.curve2D[1], self.curve2D[2])
-            if not isinstance(self.curve2D,tuple):
+            c2d = self.face.curveOnSurface(self.edge)
+            if not isinstance(c2d,tuple):
                 newedge = self.face.project([self.edge]).Edges[0]
-                self.curve2D = self.face.curveOnSurface(newedge)
-                #self.edgeOnFace = self.curve2D[0].toShape(self.face, self.curve2D[1], self.curve2D[2])
-            if isinstance(self.curve2D,tuple):
-                self.edgeOnFace = self.curve2D[0].toShape(self.face, self.curve2D[1], self.curve2D[2])
-                return(True)
-            else:
-                return(False)
+                c2d = self.face.curveOnSurface(newedge)
+            if isinstance(c2d,tuple):
+                self.curve2D = c2d[0]
+                self.firstParameter = c2d[1]
+                self.lastParameter  = c2d[2]
+                self.edgeOnFace = self.curve2D.toShape(self.face, self.firstParameter, self.lastParameter)
+                if isinstance(self.edgeOnFace, Part.Edge):
+                    self.isValid = True
+                else:
+                    self.isValid = False
         else:
-            return(False)
+            self.isValid = False
+        return(self.isValid)
 
     def valueAt(self, t):
-        if self.edgeOnFace:
+        if self.isValid:
             return(self.edgeOnFace.valueAt(t))
         else:
             return(None)
 
     def tangentAt(self, t):
-        if self.edgeOnFace:
+        if self.isValid:
             if self.reverseTangent:
                 return(self.edgeOnFace.tangentAt(t).negative().normalize())
             else:
@@ -88,22 +90,10 @@ class curveOnSurface:
             return(None)
 
     def normalAt(self, t):
-        if self.edgeOnFace:
+        if self.isValid:
             vec = None
-            if self.face:
-                if self.curve2D:
-                    #print("%s at %f"%(str(self.curve2D[0]),t))
-                    p = self.curve2D[0].value(t)
-                    #print("%d - %d"%(p.x,p.y))
-                    vec = self.face.normalAt(p.x,p.y)
-                else:
-                    # TODO Try to get self.face normal using distToShape
-                    # v = Part.Vertex(self.edge.valueAt(t))
-                    # d, pts, info = v.distToShape(self.face)
-                    # if info[0]:
-                    pass
-            else:
-                vec = self.edgeOnFace.normalAt(t)
+            p = self.curve2D.value(t)
+            vec = self.face.normalAt(p.x,p.y)
             if self.reverseNormal:
                 return(vec.negative().normalize())
             else:
@@ -121,6 +111,24 @@ class curveOnSurface:
                 return(ta.cross(n).normalize())
         else:
             return(None)
+
+    def checkParameters(self, num):
+        print("Input edge   : %0.3f -> %0.3f"%(self.edge.FirstParameter, self.edge.LastParameter))
+        print("2D curve     : %0.3f -> %0.3f"%(self.curve2D[1], self.curve2D[2]))
+        print("edge on face : %0.3f -> %0.3f"%(self.edgeOnFace.FirstParameter, self.edgeOnFace.LastParameter))
+        for i in range(num):
+            edgePrange = self.edge.LastParameter - self.edge.FirstParameter
+            curve2Prange = self.curve2D[2] - self.curve2D[1]
+            eofPrange = self.edgeOnFace.LastParameter - self.edgeOnFace.FirstParameter
+            t1 = self.edge.FirstParameter       + 1.0 * i * edgePrange   / (num - 1)
+            t2 = self.curve2D[1]                + 1.0 * i * curve2Prange / (num - 1)
+            t3 = self.edgeOnFace.FirstParameter + 1.0 * i * eofPrange    / (num - 1)
+            print("Sample %d"%i)
+            print("%s"%str(self.edge.valueAt(t1)))
+            u = self.curve2D[0].value(t2).x
+            v = self.curve2D[0].value(t2).y
+            print("%s"%str(self.face.valueAt(u,v)))
+            print("%s"%str(self.edgeOnFace.valueAt(t3)))
 
 
 

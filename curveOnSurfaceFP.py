@@ -132,26 +132,27 @@ class cosVP:
     def updateData(self, fp, prop):
         edge = self.getEdge(self.Object)
         face = self.getFace(self.Object)
-        if edge == None or face == None:
-            return
+        #if edge == None or face == None:
+            #return
         cos = curveOnSurface.curveOnSurface(edge, face)
-        cos.reverseTangent = fp.ReverseTangent
-        cos.reverseNormal = fp.ReverseNormal
-        cos.reverseBinormal = fp.ReverseBinormal
-        ParamRange = edge.LastParameter - edge.FirstParameter
-        val = []
-        nor = []
-        bino = []
-        for i in range(self.ViewObject.Samples):
-            t = edge.FirstParameter + (1.0 * i * ParamRange / (self.ViewObject.Samples - 1))
-            v = cos.valueAt(t)
-            val.append(v)
-            nor.append(v)
-            nor.append(v.add(cos.normalAt(t)))
-            bino.append(v)
-            bino.append(v.add(cos.binormalAt(t)))
-        self.normCoords.points = nor
-        self.binormCoords.points = bino
+        if cos.isValid:
+            cos.reverseTangent = fp.ReverseTangent
+            cos.reverseNormal = fp.ReverseNormal
+            cos.reverseBinormal = fp.ReverseBinormal
+            ParamRange = cos.lastParameter - cos.firstParameter
+            val = []
+            nor = []
+            bino = []
+            for i in range(self.ViewObject.Samples):
+                t = cos.firstParameter + (1.0 * i * ParamRange / (self.ViewObject.Samples - 1))
+                v = cos.valueAt(t)
+                val.append(v)
+                nor.append(v)
+                nor.append(v.add(cos.normalAt(t)))
+                bino.append(v)
+                bino.append(v.add(cos.binormalAt(t)))
+            self.normCoords.points = nor
+            self.binormCoords.points = bino
 
   
     def getDisplayModes(self,obj):
