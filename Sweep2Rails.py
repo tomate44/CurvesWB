@@ -31,7 +31,7 @@ class sweep2rails:
         obj.addProperty("App::PropertyBool",       "Extend",         "Base",   "Extend to rail limits")
         obj.addProperty("App::PropertyVectorList", "Points",         "Base",   "Points")
         obj.addProperty("Part::PropertyPartShape", "Shape",          "Base",   "Shape")
-        obj.Blending = "Average"
+        obj.Blending = "Blend"
         obj.ProfileSamples = 20
         obj.RailSamples = 20
         obj.Parametrization = 0.0
@@ -91,7 +91,7 @@ class sweep2rails:
 class sweep2railsVP:
     def __init__(self, obj):
         obj.Proxy = self
-        self.attach(obj)
+        #self.attach(obj)
         
     def getIcon(self):
         return (path_curvesWB_icons+'/sw2r.svg')
@@ -137,6 +137,7 @@ class sweep2railsVP:
             #vobj.DisplayMode = "Wireframe"
 
     def updateData(self, fp, prop):
+        FreeCAD.Console.PrintMessage("updateDate : " + str(prop) + "\n")
         if len(fp.Points) == fp.RailSamples * fp.ProfileSamples :
             self.coord.points = fp.Points
             self.row.vertices = (fp.RailSamples, fp.ProfileSamples)
@@ -149,15 +150,15 @@ class sweep2railsVP:
     def getDisplayModes(self,obj):
          "Return a list of display modes."
          modes=[]
-         modes.append("Wireframe")
          modes.append("Points")
          modes.append("Profiles")
          modes.append("Rails")
+         modes.append("Wireframe")
          return modes
 
     def getDefaultDisplayMode(self):
          "Return the name of the default display mode. It must be defined in getDisplayModes."
-         return "Wireframe"
+         return "Points"
 
     def setDisplayMode(self,mode):
          return mode
