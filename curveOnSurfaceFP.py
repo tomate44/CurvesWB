@@ -23,46 +23,47 @@ class cosFP:
     "joins the selected edges into a single BSpline Curve"
     def __init__(self, obj):
         ''' Add the properties '''
-        obj.addProperty("App::PropertyLinkSub",  "InputEdge",      "CurveOnSurface",   "Input edge")
-        obj.addProperty("App::PropertyLinkSub",  "Face",           "CurveOnSurface",   "Support face")
-        #obj.addProperty("App::PropertyFloat",    "Tolerance",      "CurveOnSurface",   "Tolerance").Tolerance=0.001
-        obj.addProperty("App::PropertyBool",     "ReverseTangent", "CurveOnSurface",   "Reverse tangent").ReverseTangent = False
-        obj.addProperty("App::PropertyBool",     "ReverseNormal",  "CurveOnSurface",   "Reverse normal").ReverseNormal = False
-        obj.addProperty("App::PropertyBool",     "ReverseBinormal","CurveOnSurface",   "Reverse binormal").ReverseBinormal = False
+        obj.addProperty("App::PropertyLinkSub",    "InputEdge",      "CurveOnSurface",   "Input edge")
+        obj.addProperty("App::PropertyLinkSub",    "Face",           "CurveOnSurface",   "Support face")
+        #obj.addProperty("App::PropertyFloat",      "Tolerance",      "CurveOnSurface",   "Tolerance").Tolerance=0.001
+        obj.addProperty("App::PropertyBool",       "ReverseTangent", "CurveOnSurface",   "Reverse tangent").ReverseTangent = False
+        obj.addProperty("App::PropertyBool",       "ReverseNormal",  "CurveOnSurface",   "Reverse normal").ReverseNormal = False
+        obj.addProperty("App::PropertyBool",       "ReverseBinormal","CurveOnSurface",   "Reverse binormal").ReverseBinormal = False
+        obj.addProperty("Part::PropertyPartShape", "Shape",          "Base",   "Shape")
         obj.Proxy = self
 
-    #def getEdge(self, obj):
-        #res = None
-        #if hasattr(obj, "InputEdge"):
-            #o = obj.InputEdge[0]
-            #ss = obj.InputEdge[1][0]
-            #n = eval(ss.lstrip('Edge'))
-            #res = o.Shape.Edges[n-1]
-        #return(res)
+    def getEdge(self, obj):
+        res = None
+        if hasattr(obj, "InputEdge"):
+            o = obj.InputEdge[0]
+            ss = obj.InputEdge[1][0]
+            n = eval(ss.lstrip('Edge'))
+            res = o.Shape.Edges[n-1]
+        return(res)
 
-    #def getFace(self, obj):
-        #res = None
-        #if hasattr(obj, "Face"):
-            #o = obj.Face[0]
-            #ss = obj.Face[1][0]
-            #n = eval(ss.lstrip('Face'))
-            #res = o.Shape.Faces[n-1]
-        #return(res)
+    def getFace(self, obj):
+        res = None
+        if hasattr(obj, "Face"):
+            o = obj.Face[0]
+            ss = obj.Face[1][0]
+            n = eval(ss.lstrip('Face'))
+            res = o.Shape.Faces[n-1]
+        return(res)
 
     def execute(self, obj):
-        return
-        #edge = self.getEdge(obj)
-        #face = self.getFace(obj)
-        #cos = curveOnSurface.curveOnSurface(edge, face)
-        #cos.reverseTangent = obj.ReverseTangent
-        #cos.reverseNormal = obj.ReverseNormal
-        #cos.reverseBinormal = obj.ReverseBinormal
+        edge = self.getEdge(obj)
+        face = self.getFace(obj)
+        cos = curveOnSurface.curveOnSurface(edge, face)
+        cos.reverseTangent = obj.ReverseTangent
+        cos.reverseNormal = obj.ReverseNormal
+        cos.reverseBinormal = obj.ReverseBinormal
         #e2d = cos.curve2D
-        #obj.Shape = cos.edgeOnFace()
+        obj.Shape = cos.edgeOnFace
 
 class cosVP:
     def __init__(self,vobj):
         vobj.addProperty("App::PropertyInteger", "Samples", "CurveOnSurface", "Samples").Samples=64
+        vobj.addProperty("App::PropertyFloat",   "Scale",   "CurveOnSurface", "Scale").Scale=1.0
         vobj.Proxy = self
 
     def getEdge(self, obj):
@@ -100,6 +101,7 @@ class cosVP:
         
         self.normCoords = CoinNodes.coordinate3Node()
         self.binormCoords = CoinNodes.coordinate3Node()
+        self.curveCoords = CoinNodes.coordinate3Node()
         
         self.normComb = CoinNodes.combComb(color = (0.,0.3,0.), lineWidth = 1.0)
         self.normCurve = CoinNodes.combCurve(color = (0.,0.7,0.), lineWidth = 1.0)
@@ -107,11 +109,20 @@ class cosVP:
         self.binormComb = CoinNodes.combComb(color = (0.,0.,0.3), lineWidth = 1.0)
         self.binormCurve = CoinNodes.combCurve(color = (0.,0.,0.7), lineWidth = 1.0)
         
+        self.curve = CoinNodes.polygonNode(color = (0.,0.,0.), lineWidth = 1.0)
+        
         self.normComb.linkTo(self.normCoords)
         self.normCurve.linkTo(self.normCoords)
         
         self.binormComb.linkTo(self.binormCoords)
         self.binormCurve.linkTo(self.binormCoords)
+        
+        self.wireframeDM.addChild(self.curveCoords)
+        self.wireframeDM.addChild(self.curve)
+        self.normalDM.addChild(self.curveCoords)
+        self.normalDM.addChild(self.curve)
+        self.binormalDM.addChild(self.curveCoords)
+        self.binormalDM.addChild(self.curve)
         
         self.normalDM.addChild(self.normCoords)
         self.normalDM.addChild(self.normComb)
@@ -148,9 +159,11 @@ class cosVP:
                 v = cos.valueAt(t)
                 val.append(v)
                 nor.append(v)
-                nor.append(v.add(cos.normalAt(t)))
+                nor.append(v.add(cos.normalAt(t).multiply(self.ViewObject.Scale)))
                 bino.append(v)
-                bino.append(v.add(cos.binormalAt(t)))
+                bino.append(v.add(cos.binormalAt(t).multiply(self.ViewObject.Scale)))
+            self.curveCoords.points = val
+            self.curve.vertices = val
             self.normCoords.points = nor
             self.binormCoords.points = bino
 
@@ -173,13 +186,19 @@ class cosVP:
 
     def onChanged(self, vp, prop):
         "Here we can do something when a single property got changed"
-        if prop == "Edge":
-            debug("vp detected a Edge change")
-        if prop == "CurveColor":
-            self.curveColor.rgb = (vp.CurveColor[0],vp.CurveColor[1],vp.CurveColor[2])
-        elif prop == "CombColor":
-            self.combColor.rgb  = (vp.CombColor[0],vp.CombColor[1],vp.CombColor[2])
-        return
+        if prop == "Samples":
+            debug("vp detected a Samples change")
+            if vp.Samples < 2:
+                vp.Samples = 2
+            elif vp.Samples > 1000:
+                vp.Samples = 1000
+        if prop == "Scale":
+            debug("vp detected a Scale change")
+            if vp.Scale <= 0.0:
+                vp.Scale = 0.0001
+            elif vp.Scale > 1000:
+                vp.Scale = 1000
+        self.updateData(vp.Object,"Scale")
 
   
     def setEdit(self,vobj,mode):
@@ -224,15 +243,15 @@ class cosCommand:
         print(edge)
         print(face)
         if edge and face:
-            cos = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","CurveOnSurface")
+            cos = FreeCAD.ActiveDocument.addObject("App::FeaturePython","CurveOnSurface")
             cosFP(cos)
             cosVP(cos.ViewObject)
             cos.InputEdge = edge
             cos.Face = face
             FreeCAD.ActiveDocument.recompute()
             #cos.ViewObject.DrawStyle = "Dashed"
-            cos.ViewObject.LineColor = (1.0,0.67,0.0)
-            cos.ViewObject.LineWidth = 3.0
+            #cos.ViewObject.LineColor = (1.0,0.67,0.0)
+            #cos.ViewObject.LineWidth = 3.0
         else:
             FreeCAD.Console.PrintError("Select an edge and its supporting face \n")
 
