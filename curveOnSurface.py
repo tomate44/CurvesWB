@@ -112,23 +112,22 @@ class curveOnSurface:
         else:
             return(None)
 
-    def checkParameters(self, num):
-        print("Input edge   : %0.3f -> %0.3f"%(self.edge.FirstParameter, self.edge.LastParameter))
-        print("2D curve     : %0.3f -> %0.3f"%(self.curve2D[1], self.curve2D[2]))
-        print("edge on face : %0.3f -> %0.3f"%(self.edgeOnFace.FirstParameter, self.edgeOnFace.LastParameter))
-        for i in range(num):
-            edgePrange = self.edge.LastParameter - self.edge.FirstParameter
-            curve2Prange = self.curve2D[2] - self.curve2D[1]
-            eofPrange = self.edgeOnFace.LastParameter - self.edgeOnFace.FirstParameter
-            t1 = self.edge.FirstParameter       + 1.0 * i * edgePrange   / (num - 1)
-            t2 = self.curve2D[1]                + 1.0 * i * curve2Prange / (num - 1)
-            t3 = self.edgeOnFace.FirstParameter + 1.0 * i * eofPrange    / (num - 1)
-            print("Sample %d"%i)
-            print("%s"%str(self.edge.valueAt(t1)))
-            u = self.curve2D[0].value(t2).x
-            v = self.curve2D[0].value(t2).y
-            print("%s"%str(self.face.valueAt(u,v)))
-            print("%s"%str(self.edgeOnFace.valueAt(t3)))
+    def tangentTo(self, t, pt):
+        v = self.valueAt(t)
+        n = self.normalAt(t)
+        tanPlane = Part.Plane(v,n)
+        line = Part.Line(pt, pt.add(n))
+        ptOnPlane = tanPlane.intersect(line)
+        res = []
+        if isinstance(ptOnPlane,tuple):
+            for el in ptOnPlane:
+                if isinstance(el,(tuple,list)):
+                    for e in el:
+                        if isinstance(e,Part.Point):
+                            res.append(FreeCAD.Vector(e.X,e.Y,e.Z).sub(v))
+        return(res)
+
+
 
 
 
