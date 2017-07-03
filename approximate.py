@@ -338,16 +338,17 @@ class approx:
             obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Approximation_Surface") #add object to document
             Approximate(obj,source)
             ViewProviderApp(obj.ViewObject)
-            s.ViewObject.Visibility=False
-        for s in source:
-            obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Approximation_Curve") #add object to document
-            Approximate(obj,s)
-            ViewProviderApp(obj.ViewObject)
-            s.ViewObject.Visibility=False
+            #s.ViewObject.Visibility=False
+        else:
+            for s in source:
+                obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Approximation_Curve") #add object to document
+                Approximate(obj,s)
+                ViewProviderApp(obj.ViewObject)
+                s.ViewObject.Visibility=False
         FreeCAD.ActiveDocument.recompute()
             
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/approximate.svg', 'MenuText': 'Approximate', 'ToolTip': 'Curve approximating a list of points'}
+        return {'Pixmap' : path_curvesWB_icons+'/approximate.svg', 'MenuText': 'Approximate', 'ToolTip': 'Approximate points to NURBS curve or surface'}
 
 FreeCADGui.addCommand('Approximate', approx())
 
