@@ -35,6 +35,14 @@ f2 = getFace(o2)
 cos1 = curveOnSurface.curveOnSurface(e1,f1)
 cos2 = curveOnSurface.curveOnSurface(e2,f2)
 
+cos1.reverseTangent =  o1.ReverseTangent
+cos1.reverseNormal =   o1.ReverseNormal
+cos1.reverseBinormal = o1.ReverseBinormal
+
+cos2.reverseTangent =  o2.ReverseTangent
+cos2.reverseNormal =   o2.ReverseNormal
+cos2.reverseBinormal = o2.ReverseBinormal
+
 samples = 20
 curves = []
 
@@ -46,14 +54,17 @@ for i in range(samples):
     pt1 = cos1.valueAt(t1)
     pt2 = cos2.valueAt(t2)
     chord = pt2.sub(pt1).Length
-    ip1 = cos1.tangentTo(t1,pt2)[0]
-    ip2 = cos2.tangentTo(t2,pt1)[0]
+#    ip1 = cos1.tangentTo(t1,pt2)[0]
+#    ip2 = cos2.tangentTo(t2,pt1)[0]
+    ip1 = cos1.binormalAt(t1)
+    ip2 = cos2.binormalAt(t2)
     ip1.normalize().multiply(chord / 3.0)
     ip2.normalize().multiply(chord / 3.0)
     poles = [pt1, pt1.add(ip1), pt2.add(ip2), pt2]
     bz = Part.BezierCurve()
     bz.setPoles(poles)
     curves.append(bz)
+
 
 for c in curves:
     e = c.toShape()
