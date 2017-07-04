@@ -99,9 +99,9 @@ class Approximate:
                 else:
                     a.append([v.Point for v in o.Shape.Vertexes])
             self.Points = a
-        elif hasattr(obj.PointObject,'Birail'):
+        elif hasattr(obj.PointObject,'ProfileSamples'):
             numVert = len(obj.PointObject.Shape.Vertexes) 
-            debug("Birail object detected")
+            debug("Surface object detected")
             debug("%d points"%numVert)
             n = numVert / obj.PointObject.ProfileSamples
             a = []
