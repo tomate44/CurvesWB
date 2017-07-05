@@ -140,6 +140,12 @@ class blendSurfVP:
             self.coord.points = fp.Points
             self.row.vertices = (fp.RailSamples, fp.ProfileSamples)
             self.col.vertices = (fp.RailSamples, fp.ProfileSamples)
+            colors1 = [(0.0,0.8,0.0)] * (fp.ProfileSamples - 1)
+            colors2 = [(0.8,0.4,0.4)] * (fp.RailSamples - 2)* (fp.ProfileSamples-1)
+            colors3 = [(0.8,0.8,0.0)] * (fp.ProfileSamples - 1)
+            colors = colors1 + colors2 + colors3
+            self.row.binding.value = coin.SoMaterialBinding.PER_PART
+            self.row.coinColor.diffuseColor.setValues(0,len(colors),colors)
 
     def onChanged(self, vp, prop):
         "Here we can do something when a single property got changed"
@@ -156,7 +162,7 @@ class blendSurfVP:
 
     def getDefaultDisplayMode(self):
          "Return the name of the default display mode. It must be defined in getDisplayModes."
-         return "Points"
+         return "Wireframe"
 
     def setDisplayMode(self,mode):
          return mode

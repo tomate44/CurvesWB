@@ -179,7 +179,7 @@ class cosVP:
 
     def getDefaultDisplayMode(self):
          "Return the name of the default display mode. It must be defined in getDisplayModes."
-         return "Wireframe"
+         return "Normal Binormal"
 
     def setDisplayMode(self,mode):
          return mode

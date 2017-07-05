@@ -117,16 +117,26 @@ class colorNode(coin.SoSeparator):
     def __init__(self, color = (0.,0.,0.)):
         super(colorNode, self).__init__()
         self.coinColor = coin.SoMaterial()
+        self.binding = coin.SoMaterialBinding()
+        self.binding.value = coin.SoMaterialBinding.OVERALL
+        self.addChild(self.binding)
         self.addChild(self.coinColor)
         self.color = color
 
     @property
     def color(self):
-        return self.coinColor.diffuseColor.getValues()[0].getValue()
+        ar = [col.getValue() for col in self.coinColor.diffuseColor.getValues()]
+        return ar
 
     @color.setter
     def color(self, color):
-        self.coinColor.diffuseColor = (color[0], color[1], color[2])
+        if isinstance(color[0], (tuple, list)):
+            #ar = []
+            #for col in color:
+                #ar.append((col[0], col[1], col[2]))
+            self.coinColor.diffuseColor.setValues(0,len(color),color)
+        else:
+            self.coinColor.diffuseColor.setValues(0,1,[color])
 
     @property
     def transparency(self):
@@ -181,6 +191,18 @@ class polygonNode(styleNode):
         self.lines.coordIndex.setValue(0)
         self.lines.coordIndex.setValues(0, len(a), a)
         self._numVertices = a
+        col = self.color[0]
+        self.color = [col]*len(a)
+
+    def setFirstColor(self, col):
+        collist = self.color
+        collist[0] = col
+        self.color = collist
+        
+    def setLastColor(self, col):
+        collist = self.color
+        collist[-1] = col
+        self.color = collist
 
 class rowNode(polygonNode):
     def __init__(self, color = (0.,0.,0.), lineWidth = 1.0):
