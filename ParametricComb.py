@@ -163,7 +163,7 @@ class Comb:
         #obj.addProperty("App::PropertyBool","ScaleAuto","Comb","Automatic Scale").ScaleAuto = True
         obj.addProperty("App::PropertyIntegerConstraint","Samples","Comb","Number of samples").Samples = 64
         obj.addProperty("App::PropertyInteger","Number","Surface","Number of surface samples").Number = 3
-        obj.addProperty("App::PropertyEnumeration","Orientation","Surface","Surface Comb Orientation").Orientation=["U","V"]
+        obj.addProperty("App::PropertyEnumeration","Orientation","Surface","Surface Comb Orientation").Orientation=["U","V","UV"]
         #obj.addProperty("App::PropertyFloat","TotalLength","Comb","Total length of edges")
         obj.addProperty("App::PropertyVectorList","CombPoints","Comb","CombPoints")
         obj.addProperty("Part::PropertyPartShape","Shape","Comb", "Shape of comb plot")
@@ -212,15 +212,16 @@ class Comb:
                     if o.Shape.Faces:
                         g = o.Shape.Faces[n-1]
                         try:
-                            if obj.Orientation == 'U':
+                            if 'U' in obj.Orientation:
                                 bounds = g.Surface.bounds()
                                 midParam = bounds[0] + (bounds[1] - bounds[0]) / 2
                                 iso = isoEdge(g.Surface,'U',midParam)       #g.Surface.uIso(midParam).toShape()
-                            else:
+                                totalLength += iso.Length
+                            if 'V' in obj.Orientation:
                                 bounds = g.Surface.bounds()
                                 midParam = bounds[2] + (bounds[3] - bounds[2]) / 2
                                 iso = isoEdge(g.Surface,'V',midParam)    #g.Surface.vIso(midParam).toShape()
-                            totalLength += iso.Length
+                                totalLength += iso.Length
                         except:
                             debug("Surface Error")
  
@@ -248,11 +249,12 @@ class Comb:
                     if o.Shape.Faces:
                         g = o.Shape.Faces[n-1]
                         #try:
-                        if obj.Orientation == 'U':
-                            iso = self.getuIsoEdges(g,obj.Number)
-                        else:
-                            iso = self.getvIsoEdges(g,obj.Number)
-                        edgeList += iso
+                        if 'U' in obj.Orientation:
+                            #iso = self.getuIsoEdges(g,obj.Number)
+                            edgeList += self.getuIsoEdges(g,obj.Number)
+                        if 'V' in obj.Orientation:
+                            edgeList += self.getvIsoEdges(g,obj.Number)
+                        #edgeList += iso
                         #except:
                             #debug("Surface Error")
         self.edges = edgeList
