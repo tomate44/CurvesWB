@@ -2,28 +2,23 @@
 
 ![Curves Workbench](https://github.com/tomate44/CurvesWB/raw/master/docFiles/GeomInfo_01.jpg)
 
-This is a python workbench, with a collection of tools for Nurbs curves and surfaces.
-I am a very bad programer, and this workbench is full of dirty, crappy code ;-)
-Please don't use these tools for any serious work.
-
-This workbench is developped with FreeCAD Master ( currently 0.17 ) and OCC 7.1. 
+This is a python workbench, with a collection of tools for NURBS curves and surfaces. This workbench is developed with FreeCAD Master (currently 0.17dev) and OCC 7.1. 
 Some tools may not work with earlier versions.
 
-How to install :
+**Note:** I am a very bad programer, and this workbench is full of dirty, crappy code ;-) Please don't use these tools for any serious work.
 
-For FreeCAD version 0.17 or higher, this workbench can be installed with FreeCAD's addon manager (name : "Curves")
-
-  OR
-
+## Installation 
+There are 2 methods to install Curves WB:
+1. For FreeCAD version 0.17 or higher it's preferred to install this workbench with the [FreeCAD's addon manager](https://github.com/FreeCAD/FreeCAD-addons) under the label "Curves".  
+2. The second method is 
 - go in your personal FreeCAD folder ( usually ~/.FreeCAD on Linux )
 - cd ./Mod ( or create this folder if it doesn't exist )
 - git clone https://github.com/tomate44/CurvesWB
 - start FreeCAD
 
-if you're lucky, you should see a "Curves" workbench in the workbench dropdown list.
+"Curves" workbench should now show up in the workbench dropdown list.
 
-Available tools :
-
+## Curves WB Tools 
 - Create a B-Spline curve
 ![BSplineCurve](https://github.com/tomate44/CurvesWB/raw/master/docFiles/BSplineCurve_01.jpg)
 - Create a parametric editable B-Spline curve from a selected edge
@@ -49,4 +44,5 @@ Available tools :
 - Map a sketch on a face
 - Birail object to be used as support for a "Sweep On 2 Rails" tool
 
-LGPL2+ license
+== License
+CurvesWB is released under the LGPL2+ license
