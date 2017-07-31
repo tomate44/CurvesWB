@@ -18,6 +18,10 @@ There are 2 methods to install Curves WB:
 
 "Curves" workbench should now show up in the workbench dropdown list.
 
+## Feedback  
+Feedback, suggestions, and patches (via Pull Request) are all appreciated. If you find a problem with this workbench please open an issue in the issue queue. 
+ 
+
 ## Curves WB Tools 
 - Create a B-Spline curve
 ![BSplineCurve](https://github.com/tomate44/CurvesWB/raw/master/docFiles/BSplineCurve_01.jpg)
@@ -44,5 +48,5 @@ There are 2 methods to install Curves WB:
 - Map a sketch on a face
 - Birail object to be used as support for a "Sweep On 2 Rails" tool
 
-== License
+== License  
 CurvesWB is released under the LGPL2+ license
