@@ -48,5 +48,5 @@ Feedback, suggestions, and patches (via Pull Request) are all appreciated. If yo
 - Map a sketch on a face
 - Birail object to be used as support for a "Sweep On 2 Rails" tool
 
-== License  
+## License  
 CurvesWB is released under the LGPL2+ license
