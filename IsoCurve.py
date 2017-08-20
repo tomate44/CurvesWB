@@ -1,40 +1,19 @@
-#***************************************************************************
-#*                                                                         *
-#*   Copyright (c) 2017 - Christophe Grellier (Chris_G)                    *
-#*                                                                         *  
-#*                                                                         *
-#*   This program is free software; you can redistribute it and/or modify  *
-#*   it under the terms of the GNU Lesser General Public License (LGPL)    *
-#*   as published by the Free Software Foundation; either version 2 of     *
-#*   the License, or (at your option) any later version.                   *
-#*   for detail see the LICENCE text file.                                 *
-#*                                                                         *
-#*   This program is distributed in the hope that it will be useful,       *
-#*   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
-#*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
-#*   GNU Library General Public License for more details.                  *
-#*                                                                         *
-#*   You should have received a copy of the GNU Library General Public     *
-#*   License along with this program; if not, write to the Free Software   *
-#*   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  *
-#*   USA                                                                   *
-#*                                                                         *
-#***************************************************************************
-
 __title__="Macro IsoCurves"
 __author__ = "Chris_G"
+__license__="LGPL 2.1"
 __doc__ = '''
 Macro IsoCurves.
-Creates a parametric isoCurve from a face
+Creates parametric isoCurves from a face
 
 Instructions:
 Select a face in the 3D View.
 Then, in Py console:
 
-import IsoCurves
-IsoCurves.run()
+import IsoCurve
+IsoCurve.run()
 
 '''
+
 import os, dummy
 import FreeCAD as App
 if App.GuiUp:
@@ -61,9 +40,13 @@ class IsoCurve:
         selfobj.addProperty("App::PropertyFloat","Parameter","IsoCurve","IsoCurve parameter").Parameter=0.
         selfobj.addProperty("App::PropertyInteger","NumberU","IsoCurve","Number of IsoCurve in U direction").NumberU=3
         selfobj.addProperty("App::PropertyInteger","NumberV","IsoCurve","Number of IsoCurve in V direction").NumberV=3
-        selfobj.addProperty("App::PropertyEnumeration","Multi","IsoCurve","Number of IsoCurve").Multi=["Single","Multi"]
+        selfobj.addProperty("App::PropertyEnumeration","Mode","IsoCurve","Number of IsoCurve").Mode=["Single","Multi"]
         selfobj.addProperty("App::PropertyEnumeration","Orientation","IsoCurve","Curve Orientation").Orientation=["U","V"]
-        selfobj.Multi = "Single"
+        selfobj.Mode = "Single"
+        selfobj.setEditorMode("Parameter", 0)
+        selfobj.setEditorMode("Orientation", 0)
+        selfobj.setEditorMode("NumberU", 2)
+        selfobj.setEditorMode("NumberV", 2)
         selfobj.Proxy = self
 
     def split(self, e, t0, t1):
@@ -124,7 +107,7 @@ class IsoCurve:
         face = self.getFace(selfobj)
         #u0,u1,v0,v1 = face.ParameterRange
         if face:
-            if selfobj.Multi == 'Multi':
+            if selfobj.Mode == 'Multi':
                 w = isocurves.multiIso(face, selfobj.NumberU, selfobj.NumberV).toShape()
             else:
                 if selfobj.Orientation == 'U':
@@ -150,13 +133,13 @@ class IsoCurve:
             else:
                 self.p0 = self.v0
                 self.p1 = self.v1
-        if prop == 'Multi':
-            if selfobj.Multi  == "Single":
+        if prop == 'Mode':
+            if selfobj.Mode  == "Single":
                 selfobj.setEditorMode("Parameter", 0)
                 selfobj.setEditorMode("Orientation", 0)
                 selfobj.setEditorMode("NumberU", 2)
                 selfobj.setEditorMode("NumberV", 2)
-            elif selfobj.Multi  == "Multi":
+            elif selfobj.Mode  == "Multi":
                 selfobj.setEditorMode("Parameter", 2)
                 selfobj.setEditorMode("Orientation", 2)
                 selfobj.setEditorMode("NumberU", 0)
@@ -169,14 +152,14 @@ class IsoCurve:
                 selfobj.Parameter  = self.p1
             selfobj.Proxy.execute(selfobj)
         if prop == 'NumberU':
-            if  selfobj.NumberU  < 1:
-                selfobj.NumberU  = 1
+            if  selfobj.NumberU  < 0:
+                selfobj.NumberU  = 0
             elif selfobj.NumberU  > 1000:
                 selfobj.NumberU  = 1000
             selfobj.Proxy.execute(selfobj)
         if prop == 'NumberV':
-            if  selfobj.NumberV  < 1:
-                selfobj.NumberV  = 1
+            if  selfobj.NumberV  < 0:
+                selfobj.NumberV  = 0
             elif selfobj.NumberV  > 1000:
                 selfobj.NumberV  = 1000
             selfobj.Proxy.execute(selfobj)
