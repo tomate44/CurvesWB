@@ -38,15 +38,15 @@ class IsoCurve:
     def __init__(self,selfobj):
         selfobj.addProperty("App::PropertyLinkSub","Face","IsoCurve","Input face")
         selfobj.addProperty("App::PropertyFloat","Parameter","IsoCurve","IsoCurve parameter").Parameter=0.
-        selfobj.addProperty("App::PropertyInteger","NumberU","IsoCurve","Number of IsoCurve in U direction").NumberU=3
-        selfobj.addProperty("App::PropertyInteger","NumberV","IsoCurve","Number of IsoCurve in V direction").NumberV=3
+        selfobj.addProperty("App::PropertyInteger","NumberU","IsoCurve","Number of IsoCurve in U direction").NumberU=5
+        selfobj.addProperty("App::PropertyInteger","NumberV","IsoCurve","Number of IsoCurve in V direction").NumberV=5
         selfobj.addProperty("App::PropertyEnumeration","Mode","IsoCurve","Number of IsoCurve").Mode=["Single","Multi"]
         selfobj.addProperty("App::PropertyEnumeration","Orientation","IsoCurve","Curve Orientation").Orientation=["U","V"]
-        selfobj.Mode = "Single"
-        selfobj.setEditorMode("Parameter", 0)
-        selfobj.setEditorMode("Orientation", 0)
-        selfobj.setEditorMode("NumberU", 2)
-        selfobj.setEditorMode("NumberV", 2)
+        selfobj.Mode = "Multi"
+        selfobj.setEditorMode("Parameter", 2)
+        selfobj.setEditorMode("Orientation", 2)
+        selfobj.setEditorMode("NumberU", 0)
+        selfobj.setEditorMode("NumberV", 0)
         selfobj.Proxy = self
 
     def split(self, e, t0, t1):
@@ -219,28 +219,36 @@ class CommandMacroIsoCurve:
         run()
     def IsActive(self):
         if App.ActiveDocument:
-            return True
+            #sel = Gui.Selection.getSelectionEx()
+            f = Gui.Selection.Filter("SELECT Part::Feature SUBELEMENT Face COUNT 1..1000")
+            return f.match()
         else:
-            return False
+            return(False)
 
 if App.GuiUp:
     Gui.addCommand("IsoCurve", CommandMacroIsoCurve())
 
 def run():
-    sel = Gui.Selection.getSelectionEx()
+    f = Gui.Selection.Filter("SELECT Part::Feature SUBELEMENT Face COUNT 1..1000")
     try:
-        if len(sel) != 1:
-            raise Exception("Select one face only.")
+        if not f.match():
+            raise Exception("Select at least one face.")
         try:
             App.ActiveDocument.openTransaction("Macro IsoCurve")
-            selfobj = makeIsoCurveFeature()
-            so = sel[0].SubObjects[0]
-            p = sel[0].PickedPoints[0]
-            poe = so.distToShape(Part.Vertex(p))
-            par = poe[2][0][2]
-            selfobj.Face = [sel[0].Object,sel[0].SubElementNames]
-            selfobj.Parameter = par[0]
-            selfobj.Proxy.execute(selfobj)
+            r = f.result()
+            for e in r:
+                for s in e:
+                    for f in s.SubElementNames:
+                        #App.ActiveDocument.openTransaction("Macro IsoCurve")
+                        selfobj = makeIsoCurveFeature()
+                        #so = sel[0].SubObjects[0]
+                        #p = sel[0].PickedPoints[0]
+                        #poe = so.distToShape(Part.Vertex(p))
+                        #par = poe[2][0][2]
+                        #selfobj.Face = [sel[0].Object,sel[0].SubElementNames]
+                        selfobj.Face = [s.Object,f]
+                        #selfobj.Parameter = par[0]
+                        selfobj.Proxy.execute(selfobj)
         finally:
             App.ActiveDocument.commitTransaction()
     except Exception as err:

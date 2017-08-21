@@ -276,7 +276,16 @@ class discretize:
             ViewProviderDisc(obj.ViewObject)
             obj.ViewObject.PointSize = 3.00000
         FreeCAD.ActiveDocument.recompute()
-            
+
+    def IsActive(self):
+        if FreeCAD.ActiveDocument:
+            #f = FreeCADGui.Selection.Filter("SELECT Part::Feature SUBELEMENT Edge COUNT 1..1000")
+            #return f.match()
+            return(True)
+        else:
+            return(False)
+
+
     def GetResources(self):
         return {'Pixmap' : path_curvesWB_icons+'/discretize.svg', 'MenuText': 'Discretize', 'ToolTip': 'Discretizes edge or wire'}
 

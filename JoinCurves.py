@@ -57,14 +57,24 @@ class join:
 
     def execute(self, obj):
         edges = self.getEdges(obj)
-        curves = []
+        tmp = []
         for e in edges:
+            #c = e.Curve
+            #if not isinstance(c,Part.BSplineCurve):
+                #c = e.Curve.toBSpline()
+            #c.segment(e.FirstParameter,e.LastParameter)
+            #tmp.append(c)
+            tmp += e.toNurbs().Edges
+
+        curves = []
+        for e in tmp:
             c = e.Curve
             if not isinstance(c,Part.BSplineCurve):
                 c = e.Curve.toBSpline()
             c.segment(e.FirstParameter,e.LastParameter)
             curves.append(c)
 
+        debug("Edges : \n%s"%str(curves))
         c0 = curves[0].copy()
         if not isinstance(c0,Part.BSplineCurve):
             #FreeCAD.Console.PrintMessage("\nConverting c0 to BSplineCurve\n")
@@ -99,6 +109,34 @@ class join:
             #if selobj.Object:                
                 #selobj.Object.ViewObject.Visibility = False
 
+class joinVP:
+    def __init__(self,vobj):
+        vobj.Proxy = self
+       
+    def getIcon(self):
+        return (path_curvesWB_icons+'/joincurve.svg')
+
+    def attach(self, vobj):
+        self.ViewObject = vobj
+        self.Object = vobj.Object
+  
+    def setEdit(self,vobj,mode):
+        return False
+    
+    def unsetEdit(self,vobj,mode):
+        return
+
+    def __getstate__(self):
+        return None
+
+    def __setstate__(self,state):
+        return None
+
+    #def claimChildren(self):
+        #return None #[self.Object.Base, self.Object.Tool]
+        
+    def onDelete(self, feature, subelements): # subelements is a tuple of strings
+        return True
 
 
 class joinCommand:
@@ -120,18 +158,19 @@ class joinCommand:
         
         joinCurve = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","JoinCurve")
         join(joinCurve)
-        joinCurve.ViewObject.Proxy=0
+        joinVP(joinCurve.ViewObject)
         joinCurve.Edges = edges
         FreeCAD.ActiveDocument.recompute()
+        joinCurve.ViewObject.LineWidth = 2.0
+        joinCurve.ViewObject.LineColor = (0.3,0.0,0.5)
         
-        
-        #curves = []
-        #for e in edges:
-            #c = e.Curve
-            #if not isinstance(c,Part.BSplineCurve):
-                #c = e.Curve.toBSpline()
-            #c.segment(e.FirstParameter,e.LastParameter)
-            #curves.append(c)
+    def IsActive(self):
+        if FreeCAD.ActiveDocument:
+            #f = FreeCADGui.Selection.Filter("SELECT Part::Feature SUBELEMENT Edge COUNT 1..1000")
+            #return f.match()
+            return(True)
+        else:
+            return(False)
 
     def GetResources(self):
         return {'Pixmap' : path_curvesWB_icons+'/joincurve.svg', 'MenuText': 'Join Curves', 'ToolTip': 'Joins the selected edges into BSpline Curves'}
