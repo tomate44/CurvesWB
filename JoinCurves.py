@@ -17,9 +17,13 @@ def increaseContinuity(c,tol):
     #oc = c.Continuity
     mults = [int(m) for m in c.getMultiplicities()]
     #knots = c.getKnots()
-    for i in range(len(mults))[1:-1]:
-        rk = c.removeKnot(i+1,mults[i]-1,tol)
-    return(c.Continuity)    
+    try:
+        for i in range(len(mults))[1:-1]:
+            rk = c.removeKnot(i+1,mults[i]-1,tol)
+    except Part.OCCError:
+        debug('failed to increase continuity.')
+        debug("curve has %d poles."%len(c.getPoles()))
+    return(c)    
 
 def alignedTangents(c0, c1, Tol):
     t0 = c0.tangent(c0.LastParameter)[0]
@@ -80,7 +84,8 @@ class join:
             #FreeCAD.Console.PrintMessage("\nConverting c0 to BSplineCurve\n")
             c0 = c0.toBSpline()
         outcurves = []
-        for c in curves[1:]:
+        for n,c in enumerate(curves[1:]):
+            debug("joining edge #%d"%(n+2))
             i = False
             tempCurve = c0.copy()
             tan = alignedTangents(c0,c,obj.Tolerance)
@@ -96,11 +101,10 @@ class join:
                     debug("Failed to join edge #"+str(curves[1:].index(c)+2)+"\n")
                 else:
                     i = increaseContinuity(c0,obj.Tolerance)
-                    if (not (i == 'C1')) & obj.CornerBreak:
+                    if (not (i.Continuity == 'C1')) & obj.CornerBreak:
                         outcurves.append(tempCurve)
                         c0 = c.copy()
                         debug("Failed to smooth edge #"+str(curves[1:].index(c)+2)+"\n")
-
         outcurves.append(c0)
 
         outEdges = [Part.Edge(c) for c in outcurves]

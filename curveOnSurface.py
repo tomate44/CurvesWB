@@ -59,7 +59,15 @@ class curveOnSurface:
         if (not self.edge == None) and (not self.face == None):
             c2d = self.face.curveOnSurface(self.edge)
             if not isinstance(c2d,tuple):
-                newedge = self.face.project([self.edge]).Edges[0]
+                try:
+                    newedge = self.face.project([self.edge]).Edges[0]
+                    success = True
+                    print("Projection successful.")
+                except Part.OCCError:
+                    newface = self.face.Surface.toShape()
+                    newedge = newface.project([self.edge]).Edges[0]
+                    success = True
+                    print("Projection failed. Fallback on surface.")
                 c2d = self.face.curveOnSurface(newedge)
             if isinstance(c2d,tuple):
                 self.curve2D = c2d[0]
