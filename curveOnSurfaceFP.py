@@ -146,7 +146,7 @@ class cosVP:
         #if edge == None or face == None:
             #return
         cos = curveOnSurface.curveOnSurface(edge, face)
-        if cos.isValid:
+        if True: #cos.isValid:
             cos.reverseTangent = fp.ReverseTangent
             cos.reverseNormal = fp.ReverseNormal
             cos.reverseBinormal = fp.ReverseBinormal

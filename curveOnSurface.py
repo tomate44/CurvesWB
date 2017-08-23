@@ -58,17 +58,19 @@ class curveOnSurface:
         c2d = None
         if (not self.edge == None) and (not self.face == None):
             c2d = self.face.curveOnSurface(self.edge)
-            if not isinstance(c2d,tuple):
-                try:
-                    newedge = self.face.project([self.edge]).Edges[0]
-                    success = True
-                    print("Projection successful.")
-                except Part.OCCError:
-                    newface = self.face.Surface.toShape()
-                    newedge = newface.project([self.edge]).Edges[0]
-                    success = True
-                    print("Projection failed. Fallback on surface.")
-                c2d = self.face.curveOnSurface(newedge)
+            #if not isinstance(c2d,tuple):
+                #print("curveOnSurface error.")
+                #try:
+                    #newedge = self.face.project([self.edge]).Edges[0]
+                    #success = True
+                    #c2d = self.face.curveOnSurface(newedge)
+                    #print("Projection successful.")
+                #except Part.OCCError:
+                    #newface = self.face.Surface.toShape()
+                    #newedge = newface.project([self.edge]).Edges[0]
+                    #success = True
+                    #print("Projection failed. Fallback on surface.")
+                    #c2d = self.face.curveOnSurface(newedge)
             if isinstance(c2d,tuple):
                 self.curve2D = c2d[0]
                 self.firstParameter = c2d[1]
@@ -78,15 +80,22 @@ class curveOnSurface:
                     self.isValid = True
                 else:
                     self.isValid = False
-        else:
-            self.isValid = False
+                    self.edgeOnFace = self.edge
+            else:
+                self.isValid = False
+                self.firstParameter = self.edge.FirstParameter
+                self.lastParameter  = self.edge.LastParameter
+                self.edgeOnFace = self.edge
         return(self.isValid)
 
     def valueAt(self, t):
         if self.isValid:
             return(self.edgeOnFace.valueAt(t))
         else:
-            return(None)
+            p = self.edge.valueAt(t)
+            surf = self.face.Surface
+            u,v = surf.parameter(p)            
+            return(self.face.Surface.value(u,v))
 
     def tangentAt(self, t):
         if self.isValid:
@@ -95,7 +104,10 @@ class curveOnSurface:
             else:
                 return(self.edgeOnFace.tangentAt(t).normalize())
         else:
-            return(None)
+            if self.reverseTangent:
+                return(self.edge.tangentAt(t).negative().normalize())
+            else:
+                return(self.edge.tangentAt(t).normalize())
 
     def normalAt(self, t):
         if self.isValid:
@@ -107,7 +119,13 @@ class curveOnSurface:
             else:
                 return(vec.normalize())
         else:
-            return(None)
+            p = self.edge.valueAt(t)
+            surf = self.face.Surface
+            u,v = surf.parameter(p)
+            if self.reverseNormal:
+                return(self.face.Surface.normal(u,v).negative().normalize())
+            else:
+                return(self.face.Surface.normal(u,v).normalize())
 
     def binormalAt(self, t):
         ta = self.tangentAt(t)
