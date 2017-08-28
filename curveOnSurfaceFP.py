@@ -94,7 +94,7 @@ class cosVP:
     def attach(self, vobj):
         self.ViewObject = vobj
         self.Object = vobj.Object
-        self.wireframeDM = coin.SoGroup()
+        #self.wireframeDM = coin.SoGroup()
         self.normalDM = coin.SoGroup()
         self.binormalDM = coin.SoGroup()
         self.bothDM = coin.SoGroup()
@@ -117,8 +117,8 @@ class cosVP:
         self.binormComb.linkTo(self.binormCoords)
         self.binormCurve.linkTo(self.binormCoords)
         
-        self.wireframeDM.addChild(self.curveCoords)
-        self.wireframeDM.addChild(self.curve)
+        #self.wireframeDM.addChild(self.curveCoords)
+        #self.wireframeDM.addChild(self.curve)
         self.normalDM.addChild(self.curveCoords)
         self.normalDM.addChild(self.curve)
         self.binormalDM.addChild(self.curveCoords)
@@ -135,7 +135,7 @@ class cosVP:
         self.bothDM.addChild(self.normalDM)
         self.bothDM.addChild(self.binormalDM)
         
-        vobj.addDisplayMode(self.wireframeDM,"Wireframe")
+        #vobj.addDisplayMode(self.wireframeDM,"Wireframe")
         vobj.addDisplayMode(self.normalDM,   "Normal")
         vobj.addDisplayMode(self.binormalDM, "Binormal")
         vobj.addDisplayMode(self.bothDM,     "Normal Binormal")
@@ -171,7 +171,7 @@ class cosVP:
     def getDisplayModes(self,obj):
          "Return a list of display modes."
          modes=[]
-         modes.append("Wireframe")
+         #modes.append("Wireframe")
          modes.append("Normal")
          modes.append("Binormal")
          modes.append("Normal Binormal")
@@ -243,12 +243,14 @@ class cosCommand:
         print(edge)
         print(face)
         if edge and face:
-            cos = FreeCAD.ActiveDocument.addObject("App::FeaturePython","CurveOnSurface")
+            cos = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","CurveOnSurface")
             cosFP(cos)
             cosVP(cos.ViewObject)
             cos.InputEdge = edge
             cos.Face = face
+            cos.Placement = edge[0].Placement
             FreeCAD.ActiveDocument.recompute()
+            
             #cos.ViewObject.DrawStyle = "Dashed"
             #cos.ViewObject.LineColor = (1.0,0.67,0.0)
             #cos.ViewObject.LineWidth = 3.0
