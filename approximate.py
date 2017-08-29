@@ -134,6 +134,8 @@ class Approximate:
                 dis = 1.0
             for i in range(len(pts)):
                 params.append(1.0 * i * dis)
+            lv = pts[-1].sub(pts[-2])
+            params[-1] = params[-2] + lv.Length
             bs.interpolate(Points = pts, Parameters = params, Tolerance = obj.ApproxTolerance)
 
         elif obj.Method == "Parametrization":

@@ -38,12 +38,12 @@ class blendSurfFP:
         obj.addProperty("App::PropertyLink",       "Edge1",          "Base",   "First edge")
         obj.addProperty("App::PropertyLink",       "Edge2",          "Base",   "Second edge")
         #obj.addProperty("App::PropertyEnumeration","Blending",       "Base",   "Blending method").Blending = ["Average","Blend","Rail1","Rail2"]
-        #obj.addProperty("App::PropertyFloat",      "Parametrization","Base",   "Parametrization of interpolating curves")
-        obj.addProperty("App::PropertyInteger",    "ProfileSamples", "Base",   "Profile Samples")
-        obj.addProperty("App::PropertyInteger",    "RailSamples",    "Base",   "Edge Samples")
-        obj.addProperty("App::PropertyBool",       "Untwist",        "Base",   "Untwist surface")
-        obj.addProperty("App::PropertyVectorList", "Points",         "Base",   "Points")
-        obj.addProperty("Part::PropertyPartShape", "Shape",          "Base",   "Shape")
+        obj.addProperty("App::PropertyPlacement",  "Placement",      "Base",   "Placement")
+        obj.addProperty("App::PropertyInteger",    "ProfileSamples", "BlendSurface",   "Profile Samples")
+        obj.addProperty("App::PropertyInteger",    "RailSamples",    "BlendSurface",   "Edge Samples")
+        obj.addProperty("App::PropertyBool",       "Untwist",        "BlendSurface",   "Untwist surface")
+        obj.addProperty("App::PropertyVectorList", "Points",         "BlendSurface",   "Points")
+        obj.addProperty("Part::PropertyPartShape", "Shape",          "BlendSurface",   "Shape")
         #obj.Blending = "Blend"
         obj.ProfileSamples = 20
         obj.RailSamples = 20
