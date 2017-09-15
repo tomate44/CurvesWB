@@ -291,9 +291,9 @@ class GeomInfo:
             #self.cam2 = coin.SoPerspectiveCamera()
             #self.sg.addChild(self.cam2)
             
-            self.sensor = coin.SoFieldSensor(self.updateCB, None)
+            #self.sensor = coin.SoFieldSensor(self.updateCB, None)
             #self.sensor.setData(self.sensor)
-            self.sensor.setPriority(0)
+            #self.sensor.setPriority(0)
             
             self.addHUD()
             
@@ -321,9 +321,9 @@ class GeomInfo:
         self.removeGrid()
         self.sg.touch()
 
-    def updateCB(self, *args):
-        #return(True)
-        self.getTopo()
+    #def updateCB(self, *args):
+        ##return(True)
+        #self.getTopo()
 
     def removeGrid(self):
         if self.viz:
@@ -436,8 +436,8 @@ class GeomInfo:
                 self.coord = self.root.getChild(1)
                 self.node = surfNode(surf)
                 self.insertGrid()
-                self.sensor.detach()
-                self.sensor.attach(self.coord.point)
+                #self.sensor.detach()
+                #self.sensor.attach(self.coord.point)
             elif self.ss.ShapeType == 'Edge':
                 #FreeCAD.Console.PrintMessage("Edge detected"+ "\n")
                 cur = self.ss.Curve
@@ -448,8 +448,8 @@ class GeomInfo:
                 self.coord = self.root.getChild(1)
                 self.node = curveNode(cur)
                 self.insertGrid()
-                self.sensor.detach()
-                self.sensor.attach(self.coord.point)
+                #self.sensor.detach()
+                #self.sensor.attach(self.coord.point)
 
     def GetResources(self):
         #return {'Pixmap'  : 'python', 'MenuText': 'Toggle command', 'ToolTip': 'Example toggle command', 'Checkable': True}
