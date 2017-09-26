@@ -162,6 +162,7 @@ class sketchOnSurface:
     def __init__(self, obj):
         obj.addProperty("App::PropertyLinkSub", "Face",   "SketchOnSurface", "Input face")
         obj.addProperty("App::PropertyLink",    "Sketch", "SketchOnSurface", "Input Sketch")
+        obj.addProperty("App::PropertyBool",    "ConstructionBounds", "SketchOnSurface", "include construction geometry in sketch bounds").ConstructionBounds = False
         obj.Proxy = self
 
     def getSketchBounds(self, obj):
@@ -169,11 +170,23 @@ class sketchOnSurface:
             debug("No Sketch")
             return
         else:
-            skedges = [i.toShape() for i in obj.Sketch.Geometry]
-            comp = Part.Compound(skedges)
-            bb = comp.BoundBox
-            self.sketchBounds = (bb.XMin,bb.XMax,bb.YMin,bb.YMax)
-            debug("Sketch bounds = %s"%str(self.sketchBounds))
+            if obj.ConstructionBounds:
+                skedges = []
+                for i in obj.Sketch.Geometry:
+                    try:
+                        skedges.append(i.toShape())
+                    except:
+                        print("toShape() error, ignoring geometry")
+                #skedges = [i.toShape() for i in obj.Sketch.Geometry]
+                comp = Part.Compound(skedges)
+                bb = comp.BoundBox
+                self.sketchBounds = (bb.XMin,bb.XMax,bb.YMin,bb.YMax)
+                debug("Sketch bounds = %s"%str(self.sketchBounds))
+            else:
+                comp = Part.Compound(obj.Sketch.Shape.Edges)
+                bb = comp.BoundBox
+                self.sketchBounds = (bb.XMin,bb.XMax,bb.YMin,bb.YMax)
+                debug("Sketch bounds = %s"%str(self.sketchBounds))
 
     def updateFace(self, obj):
         if not obj.Face:
@@ -217,10 +230,11 @@ class sketchOnSurface:
         #self.scaledSketch = Draft.scale([obj.Sketch],delta=sc,center=off,copy=True)
         self.geoms = []
         for g in obj.Sketch.Geometry:
-            if not g.Construction:
-                bs = g.toBSpline()
-                sbs = self.scaleGeom(bs)
-                self.geoms.append(sbs)
+            if hasattr(g,'Construction'):
+                if not g.Construction:
+                    bs = g.toBSpline()
+                    sbs = self.scaleGeom(bs)
+                    self.geoms.append(sbs)
 
 
     def mapOnSurface(self, obj):
