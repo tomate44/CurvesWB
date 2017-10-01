@@ -162,7 +162,7 @@ class sketchOnSurface:
     def __init__(self, obj):
         obj.addProperty("App::PropertyLinkSub", "Face",   "SketchOnSurface", "Input face")
         obj.addProperty("App::PropertyLink",    "Sketch", "SketchOnSurface", "Input Sketch")
-        obj.addProperty("App::PropertyBool",    "ConstructionBounds", "SketchOnSurface", "include construction geometry in sketch bounds").ConstructionBounds = False
+        obj.addProperty("App::PropertyBool",    "ConstructionBounds", "SketchOnSurface", "include construction geometry in sketch bounds").ConstructionBounds = True
         obj.Proxy = self
 
     def getSketchBounds(self, obj):

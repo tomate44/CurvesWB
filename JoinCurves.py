@@ -43,7 +43,8 @@ class join:
     "joins the selected edges into a single BSpline Curve"
     def __init__(self, obj):
         ''' Add the properties '''
-        obj.addProperty("App::PropertyLinkSubList",  "Edges",        "Join",   "Edges")
+        obj.addProperty("App::PropertyLinkSubList",  "Edges",        "Join",   "List of edges to join")
+        obj.addProperty("App::PropertyLink",         "Base",         "Join",   "Join all the edges of this base object")
         obj.addProperty("App::PropertyFloat",        "Tolerance",    "Join",   "Tolerance").Tolerance=0.001
         obj.addProperty("App::PropertyBool",         "CornerBreak",  "Join",   "Break on corners").CornerBreak = False
         #obj.addProperty("App::PropertyBool",         "BadContinuity","Join",   "Break On Bad C0 Continuity").BadContinuity = False
@@ -51,6 +52,9 @@ class join:
 
     def getEdges(self, obj):
         res = []
+        if hasattr(obj, "Base"):
+            if obj.Base:
+                res = obj.Base.Shape.Edges
         if hasattr(obj, "Edges"):
             for l in obj.Edges:
                 o = l[0]
@@ -145,6 +149,18 @@ class joinVP:
 
 class joinCommand:
     "joins the selected edges into a single BSpline Curve"
+    def makeJoinFeature(self,source):
+        joinCurve = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","JoinCurve")
+        join(joinCurve)
+        joinVP(joinCurve.ViewObject)
+        if isinstance(source,list):
+            joinCurve.Edges = source
+        else:
+            joinCurve.Base = source
+        FreeCAD.ActiveDocument.recompute()
+        joinCurve.ViewObject.LineWidth = 2.0
+        joinCurve.ViewObject.LineColor = (0.3,0.0,0.5)
+
     def Activated(self):
         edges = []
         sel = FreeCADGui.Selection.getSelectionEx()
@@ -156,17 +172,17 @@ class joinCommand:
                     if isinstance(selobj.SubObjects[i], Part.Edge):
                         edges.append((selobj.Object, selobj.SubElementNames[i]))
             else:
-                for i in range(len(selobj.Object.Shape.Edges)):
-                    name = "Edge%d"%(i+1)
-                    edges.append((selobj.Object, name))
-        
-        joinCurve = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","JoinCurve")
-        join(joinCurve)
-        joinVP(joinCurve.ViewObject)
-        joinCurve.Edges = edges
-        FreeCAD.ActiveDocument.recompute()
-        joinCurve.ViewObject.LineWidth = 2.0
-        joinCurve.ViewObject.LineColor = (0.3,0.0,0.5)
+                self.makeJoinFeature(selobj.Object)
+                selobj.Object.ViewObject.Visibility=False
+        if edges:
+            self.makeJoinFeature(edges)
+        #joinCurve = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","JoinCurve")
+        #join(joinCurve)
+        #joinVP(joinCurve.ViewObject)
+        #joinCurve.Edges = edges
+        #FreeCAD.ActiveDocument.recompute()
+        #joinCurve.ViewObject.LineWidth = 2.0
+        #joinCurve.ViewObject.LineColor = (0.3,0.0,0.5)
         
     def IsActive(self):
         if FreeCAD.ActiveDocument:
