@@ -163,6 +163,7 @@ class sketchOnSurface:
         obj.addProperty("App::PropertyLinkSub", "Face",   "SketchOnSurface", "Input face")
         obj.addProperty("App::PropertyLink",    "Sketch", "SketchOnSurface", "Input Sketch")
         obj.addProperty("App::PropertyBool",    "ConstructionBounds", "SketchOnSurface", "include construction geometry in sketch bounds").ConstructionBounds = True
+        obj.addProperty("App::PropertyBool",    "Scale",  "SketchOnSurface", "Scale sketch geometries").Scale = True
         obj.Proxy = self
 
     def getSketchBounds(self, obj):
@@ -233,8 +234,14 @@ class sketchOnSurface:
             if hasattr(g,'Construction'):
                 if not g.Construction:
                     bs = g.toBSpline()
-                    sbs = self.scaleGeom(bs)
-                    self.geoms.append(sbs)
+                    if hasattr(obj,'Scale'):
+                        if obj.Scale:
+                            sbs = self.scaleGeom(bs)
+                            self.geoms.append(sbs)
+                        else:
+                            self.geoms.append(bs)
+                    else:
+                        self.geoms.append(bs)
 
 
     def mapOnSurface(self, obj):
