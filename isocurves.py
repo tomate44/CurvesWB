@@ -9,7 +9,9 @@ multi  = isocurves.multiIso(face,10,20)
 Part.show(multi.toShape())
 '''
 
+from operator import itemgetter
 import FreeCAD
+from FreeCAD import Base
 import Part
 
 class curve(object):
@@ -60,15 +62,52 @@ class isoCurve:
             Msg("Parameter error")
         else:
             self.parameter = param
-        
+
+    def faceBounds2d(self):
+        edges2d = []
+        for edge3d in self.face.OuterWire.Edges:
+            edges2d.append(self.face.curveOnSurface(edge3d))
+        return(edges2d)
+
+    def getIntersectionPoints(self,l2d,bounds):
+        pts = []
+        for c2d in bounds:
+            try:
+                inter = l2d.intersectCC(c2d[0])
+                for pt in inter:
+                    pts.append((pt.x,pt.y))
+            except RuntimeError:
+                pass
+        return(pts)
+
     def toShape(self):
+        bounds = self.faceBounds2d()
+        
         if self.direction == 'U':
             self.curve = self.face.Surface.uIso(self.parameter)
-            prange = self.bounds[2:4]
+            v1 = Base.Vector2d(self.parameter,self.bounds[2])
+            v2 = Base.Vector2d(self.parameter,self.bounds[3])
+            l2d = Part.Geom2d.Line2dSegment(v1,v2)
+            pts = self.getIntersectionPoints(l2d,bounds)
+            if pts:
+                sortedPts = sorted(pts,key=itemgetter(1))
+                prange = [l2d.parameter(Base.Vector2d(sortedPts[0][0], sortedPts[0][1])), l2d.parameter(Base.Vector2d(sortedPts[-1][0], sortedPts[-1][1]))]
+            else:
+                Msg("No intersection points")
         elif self.direction == 'V':
             self.curve = self.face.Surface.vIso(self.parameter)
-            prange = self.bounds[0:2]
-        return(self.curve.toShape(prange[0],prange[1]))
+            v1 = Base.Vector2d(self.bounds[0], self.parameter)
+            v2 = Base.Vector2d(self.bounds[1], self.parameter)
+            l2d = Part.Geom2d.Line2dSegment(v1,v2)
+            pts = self.getIntersectionPoints(l2d,bounds)
+            sortedPts = sorted(pts,key=itemgetter(0))
+            prange = [l2d.parameter(Base.Vector2d(sortedPts[0][0], sortedPts[0][1])), l2d.parameter(Base.Vector2d(sortedPts[-1][0], sortedPts[-1][1]))]
+        e = l2d.toShape(self.face,prange[0],prange[1])
+        if isinstance(e, Part.Edge):
+            return(e)
+        else:
+            Msg("Failed to create isoCurve shape")
+            return(None)
 
 class multiIso:
     '''defines a set of multiple iso curves on a face'''
