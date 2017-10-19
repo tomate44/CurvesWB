@@ -4,6 +4,7 @@ import FreeCAD, Part, math
 import os, dummy, FreeCADGui
 from FreeCAD import Base
 from pivy import coin
+import CoinNodes
 
 path_curvesWB = os.path.dirname(dummy.__file__)
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
@@ -29,7 +30,7 @@ class hook:
         obj.addProperty("App::PropertyFloat",        "StartDistance", "Value", "Distance from edge start")
         obj.addProperty("App::PropertyFloat",        "EndDistance",   "Value", "Distance to edge end")
         obj.addProperty("App::PropertyVector",       "Center",        "Position", "Center")
-        obj.Method = "Parameter"
+        #obj.Method = "Parameter"
         obj.Proxy = self
 
     def getEdge(self, obj):
@@ -60,11 +61,11 @@ class hook:
         elif obj.Method == "Distance-From-End":
             par = e.getParameterByLength(e.Length - obj.EndDistance)
             obj.Center = e.valueAt(par)
-        radius = 1.0 * e.Length / 100.0
-        sphere = Part.Sphere()
-        sphere.Radius = radius
-        sphere.Center = obj.Center
-        obj.Shape = sphere.toShape()
+        #radius = 1.0 * e.Length / 100.0
+        #sphere = Part.Sphere()
+        #sphere.Radius = radius
+        #sphere.Center = obj.Center
+        obj.Shape = Part.Vertex(obj.Center)
 
     def setEditormode(self, fp, l):
         if not len(l) == 6:
@@ -146,6 +147,49 @@ class ViewProviderHook:
     def attach(self, vobj):
         self.ViewObject = vobj
         self.Object = vobj.Object
+        
+        #self.selectionNode = coin.SoType.fromName("SoFCSelection").createInstance()
+        #self.selectionNode.documentName.setValue(FreeCAD.ActiveDocument.Name)
+        #self.selectionNode.objectName.setValue(vobj.Object.Name) # here obj is the ViewObject, we need its associated App Object
+        #self.selectionNode.subElementName.setValue("Vertex")
+        
+        
+        #self.node = coin.SoSeparator()
+        #self.node.setName("Hook")
+        #self.coord = coin.SoCoordinate3()
+        #self.marker = coin.SoSphere() #coin.SoMarkerSet() #((1,0,0),coin.SoMarkerSet.DIAMOND_FILLED_9_9)
+        ##self.marker.markerIndex = coin.SoMarkerSet.DIAMOND_FILLED_9_9
+        #self.color = coin.SoBaseColor()
+        #self.color.rgb = (1,0,0)
+        
+        
+        ##self.node.addChild(self.color)
+        ##self.node.addChild(self.coord)
+        ##self.node.addChild(self.marker)
+        #self.selectionNode.addChild(self.color)
+        #self.selectionNode.addChild(self.coord)
+        #self.selectionNode.addChild(self.marker)
+        
+        #vobj.addDisplayMode(self.selectionNode,"Wireframe")
+
+    #def updateData(self, fp, prop):
+        #if prop == "Center":
+            #vec = coin.SbVec3f(fp.Center.x, fp.Center.y, fp.Center.z)
+            #self.coord.point.setValue(vec)
+            ##self.coord.point.setValues(0,len([vec]),[vec])
+
+    #def getDisplayModes(self,obj):
+         #"Return a list of display modes."
+         #modes=[]
+         #modes.append("Wireframe")
+         #return modes
+
+    #def getDefaultDisplayMode(self):
+         #'''Return the name of the default display mode. It must be defined in getDisplayModes.'''
+         #return "Wireframe"
+
+    #def setDisplayMode(self,mode):
+         #return mode
   
     def setEdit(self,vobj,mode):
         return False
@@ -190,6 +234,8 @@ class hookCmd:
             obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython",u"Hook") #add object to document
             hook(obj,e)
             ViewProviderHook(obj.ViewObject)
+            obj.ViewObject.PointSize = 5
+            obj.Method = "Parameter"
         FreeCAD.ActiveDocument.recompute()
             
     def GetResources(self):
