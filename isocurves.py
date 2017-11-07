@@ -50,16 +50,16 @@ class isoCurve:
         self.direction = 'U'
         self.parameter = 0
         if not isinstance(face, Part.Face):
-            Msg("Error. Not a face")
+            FreeCAD.Console.PrintMessage("Error. Not a face")
         else:
             self.bounds = face.ParameterRange
             self.face = face
         if not direc in 'UV':
-            Msg("Direction error")
+            FreeCAD.Console.PrintMessage("Direction error")
         else:
             self.direction = direc
         if not isinstance(param, (float, int)):
-            Msg("Parameter error")
+            FreeCAD.Console.PrintMessage("Parameter error")
         else:
             self.parameter = param
 
@@ -82,7 +82,7 @@ class isoCurve:
 
     def toShape(self):
         bounds = self.faceBounds2d()
-        
+        prange = [0,1]
         if self.direction == 'U':
             self.curve = self.face.Surface.uIso(self.parameter)
             v1 = Base.Vector2d(self.parameter,self.bounds[2])
@@ -93,20 +93,23 @@ class isoCurve:
                 sortedPts = sorted(pts,key=itemgetter(1))
                 prange = [l2d.parameter(Base.Vector2d(sortedPts[0][0], sortedPts[0][1])), l2d.parameter(Base.Vector2d(sortedPts[-1][0], sortedPts[-1][1]))]
             else:
-                Msg("No intersection points")
+                FreeCAD.Console.PrintMessage("No intersection points")
         elif self.direction == 'V':
             self.curve = self.face.Surface.vIso(self.parameter)
             v1 = Base.Vector2d(self.bounds[0], self.parameter)
             v2 = Base.Vector2d(self.bounds[1], self.parameter)
             l2d = Part.Geom2d.Line2dSegment(v1,v2)
             pts = self.getIntersectionPoints(l2d,bounds)
-            sortedPts = sorted(pts,key=itemgetter(0))
-            prange = [l2d.parameter(Base.Vector2d(sortedPts[0][0], sortedPts[0][1])), l2d.parameter(Base.Vector2d(sortedPts[-1][0], sortedPts[-1][1]))]
+            if pts:
+                sortedPts = sorted(pts,key=itemgetter(0))
+                prange = [l2d.parameter(Base.Vector2d(sortedPts[0][0], sortedPts[0][1])), l2d.parameter(Base.Vector2d(sortedPts[-1][0], sortedPts[-1][1]))]
+            else:
+                FreeCAD.Console.PrintMessage("No intersection points")
         e = l2d.toShape(self.face,prange[0],prange[1])
         if isinstance(e, Part.Edge):
             return(e)
         else:
-            Msg("Failed to create isoCurve shape")
+            FreeCAD.Console.PrintMessage("Failed to create isoCurve shape")
             return(None)
 
 class multiIso:
@@ -118,7 +121,7 @@ class multiIso:
         self.uiso = []
         self.viso = []
         if not isinstance(face, Part.Face):
-            Msg("Error. Not a face")
+            FreeCAD.Console.PrintMessage("Error. Not a face")
         else:
             self.bounds = face.ParameterRange
             self.face = face

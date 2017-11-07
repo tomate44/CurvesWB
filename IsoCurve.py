@@ -120,6 +120,7 @@ class IsoCurve:
                     ci.computeV()
                 w = ci.toShape()
             selfobj.Shape = w
+            selfobj.Placement = face.Placement
         else:
             return False
 
