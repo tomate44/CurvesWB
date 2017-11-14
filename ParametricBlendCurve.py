@@ -280,12 +280,13 @@ class ParametricBlendCurve:
     def getParam(self, selectionObject):
         param = []
         for o in selectionObject:
-            so = o.SubObjects[0]
-            p = o.PickedPoints[0]
-            poe = so.distToShape(Part.Vertex(p))
-            par = poe[2][0][2]
-            goodpar = (par - so.FirstParameter) * 100. / (so.LastParameter - so.FirstParameter)
-            param.append(goodpar)
+            for i in range(len(o.SubObjects)):
+                so = o.SubObjects[i]
+                p = o.PickedPoints[i]
+                poe = so.distToShape(Part.Vertex(p))
+                par = poe[2][0][2]
+                goodpar = (par - so.FirstParameter) * 100. / (so.LastParameter - so.FirstParameter)
+                param.append(goodpar)
         return param
 
     def parseSel(self, selectionObject):
