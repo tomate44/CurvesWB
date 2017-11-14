@@ -87,10 +87,10 @@ class BlendCurve:
         
         self.initEdges(obj)
         
-        obj.Parameter1 = ( self.edge1.LastParameter * 100, self.edge1.FirstParameter * 100, self.edge1.LastParameter * 100, 0.5 )
-        obj.Parameter2 = ( self.edge2.LastParameter * 100, self.edge2.FirstParameter * 100, self.edge2.LastParameter * 100, 0.5 )
-        self.param1 = self.edge1.LastParameter
-        self.param2 = self.edge2.LastParameter
+        obj.Parameter1 = ( 1.0, 0.0, 1.0, 0.1 )
+        obj.Parameter2 = ( 1.0, 0.0, 1.0, 0.1 )
+        self.param1 = 1.0
+        self.param2 = 1.0
         
         obj.Proxy = self
         self.execute(obj)
@@ -152,6 +152,7 @@ class BlendCurve:
             radius = curvature1 * self.blendDegree * pow(e1d1.Length,2) / (self.blendDegree -1)
             opp = math.sqrt(pow(segmentLength * self.scale1,2)-pow(radius,2))
             c = Part.Circle()
+            FreeCAD.Console.PrintMessage("\ne1d1 length : %f\n"%e1d1.Length)
             c.Axis = e1d1
             v = FreeCAD.Vector(e1d1)
             v.normalize().multiply(e1d1.Length+opp)
@@ -192,9 +193,10 @@ class BlendCurve:
         
         self.initEdges(fp)
         
-
-        self.param1 = fp.Parameter1 / 100
-        self.param2 = fp.Parameter2 / 100
+        #p0,p1 = self.curve1.FirstParameter, self.curve1.LastParameter
+        self.param1 = self.curve1.FirstParameter + fp.Parameter1 * (self.curve1.LastParameter - self.curve1.FirstParameter)
+        #p0,p1 = self.curve2.FirstParameter, self.curve2.LastParameter
+        self.param2 = self.curve2.FirstParameter + fp.Parameter2 * (self.curve2.LastParameter - self.curve2.FirstParameter)
         
         self.blendPoles = self.computePoles() #[self.edge1.valueAt(self.param1),self.edge2.valueAt(self.param2)]
         
@@ -233,10 +235,10 @@ class BlendCurve:
             self.scale1 = fp.Scale1 / 10.
         elif prop == "Scale2":
             self.scale2 = fp.Scale2 / 10.
-        elif prop == "Parameter1":
-            self.param1 = fp.Parameter1 / 100
-        elif prop == "Parameter2":
-            self.param2 = fp.Parameter2 / 100
+        #elif prop == "Parameter1":
+            #self.param1 = fp.Parameter1 / 100
+        #elif prop == "Parameter2":
+            #self.param2 = fp.Parameter2 / 100
         elif prop == "Continuity1":
             self.cont1 = self.getContinuity(fp.Continuity1)
             self.blendDegree = 1 + self.cont1 + self.cont2
