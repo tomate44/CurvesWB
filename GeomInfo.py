@@ -198,7 +198,7 @@ def surfNode(surf):
                 uknotPoints.append((p.x,p.y,p.z))
         
         uknotsnode = coinNodes.coordinate3Node(uknotPoints)
-        uCurves = coinNodes.rowNode((0.5,0,0),3)
+        uCurves = coinNodes.rowNode((1.0,0.5,0.3),3)
         uCurves.vertices=(len(uknots),100)
         #debug(str(uCurves.vertices))
         
@@ -210,7 +210,7 @@ def surfNode(surf):
                 vknotPoints.append((p.x,p.y,p.z))
         
         vknotsnode = coinNodes.coordinate3Node(vknotPoints)
-        vCurves = coinNodes.rowNode((0,0,0.5),3)
+        vCurves = coinNodes.rowNode((0.3,0.5,1.0),3)
         vCurves.vertices=(len(vknots),100)
         
         ## *** Set texts ***        
