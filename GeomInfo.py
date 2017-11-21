@@ -2,6 +2,7 @@ import os
 import FreeCAD, FreeCADGui, Part
 from pivy import coin
 import dummy
+import isocurves
 import CoinNodes as coinNodes
 reload(coinNodes)
 
@@ -61,6 +62,17 @@ def to1D(arr):
             array.append(el)
     return array
 
+def paramList(n, fp, lp):
+    rang = lp-fp
+    l = []
+    if n == 1:
+        l = [fp + rang / 2.0]
+    elif n == 2:
+        l = [fp,lp]
+    elif n > 2:
+        for i in range(n):
+            l.append( fp + 1.0* i* rang / (n-1) )
+    return(l)
 
 def curveNode(cur):
     bspline = False
@@ -131,6 +143,8 @@ def curveNode(cur):
         vizSep.addChild(knotMarkerSep)
         vizSep.addChild(multSep)
     return vizSep
+
+
 
 def surfNode(surf):
     bspline = False
@@ -212,7 +226,38 @@ def surfNode(surf):
         vknotsnode = coinNodes.coordinate3Node(vknotPoints)
         vCurves = coinNodes.rowNode((0.3,0.5,1.0),3)
         vCurves.vertices=(len(vknots),100)
+
+        # ***** isoCurves ******
         
+        uparam = paramList(16,u0,u1)
+        uisoPoints = []
+        for k in uparam:
+            uIso = surf.uIso(k)
+            epts = uIso.toShape().discretize(100)
+            for p in epts:
+                uisoPoints.append((p.x,p.y,p.z))
+        
+        uisonode = coinNodes.coordinate3Node(uisoPoints)
+        uisoCurves = coinNodes.rowNode((0.0,0.0,0.0),1)
+        uisoCurves.transparency = 0.8
+        uisoCurves.vertices=(len(uparam),100)
+        #debug(str(uCurves.vertices))
+        
+        vparam = paramList(16,v0,v1)
+        visoPoints = []
+        for k in vparam:
+            vIso = surf.vIso(k)
+            epts = vIso.toShape().discretize(100)
+            for p in epts:
+                visoPoints.append((p.x,p.y,p.z))
+        
+        visonode = coinNodes.coordinate3Node(visoPoints)
+        visoCurves = coinNodes.rowNode((0.0,0.0,0.0),1)
+        visoCurves.transparency = 0.8
+        visoCurves.vertices=(len(vparam),100)
+
+
+
         ## *** Set texts ***        
         #multStr = []
         #for m in mults:
@@ -238,8 +283,10 @@ def surfNode(surf):
         vizSep.addChild(uCurves)
         vizSep.addChild(vknotsnode)
         vizSep.addChild(vCurves)
-        #vizSep.addChild(knotMarkerSep)
-        #vizSep.addChild(multSep)
+        vizSep.addChild(uisonode)
+        vizSep.addChild(uisoCurves)
+        vizSep.addChild(visonode)
+        vizSep.addChild(visoCurves)
     return vizSep
 
 
@@ -327,11 +374,23 @@ class GeomInfo:
 
     def removeGrid(self):
         if self.viz:
+            #self.root.removeChild(self.trans)
             self.root.removeChild(self.node)
             self.viz = False
             #self.sensor.detach()
     def insertGrid(self):
         if self.node:
+            #self.trans = coin.SoMatrixTransform()
+            #mat = self.placement.toMatrix()
+            #self.trans.matrix.setValue(mat.A11, mat.A12, mat.A13, mat.A14, 
+                                       #mat.A21, mat.A22, mat.A23, mat.A24, 
+                                       #mat.A31, mat.A32, mat.A33, mat.A34, 
+                                       #mat.A41, mat.A42, mat.A43, mat.A44 )
+            #self.trans.matrix.setValue(mat.A11, mat.A21, mat.A31, mat.A41, 
+                                       #mat.A12, mat.A22, mat.A32, mat.A42, 
+                                       #mat.A13, mat.A23, mat.A33, mat.A43, 
+                                       #mat.A14, mat.A24, mat.A34, mat.A44 )
+            #self.root.addChild(self.trans)
             self.root.addChild(self.node)
             self.viz = True
             #self.sensor.attach(self.root)
@@ -432,9 +491,11 @@ class GeomInfo:
                 t = self.getSurfInfo(surf)
                 self.SoText2.string.setValues(0,len(t),t)
                 self.removeGrid()
-                self.root = self.so.ViewObject.RootNode
-                self.coord = self.root.getChild(1)
+                #self.root = self.so.ViewObject.RootNode
+                self.root = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
+                #self.coord = self.root.getChild(1)
                 self.node = surfNode(surf)
+                #self.placement = self.ss.Placement
                 self.insertGrid()
                 #self.sensor.detach()
                 #self.sensor.attach(self.coord.point)
@@ -444,9 +505,11 @@ class GeomInfo:
                 t = self.getCurvInfo(cur)
                 self.SoText2.string.setValues(0,len(t),t)
                 self.removeGrid()
-                self.root = self.so.ViewObject.RootNode
-                self.coord = self.root.getChild(1)
+                #self.root = self.so.ViewObject.RootNode
+                self.root = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
+                #self.coord = self.root.getChild(1)
                 self.node = curveNode(cur)
+                #self.placement = self.ss.Placement
                 self.insertGrid()
                 #self.sensor.detach()
                 #self.sensor.attach(self.coord.point)
