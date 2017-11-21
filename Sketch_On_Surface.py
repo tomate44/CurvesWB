@@ -295,6 +295,10 @@ class SoS:
                 if issubclass(type(selobj.SubObjects[0]),Part.Face):
                     face = (selobj.Object,[selobj.SubElementNames[0]])
                     faceFound = True
+            else:
+                if selobj.Shape.Faces:
+                    face = selobj.Shape.Faces[0]
+                    faceFound = True
 
         if sketchFound & faceFound:
             doc = FreeCAD.ActiveDocument
@@ -305,7 +309,7 @@ class SoS:
             sos.Face = face
             doc.recompute()
         else:
-            FreeCAD.Console.PrintMessage("Please select exactly 1 face and 1 sketch\n")
+            FreeCAD.Console.PrintMessage("Please select exactly 1 face (in the 3D view) and 1 sketch\n")
 
     def GetResources(self):
         return {'Pixmap' : path_curvesWB_icons+'/sketch_surf.svg', 'MenuText': 'SoS', 'ToolTip': 'Maps a sketch on a surface'}
