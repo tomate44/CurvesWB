@@ -296,8 +296,8 @@ class SoS:
                     face = (selobj.Object,[selobj.SubElementNames[0]])
                     faceFound = True
             else:
-                if selobj.Shape.Faces:
-                    face = selobj.Shape.Faces[0]
+                if selobj.Object.Shape.Faces:
+                    face = (selobj.Object,['Face1'])
                     faceFound = True
 
         if sketchFound & faceFound:
