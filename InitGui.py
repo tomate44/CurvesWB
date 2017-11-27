@@ -5,9 +5,13 @@ import dummy
 path_curvesWB = os.path.dirname(dummy.__file__)
 sys.path.append(os.path.join(path_curvesWB, 'Gui'))
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
+global main_CurvesWB_Icon
+main_CurvesWB_Icon = os.path.join( path_curvesWB_icons , 'blendSurf.svg')
 
 class CurvesWorkbench (Workbench):
     MenuText = "Curves"
+    global main_CurvesWB_Icon
+    Icon = main_CurvesWB_Icon
     def Initialize(self):
         "This function is executed when FreeCAD starts"
         import bezierCurve
