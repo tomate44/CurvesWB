@@ -3,7 +3,7 @@ import os, sys
 import dummy
 
 path_curvesWB = os.path.dirname(dummy.__file__)
-sys.path.append(path_curvesWB + '/Gui')
+sys.path.append(os.path.join(path_curvesWB, 'Gui'))
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 
 class CurvesWorkbench (Workbench):
