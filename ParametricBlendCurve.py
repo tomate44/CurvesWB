@@ -97,25 +97,27 @@ class BlendCurve:
 
     def initEdges(self, fp):
         n1 = eval(fp.Edge1[1][0].lstrip('Edge'))
+        e1 = fp.Edge1[0].Shape.Edges[n1-1]
         if (not fp.Edge1[0].Shape.Edges) and (not fp.Edge2[0].Shape.Edges):
             return
         if self.reverse1:
-            self.curve1 = fp.Edge1[0].Shape.Edges[n1-1].toNurbs().Edges[0].Curve.copy()
+            self.curve1 = e1.Curve.toBSpline(e1.FirstParameter,e1.LastParameter).copy()
             poles = self.curve1.getPoles()
             for i in range(len(poles)):
                 self.curve1.setPole(i+1,poles[-1-i])
         else:
-            self.curve1 = fp.Edge1[0].Shape.Edges[n1-1].toNurbs().Edges[0].Curve
+            self.curve1 = e1.Curve.toBSpline(e1.FirstParameter,e1.LastParameter)
         self.edge1 = self.curve1.toShape()
         
         n2 = eval(fp.Edge2[1][0].lstrip('Edge'))
+        e2 = fp.Edge2[0].Shape.Edges[n2-1]
         if self.reverse2:
-            self.curve2 = fp.Edge2[0].Shape.Edges[n2-1].toNurbs().Edges[0].Curve.copy()
+            self.curve2 = e2.Curve.toBSpline(e2.FirstParameter,e2.LastParameter).copy()
             poles = self.curve2.getPoles()
             for i in range(len(poles)):
                 self.curve2.setPole(i+1,poles[-1-i])
         else:
-            self.curve2 = fp.Edge2[0].Shape.Edges[n2-1].toNurbs().Edges[0].Curve
+            self.curve2 = e2.Curve.toBSpline(e2.FirstParameter,e2.LastParameter)
         self.edge2 = self.curve2.toShape()
         
         #fp.Parameter1 = ( self.edge1.LastParameter * 100, self.edge1.FirstParameter * 100, self.edge1.LastParameter * 100, 0.5 )
@@ -287,7 +289,7 @@ class ParametricBlendCurve:
                 p = o.PickedPoints[i]
                 poe = so.distToShape(Part.Vertex(p))
                 par = poe[2][0][2]
-                goodpar = (par - so.FirstParameter) * 100. / (so.LastParameter - so.FirstParameter)
+                goodpar = (par - so.FirstParameter) * 1.0 / (so.LastParameter - so.FirstParameter)
                 param.append(goodpar)
         return param
 
@@ -319,6 +321,8 @@ class ParametricBlendCurve:
         param = self.getParam(s)
         obj.Parameter1 = param[0]
         obj.Parameter2 = param[1]
+        obj.Continuity1 = "G1"
+        obj.Continuity2 = "G1"
         FreeCAD.ActiveDocument.recompute()
             
     def GetResources(self):
