@@ -61,7 +61,10 @@ class blendCurve:
             v.normalize().multiply(t2.Length+opp)
             c.Center = poles2[0].add(v)
             c.Radius = radius
-            poles2.append(c.value(c.parameter(poles1[-2])))
+            if len(poles1) > 1:
+                poles2.append(c.value(c.parameter(poles1[-2])))
+            else:
+                poles2.append(c.value(c.parameter(poles1[0])))
         return(poles1+poles2[::-1])
             
     def compute(self):

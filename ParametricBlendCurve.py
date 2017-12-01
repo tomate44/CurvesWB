@@ -63,6 +63,12 @@ class BlendCurveFP:
                 fp.Parameter2 = 0
             elif fp.Parameter2 > 1:
                 fp.Parameter2 = 1
+        elif prop == "Scale1":
+            if fp.Scale1 == 0:
+                fp.Scale1 = 0.0001
+        elif prop == "Scale2":
+            if fp.Scale2 == 0:
+                fp.Scale2 = 0.0001
 
     def getContinuity(self, cont):
         if cont == "C0":
