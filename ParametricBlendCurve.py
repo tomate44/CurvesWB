@@ -88,6 +88,9 @@ class BlendCurveVP:
         ''' Add the properties '''
         print("VP init")
         obj.Proxy = self
+        self.build()
+
+    def build(self):
         self.active = False
         self.sg = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
         self.node = coin.SoSeparator()
@@ -112,10 +115,11 @@ class BlendCurveVP:
         #self.node.addChild(self.marker)
 
     def updateData(self, fp, prop):
-        print("%s - %s changed"%(fp,prop))
+        print("%s - %s data update"%(fp,prop))
         if prop == "CurvePts":
-            self.coord.points = fp.CurvePts
-            self.poly.vertices = self.coord.points
+            if hasattr(self,'coord') and hasattr(self,'poly'):
+                self.coord.points = fp.CurvePts
+                self.poly.vertices = self.coord.points
 
     #def getDisplayModes(self,obj):
          #"Return a list of display modes."
@@ -131,12 +135,17 @@ class BlendCurveVP:
     #def setDisplayMode(self,mode):
          #return mode
 
-    #def onChanged(self, vp, prop):
-        #'''Here we can do something when a single property got changed'''
-        #debug("\nonChanged : "+str(prop)+"\n")
-        #return
+    def onChanged(self, fp, prop):
+        '''Here we can do something when a single property got changed'''
+        print("%s - %s changed"%(fp,prop))
+        if prop == "CurvePts":
+            if hasattr(self,'coord') and hasattr(self,'poly'):
+                self.coord.points = fp.CurvePts
+                self.poly.vertices = self.coord.points
 
     def doubleClicked(self,vobj):
+        if not hasattr(self,'active'):
+            self.active = False
         if not self.active:
             self.active = True
             #self.coord.points = vobj.Object.CurvePts
@@ -164,6 +173,9 @@ class BlendCurveVP:
         return None
 
     def __setstate__(self,state):
+        print("setstate")
+        #self.__init__()
+        self.build()
         return None
 
 

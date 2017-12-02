@@ -50,7 +50,11 @@ class blendCurve:
             v.normalize().multiply(t1.Length+opp)
             c.Center = poles1[0].add(v)
             c.Radius = radius
-            poles1.append(c.value(c.parameter(poles2[-1])))
+            plane = Part.Plane(poles1[0],poles1[1],poles1[0].add(self.edge1.normalAt(self.param1)))
+            print(plane)
+            pt = plane.intersect(c)[0][1] # 2 solutions
+            print(pt)
+            poles1.append(FreeCAD.Vector(pt.X,pt.Y,pt.Z))
         if self.cont2 > 1:
             curv = self.edge2.curvatureAt(self.param2)
             radius = curv * self.nbSegments * pow(t2.Length,2) / (self.nbSegments -1)
@@ -61,10 +65,15 @@ class blendCurve:
             v.normalize().multiply(t2.Length+opp)
             c.Center = poles2[0].add(v)
             c.Radius = radius
-            if len(poles1) > 1:
-                poles2.append(c.value(c.parameter(poles1[-2])))
-            else:
-                poles2.append(c.value(c.parameter(poles1[0])))
+            plane = Part.Plane(poles2[0],poles2[1],poles2[0].add(self.edge2.normalAt(self.param2)))
+            print(plane)
+            pt = plane.intersect(c)[0][1] # 2 solutions
+            print(pt)
+            poles2.append(FreeCAD.Vector(pt.X,pt.Y,pt.Z))
+            #if len(poles1) > 1:
+                #poles2.append(c.value(c.parameter(poles1[-2])))
+            #else:
+                #poles2.append(c.value(c.parameter(poles1[0])))
         return(poles1+poles2[::-1])
             
     def compute(self):
