@@ -171,13 +171,24 @@ class profile:
 
     def execute(self, obj):
         e1,e2 = self.getEdges(obj)
-        ls = Part.LineSegment(e1.valueAt(obj.Parameter1),e2.valueAt(obj.Parameter2))
-        debug(ls)
-        obj.Shape = ls.toShape()
+        if hasattr(obj, "Parameter1") and hasattr(obj, "Parameter2") and hasattr(obj, "MainAxis"):
+            l1 = Part.LineSegment(e1.valueAt(obj.Parameter1), e2.valueAt(obj.Parameter2))
+            obj.Shape = l1.toShape().extrude(obj.MainAxis)
         return()
     
     def onChanged(self, fp, prop):
-        if prop in ["Edge1","Edge2","Parameter1","Parameter2","MainAxis"]:
+        e1,e2 = self.getEdges(fp)
+        if prop == "Parameter1":
+            if fp.Parameter1 < e1.FirstParameter:
+                fp.Parameter1 = e1.FirstParameter
+            elif fp.Parameter1 > e1.LastParameter:
+                fp.Parameter1 = e1.LastParameter
+        elif prop == "Parameter2":
+            if fp.Parameter2 < e2.FirstParameter:
+                fp.Parameter2 = e2.FirstParameter
+            elif fp.Parameter2 > e2.LastParameter:
+                fp.Parameter2 = e2.LastParameter
+        elif prop in ["Edge1","Edge2","MainAxis"]:
             self.execute(fp)
 
 class profileVP:
@@ -229,7 +240,7 @@ class profileCommand:
             prof.Edge2 = shapes[1]
             prof.Parameter1 = params[0]
             prof.Parameter2 = params[1]
-            prof.MainAxis = FreeCAD.Vector(0,0,1)
+            prof.MainAxis = FreeCADGui.ActiveDocument.ActiveView.getViewDirection()
         else:
             prof.Base = source
         FreeCAD.ActiveDocument.recompute()
