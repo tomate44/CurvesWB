@@ -92,20 +92,21 @@ class BlendCurveVP:
 
     def build(self):
         self.active = False
-        self.sg = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
-        self.switch = coin.SoSwitch()
-        self.switch.setName("%s_ControlPoints"%self.Object.Name)
-        self.empty = coin.SoSeparator() # Empty node
-        self.node = coin.SoSeparator()
-        self.coord = CoinNodes.coordinate3Node()
-        self.poly = CoinNodes.polygonNode((0.5,0.5,0.5),1)
-        self.marker = CoinNodes.markerSetNode((1,0,0),coin.SoMarkerSet.DIAMOND_FILLED_7_7)
-        self.node.addChild(self.coord)
-        self.node.addChild(self.poly)
-        self.node.addChild(self.marker)
-        self.switch.addChild(self.empty)
-        self.switch.addChild(self.node)
-        self.sg.addChild(self.switch)
+        if not hasattr(self,'switch'):
+            self.sg = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
+            self.switch = coin.SoSwitch()
+            self.switch.setName("%s_ControlPoints"%self.Object.Name)
+            self.empty = coin.SoSeparator() # Empty node
+            self.node = coin.SoSeparator()
+            self.coord = CoinNodes.coordinate3Node()
+            self.poly = CoinNodes.polygonNode((0.5,0.5,0.5),1)
+            self.marker = CoinNodes.markerSetNode((1,0,0),coin.SoMarkerSet.DIAMOND_FILLED_7_7)
+            self.node.addChild(self.coord)
+            self.node.addChild(self.poly)
+            self.node.addChild(self.marker)
+            self.switch.addChild(self.empty)
+            self.switch.addChild(self.node)
+            self.sg.addChild(self.switch)
 
     def attach(self, vobj):
         print("VP attach")
