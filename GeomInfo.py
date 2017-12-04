@@ -19,13 +19,12 @@ def debug(string):
 
 def beautify(shp):
     if not shp:
-        return ""
+        return("")
     else:
+        t = shp
         if (shp[0] == "<") and (shp[-1] == ">"):
             t = shp[1:-1]
-            return t.split()[0]
-        else:
-            return shp
+        return(t.split()[0])
 
 def getString(weights):
     weightStr = []
@@ -48,6 +47,17 @@ def cleanString(arr):
         else:
             strArr += "%0.2f, "%w
     return(strArr[:-2])
+
+def coordStr(v):
+    if hasattr(v,'x'):
+        s = "%0.2f"%v.x
+        if hasattr(v,'y'):
+            s += ", %0.2f"%v.y
+            if hasattr(v,'z'):
+                s += ", %0.2f"%v.z
+        return(s)
+    else:
+        return(v)
 
 def removeDecim(arr):
     r = []
@@ -419,58 +429,81 @@ class GeomInfo:
 
 # ------ get info about shape --------
 
+
+    def propStr(self,c,att):
+        if hasattr(c,att):
+            a = c.__getattribute__(att)
+            if not a:
+                return(False)
+            elif hasattr(a,'x') and hasattr(a,'y') and hasattr(a,'z'):
+                return("%s : (%0.2f, %0.2f, %0.2f)"%(att,a.x,a.y,a.z))
+            else:
+                return("%s : %s"%(att,str(a)))
+        else:
+            return(False)
+
+    def propMeth(self,c,att):
+        if hasattr(c,att):
+            a = c.__getattribute__(att)()
+            if not a:
+                return(False)
+            elif hasattr(a,'x') and hasattr(a,'y') and hasattr(a,'z'):
+                return("%s : (%0.2f, %0.2f, %0.2f)"%(att,a.x,a.y,a.z))
+            else:
+                return("%s : %s"%(att,str(a)))
+        else:
+            return(False)
+
     def getSurfInfo(self,surf):
         ret = []
         ret.append(beautify(str(surf)))
-        try:
+        props = ['Center','Axis','Position','Radius','Direction','Location','Continuity']
+        for p in props:
+            s = self.propStr(surf,p)
+            if s:
+                ret.append(s)
+        if isinstance(surf, (Part.BSplineSurface, Part.BezierSurface)):
             ret.append("Degree : %d x %d"%(surf.UDegree, surf.VDegree))
             ret.append("Poles  : %d x %d (%d)"%(surf.NbUPoles, surf.NbVPoles, surf.NbUPoles * surf.NbVPoles))
-            ret.append("Continuity : %s"%surf.Continuity)
-            funct = [(surf.isURational,"U Rational"),
-                    (surf.isVRational, "V Rational"),
-                    (surf.isUPeriodic, "U Periodic"),
-                    (surf.isVPeriodic, "V Periodic"),
-                    (surf.isUClosed,   "U Closed"),
-                    (surf.isVClosed,   "V Closed"),]
-            for i in funct:
-                if i[0]():
-                    ret.append(i[1])
+        props = ['isURational', 'isVRational', 'isUPeriodic', 'isVPeriodic', 'isUClosed', 'isVClosed']
+        for p in props:
+            s = self.propMeth(surf,p)
+            if s:
+                ret.append(s)
+        if isinstance(surf, Part.BSplineSurface):
             funct = [(surf.getUKnots,"U Knots"),
-                     (surf.getUMultiplicities,"U Mults"),
-                     (surf.getVKnots,"V Knots"),
-                     (surf.getVMultiplicities,"V Mults")]
+                    (surf.getUMultiplicities,"U Mults"),
+                    (surf.getVKnots,"V Knots"),
+                    (surf.getVMultiplicities,"V Mults")]
             for i in funct:
                 r = i[0]()
                 if r:
                     s = str(i[1]) + " : " + cleanString(r)
                     ret.append(s)
-            #FreeCAD.Console.PrintMessage(ret)
-            return ret
-        except:
-            return ret
+        return(ret)
         
     def getCurvInfo(self,curve):
         ret = []
         ret.append(beautify(str(curve)))
-        try:
-            ret.append("Degree : " + str(curve.Degree))
-            ret.append("Poles  : " + str(curve.NbPoles))
-            ret.append("Continuity : " + curve.Continuity)
-            funct = [(curve.isRational,"Rational"),
-                    (curve.isPeriodic, "Periodic"),
-                    (curve.isClosed,   "Closed")]
-            for i in funct:
-                if i[0]():
-                    ret.append(i[1])
+        props = ['Center','Axis','Position','Radius','Direction','Location','Degree', 'NbPoles', 'Continuity']
+        for p in props:
+            s = self.propStr(curve,p)
+            if s:
+                ret.append(s)
+        props = ['isRational', 'isPeriodic', 'isClosed']
+        for p in props:
+            s = self.propMeth(curve,p)
+            if s:
+                ret.append(s)
+        if hasattr(curve,'getKnots'):
             r = curve.getKnots()
             s = "Knots : " + cleanString(r)
             ret.append(s)
+        if hasattr(curve,'getMultiplicities'):
             r = curve.getMultiplicities()
             s = "Mults : " + cleanString(r)
             ret.append(s)
-            return ret
-        except:
-            return ret
+        return(ret)
 
     def getTopo(self):
         sel = FreeCADGui.Selection.getSelectionEx()
