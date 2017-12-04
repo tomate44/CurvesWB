@@ -93,6 +93,9 @@ class BlendCurveVP:
     def build(self):
         self.active = False
         self.sg = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
+        self.switch = coin.SoSwitch()
+        self.switch.setName("%s_ControlPoints"%self.Object.Name)
+        self.empty = coin.SoSeparator() # Empty node
         self.node = coin.SoSeparator()
         self.coord = CoinNodes.coordinate3Node()
         self.poly = CoinNodes.polygonNode((0.5,0.5,0.5),1)
@@ -100,19 +103,14 @@ class BlendCurveVP:
         self.node.addChild(self.coord)
         self.node.addChild(self.poly)
         self.node.addChild(self.marker)
+        self.switch.addChild(self.empty)
+        self.switch.addChild(self.node)
+        self.sg.addChild(self.switch)
 
     def attach(self, vobj):
         print("VP attach")
         self.ViewObject = vobj
         self.Object = vobj.Object
-        #self.sg = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
-        #self.node = coin.SoSeparator()
-        #self.coord = CoinNodes.coordinate3Node()
-        #self.poly = CoinNodes.polygonNode((0.5,0.5,0.5),1)
-        #self.marker = CoinNodes.markerSetNode((1,0,0),coin.SoMarkerSet.DIAMOND_FILLED_7_7)
-        #self.node.addChild(self.coord)
-        #self.node.addChild(self.poly)
-        #self.node.addChild(self.marker)
 
     def updateData(self, fp, prop):
         print("%s - %s data update"%(fp,prop))
@@ -135,27 +133,23 @@ class BlendCurveVP:
     #def setDisplayMode(self,mode):
          #return mode
 
-    def onChanged(self, fp, prop):
-        '''Here we can do something when a single property got changed'''
-        print("%s - %s changed"%(fp,prop))
-        if prop == "CurvePts":
-            if hasattr(self,'coord') and hasattr(self,'poly'):
-                self.coord.points = fp.CurvePts
-                self.poly.vertices = self.coord.points
+    #def onChanged(self, fp, prop):
+        #'''Here we can do something when a single property got changed'''
+        #print("%s - %s changed"%(fp,prop))
+        #if prop == "CurvePts":
+            #if hasattr(self,'coord') and hasattr(self,'poly'):
+                #self.coord.points = fp.CurvePts
+                #self.poly.vertices = self.coord.points
 
     def doubleClicked(self,vobj):
         if not hasattr(self,'active'):
             self.active = False
         if not self.active:
             self.active = True
-            #self.coord.points = vobj.Object.CurvePts
-            #self.poly.vertices = self.coord.points
-            print(self.node)
-            self.sg = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
-            self.sg.addChild(self.node)
+            self.switch.whichChild = 1
         else:
             self.active = False
-            self.sg.removeChild(self.node)
+            self.switch.whichChild = 0
         return True
 
     def setEdit(self,vobj,mode):   # --- in ViewProvider ---
