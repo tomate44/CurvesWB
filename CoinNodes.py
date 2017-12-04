@@ -419,7 +419,7 @@ class multiTextNode(colorNode):
 
     @data.setter
     def data(self, datarr):
-        if not ((len(self._data) == len(datarr[0])) & (len(self._data) == len(datarr[1]))): # lenghts of the 2 arrays are different. Wipe the Separator and populate it.
+        if not ((len(self._data) == len(datarr[0])) & (len(self._data) == len(datarr[1]))): # lengths of the 2 arrays are different. Wipe the Separator and populate it.
             self.nodeList = []
             self._data = []
             self.textSep.removeAllChildren()
