@@ -36,8 +36,9 @@ class CurvesWorkbench (Workbench):
         import hooks
         import curveOnSurfaceFP
         import blendSurfaceFP
+        import parametricSolid
 
-        stablelist = ["bezierCurve","editableSpline","join","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","Trim","GeomInfo","extract","IsoCurve","SoS","sw2r","cos","blendSurface"]
+        stablelist = ["bezierCurve","editableSpline","join","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","cos","blendSurface"]
         #devellist = ["Vector","Plate"]
         #FreeCADGui.addIconPath( ':/CurvesWB/icons' )
         self.appendToolbar("Curves",stablelist)
