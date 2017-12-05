@@ -5,14 +5,10 @@
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    width="51.200001"
    height="51.200001"
    id="svg2"
-   version="1.1"
-   inkscape:version="0.92.0 unknown"
-   sodipodi:docname="extract.svg">
+   version="1.1">
   <metadata
      id="metadata33">
     <rdf:RDF>
@@ -25,35 +21,8 @@
       </cc:Work>
     </rdf:RDF>
   </metadata>
-  <sodipodi:namedview
-     pagecolor="#ffffff"
-     bordercolor="#666666"
-     borderopacity="1"
-     objecttolerance="10"
-     gridtolerance="10"
-     guidetolerance="10"
-     inkscape:pageopacity="0"
-     inkscape:pageshadow="2"
-     inkscape:window-width="1920"
-     inkscape:window-height="1005"
-     id="namedview31"
-     showgrid="false"
-     inkscape:zoom="5.12"
-     inkscape:cx="51.601133"
-     inkscape:cy="68.106834"
-     inkscape:window-x="0"
-     inkscape:window-y="0"
-     inkscape:window-maximized="1"
-     inkscape:current-layer="svg2" />
   <defs
      id="defs4">
-    <inkscape:perspective
-       sodipodi:type="inkscape:persp3d"
-       inkscape:vp_x="-2.6716472 : 110.618 : 1"
-       inkscape:vp_y="0 : 1000 : 0"
-       inkscape:vp_z="63.788246 : 69.305076 : 1"
-       inkscape:persp3d-origin="25.6 : 17.066667 : 1"
-       id="perspective4088" />
     <linearGradient
        id="a"
        y1="1016.36"
@@ -104,18 +73,19 @@
     </linearGradient>
   </defs>
   <path
-     inkscape:connector-curvature="0"
      id="path4128"
-     d="M 5.3848898,16.525959 V 36.689551 L 24.490848,47.876201 L 24.490847,27.712609 Z"
+     d="m 1.6053622,14.636195 v 20.163592 l 19.1059578,11.18665 -1e-6,-20.163592 z"
      style="fill:#808080;fill-rule:evenodd;stroke:#000000;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1" />
   <path
-     inkscape:connector-curvature="0"
      id="path4130"
-     d="M 46.832491,14.73057 L 24.490847,27.712609 L 24.490848,47.876201 L 46.832492,34.894162 L 46.832491,14.73057"
-     style="fill:#008000;fill-rule:evenodd;stroke:#000000;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1" />
+     d="m 43.052963,12.840806 -22.341644,12.982039 1e-6,20.163592 22.341644,-12.982039 -1e-6,-20.163592"
+     style="fill:#666666;fill-rule:evenodd;stroke:#000000;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1" />
   <path
-     inkscape:connector-curvature="0"
      id="path4132"
-     d="M 5.3848898,16.525959 L 27.726533,3.5439198 L 46.832491,14.73057 L 24.490847,27.712609 Z"
-     style="fill:#b3b3b3;fill-rule:evenodd;stroke:#008000;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1" />
+     d="M 1.6053622,14.636195 23.947005,1.654156 43.052963,12.840806 20.711319,25.822845 Z"
+     style="fill:#b3b3b3;fill-rule:evenodd;stroke:#000000;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1" />
+  <path
+     style="fill:#55d400;fill-rule:evenodd;stroke:#000000;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1"
+     d="M 48.980929,16.683695 26.639285,29.665734 v 20.163592 l 22.341645,-12.982039 -10e-7,-20.163592"
+     id="path19" />
 </svg>
