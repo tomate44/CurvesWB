@@ -33,8 +33,8 @@ class curve(object):
         elif isinstance(edge, (Part.BezierCurve, Part.BSplineCurve)):
             self.curve = edge
 
-    def lenght(self):
-        return self.curve.lenght()
+    def length(self):
+        return self.curve.length()
 
 
 
@@ -179,7 +179,4 @@ class multiIso:
     def setNumbers(self, nu, nv):
         self.setNumberU(nu)
         self.setNumberV(nv)
-            
 
-
-        
