@@ -95,7 +95,8 @@ class BlendCurveVP:
         if not hasattr(self,'switch'):
             self.sg = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
             self.switch = coin.SoSwitch()
-            self.switch.setName("%s_ControlPoints"%self.Object.Name)
+            if hasattr(self,'Object'):
+                self.switch.setName("%s_ControlPoints"%self.Object.Name)
             self.empty = coin.SoSeparator() # Empty node
             self.node = coin.SoSeparator()
             self.coord = CoinNodes.coordinate3Node()
@@ -112,9 +113,10 @@ class BlendCurveVP:
         print("VP attach")
         self.ViewObject = vobj
         self.Object = vobj.Object
+        self.objName = self.Object.Name
 
     def updateData(self, fp, prop):
-        print("%s - %s data update"%(fp,prop))
+        #print("%s - %s data update"%(fp,prop))
         if prop == "CurvePts":
             if hasattr(self,'coord') and hasattr(self,'poly'):
                 self.coord.points = fp.CurvePts
@@ -165,59 +167,61 @@ class BlendCurveVP:
         return (path_curvesWB_icons+'/blend.svg')
 
     def __getstate__(self):
-        return None
+        state = {}
+        state['Name'] = self.objName
+        return(state)
+
 
     def __setstate__(self,state):
         print("setstate")
-        #self.__init__()
+        self.objName = state['Name']
         self.build()
         return None
 
 
 
 class ParametricBlendCurve:
-    def getParam(self, selectionObject):
-        param = []
-        for o in selectionObject:
-            for i in range(len(o.SubObjects)):
-                so = o.SubObjects[i]
-                p = o.PickedPoints[i]
-                poe = so.distToShape(Part.Vertex(p))
-                par = poe[2][0][2]
-                goodpar = (par - so.FirstParameter) * 1.0 / (so.LastParameter - so.FirstParameter)
-                param.append(goodpar)
-        return param
+    #def getParam(self, selectionObject):
+        #param = []
+        #for o in selectionObject:
+            #for i in range(len(o.SubObjects)):
+                #so = o.SubObjects[i]
+                #p = o.PickedPoints[i]
+                #poe = so.distToShape(Part.Vertex(p))
+                #par = poe[2][0][2]
+                #goodpar = (par - so.FirstParameter) * 1.0 / (so.LastParameter - so.FirstParameter)
+                #param.append(goodpar)
+        #return param
 
     def parseSel(self, selectionObject):
         res = []
-        params = []
+        param = []
         for obj in selectionObject:
-            if obj.HasSubObjects:
-                i = 0
-                for subobj in obj.SubObjects:
-                    if issubclass(type(subobj),Part.Edge):
-                        res.append([obj.Object,obj.SubElementNames[i]])
-                    i += 1
-            else:
-                i = 0
-                for e in obj.Object.Shape.Edges:
-                    n = "Edge"+str(i)
-                    res.append([obj.Object,n])
-                    i += 1
-        return res
+            for i in range(len(obj.SubObjects)):
+                so = obj.SubObjects[i]
+                if isinstance(so,Part.Edge):
+                    res.append([obj.Object,obj.SubElementNames[i]])
+                    p = obj.PickedPoints[i]
+                    poe = so.distToShape(Part.Vertex(p))
+                    par = poe[2][0][2]
+                    goodpar = (par - so.FirstParameter) * 1.0 / (so.LastParameter - so.FirstParameter)
+                    param.append(goodpar)
+        return(res,param)
     
     def Activated(self):
         s = FreeCADGui.Selection.getSelectionEx()
-        edges = self.parseSel(s)
-        print str(edges)
-        obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Blend Curve") #add object to document
-        BlendCurveFP(obj,edges[0:2])
-        BlendCurveVP(obj.ViewObject)
-        param = self.getParam(s)
-        obj.Parameter1 = param[0]
-        obj.Parameter2 = param[1]
-        obj.Continuity1 = "G1"
-        obj.Continuity2 = "G1"
+        edges, param = self.parseSel(s)
+        #param = self.getParam(s)
+        #print str(edges)
+        if len(edges) > 1:
+            for i in range(int(len(edges)/2)):
+                obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Blend Curve") #add object to document
+                BlendCurveFP(obj,edges[i:i+2])
+                BlendCurveVP(obj.ViewObject)
+                obj.Parameter1 = param[i]
+                obj.Parameter2 = param[i+1]
+                obj.Continuity1 = "G1"
+                obj.Continuity2 = "G1"
         FreeCAD.ActiveDocument.recompute()
             
     def GetResources(self):
