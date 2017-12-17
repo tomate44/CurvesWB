@@ -193,7 +193,21 @@ class ParametricBlendCurve:
                 #param.append(goodpar)
         #return param
 
-    def parseSel(self, selectionObject):
+    def getEdge(self, edge):
+        n = eval(edge[1].lstrip('Edge'))
+        return(edge[0].Shape.Edges[n-1])
+
+    def normalizedParam(self, edge, par, endClamp = False):
+        e = self.getEdge(edge)
+        goodpar = (par - e.FirstParameter) * 1.0 / (e.LastParameter - e.FirstParameter)
+        if endClamp:
+            if goodpar < 0.5:
+                goodpar = 0.0
+            else:
+                goodpar = 1.0
+        return(goodpar)
+
+    def parseSel(self, selectionObject): #, endClamp = False):
         res = []
         param = []
         for obj in selectionObject:
@@ -204,9 +218,31 @@ class ParametricBlendCurve:
                     p = obj.PickedPoints[i]
                     poe = so.distToShape(Part.Vertex(p))
                     par = poe[2][0][2]
-                    goodpar = (par - so.FirstParameter) * 1.0 / (so.LastParameter - so.FirstParameter)
-                    param.append(goodpar)
+                    param.append(par) #goodpar)
         return(res,param)
+
+    def line(self, ed, p):
+        e = self.getEdge(ed)
+        pt = e.valueAt(p)
+        t = e.tangentAt(p).multiply(100000)
+        l = Part.LineSegment(pt,pt.add(t)).toShape()
+        return(l)
+
+    def getOrientation(self, e1, p1, e2, p2):
+        r1 = -1.0
+        r2 = -1.0
+        l1 = self.line(e1, p1)
+        l2 = self.line(e2, p2)
+        dts = l1.distToShape(l2)
+        par1 = dts[2][0][2]
+        par2 = dts[2][0][5]
+        if par1:
+            r1 = 1.0
+        if par2:
+            r2 = 1.0
+        return(r1,r2)
+        
+        
     
     def Activated(self):
         s = FreeCADGui.activeWorkbench().Selection
@@ -219,10 +255,13 @@ class ParametricBlendCurve:
                 obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Blend Curve") #add object to document
                 BlendCurveFP(obj,edges[i:i+2])
                 BlendCurveVP(obj.ViewObject)
-                obj.Parameter1 = param[i]
-                obj.Parameter2 = param[i+1]
+                obj.Parameter1 = self.normalizedParam(edges[i], param[i], True)
+                obj.Parameter2 = self.normalizedParam(edges[i+1], param[i+1], True)
                 obj.Continuity1 = "G1"
                 obj.Continuity2 = "G1"
+                ori1, ori2 = self.getOrientation(edges[i], param[i], edges[i+1], param[i+1])
+                obj.Scale1 = ori1
+                obj.Scale2 = ori2
         FreeCAD.ActiveDocument.recompute()
             
     def GetResources(self):
