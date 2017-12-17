@@ -209,12 +209,13 @@ class ParametricBlendCurve:
         return(res,param)
     
     def Activated(self):
-        s = FreeCADGui.Selection.getSelectionEx()
+        s = FreeCADGui.activeWorkbench().Selection
         edges, param = self.parseSel(s)
         #param = self.getParam(s)
         #print str(edges)
         if len(edges) > 1:
-            for i in range(int(len(edges)/2)):
+            for j in range(int(len(edges)/2)):
+                i = j*2
                 obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Blend Curve") #add object to document
                 BlendCurveFP(obj,edges[i:i+2])
                 BlendCurveVP(obj.ViewObject)
