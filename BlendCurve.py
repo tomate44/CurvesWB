@@ -42,34 +42,40 @@ class blendCurve:
             poles2.append(poles2[0].add(t2))
         if self.cont1 > 1:
             curv = self.edge1.curvatureAt(self.param1)
-            radius = curv * self.nbSegments * pow(t1.Length,2) / (self.nbSegments -1)
-            opp = math.sqrt(abs(pow(self.unitLength * self.scale1,2)-pow(radius,2)))
-            c = Part.Circle()
-            c.Axis = t1
-            v = FreeCAD.Vector(t1)
-            v.normalize().multiply(t1.Length+opp)
-            c.Center = poles1[0].add(v)
-            c.Radius = radius
-            plane = Part.Plane(poles1[0],poles1[1],poles1[0].add(self.edge1.normalAt(self.param1)))
-            print(plane)
-            pt = plane.intersect(c)[0][1] # 2 solutions
-            print(pt)
-            poles1.append(FreeCAD.Vector(pt.X,pt.Y,pt.Z))
+            if curv:
+                radius = curv * self.nbSegments * pow(t1.Length,2) / (self.nbSegments -1)
+                opp = math.sqrt(abs(pow(self.unitLength * self.scale1,2)-pow(radius,2)))
+                c = Part.Circle()
+                c.Axis = t1
+                v = FreeCAD.Vector(t1)
+                v.normalize().multiply(t1.Length+opp)
+                c.Center = poles1[0].add(v)
+                c.Radius = radius
+                plane = Part.Plane(poles1[0],poles1[1],poles1[0].add(self.edge1.normalAt(self.param1)))
+                print(plane)
+                pt = plane.intersect(c)[0][1] # 2 solutions
+                print(pt)
+                poles1.append(FreeCAD.Vector(pt.X,pt.Y,pt.Z))
+            else:
+                poles1.append(poles1[-1].add(t1))
         if self.cont2 > 1:
             curv = self.edge2.curvatureAt(self.param2)
-            radius = curv * self.nbSegments * pow(t2.Length,2) / (self.nbSegments -1)
-            opp = math.sqrt(abs(pow(self.unitLength * self.scale2,2)-pow(radius,2)))
-            c = Part.Circle()
-            c.Axis = t2
-            v = FreeCAD.Vector(t2)
-            v.normalize().multiply(t2.Length+opp)
-            c.Center = poles2[0].add(v)
-            c.Radius = radius
-            plane = Part.Plane(poles2[0],poles2[1],poles2[0].add(self.edge2.normalAt(self.param2)))
-            print(plane)
-            pt = plane.intersect(c)[0][1] # 2 solutions
-            print(pt)
-            poles2.append(FreeCAD.Vector(pt.X,pt.Y,pt.Z))
+            if curv:
+                radius = curv * self.nbSegments * pow(t2.Length,2) / (self.nbSegments -1)
+                opp = math.sqrt(abs(pow(self.unitLength * self.scale2,2)-pow(radius,2)))
+                c = Part.Circle()
+                c.Axis = t2
+                v = FreeCAD.Vector(t2)
+                v.normalize().multiply(t2.Length+opp)
+                c.Center = poles2[0].add(v)
+                c.Radius = radius
+                plane = Part.Plane(poles2[0],poles2[1],poles2[0].add(self.edge2.normalAt(self.param2)))
+                print(plane)
+                pt = plane.intersect(c)[0][1] # 2 solutions
+                print(pt)
+                poles2.append(FreeCAD.Vector(pt.X,pt.Y,pt.Z))
+            else:
+                poles2.append(poles2[-1].add(t2))
             #if len(poles1) > 1:
                 #poles2.append(c.value(c.parameter(poles1[-2])))
             #else:
