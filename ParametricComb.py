@@ -161,7 +161,7 @@ class Comb:
         #obj.addProperty("App::PropertyEnumeration","Type","Comb","Comb Type").Type=["Curvature","Unit Normal"]
         obj.addProperty("App::PropertyFloat","Scale","Comb","Scale (%). 0 for AutoScale").Scale=0.0
         #obj.addProperty("App::PropertyBool","ScaleAuto","Comb","Automatic Scale").ScaleAuto = True
-        obj.addProperty("App::PropertyIntegerConstraint","Samples","Comb","Number of samples").Samples = 64
+        obj.addProperty("App::PropertyIntegerConstraint","Samples","Comb","Number of samples").Samples = 100
         obj.addProperty("App::PropertyInteger","Number","Surface","Number of surface samples").Number = 3
         obj.addProperty("App::PropertyEnumeration","Orientation","Surface","Surface Comb Orientation").Orientation=["U","V","UV"]
         #obj.addProperty("App::PropertyFloat","TotalLength","Comb","Total length of edges")
@@ -359,7 +359,10 @@ class Comb:
                 self.factor = 0.5 * self.TotalLength / self.maxCurv
                 fp.Scale = self.factor
             debug("Comb : Scale Property changed to "+str(fp.Scale)+"")
+            self.execute(fp)
         if prop == "Samples":
+            if fp.Samples < 10:
+                fp.Samples = 10
             debug("Comb : Samples Property changed")
             self.execute(fp)
         #if prop == "ScaleAuto":
@@ -383,6 +386,7 @@ class ViewProviderComb:
         obj.addProperty("App::PropertyColor","CurveColor","Comb","Color of the curvature curve").CurveColor=(0.8,0.0,0.0)
         obj.addProperty("App::PropertyColor","CombColor","Comb","Color of the curvature comb").CombColor=(0.0,0.8,0.0)
         # TODO : add transparency property
+        self.Object = obj.Object
         obj.Proxy = self
             
     def createNodes(self, fp):
@@ -396,6 +400,8 @@ class ViewProviderComb:
     def attach(self, obj):
         #debug("Comb : ViewProviderComb.attach ")
 
+        self.oldx = 0
+        self.oldy = 0
         self.wireframe = coin.SoGroup()
 
         self.combColor  =  coin.SoBaseColor()
@@ -437,6 +443,52 @@ class ViewProviderComb:
         i2 = getCurveCoords(fp)
         self.curveLines.coordIndex.setValues(0,len(i2),i2)
         #debug(""+str(i2)+"")
+
+    def loc_cb(self, event_callback):
+        event = event_callback.getEvent()
+        pos = event.getPosition()
+        x,y = pos.getValue()
+        if event.wasCtrlDown():
+            if y > self.oldy:
+                self.Object.Samples +=5
+            elif y < self.oldy:
+                self.Object.Samples -=5
+        if event.wasShiftDown():
+            if y > self.oldy:
+                self.Object.Scale *= 1.02
+            elif y < self.oldy:
+                self.Object.Scale /= 1.02
+        self.oldx = x
+        self.oldy = y
+
+    def setEdit(self,vobj,mode=0):
+        if mode == 0:
+            FreeCAD.Console.PrintWarning("--- Entering Comb Edit Mode ---\n")
+            FreeCAD.Console.PrintMessage("Nb of samples : CTRL  + Mouse Up / Down\n")
+            FreeCAD.Console.PrintMessage("Comb scale :    SHIFT + Mouse Up / Down\n")
+            self.view = FreeCADGui.ActiveDocument.ActiveView
+            self.locCB = self.view.addEventCallbackPivy( coin.SoLocation2Event.getClassTypeId(), self.loc_cb)
+            return True
+        return False
+
+    def unsetEdit(self,vobj,mode=0):
+        FreeCAD.Console.PrintWarning("--- Exiting Comb Edit Mode ---\n")
+        self.view.removeEventCallbackPivy( coin.SoLocation2Event.getClassTypeId(), self.locCB)
+        return False
+
+    def doubleClicked(self,vobj):
+        if not hasattr(self,'editing'):
+            self.editing = False
+        if not self.editing:
+            self.editing = True
+            #self.setEdit(vobj)
+            FreeCADGui.ActiveDocument.setEdit(self.Object,0)
+        else:
+            self.editing = False
+            #self.unsetEdit(vobj)
+            FreeCADGui.ActiveDocument.setEdit(self.Object,1)
+        return True
+
 
     def getDisplayModes(self,obj):
          "Return a list of display modes."
