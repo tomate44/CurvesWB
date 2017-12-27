@@ -75,6 +75,7 @@ class lineCommand:
         lineVP(lineObj.ViewObject)
         lineObj.Vertex1 = source[0]
         lineObj.Vertex2 = source[1]
+        FreeCAD.ActiveDocument.recompute()
 
     def Activated(self):
         verts = []
