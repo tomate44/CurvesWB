@@ -14,6 +14,7 @@ class CurvesWorkbench (Workbench):
     Icon = main_CurvesWB_Icon
     def Initialize(self):
         "This function is executed when FreeCAD starts"
+        import lineFP
         import bezierCurve
         import paramVector
         import editableSpline
@@ -39,7 +40,7 @@ class CurvesWorkbench (Workbench):
         import parametricSolid
         import ProfileSketch
 
-        stablelist = ["bezierCurve","editableSpline","join","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface"]
+        stablelist = ["line","bezierCurve","editableSpline","join","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface"]
         #devellist = ["Vector","Plate"]
         #FreeCADGui.addIconPath( ':/CurvesWB/icons' )
         self.appendToolbar("Curves",stablelist)
