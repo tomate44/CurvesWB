@@ -56,7 +56,8 @@ class sweep2rails:
                 #s2r.show()
                 obj.Points = s2r.downgradeArray()
                 obj.Shape = s2r.shapeCloud()
-                
+                return(s2r)
+
 
     def onChanged(self, fp, prop):
         FreeCAD.Console.PrintMessage('%s changed\n'%prop)
