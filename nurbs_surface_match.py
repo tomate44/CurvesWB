@@ -166,7 +166,26 @@ def matchVMults(s1,s2):
             s1.increaseVMultiplicity(i+1,m2[i])
     return(True)
 
-def matchSurfaces(s1,s2):
+def checkPoles(lsurf, tol=0.00001):
+    s0 = lsurf[0]
+    p0 = s0.getPoles()[0][0]
+    p1 = s0.getPoles()[0][-1]
+    p2 = s0.getPoles()[-1][0]
+    d0 = 0
+    d1 = 0
+    d2 = 0
+    for s in lsurf[1::]:
+        d0 += p0.distanceToPoint(s.getPoles()[0][0])
+        d1 += p1.distanceToPoint(s.getPoles()[0][-1])
+        d2 += p2.distanceToPoint(s.getPoles()[-1][0])
+    if (d0 < tol) and (d1 < tol) and (d2 < tol):
+        debug("Poles are matching")
+        return(True)
+    else:
+        debug("Poles are NOT matching !!! %f - %f - %f"%(d0,d1,d2))
+        return(False)
+
+def matchSurfaces(surf1,surf2):
     matchUDegree( surf1, surf2)
     matchVDegree( surf1, surf2)
     matchURange(  surf1, surf2)
@@ -175,6 +194,27 @@ def matchSurfaces(s1,s2):
     matchVknots(  surf1, surf2)
     matchUMults(  surf1, surf2)
     matchVMults(  surf1, surf2)
+
+
+def addPoles(array1,array2):
+    arr = []
+    for d in range(len(array1)):
+        pro = []
+        for c in range(len(array1[0])):
+            pro.append(array1[d][c].add(array2[d][c]))
+        arr.append(pro)
+    return(arr)
+
+def subPoles(array1,array2):
+    arr = []
+    for d in range(len(array1)):
+        pro = []
+        for c in range(len(array1[0])):
+            pro.append(array1[d][c].sub(array2[d][c]))
+        arr.append(pro)
+    return(arr)
+
+
 
 def old_main():
     doc   = App.getDocument("Gordon_1")
@@ -238,12 +278,22 @@ def main():
     matchSurfaces(surf2, surf3)
     matchSurfaces(surf3, surf1)
     
+    checkPoles([surf1,surf2,surf3])
+
     # Now, the 3 surfaces should have identical topologies (same degrees, knots, mults)
     # Only their poles, weights are different
+
+    poles1 = addPoles(surf1.getPoles(), surf2.getPoles())
+    poles2 = subPoles(poles1, surf3.getPoles())
+
+    gordon = surf1.copy()
+    for i in range(len(poles2)):
+        gordon.setPoleRow(i+1, poles2[i])
 
     Part.show(surf1.toShape())
     Part.show(surf2.toShape())
     Part.show(surf3.toShape())
+    Part.show(gordon.toShape())
 
 if __name__ == '__main__':
     main()
