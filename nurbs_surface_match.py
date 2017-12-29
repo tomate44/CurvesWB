@@ -166,8 +166,17 @@ def matchVMults(s1,s2):
             s1.increaseVMultiplicity(i+1,m2[i])
     return(True)
 
+def matchSurfaces(s1,s2):
+    matchUDegree( surf1, surf2)
+    matchVDegree( surf1, surf2)
+    matchURange(  surf1, surf2)
+    matchVRange(  surf1, surf2)
+    matchUknots(  surf1, surf2)
+    matchVknots(  surf1, surf2)
+    matchUMults(  surf1, surf2)
+    matchVMults(  surf1, surf2)
 
-def main():
+def old_main():
     doc   = App.getDocument("Gordon_1")
     appro = doc.getObject("Approximation_Curve")
     appface  = appro.Shape.Face1
@@ -205,6 +214,36 @@ def main():
 
     Part.show(surf1.toShape())
     #Part.show(surf2.toShape())
+
+def main():
+    doc   = App.getDocument("Gordon_1")
+    
+    loft = doc.getObject("Loft")
+    profloft  = loft.Shape.Face1
+
+    inter = doc.getObject("Shape")
+    interpts  = inter.Shape.Face1
+    
+    loft2 = doc.getObject("Loft001")
+    railloft = loft2.Shape.Face1
+
+
+    surf1 = profloft.Surface.copy()
+    surf2 = railloft.Surface.copy()
+    surf3 = interpts.Surface.copy()
+
+    surf1.exchangeUV()
+
+    matchSurfaces(surf1, surf2)
+    matchSurfaces(surf2, surf3)
+    matchSurfaces(surf3, surf1)
+    
+    # Now, the 3 surfaces should have identical topologies (same degrees, knots, mults)
+    # Only their poles, weights are different
+
+    Part.show(surf1.toShape())
+    Part.show(surf2.toShape())
+    Part.show(surf3.toShape())
 
 if __name__ == '__main__':
     main()
