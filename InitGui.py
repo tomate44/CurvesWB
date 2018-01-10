@@ -18,6 +18,7 @@ class CurvesWorkbench (Workbench):
         import bezierCurve
         import paramVector
         import editableSpline
+        import curveExtendFP
         import JoinCurves
         import Discretize
         import approximate
@@ -40,7 +41,7 @@ class CurvesWorkbench (Workbench):
         import parametricSolid
         import ProfileSketch
 
-        stablelist = ["line","bezierCurve","editableSpline","join","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface"]
+        stablelist = ["line","bezierCurve","editableSpline","extend","join","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface"]
         #devellist = ["Vector","Plate"]
         #FreeCADGui.addIconPath( ':/CurvesWB/icons' )
         self.appendToolbar("Curves",stablelist)
