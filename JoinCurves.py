@@ -45,8 +45,8 @@ class join:
         ''' Add the properties '''
         obj.addProperty("App::PropertyLinkSubList",  "Edges",        "Join",   "List of edges to join")
         obj.addProperty("App::PropertyLink",         "Base",         "Join",   "Join all the edges of this base object")
-        obj.addProperty("App::PropertyFloat",        "Tolerance",    "Join",   "Tolerance").Tolerance=0.001
-        obj.addProperty("App::PropertyBool",         "CornerBreak",  "Join",   "Break on corners").CornerBreak = False
+        obj.addProperty("App::PropertyFloat",        "Tolerance",    "Join",   "Tolerance").Tolerance=0.01
+        obj.addProperty("App::PropertyBool",         "CornerBreak",  "Join",   "Break on corners").CornerBreak = True
         #obj.addProperty("App::PropertyBool",         "BadContinuity","Join",   "Break On Bad C0 Continuity").BadContinuity = False
         obj.Proxy = self
 
