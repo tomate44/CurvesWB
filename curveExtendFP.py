@@ -43,6 +43,10 @@ class extend:
 
     def execute(self, obj):
         edge = self.getEdges(obj)[0]
+        if hasattr(obj, "Length"):
+            if obj.Length <= 0:
+                obj.Shape = edge
+                return()
         curve = curveExtend.getTrimmedCurve(edge)
         cont = 1
         if hasattr(obj, "Type"):
