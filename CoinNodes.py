@@ -112,6 +112,19 @@ def removeDecim(arr):
         r.append("%0.2f"%fl)
     return r
 
+def getCoinNode(shape):
+    import tempfile
+    iv = shape.writeInventor()
+    temp = tempfile.NamedTemporaryFile()
+    temp.write(shape.writeInventor())
+    temp.seek(0)
+    inp = coin.SoInput()
+    #openFile(str(filename.toLatin1()))
+    inp.openFile(temp.name)
+    root = coin.SoDB.readAll(inp)
+    temp.close()
+    return(root)
+
 
 class colorNode(coin.SoSeparator):
     def __init__(self, color = (0.,0.,0.)):
