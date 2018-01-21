@@ -12,6 +12,30 @@ def getTrimmedCurve(e):
         return(c)
     return(c)
 
+def trim(curve,min,max,length,tol):
+    c = curve.copy()
+    mid = (max + min) * 0.5
+    c.segment(c.FirstParameter,mid)
+    #print(mid)
+    r = None
+    if abs(c.length() - length) < tol:
+        #print("Found at %f"%mid)
+        return(c)
+    elif c.length() < length:
+        r = trim(curve,mid,max,length,tol)
+    elif c.length() > length:
+        r = trim(curve,min,mid,length,tol)
+    return(r)
+    
+
+def trimToLength(ed, l, tol = 1e-5):
+    if l > ed.Length:
+        return(False)
+    r = trim(ed.Curve,ed.Curve.FirstParameter,ed.Curve.LastParameter,l,tol)
+    return(r.toShape())
+
+
+
 def extendCurve( curve, end = 1, scale = 1, degree = 1):
     if scale <= 0:
         return(curve)
@@ -59,7 +83,7 @@ def extendCurve( curve, end = 1, scale = 1, degree = 1):
     bez.setPoles([val,val.add(tan),p2])
     # cut to the right length
     #e = bez.toShape()
-    parm = bez.parameterAtDistance(bez.FirstParameter,scale)
-    bez.segment(bez.FirstParameter,parm)
-    return(bez)
+    nc = trim(bez, bez.FirstParameter, bez.LastParameter, scale, 1e-5)
+
+    return(nc)
 

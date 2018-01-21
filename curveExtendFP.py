@@ -23,8 +23,10 @@ class extend:
         obj.addProperty("App::PropertyFloat",        "Length",     "Extend", "Extension Length").Length=1.0
         obj.addProperty("App::PropertyEnumeration",  "Location",   "Extend", "Edge extremity to extend").Location = ["Start","End","Both"]
         obj.addProperty("App::PropertyEnumeration",  "Type",       "Extend", "Extension type").Type = ["Straight","G2 curve"]
+        obj.addProperty("App::PropertyEnumeration",  "Output",     "Extend", "Output shape").Output = ["SingleEdge","Wire"]
         obj.Location = "Start"
         obj.Type = "Straight"
+        obj.Output = "SingleEdge"
         obj.Proxy = self
 
     def getEdges(self, obj):
@@ -59,9 +61,19 @@ class extend:
             if obj.Location in ["End","Both"]:
                 ext.append(curveExtend.extendCurve( curve, 1, obj.Length, cont))
         if not ext == []:
-            for c in ext:
-                curve.join(c.toBSpline())
-        obj.Shape = curve.toShape()
+            if hasattr(obj, "Output"):
+                if obj.Output == "SingleEdge":
+                    for c in ext:
+                        curve.join(c.toBSpline())
+                    obj.Shape = curve.toShape()
+                else:
+                    ext.append(curve)
+                    edges = []
+                    for c in ext:
+                        edges.append(Part.Edge(c))
+                    w = Part.Wire(Part.__sortEdges__(edges))
+                    w.fixWire()
+                    obj.Shape = w
 
 
 class extendVP:
