@@ -68,7 +68,7 @@ class CurvesWorkbench (Workbench):
         self.Selection.append(Gui.Selection.getSelectionObject(doc,obj,sub,pnt))
 
     def removeSelection(self,doc,obj,sub):                # Delete the selected object
-        FreeCAD.Console.PrintMessage("removeSelection"+ "\n")
+        #FreeCAD.Console.PrintMessage("removeSelection"+ "\n")
         nl = []
         for o in self.Selection:
             if not o == Gui.Selection.getSelectionObject(doc,obj,sub):
@@ -76,10 +76,10 @@ class CurvesWorkbench (Workbench):
         self.Selection= nl
                 
     def setSelection(self,doc):                           # Selection in ComboView
-        FreeCAD.Console.PrintMessage("setSelection"+ "\n")
+        #FreeCAD.Console.PrintMessage("setSelection"+ "\n")
         #self.Selection.append((doc,None,None,None))
     def clearSelection(self,doc):                         # If click on the screen, clear the selection
-        FreeCAD.Console.PrintMessage("clearSelection"+ "\n")
+        #FreeCAD.Console.PrintMessage("clearSelection"+ "\n")
         self.Selection = []
 
 
