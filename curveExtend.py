@@ -83,7 +83,13 @@ def extendCurve( curve, end = 1, scale = 1, degree = 1):
     bez.setPoles([val,val.add(tan),p2])
     # cut to the right length
     #e = bez.toShape()
+<<<<<<< HEAD
     nc = trim(bez, bez.FirstParameter, bez.LastParameter, scale, 1e-5)
 
     return(nc)
+=======
+    #parm = bez.parameterAtDistance(bez.FirstParameter,scale)
+    #bez.segment(bez.FirstParameter,parm)
+    return(bez)
+>>>>>>> 28f8c11788772efb5ae7c61e37cc711e31dbcac8
 
