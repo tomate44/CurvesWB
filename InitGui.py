@@ -75,7 +75,7 @@ class CurvesWorkbench (Workbench):
                 nl.append(o)
         self.Selection= nl
                 
-    def setSelection(self,doc):                           # Selection in ComboView
+    #def setSelection(self,doc):                           # Selection in ComboView
         #FreeCAD.Console.PrintMessage("setSelection"+ "\n")
         #self.Selection.append((doc,None,None,None))
     def clearSelection(self,doc):                         # If click on the screen, clear the selection
