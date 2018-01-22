@@ -249,6 +249,7 @@ class sketchOnSurface:
         c2d = to2D(self.geoms)
         debug("to2D : %s"%str(c2d))
         compound = toShape(c2d,self.surface, Approx = False)
+        compound.connectEdgesToWires(False, 1e-7)
         obj.Shape = compound
         return
 
