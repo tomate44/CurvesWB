@@ -59,8 +59,13 @@ def extendCurve( curve, end = 1, scale = 1, degree = 1):
 
     # Degree 2 extension (G2)
 
-    nor = curve.normal(p)
-    cur = curve.curvature(p)
+    try:
+        nor = curve.normal(p)
+        cur = curve.curvature(p)
+    except Part.OCCError:
+        # the curve is probably straight
+        bez.setPoles([val,val.add(tan/2),val.add(tan)])
+        return(bez)
     
     #if cur < 1e-6:
         #bez.setPoles([val,val.add(tan)])
