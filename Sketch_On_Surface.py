@@ -162,8 +162,9 @@ class sketchOnSurface:
     def __init__(self, obj):
         obj.addProperty("App::PropertyLinkSub", "Face",   "SketchOnSurface", "Input face")
         obj.addProperty("App::PropertyLink",    "Sketch", "SketchOnSurface", "Input Sketch")
-        obj.addProperty("App::PropertyBool",    "ConstructionBounds", "SketchOnSurface", "include construction geometry in sketch bounds").ConstructionBounds = True
-        obj.addProperty("App::PropertyBool",    "Scale",  "SketchOnSurface", "Scale sketch geometries").Scale = True
+        obj.addProperty("App::PropertyBool",    "ConstructionBounds", "SketchOnSurface", "include construction geometry in sketch bounds").ConstructionBounds = False
+        obj.addProperty("App::PropertyBool",    "Scale",  "SketchOnSurface", "Scale sketch geometries").Scale = False
+        obj.addProperty("App::PropertyBool",    "Fill",   "SketchOnSurface", "Fill face").Fill = False
         obj.Proxy = self
 
     def getSketchBounds(self, obj):
@@ -250,7 +251,33 @@ class sketchOnSurface:
         debug("to2D : %s"%str(c2d))
         compound = toShape(c2d,self.surface, Approx = False)
         compound.connectEdgesToWires(False, 1e-7)
-        obj.Shape = compound
+        if hasattr(obj,'Fill'):
+            if not obj.Fill:
+                obj.Shape = compound
+            else:
+                outer = compound.Wires[0]
+                outer.fixWire()
+                inner = []
+                for w in compound.Wires[1:]:
+                    w.fixWire()
+                    if w.BoundBox.DiagonalLength > outer.BoundBox.DiagonalLength:
+                        inner.append(outer)
+                        outer = w
+                    else:
+                        inner.append(w)
+                of = Part.Face(self.surface,outer)
+                of.validate()
+                nf = of.copy()
+                for w in inner:
+                    nf = Part.Face(nf.copy(),w)
+                    nf.validate()
+                try:
+                    nf.check()
+                    obj.Shape = nf
+                except:
+                    obj.Shape = compound
+                    FreeCAD.Console.PrintError("Failed to create face\n")
+                    
         return
 
     def execute(self, obj):
