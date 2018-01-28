@@ -6,7 +6,7 @@ def error(s):
     FreeCAD.Console.PrintError(s)
 
 def getTrimmedCurve(e):
-    c = e.Curve.copy()
+    c = e.Curve.copy().toBSpline()
     if (not e.FirstParameter == c.FirstParameter) or (not e.LastParameter == c.LastParameter):
         c.segment(e.FirstParameter, e.LastParameter)
         return(c)
@@ -66,10 +66,6 @@ def extendCurve( curve, end = 1, scale = 1, degree = 1):
         # the curve is probably straight
         bez.setPoles([val,val.add(tan/2),val.add(tan)])
         return(bez)
-    
-    #if cur < 1e-6:
-        #bez.setPoles([val,val.add(tan)])
-        #return(bez)
 
     radius = 2 * cur * pow( tan.Length, 2)
     opp = math.sqrt(abs(pow(scale,2)-pow(radius,2)))
@@ -80,17 +76,24 @@ def extendCurve( curve, end = 1, scale = 1, degree = 1):
     c.Center = val.add(v)
     c.Radius = radius
     plane = Part.Plane(val,c.Center,val.add(nor))
-    #print(plane)
     pt = plane.intersect(c)[0][1] # 2 solutions
-    #print(pt)
     p2 = FreeCAD.Vector(pt.X,pt.Y,pt.Z)
-
     bez.setPoles([val,val.add(tan),p2])
     # cut to the right length
-    #e = bez.toShape()
     nc = trim(bez, bez.FirstParameter, bez.LastParameter, scale, 1e-5)
     return(nc)
-    #parm = bez.parameterAtDistance(bez.FirstParameter,scale)
-    #bez.segment(bez.FirstParameter,parm)
-    #return(bez)
+
+def extendToPoint( curve, pt, end = 1, degree = 1):
+    ''' bezierCurveExtension = curveExtend.extendToPoint( curve, point, end=[0|1], degree=[1|2]) '''
+    if end == 0:
+        val = curve.value(curve.FirstParameter)
+    else:
+        val = curve.value(curve.LastParameter)
+    dist = val.distanceToPoint(pt)
+    ratio = 1.0 * degree / (degree + 1)
+    
+    bez = extendCurve( curve, end, dist * ratio, degree)
+    nbez = Part.BezierCurve()
+    nbez.setPoles(bez.getPoles()+[pt])
+    return(nbez)
 
