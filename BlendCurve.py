@@ -18,7 +18,7 @@ class blendCurve:
             self.scale2 = 1.0
             self.bezier = Part.BezierCurve()
             self.getChordLength()
-            self.autoScale = False
+            self.autoScale = True
         else:
             error("blendCurve initialisation error")
     
@@ -26,6 +26,8 @@ class blendCurve:
         v1 = self.edge1.valueAt(self.param1)
         v2 = self.edge2.valueAt(self.param2)
         self.chordLength = v1.distanceToPoint(v2)
+        if self.chordLength < 1e-4:
+            self.chordLength = 1.0
     
     def getPoles(self): #, edge, param, cont, scale):
         poles1 = []
