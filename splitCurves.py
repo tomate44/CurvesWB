@@ -28,10 +28,13 @@ class split:
 
     def getEdge(self, obj):
         if hasattr(obj, "Edge"):
-            o  = obj.Edge[0]
-            ss = obj.Edge[1][0]
-            n = eval(ss.lstrip('Edge'))
-            return(o.Shape.Edges[n-1])
+            try:
+                o  = obj.Edge[0]
+                ss = obj.Edge[1][0]
+                n = eval(ss.lstrip('Edge'))
+                return(o.Shape.Edges[n-1])
+            except:
+                return(None)
         else:
             FreeCAD.Console.PrintError("Object has no attribute 'Edge'\n")
             return(None)
@@ -98,7 +101,11 @@ class split:
 
     def execute(self, obj):
         e = self.getEdge(obj)
-        p = obj.Param
+        p = obj.Value
+        if   obj.Method == "Percent":
+            p = self.PercentToParam(e, obj.Value)
+        elif obj.Method == "Distance":
+            p = self.DistanceToParam(e, obj.Value)
         if p > e.FirstParameter and p < e.LastParameter:
             obj.Shape = e.split(p)
         else:

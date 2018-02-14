@@ -66,8 +66,8 @@ def extendCurve( curve, end = 1, scale = 1, degree = 1):
         # the curve is probably straight
         bez.setPoles([val,val.add(tan/2),val.add(tan)])
         return(bez)
-
-    radius = 2 * cur * pow( tan.Length, 2)
+    radius = cur * pow(tan.Length,2) * degree / (degree - 1)
+    # radius = 2 * cur * pow( tan.Length, 2)
     opp = math.sqrt(abs(pow(scale,2)-pow(radius,2)))
     c = Part.Circle()
     c.Axis = tan
