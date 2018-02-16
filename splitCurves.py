@@ -85,10 +85,8 @@ class split:
             return(e.LastParameter)
         elif dis <= -e.Length:
             return(e.FirstParameter)
-        elif dis < 0:
-            return (e.Curve.parameterAtDistance(e.Length + dis, e.FirstParameter))
         else:
-            return (e.Curve.parameterAtDistance(dis, e.FirstParameter))
+            return (e.getParameterByLength(dis))
 
     def ParamToPercent(self, e, par):
         prange = e.LastParameter - e.FirstParameter

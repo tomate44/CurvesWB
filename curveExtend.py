@@ -80,7 +80,11 @@ def extendCurve( curve, end = 1, scale = 1, degree = 1):
     p2 = FreeCAD.Vector(pt.X,pt.Y,pt.Z)
     bez.setPoles([val,val.add(tan),p2])
     # cut to the right length
-    nc = trim(bez, bez.FirstParameter, bez.LastParameter, scale, 1e-5)
+    #nc = trim(bez, bez.FirstParameter, bez.LastParameter, scale, 1e-5)
+    nc = bez.copy()
+    e = bez.toShape()
+    p = e.getParameterByLength(scale)
+    nc.segment(c.FirstParameter,p)
     return(nc)
 
 def extendToPoint( curve, pt, end = 1, degree = 1):
