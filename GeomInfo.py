@@ -503,6 +503,13 @@ class GeomInfo:
             r = curve.getMultiplicities()
             s = "Mults : " + cleanString(r)
             ret.append(s)
+        if hasattr(curve,'length'):
+            r = curve.length()
+            if r < 1e80:
+                s = "Length : " + cleanString([r])
+                ret.append(s)
+            else:
+                ret.append("Length : Infinite")
         return(ret)
 
     def getTopo(self):
