@@ -42,8 +42,9 @@ class CurvesWorkbench (Workbench):
         import ProfileSketch
         import splitCurves
         import pasteSVG
+        import pipeshellProfileFP
 
-        stablelist = ["line","bezierCurve","editableSpline","extend","join","split","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface","pasteSVG"]
+        stablelist = ["line","bezierCurve","editableSpline","extend","join","split","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface","pasteSVG","profile"]
         #devellist = ["Vector","Plate"]
         #FreeCADGui.addIconPath( ':/CurvesWB/icons' )
         self.appendToolbar("Curves",stablelist)
@@ -83,7 +84,6 @@ class CurvesWorkbench (Workbench):
     def clearSelection(self,doc):                         # If click on the screen, clear the selection
         #FreeCAD.Console.PrintMessage("clearSelection"+ "\n")
         self.Selection = []
-
 
 
     def ContextMenu(self, recipient):
