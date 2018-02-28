@@ -43,8 +43,9 @@ class CurvesWorkbench (Workbench):
         import splitCurves
         import pasteSVG
         import pipeshellProfileFP
+        import pipeshellFP
 
-        stablelist = ["line","bezierCurve","editableSpline","extend","join","split","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface","pasteSVG","profile"]
+        stablelist = ["line","bezierCurve","editableSpline","extend","join","split","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface","pasteSVG","profile","pipeshell"]
         #devellist = ["Vector","Plate"]
         #FreeCADGui.addIconPath( ':/CurvesWB/icons' )
         self.appendToolbar("Curves",stablelist)

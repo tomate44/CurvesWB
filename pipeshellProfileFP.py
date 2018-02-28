@@ -3,7 +3,6 @@ import FreeCAD
 import FreeCADGui
 import Part
 import dummy
-import curveExtend
 
 path_curvesWB = os.path.dirname(dummy.__file__)
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
@@ -72,7 +71,7 @@ class profileVP:
         vobj.Proxy = self
        
     def getIcon(self):
-        return (path_curvesWB_icons+'/editableSpline.svg')
+        return (path_curvesWB_icons+'/profile.svg')
 
     def attach(self, vobj):
         self.ViewObject = vobj
@@ -143,6 +142,6 @@ class profileCommand:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/editableSpline.svg', 'MenuText': 'Profile object', 'ToolTip': 'Creates a Profile object for PipeShell'}
+        return {'Pixmap' : path_curvesWB_icons+'/profile.svg', 'MenuText': 'Profile object', 'ToolTip': 'Creates a Profile object for PipeShell'}
 
 FreeCADGui.addCommand('profile', profileCommand())
