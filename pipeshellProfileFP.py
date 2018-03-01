@@ -107,7 +107,7 @@ class profileCommand:
                 proffp.Location = verts
             profileVP(proffp.ViewObject)
             proffp.ViewObject.LineWidth = 2.0
-            proffp.ViewObject.LineColor = (0.5,0.8,0.3)
+            proffp.ViewObject.LineColor = (0.1,0.1,0.8)
             FreeCAD.ActiveDocument.recompute()
         
 

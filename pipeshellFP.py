@@ -25,73 +25,133 @@ class pipeShell:
         obj.addProperty("App::PropertyBool",       "Solid",       "Settings",  "Make solid object").Solid = False
         obj.addProperty("App::PropertyInteger",    "MaxDegree",   "Settings",  "Maximum degree of the generated surface").MaxDegree = 5
         obj.addProperty("App::PropertyInteger",    "MaxSegments", "Settings",  "Maximum number of segments of the generated surface").MaxSegments = 32
-        obj.addProperty("App::PropertyInteger",    "Samples",     "Settings",  "Number of samples for preview").Samples = 20
+        obj.addProperty("App::PropertyInteger",    "Samples",     "Settings",  "Number of samples for preview").Samples = 100
+        obj.addProperty("App::PropertyFloat",      "Tol3d",       "Settings",  "Tolerance 3D").Tol3d = 1.0e-4
+        obj.addProperty("App::PropertyFloat",      "TolBound",    "Settings",  "Tolerance boundary").TolBound = 1.0e-4
+        obj.addProperty("App::PropertyFloat",      "TolAng",      "Settings",  "Tolerance angular").TolAng = 1.0e-2
+        obj.addProperty("App::PropertyVector",     "Direction",   "Mode",      "Direction of the Binormal and FixedTrihedron modes")
+        obj.addProperty("App::PropertyVector",     "Location",    "Mode",      "Location of the FixedTrihedron mode")
         obj.Mode = "DiscreteTrihedron"
+        obj.Direction = FreeCAD.Vector(0,0,1)
+        obj.Location = FreeCAD.Vector(0,0,0)
         obj.Proxy = self
+
+    def getprop(self, obj, prop):
+        if hasattr(obj, prop):
+            return(obj.getPropertyByName(prop))
+        else:
+            FreeCAD.Console.PrintError("\n%s object has no property %s\n"%(obj.Label, prop))
+            return(None)
 
     def getWires(self, obj, prop):
         res = []
-        if hasattr(obj, prop):
-            content = obj.getPropertyByName(prop)
-            if isinstance(content,(list,tuple)):
-                for l in content:
-                    res.append(l.Shape.Wires[0])
-                return(res)
-            else:
-                if content.Shape.Wires:
-                    return(content.Shape.Wires[0])
-                elif content.Shape.Edges:
-                    return(Part.Wire([content.Shape.Edges[0]]))
+        content = self.getprop( obj, prop)
+        if isinstance(content,(list,tuple)):
+            for l in content:
+                res.append(l.Shape.Wires[0])
+            return(res)
         else:
-            FreeCAD.Console.PrintError("\n%s object has no property %s\n"%(obj.Label, prop))
-        return(res)
+            if content.Shape.Wires:
+                return(content.Shape.Wires[0])
+            elif content.Shape.Edges:
+                return(Part.Wire([content.Shape.Edges[0]]))
 
     def getVertex(self, obj, prop):
-        res = []
-        content = False
-        if hasattr(obj, prop):
-            content = obj.getPropertyByName(prop)
-            if not content:
-                return(res)
-            o = content[0]
-            for ss in content[1]:
-                n = eval(ss.lstrip('Vertex'))
-                res.append(o.Shape.Vertexes[n-1])
-        else:
-            FreeCAD.Console.PrintError("\n%s object has no property %s\n"%(obj.Label, prop))
+        res = None
+        content = self.getprop( obj, prop)
+        if not content:
+            return(res)
+        o = content[0]
+        for ss in content[1]:
+            n = eval(ss.lstrip('Vertex'))
+            res = o.Shape.Vertexes[n-1]
         return(res)
 
     def onChanged(self, fp, prop):
         debug("%s changed"%prop)
+        if prop == "MaxDegree":
+            if fp.MaxDegree < 1:
+                fp.MaxDegree = 1
+            elif fp.MaxDegree > 14:
+                fp.MaxDegree = 14
+        if prop == "MaxSegments":
+            if fp.MaxSegments < 1:
+                fp.MaxSegments = 1
+            elif fp.MaxSegments > 256:
+                fp.MaxSegments = 256
+        if prop == "Samples":
+            if fp.Samples < 3:
+                fp.Samples = 3
+            elif fp.Samples > 999:
+                fp.Samples = 999
+        if prop == "Tol3d":
+            if fp.Tol3d < 1e-7:
+                fp.Tol3d = 1e-7
+            elif fp.Tol3d > 1000:
+                fp.Tol3d = 1000
+        if prop == "TolBound":
+            if fp.TolBound < 1e-7:
+                fp.TolBound = 1e-7
+            elif fp.TolBound > 1000:
+                fp.TolBound = 1000
+        if prop == "TolAng":
+            if fp.TolAng < 1e-7:
+                fp.TolAng = 1e-7
+            elif fp.TolAng > 1000:
+                fp.TolAng = 1000
+        #if prop == "":
+            #if fp. < :
+                #fp. = 
+            #elif fp. > :
+                #fp. = 
 
     def add(self, ps, p):
-        contact = False
-        correction = False
-        if hasattr(p, "Contact"):
-            contact = p.Contact
-        if hasattr(p, "Correction"):
-            correction = p.Correction
+        contact = self.getprop( p, "Contact")
+        correction = self.getprop( p, "Correction")
         loc = self.getVertex(p,"Location")
         if p.Shape.Wires:
             shape = p.Shape.Wires[0]
-        debug("Adding Profile %s"%p.Label)
-        if not loc == []:
-            ps.add(shape, loc, contact, correction)
-        else:
-            ps.add(shape, contact, correction)
+            if loc:
+                debug("Adding Profile %s at location %s"%(p.Label,loc.Point))
+                ps.add(shape, loc, contact, correction)
+            else:
+                debug("Adding Profile %s"%p.Label)
+                ps.add(shape, contact, correction)
 
     def execute(self, obj):
         #curvesWB = FreeCADGui.activeWorkbench()
         path = None
         profs = []
-        if hasattr(obj, "Spine"):
-            path =  self.getWires( obj, "Spine")
+        path =  self.getWires( obj, "Spine")
+        debug("spine : %s"%path)
         if hasattr(obj, "Profiles"):
             profs = obj.Profiles
         if not (path and profs):
             return(None)
         debug("Creating PipeShell")
+        # create the pipeShell object
         ps = Part.BRepOffsetAPI.MakePipeShell(path)
+        ps.setMaxDegree(self.getprop(obj, "MaxDegree") or 3)
+        ps.setMaxSegments(self.getprop(obj, "MaxSegments") or 32)
+        t3 = self.getprop(obj, "Tol3d") or 1.0e-4
+        tb = self.getprop(obj, "TolBound") or 1.0e-4
+        ta = self.getprop(obj, "TolAng") or 1.0e-2
+        
+        mode = self.getprop(obj, "Mode")# or "DiscreteTrihedron"
+        if mode in ["Binormal","FixedTrihedron"]:
+            direction = self.getprop(obj, "Direction")
+            if not direction:
+                direction = FreeCAD.Vector(0,0,1)
+                FreeCAD.Console.PrintError("\nWrong direction, defaulting to +Z\n")
+            elif direction.Length < 1e-7:
+                direction = FreeCAD.Vector(0,0,1)
+                FreeCAD.Console.PrintError("\nDirection has null length, defaulting to +Z\n")
+            if mode == "Binormal":
+                ps.setBiNormalMode(direction)
+            elif mode == "FixedTrihedron":
+                loc = self.getprop(obj, "Location") or FreeCAD.Vector(0,0,0)
+                ps.setTrihedronMode(loc, direction)
+        
         for p in profs:
             self.add(ps,p)
         
@@ -100,13 +160,31 @@ class pipeShell:
                 ps.build()
                 obj.Shape = ps.shape()
             else:
-                nb = 20
-                if hasattr(obj, "Samples"):
-                    nb = obj.Samples
-                c = Part.Compound(ps.simulate(nb))
+                shapes = ps.simulate(self.getprop(obj, "Samples") or 100)
+                rails = self.getRails(shapes)
+                c = Part.Compound(shapes + rails)
                 obj.Shape = c
         else:
             FreeCAD.Console.PrintError("\nFailed to create shape\n")
+
+    def getRails(self, shapes):
+        nbvert = len(shapes[0].Vertexes)
+        edges = []
+        for i in range(nbvert):
+            pts = []
+            for s in shapes:
+                pts.append(s.Vertexes[i].Point)
+            try:
+                bs = Part.BSplineCurve()
+                bs.interpolate(pts)
+                edges.append(bs.toShape())
+                debug("Rail %d : BSpline curve"%i)
+            except Part.OCCError:
+                po = Part.makePolygon(pts)
+                edges.append(po)
+                debug("Rail %d : Polygon"%i)
+        return(edges)
+                
 
 class pipeShellVP:
     def __init__(self,vobj):
@@ -131,8 +209,8 @@ class pipeShellVP:
     def __setstate__(self,state):
         return None
 
-    #def claimChildren(self):
-        #return None #[self.Object.Edge[0]]
+    def claimChildren(self):
+        return(self.Object.Profiles + [self.Object.Spine])
         
     def onDelete(self, feature, subelements): # subelements is a tuple of strings
         return True
@@ -167,6 +245,7 @@ class pipeShellCommand:
             elif selobj.Shape.Wires or selobj.Shape.Edges:
                 path = selobj
         if path and profs:
+            path.ViewObject.LineColor = (1.0,0.3,0.0)
             self.makePipeShellFeature(path,profs)
         
     def IsActive(self):
