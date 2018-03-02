@@ -18,10 +18,12 @@ class pipeShell:
     "PipeShell featurePython object"
     def __init__(self, obj):
         ''' Add the properties '''
-        obj.addProperty("App::PropertyLink",       "Spine",       "PipeShell", "Sweep path")
-        obj.addProperty("App::PropertyLinkList",   "Profiles",    "PipeShell", "Profiles that are swept along spine")
-        obj.addProperty("App::PropertyEnumeration","Mode",        "PipeShell", "PipeShell mode").Mode = ["Frenet","DiscreteTrihedron","FixedTrihedron","Binormal","ShapeSupport","AuxiliarySpine"]
-        obj.addProperty("App::PropertyBool",       "Preview",     "PipeShell", "Preview mode").Preview = True
+        obj.addProperty("App::PropertyLink",       "Spine",       "Main", "Sweep path")
+        obj.addProperty("App::PropertyLinkList",   "Profiles",    "Main", "Profiles that are swept along spine")
+        obj.addProperty("App::PropertyLink",       "Support",     "Mode", "Shape of the ShapeSupport mode")
+        obj.addProperty("App::PropertyLink",       "Auxiliary",   "Mode", "Auxiliary spine")
+        obj.addProperty("App::PropertyEnumeration","Mode",        "Main", "PipeShell mode").Mode = ["Frenet","DiscreteTrihedron","FixedTrihedron","Binormal","ShapeSupport","AuxiliarySpine"]
+        obj.addProperty("App::PropertyBool",       "Preview",     "Main", "Preview mode").Preview = True
         obj.addProperty("App::PropertyBool",       "Solid",       "Settings",  "Make solid object").Solid = False
         obj.addProperty("App::PropertyInteger",    "MaxDegree",   "Settings",  "Maximum degree of the generated surface").MaxDegree = 5
         obj.addProperty("App::PropertyInteger",    "MaxSegments", "Settings",  "Maximum number of segments of the generated surface").MaxSegments = 32
@@ -31,7 +33,11 @@ class pipeShell:
         obj.addProperty("App::PropertyFloat",      "TolAng",      "Settings",  "Tolerance angular").TolAng = 1.0e-2
         obj.addProperty("App::PropertyVector",     "Direction",   "Mode",      "Direction of the Binormal and FixedTrihedron modes")
         obj.addProperty("App::PropertyVector",     "Location",    "Mode",      "Location of the FixedTrihedron mode")
+        obj.addProperty("App::PropertyBool",       "Corrected",   "Mode",      "Corrected Frenet").Corrected = False
+        obj.addProperty("App::PropertyBool",       "EquiCurvi",   "Mode",      "Curvilinear equivalence").EquiCurvi = False
+        obj.addProperty("App::PropertyEnumeration","Contact",     "Mode",      "Type of contact to auxiliary spine").Contact = ["NoContact","Contact","ContactOnBorder"]
         obj.Mode = "DiscreteTrihedron"
+        obj.Contact = "NoContact"
         obj.Direction = FreeCAD.Vector(0,0,1)
         obj.Location = FreeCAD.Vector(0,0,0)
         obj.Proxy = self
@@ -69,9 +75,58 @@ class pipeShell:
 
     def onChanged(self, fp, prop):
         debug("%s changed"%prop)
+        if prop == "Mode":
+            if fp.Mode == "Frenet":
+                fp.setEditorMode("Corrected", 0)
+                fp.setEditorMode("Location", 2)
+                fp.setEditorMode("Direction", 2)
+                fp.setEditorMode("Auxiliary", 2)
+                fp.setEditorMode("Support", 2)
+                fp.setEditorMode("EquiCurvi", 2)
+                fp.setEditorMode("Contact", 2)
+            elif fp.Mode == "DiscreteTrihedron":
+                fp.setEditorMode("Corrected", 2)
+                fp.setEditorMode("Location", 2)
+                fp.setEditorMode("Direction", 2)
+                fp.setEditorMode("Auxiliary", 2)
+                fp.setEditorMode("Support", 2)
+                fp.setEditorMode("EquiCurvi", 2)
+                fp.setEditorMode("Contact", 2)
+            elif fp.Mode == "FixedTrihedron":
+                fp.setEditorMode("Corrected", 2)
+                fp.setEditorMode("Location", 0)
+                fp.setEditorMode("Direction", 0)
+                fp.setEditorMode("Auxiliary", 2)
+                fp.setEditorMode("Support", 2)
+                fp.setEditorMode("EquiCurvi", 2)
+                fp.setEditorMode("Contact", 2)
+            elif fp.Mode == "Binormal":
+                fp.setEditorMode("Corrected", 2)
+                fp.setEditorMode("Location", 2)
+                fp.setEditorMode("Direction", 0)
+                fp.setEditorMode("Auxiliary", 2)
+                fp.setEditorMode("Support", 2)
+                fp.setEditorMode("EquiCurvi", 2)
+                fp.setEditorMode("Contact", 2)
+            elif fp.Mode == "ShapeSupport":
+                fp.setEditorMode("Corrected", 2)
+                fp.setEditorMode("Location", 2)
+                fp.setEditorMode("Direction", 2)
+                fp.setEditorMode("Auxiliary", 2)
+                fp.setEditorMode("Support", 0)
+                fp.setEditorMode("EquiCurvi", 2)
+                fp.setEditorMode("Contact", 2)
+            elif fp.Mode == "AuxiliarySpine":
+                fp.setEditorMode("Corrected", 2)
+                fp.setEditorMode("Location", 2)
+                fp.setEditorMode("Direction", 2)
+                fp.setEditorMode("Auxiliary", 0)
+                fp.setEditorMode("Support", 2)
+                fp.setEditorMode("EquiCurvi", 0)
+                fp.setEditorMode("Contact", 0)
         if prop == "MaxDegree":
-            if fp.MaxDegree < 1:
-                fp.MaxDegree = 1
+            if fp.MaxDegree < 5:
+                fp.MaxDegree = 5
             elif fp.MaxDegree > 14:
                 fp.MaxDegree = 14
         if prop == "MaxSegments":
@@ -99,11 +154,10 @@ class pipeShell:
                 fp.TolAng = 1e-7
             elif fp.TolAng > 1000:
                 fp.TolAng = 1000
-        #if prop == "":
-            #if fp. < :
-                #fp. = 
-            #elif fp. > :
-                #fp. = 
+        if prop == "Contact":
+            if fp.Contact == "ContactOnBorder":
+                FreeCAD.Console.PrintError("\nSorry, ContactOnBorder option is currently broken in OCCT.\n")
+                fp.Contact = "Contact"
 
     def add(self, ps, p):
         contact = self.getprop( p, "Contact")
@@ -142,21 +196,56 @@ class pipeShell:
             direction = self.getprop(obj, "Direction")
             if not direction:
                 direction = FreeCAD.Vector(0,0,1)
+                obj.Direction = direction
                 FreeCAD.Console.PrintError("\nWrong direction, defaulting to +Z\n")
             elif direction.Length < 1e-7:
                 direction = FreeCAD.Vector(0,0,1)
+                obj.Direction = direction
                 FreeCAD.Console.PrintError("\nDirection has null length, defaulting to +Z\n")
             if mode == "Binormal":
+                debug("Binormal mode (%r)"%direction)
                 ps.setBiNormalMode(direction)
             elif mode == "FixedTrihedron":
                 loc = self.getprop(obj, "Location") or FreeCAD.Vector(0,0,0)
+                debug("FixedTrihedron mode (%r %r)"%(loc, direction))
                 ps.setTrihedronMode(loc, direction)
-        
+        elif mode == "Frenet":
+            fre = self.getprop(obj, "Corrected")
+            debug("Frenet mode (%r)"%fre)
+            ps.setFrenetMode(fre)
+        elif mode == "AuxiliarySpine":
+            aux = self.getprop(obj, "Auxiliary")
+            w = None
+            if aux:
+                if aux.Shape.Wires:
+                    w = aux.Shape.Wires[0]
+                elif aux.Shape.Edges:
+                    w = Part.Wire(Part.__sortEdges__(aux.Shape.Edges))
+            if w:
+                curv = self.getprop(obj, "EquiCurvi") or False
+                cont = self.getprop(obj, "Contact") or "NoContact"
+                n = self.getCode(cont)
+                debug("AuxiliarySpine mode (%r %s)"%(curv,cont))
+                ps.setAuxiliarySpine(w,curv,n)
+            else:
+                FreeCAD.Console.PrintError("\nPlease set a valid Auxiliary Spine Object\n")
+        elif mode == "ShapeSupport":
+            sup = self.getprop(obj, "Support")
+            sh = None
+            if sup:
+                sh = sup.Shape
+            if sh:
+                debug("ShapeSupport mode")
+                ps.setSpineSupport(sh)
+            else:
+                FreeCAD.Console.PrintError("\nPlease set a valid Spine support Object\n")
+
+
         for p in profs:
             self.add(ps,p)
         
         if ps.isReady():
-            if not obj.Preview:
+            if (not obj.Preview) or (not hasattr(ps,'simulate')):
                 ps.build()
                 obj.Shape = ps.shape()
             else:
@@ -166,6 +255,14 @@ class pipeShell:
                 obj.Shape = c
         else:
             FreeCAD.Console.PrintError("\nFailed to create shape\n")
+
+    def getCode(self, cont):
+        if cont == "Contact":
+            return(long(1))
+        elif cont == "ContactOnBorder":
+            return(long(2))
+        else:
+            return(long(0))
 
     def getRails(self, shapes):
         nbvert = len(shapes[0].Vertexes)
