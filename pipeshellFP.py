@@ -247,6 +247,8 @@ class pipeShell:
         if ps.isReady():
             if (not obj.Preview) or (not hasattr(ps,'simulate')):
                 ps.build()
+                if self.getprop(obj, "Solid"):
+                    ps.makeSolid()
                 obj.Shape = ps.shape()
             else:
                 shapes = ps.simulate(self.getprop(obj, "Samples") or 100)
