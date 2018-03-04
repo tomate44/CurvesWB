@@ -174,7 +174,7 @@ class pipeShell:
                 ps.add(shape, contact, correction)
 
     def execute(self, obj):
-        #curvesWB = FreeCADGui.activeWorkbench()
+        debug("\n\nExecuting PipeShell\n")
         path = None
         profs = []
         path =  self.getWires( obj, "Spine")
@@ -191,6 +191,7 @@ class pipeShell:
         t3 = self.getprop(obj, "Tol3d") or 1.0e-4
         tb = self.getprop(obj, "TolBound") or 1.0e-4
         ta = self.getprop(obj, "TolAng") or 1.0e-2
+        ps.setTolerance(t3, tb, ta)
         
         mode = self.getprop(obj, "Mode")# or "DiscreteTrihedron"
         if mode in ["Binormal","FixedTrihedron"]:
