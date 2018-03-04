@@ -23,7 +23,7 @@ class pipeShell:
         obj.addProperty("App::PropertyLink",       "Support",     "Mode", "Shape of the ShapeSupport mode")
         obj.addProperty("App::PropertyLink",       "Auxiliary",   "Mode", "Auxiliary spine")
         obj.addProperty("App::PropertyEnumeration","Mode",        "Main", "PipeShell mode").Mode = ["Frenet","DiscreteTrihedron","FixedTrihedron","Binormal","ShapeSupport","AuxiliarySpine"]
-        obj.addProperty("App::PropertyBool",       "Preview",     "Main", "Preview mode").Preview = True
+        obj.addProperty("App::PropertyEnumeration","Output",      "Main", "Output shape").Output = ["Sections","Lofted sections","Surface"]
         obj.addProperty("App::PropertyBool",       "Solid",       "Settings",  "Make solid object").Solid = False
         obj.addProperty("App::PropertyInteger",    "MaxDegree",   "Settings",  "Maximum degree of the generated surface").MaxDegree = 5
         obj.addProperty("App::PropertyInteger",    "MaxSegments", "Settings",  "Maximum number of segments of the generated surface").MaxSegments = 32
@@ -38,6 +38,7 @@ class pipeShell:
         obj.addProperty("App::PropertyEnumeration","Contact",     "Mode",      "Type of contact to auxiliary spine").Contact = ["NoContact","Contact","ContactOnBorder"]
         obj.Mode = "DiscreteTrihedron"
         obj.Contact = "NoContact"
+        obj.Output = "Sections"
         obj.Direction = FreeCAD.Vector(0,0,1)
         obj.Location = FreeCAD.Vector(0,0,0)
         obj.Proxy = self
@@ -245,16 +246,21 @@ class pipeShell:
             self.add(ps,p)
         
         if ps.isReady():
-            if (not obj.Preview) or (not hasattr(ps,'simulate')):
+            output = self.getprop(obj, "Output")
+            solid = self.getprop(obj, "Solid") or False
+            if (output == "Surface") or (not hasattr(ps,'simulate')):
                 ps.build()
-                if self.getprop(obj, "Solid"):
+                if solid:
                     ps.makeSolid()
                 obj.Shape = ps.shape()
             else:
                 shapes = ps.simulate(self.getprop(obj, "Samples") or 100)
-                rails = self.getRails(shapes)
-                c = Part.Compound(shapes + rails)
-                obj.Shape = c
+                if output == "Lofted sections":
+                    obj.Shape = Part.makeLoft(shapes, solid, False, False, self.getprop(obj, "MaxDegree"))
+                else:
+                    rails = self.getRails(shapes)
+                    c = Part.Compound(shapes + rails)
+                    obj.Shape = c
         else:
             FreeCAD.Console.PrintError("\nFailed to create shape\n")
 
