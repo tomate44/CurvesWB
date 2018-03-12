@@ -5,7 +5,10 @@ import FreeCAD, Part, math
 import os, dummy, FreeCADGui
 from FreeCAD import Base
 from pivy import coin
-import BOPTools.SplitAPI
+try:
+    import BOPTools.SplitAPI
+except ImportError:
+    FreeCAD.Console.PrintError("Failed importing BOPTools. Fallback to Part API\n")
 
 path_curvesWB = os.path.dirname(dummy.__file__)
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
@@ -98,7 +101,10 @@ class trimFace:
         #Part.show(cuttool)
         face = self.getFace(obj.Face)
         #return
-        bf = BOPTools.SplitAPI.slice(face, cuttool, "Split", 1e-6)
+        try:
+            bf = BOPTools.SplitAPI.slice(face, cuttool, "Split", 1e-6)
+        except:
+            bf = Part.BOPTools.SplitAPI.slice(face, cuttool, "Split", 1e-6)
         debug("shape has %d faces"%len(bf.Faces))
         vert = Part.Vertex(obj.PickedPoint)
         min = 1e6
