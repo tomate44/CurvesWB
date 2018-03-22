@@ -1,5 +1,7 @@
 import FreeCADGui
-import splipy
+#import splipy
+import bsplineBasis
+reload(bsplineBasis)
 
 s = FreeCADGui.Selection.getSelectionEx()
 e1 = s[0].SubObjects[0]
@@ -11,7 +13,7 @@ def curvematch(c1,c2,level=0,scale=1.0):
     c1 = c1.toNurbs()
     c2 = c2.toNurbs()
 
-    c1end = c1.LastParameter
+    c1end = 2.5 #c1.LastParameter
     c2sta = c2.FirstParameter
 
     p1 = c1.getPoles()
@@ -20,14 +22,20 @@ def curvematch(c1,c2,level=0,scale=1.0):
     seq = c2.KnotSequence
     seq = [k*scale for k in seq]
 
-    basis1 = splipy.BSplineBasis(order=int(c1.Degree)+1, knots=c1.KnotSequence)
-    basis2 = splipy.BSplineBasis(order=int(c2.Degree)+1, knots=seq)
+    #basis1 = splipy.BSplineBasis(order=int(c1.Degree)+1, knots=c1.KnotSequence)
+    #basis2 = splipy.BSplineBasis(order=int(c2.Degree)+1, knots=seq)
+    basis1 = bsplineBasis.bsplineBasis()
+    basis2 = bsplineBasis.bsplineBasis()
+    basis1.p = c1.Degree
+    basis1.U = c1.KnotSequence
+    basis2.p = c2.Degree
+    basis2.U = seq
 
     l = 0
     while l <= level:
         FreeCAD.Console.PrintMessage("\nDerivative %d\n"%l)
-        ev1 = basis1.evaluate(c1end,d=l).A1.tolist()
-        ev2 = basis2.evaluate(c2sta,d=l).A1.tolist()
+        ev1 = basis1.evaluate(c1end,d=l) #.A1.tolist()
+        ev2 = basis2.evaluate(c2sta,d=l) #.A1.tolist()
         FreeCAD.Console.PrintMessage("Basis %d - %r\n"%(l,ev1))
         FreeCAD.Console.PrintMessage("Basis %d - %r\n"%(l,ev2))
         pole1 = FreeCAD.Vector()
@@ -50,7 +58,7 @@ def curvematch(c1,c2,level=0,scale=1.0):
         nc.setPole(i+1,p2[i])
     return(nc)
 
-curve = curvematch(c1,c2,2,1.0)
+curve = curvematch(c1,c2,4,0.5)
 
 edge = curve.toShape()
 d11 = e1.derivative1At(e1.LastParameter)

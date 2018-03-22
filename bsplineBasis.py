@@ -14,7 +14,8 @@ class bsplineBasis:
         """
         n = len(self.U)-self.p-1
         if u == self.U[n+1]:
-            return(n)
+            #print("End of curve !!!")
+            return(n-1)
         low = self.p
         high = n+1
         mid = int((low+high)/2)
@@ -32,7 +33,8 @@ class bsplineBasis:
         - output: basis functions values N (list of floats)
         Nurbs Book Algo A2.2 p.70
         """
-        N = [1.0] + [0.]*(self.p)
+        N = [0. for x in range(self.p+1)]
+        N[0] = 1.0
         left = [0.0]
         right = [0.0]
         for j in range(1,self.p+1):
@@ -53,9 +55,8 @@ class bsplineBasis:
         - output: basis functions and derivatives ders (array2d of floats)
         Nurbs Book Algo A2.3 p.72
         """
-        ders = [[0.0]*(self.p+1)] * (n+1)
-        #print(ders)
-        ndu = [[0.0]*(self.p+1)] * (self.p+1)
+        ders = [[0.0 for x in range(self.p+1)] for y in range(n+1)]
+        ndu = [[1.0 for x in range(self.p+1)] for y in range(self.p+1)] 
         ndu[0][0] = 1.0
         left = [0.0]
         right = [0.0]
@@ -65,17 +66,25 @@ class bsplineBasis:
             saved = 0.0
             for r in range(j):
                 ndu[j][r] = right[r+1] + left[j-r]
+                #print("ndu[%d][%d] = %f"%(j,r,ndu[j][r]))
                 temp = ndu[r][j-1] / ndu[j][r]
                 ndu[r][j] = saved + right[r+1] * temp
+                #print("ndu[%d][%d] = %f"%(r,j,ndu[r][j]))
                 saved = left[j-r]*temp
             ndu[j][j] = saved
-        print("ndu: %r"%ndu)
+            #print("ndu[%d][%d] = %f"%(j,j,ndu[j][j]))
+        #print("ndu:")
+        #for line in ndu:
+        #print(ndu[0])
+        #print(ndu[1])
+        #print(ndu[2])
+        #print("")
         for j in range(0,self.p+1):
             ders[0][j] = ndu[j][self.p]
         for r in range(0,self.p+1):
             s1 = 0
             s2 = 1
-            a = [[0.0]*(self.p+1)] * 2
+            a = [[0.0 for x in range(self.p+1)] for y in range(2)]
             a[0][0] = 1.0
             for k in range(1,n+1):
                 d = 0.0
@@ -109,14 +118,49 @@ class bsplineBasis:
             r *= (self.p-k)
         return(ders)
 
-bb = bsplineBasis()
-bb.U = [0.,0.,0.,1.,2.,3.,4.,4.,5.,5.,5.]
-bb.p = 2
-span = bb.findSpan(2.5)
-print(span)
-bas = bb.basisFuns(span,2.5)
-print(bas)
-ders = bb.dersBasisFuns(span,2.5,2)
-print(ders)
+    def evaluate(self, u, d):
+        """ Compute the derivative d of the basis functions.
+        - input: parameter u (float), derivative d (int)
+        - output: derivative d of the basis functions (list of floats)
+        """
+        n = len(self.U)-self.p-1
+        f = [0.0 for x in range(n)]
+        span = self.findSpan(u)
+        ders = self.dersBasisFuns(span, u, d)
+        for i,val in enumerate(ders[d]):
+            f[span-self.p+i] = val
+        return(f)
 
+def test():
+    bb = bsplineBasis()
+    bb.U = [0.,0.,0.,0.,1.,2.,3.,3.,3.,3.] #,5.,5.]
+    bb.p = 3
+    parm = 3.0
 
+    span = bb.findSpan(parm)
+    print(span)
+    bas = bb.basisFuns(span,parm)
+    print(bas)
+    print("")
+    ders = bb.dersBasisFuns(span,parm,2)
+    for l in ders:
+        print(l)
+    print("")
+    f0 = bb.evaluate(parm,d=0)
+    f1 = bb.evaluate(parm,d=1)
+    f2 = bb.evaluate(parm,d=2)
+    print(f0)
+    print(f1)
+    print(f2)
+    
+    
+    import splipy
+    
+    basis1 = splipy.BSplineBasis(order=bb.p+1, knots=bb.U)
+    
+    print("")
+    print(basis1.evaluate(parm,d=0).A1.tolist())
+    print(basis1.evaluate(parm,d=1).A1.tolist())
+    print(basis1.evaluate(parm,d=2).A1.tolist())
+    
+test()
