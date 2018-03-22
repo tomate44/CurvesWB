@@ -163,4 +163,4 @@ def test():
     print(basis1.evaluate(parm,d=1).A1.tolist())
     print(basis1.evaluate(parm,d=2).A1.tolist())
     
-test()
+#test()

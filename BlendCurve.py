@@ -1,9 +1,63 @@
 import math
 import FreeCAD
 import Part
+import bsplineBasis
 
 def error(s):
     FreeCAD.Console.PrintError(s)
+
+def curvematch(c1, c2, par1, level=0, scale=1.0):
+
+    c1 = c1.toNurbs()
+    c2 = c2.toNurbs()
+
+    #c1end = 2.5 #c1.LastParameter
+    c2sta = c2.FirstParameter
+
+    p1 = c1.getPoles()
+    p2 = c2.getPoles()
+
+    #seq = c2.KnotSequence
+    seq = [k*scale for k in c2.KnotSequence]
+    if scale < 0:
+        seq.reverse()
+        p2 = p2[::-1]
+
+    #basis1 = splipy.BSplineBasis(order=int(c1.Degree)+1, knots=c1.KnotSequence)
+    #basis2 = splipy.BSplineBasis(order=int(c2.Degree)+1, knots=seq)
+    basis1 = bsplineBasis.bsplineBasis()
+    basis2 = bsplineBasis.bsplineBasis()
+    basis1.p = c1.Degree
+    basis1.U = c1.KnotSequence
+    basis2.p = c2.Degree
+    basis2.U = seq
+
+    l = 0
+    while l <= level:
+        FreeCAD.Console.PrintMessage("\nDerivative %d\n"%l)
+        ev1 = basis1.evaluate(par1,d=l) #.A1.tolist()
+        ev2 = basis2.evaluate(c2sta,d=l) #.A1.tolist()
+        FreeCAD.Console.PrintMessage("Basis %d - %r\n"%(l,ev1))
+        FreeCAD.Console.PrintMessage("Basis %d - %r\n"%(l,ev2))
+        pole1 = FreeCAD.Vector()
+        for i in range(len(ev1)):
+            pole1 += 1.0*ev1[i]*p1[i]
+        val = ev2[l]
+        if val == 0:
+            FreeCAD.Console.PrintError("Zero !\n")
+            break
+        else:
+            pole2 = FreeCAD.Vector()
+            for i in range(l):
+                pole2 += 1.0*ev2[i]*p2[i]
+            np = (1.0*pole1-pole2)/val
+            FreeCAD.Console.PrintMessage("Moving P%d from (%0.2f,%0.2f,%0.2f) to (%0.2f,%0.2f,%0.2f)\n"%(l,p2[l].x,p2[l].y,p2[l].z,np.x,np.y,np.z))
+            p2[l] = np
+        l += 1
+    nc = c2.copy()
+    for i in range(len(p2)):
+        nc.setPole(i+1,p2[i])
+    return(nc)
 
 class blendCurve:
     def __init__(self, e1 = None, e2 = None):
@@ -22,14 +76,34 @@ class blendCurve:
         else:
             error("blendCurve initialisation error")
     
-    def getChordLength(self):
+    def getChord(self):
         v1 = self.edge1.valueAt(self.param1)
         v2 = self.edge2.valueAt(self.param2)
-        self.chordLength = v1.distanceToPoint(v2)
-        if self.chordLength < 1e-4:
-            self.chordLength = 1.0
+        ls = Part.LineSegment(v1,v2)
+        return(ls)
     
-    def getPoles(self): #, edge, param, cont, scale):
+    def getChordLength(self):
+        ls = self.getChord()
+        self.chordLength = ls.length()
+        if self.chordLength < 1e-6:
+            self.chordLength = 1.0
+
+    def getPoles(self):
+        nbPoles = self.cont1 + self.cont1 + 2
+        #knotSeq = [0.0 for x in range(nbPoles)]
+        #knotSeq2 = [1.0 for x in range(nbPoles)]
+        #knotSeq.extend(knotSeq2)
+        be = Part.BezierCurve()
+        be.increase(nbPoles-1)
+        #bs = be.toBSpline()
+        nc = curvematch(self.edge1.Curve, be, self.param1, self.cont1, self.scale1)
+        be = Part.BezierCurve()
+        be.setPoles(nc.getPoles()[::-1])
+        nc = curvematch(self.edge2.Curve, be, self.param2, self.cont2, self.scale2)
+        return(nc.getPoles())
+        
+
+    def getPolesOld(self): #, edge, param, cont, scale):
         poles1 = []
         poles2 = []
         poles1.append(self.edge1.valueAt(self.param1))

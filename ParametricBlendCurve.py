@@ -19,11 +19,11 @@ class BlendCurveFP:
         
         obj.addProperty("App::PropertyFloatConstraint", "Parameter1", "BlendCurve", "Location of blend curve")
         obj.addProperty("App::PropertyFloatConstraint", "Scale1",     "BlendCurve", "Scale of blend curve")
-        obj.addProperty("App::PropertyEnumeration",     "Continuity1","BlendCurve", "Continuity").Continuity1=["C0","G1","G2"]
+        obj.addProperty("App::PropertyEnumeration",     "Continuity1","BlendCurve", "Continuity").Continuity1=["C0","G1","G2","G3","G4"]
         
         obj.addProperty("App::PropertyFloatConstraint", "Parameter2", "BlendCurve", "Location of blend curve")
         obj.addProperty("App::PropertyFloatConstraint", "Scale2",     "BlendCurve", "Scale of blend curve")
-        obj.addProperty("App::PropertyEnumeration",     "Continuity2","BlendCurve", "Continuity").Continuity2=["C0","G1","G2"]
+        obj.addProperty("App::PropertyEnumeration",     "Continuity2","BlendCurve", "Continuity").Continuity2=["C0","G1","G2","G3","G4"]
         
         obj.addProperty("App::PropertyVectorList",      "CurvePts",   "BlendCurve", "CurvePts")
 
@@ -79,8 +79,12 @@ class BlendCurveFP:
             return 0
         elif cont == "G1":
             return 1
-        else:
+        elif cont == "G2":
             return 2
+        elif cont == "G3":
+            return 3
+        else:
+            return 4
 
 
 class BlendCurveVP:
