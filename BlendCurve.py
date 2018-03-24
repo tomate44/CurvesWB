@@ -6,31 +6,94 @@ import bsplineBasis
 def error(s):
     FreeCAD.Console.PrintError(s)
 
+def knotSeqReverse(knots):
+    '''Reverse a knot vector'''
+    ma = max(knots)
+    mi = min(knots)
+    newknots = [ma+mi-k for k in knots]
+    newknots.reverse()
+    return(newknots)
+
+def knotSeqNormalize(knots):
+    '''Normalize a knot vector'''
+    ma = max(knots)
+    mi = min(knots)
+    ran = ma-mi
+    newknots = [(k-mi)/ran for k in knots]
+    return(newknots)
+
+
+def paramReverse(pa,fp,lp):
+    '''Reverse a param in [fp,lp] knot sequence'''
+    seq = [fp,pa,lp]
+    return(knotSeqReverse(seq)[1])
+
+def bsplineCopy(bs, reverse = False, normalize = False):
+    '''Copy a BSplineCurve, that can be optionally reversed, and its knotvector normalized'''
+    # bs.buildFromPolesMultsKnots
+    # poles (sequence of Base.Vector), [mults , knots, periodic, degree, weights (sequence of float), CheckRational]
+    mults = bs.getMultiplicities()
+    weights = bs.getWeights()
+    poles = bs.getPoles()
+    knots = bs.getKnots()
+    perio = bs.isPeriodic()
+    ratio = bs.isRational()
+    if normalize:
+        knots = knotSeqNormalize(knots)
+    if reverse:
+        mults.reverse()
+        weights.reverse()
+        poles.reverse()
+        knots = knotSeqReverse(knots)
+    bspline = Part.BSplineCurve()
+    bspline.buildFromPolesMultsKnots(poles, mults , knots, perio, bs.Degree, weights, ratio)
+    return(bspline)
+
+def createKnots(degree, nbPoles):
+    if degree >= nbPoles:
+        error("createKnots : degree >= nbPoles")
+    else:
+        nbIntKnots = nbPoles - degree - 1
+        start = [0.0 for k in range(degree+1)]
+        mid = [float(k) for k in range(1,nbIntKnots+1)]
+        end = [float(nbIntKnots+1) for k in range(degree+1)]
+        return(start+mid+end)
+
+def createKnotsMults(degree, nbPoles):
+    if degree >= nbPoles:
+        error("createKnotsMults : degree >= nbPoles")
+    else:
+        nbIntKnots = nbPoles - degree - 1
+        knots = [0.0] + [float(k) for k in range(1,nbIntKnots+1)] + [float(nbIntKnots+1)]
+        mults = [degree+1] + [1 for k in range(nbIntKnots)] + [degree+1]
+        return(knots, mults)
+
 def curvematch(c1, c2, par1, level=0, scale=1.0):
 
     c1 = c1.toNurbs()
     c2 = c2.toNurbs()
 
-    #c1end = 2.5 #c1.LastParameter
     c2sta = c2.FirstParameter
-
-    p1 = c1.getPoles()
     p2 = c2.getPoles()
+    seq2 = [k*abs(scale) for k in c2.KnotSequence]
 
-    #seq = c2.KnotSequence
-    seq = [k*scale for k in c2.KnotSequence]
     if scale < 0:
-        seq.reverse()
-        p2 = p2[::-1]
+        bs1 = bsplineCopy(c1, True, True)
+        par1 = paramReverse(par1, c1.FirstParameter, c1.LastParameter)
+        #scale = -scale
+    else:
+        bs1 = bsplineCopy(c1, False, True)
+        par1 = knotSeqNormalize([bs1.FirstParameter, par1, bs1.LastParameter])[1]
 
+    p1 = bs1.getPoles()
     #basis1 = splipy.BSplineBasis(order=int(c1.Degree)+1, knots=c1.KnotSequence)
     #basis2 = splipy.BSplineBasis(order=int(c2.Degree)+1, knots=seq)
     basis1 = bsplineBasis.bsplineBasis()
     basis2 = bsplineBasis.bsplineBasis()
-    basis1.p = c1.Degree
-    basis1.U = c1.KnotSequence
+    basis1.p = bs1.Degree
+    basis1.U = bs1.KnotSequence
     basis2.p = c2.Degree
-    basis2.U = seq
+    basis2.U = seq2
 
     l = 0
     while l <= level:
@@ -70,9 +133,10 @@ class blendCurve:
             self.cont2 = 0
             self.scale1 = 1.0
             self.scale2 = 1.0
-            self.bezier = Part.BezierCurve()
+            self.Curve = Part.BSplineCurve()
             self.getChordLength()
             self.autoScale = True
+            self.maxDegree = int(self.Curve.MaxDegree)
         else:
             error("blendCurve initialisation error")
     
@@ -86,21 +150,29 @@ class blendCurve:
         ls = self.getChord()
         self.chordLength = ls.length()
         if self.chordLength < 1e-6:
+            error("error : chordLength < 1e-6")
             self.chordLength = 1.0
 
-    def getPoles(self):
+    def compute(self):
         nbPoles = self.cont1 + self.cont1 + 2
+        e = self.getChord()
+        poles = e.discretize(nbPoles)
+        degree = nbPoles - 1 #max((self.cont1, self.cont2))
+        if degree > self.maxDegree:
+            degree = self.maxDegree
+        #knotSeq = createKnots(degree, nbPoles)
+        knots, mults = createKnotsMults(degree, nbPoles)
+        weights = [1.0 for k in range(nbPoles)]
         #knotSeq = [0.0 for x in range(nbPoles)]
         #knotSeq2 = [1.0 for x in range(nbPoles)]
         #knotSeq.extend(knotSeq2)
-        be = Part.BezierCurve()
-        be.increase(nbPoles-1)
-        #bs = be.toBSpline()
+        be = Part.BSplineCurve()
+        be.buildFromPolesMultsKnots(poles, mults , knots, False, degree, weights, False)
+        #Curve = be.toBSpline()
         nc = curvematch(self.edge1.Curve, be, self.param1, self.cont1, self.scale1)
-        be = Part.BezierCurve()
-        be.setPoles(nc.getPoles()[::-1])
-        nc = curvematch(self.edge2.Curve, be, self.param2, self.cont2, self.scale2)
-        return(nc.getPoles())
+        rev = bsplineCopy(nc, True, False)
+        self.Curve = curvematch(self.edge2.Curve, rev, self.param2, self.cont2, self.scale2)
+        #return(self.Curve.getPoles())
         
 
     def getPolesOld(self): #, edge, param, cont, scale):
@@ -158,21 +230,17 @@ class blendCurve:
                 #poles2.append(c.value(c.parameter(poles1[0])))
         return(poles1+poles2[::-1])
             
-    def compute(self):
-        if self.autoScale:
-            self.getChordLength()
-        self.nbSegments = 1 + self.cont1 + self.cont2
-        self.unitLength = self.chordLength / self.nbSegments
-        poles = self.getPoles() #self.edge1, self.param1, self.cont1, self.scale1)
-        self.bezier.setPoles(poles)
+    def getPoles(self):
+        self.compute()
+        return(self.Curve.getPoles())
 
     def shape(self):
         self.compute()
-        return(self.bezier.toShape())
+        return(self.Curve.toShape())
 
     def curve(self):
         self.compute()
-        return(self.bezier)
+        return(self.Curve)
 
 #obj1 = App.getDocument("Surface_test_1").getObject("Sphere001")
 #e1 = obj1.Shape.Edge2

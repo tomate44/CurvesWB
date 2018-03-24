@@ -17,6 +17,8 @@ class BlendCurveFP:
         obj.addProperty("App::PropertyLinkSub",         "Edge1",      "BlendCurve", "Edge 1").Edge1 = edges[0]
         obj.addProperty("App::PropertyLinkSub",         "Edge2",      "BlendCurve", "Edge 2").Edge2 = edges[1]
         
+        obj.addProperty("App::PropertyInteger",         "DegreeMax",  "BlendCurve", "Max degree of the Blend curve").DegreeMax = 9
+        
         obj.addProperty("App::PropertyFloatConstraint", "Parameter1", "BlendCurve", "Location of blend curve")
         obj.addProperty("App::PropertyFloatConstraint", "Scale1",     "BlendCurve", "Scale of blend curve")
         obj.addProperty("App::PropertyEnumeration",     "Continuity1","BlendCurve", "Continuity").Continuity1=["C0","G1","G2","G3","G4"]
@@ -51,9 +53,11 @@ class BlendCurveFP:
         bc.cont2 = self.getContinuity(fp.Continuity2)
         bc.scale1 = fp.Scale1
         bc.scale2 = fp.Scale2
+        bc.maxDegree = fp.DegreeMax
         
-        fp.Shape = bc.shape()
-        fp.CurvePts = bc.getPoles()
+        bc.compute()
+        fp.Shape = bc.Curve.toShape()
+        fp.CurvePts = bc.Curve.getPoles()
 
     def onChanged(self, fp, prop):
         #print("%s - %s changed"%(fp,prop))
@@ -73,6 +77,11 @@ class BlendCurveFP:
         elif prop == "Scale2":
             if fp.Scale2 == 0:
                 fp.Scale2 = 0.0001
+        elif prop == "DegreeMax":
+            if fp.DegreeMax < 1:
+                fp.DegreeMax = 1
+            elif fp.DegreeMax > 9:
+                fp.DegreeMax = 9
 
     def getContinuity(self, cont):
         if cont == "C0":
