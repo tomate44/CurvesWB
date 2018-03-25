@@ -22,13 +22,20 @@ def knotSeqNormalize(knots):
     newknots = [(k-mi)/ran for k in knots]
     return(newknots)
 
+def knotSeqScale(knots, length):
+    '''Scales a knot vector to a given length'''
+    ma = max(knots)
+    mi = min(knots)
+    ran = ma-mi
+    newknots = [length * (k-mi)/ran for k in knots]
+    return(newknots)
 
 def paramReverse(pa,fp,lp):
     '''Reverse a param in [fp,lp] knot sequence'''
     seq = [fp,pa,lp]
     return(knotSeqReverse(seq)[1])
 
-def bsplineCopy(bs, reverse = False, normalize = False):
+def bsplineCopy(bs, reverse = False, scale = 1.0):
     '''Copy a BSplineCurve, that can be optionally reversed, and its knotvector normalized'''
     # bs.buildFromPolesMultsKnots
     # poles (sequence of Base.Vector), [mults , knots, periodic, degree, weights (sequence of float), CheckRational]
@@ -38,8 +45,8 @@ def bsplineCopy(bs, reverse = False, normalize = False):
     knots = bs.getKnots()
     perio = bs.isPeriodic()
     ratio = bs.isRational()
-    if normalize:
-        knots = knotSeqNormalize(knots)
+    if scale:
+        knots = knotSeqScale(knots, scale)
     if reverse:
         mults.reverse()
         weights.reverse()
@@ -72,18 +79,19 @@ def curvematch(c1, c2, par1, level=0, scale=1.0):
 
     c1 = c1.toNurbs()
     c2 = c2.toNurbs()
-
+    len1 = c1.length()
+    len2 = c2.length()
+    
     c2sta = c2.FirstParameter
     p2 = c2.getPoles()
-    seq2 = [k*abs(scale) for k in c2.KnotSequence]
+    seq2 = knotSeqScale(c2.KnotSequence, abs(scale) * len2) #[k*abs(scale) for k in c2.KnotSequence]
 
     if scale < 0:
-        bs1 = bsplineCopy(c1, True, True)
-        par1 = paramReverse(par1, c1.FirstParameter, c1.LastParameter)
-        #scale = -scale
+        bs1 = bsplineCopy(c1, True, len1)
     else:
-        bs1 = bsplineCopy(c1, False, True)
-        par1 = knotSeqNormalize([bs1.FirstParameter, par1, bs1.LastParameter])[1]
+        bs1 = bsplineCopy(c1, False, len1)
+    pt1 = c1.value(par1)
+    par1 = bs1.parameter(pt1)
 
     p1 = bs1.getPoles()
     #basis1 = splipy.BSplineBasis(order=int(c1.Degree)+1, knots=c1.KnotSequence)
