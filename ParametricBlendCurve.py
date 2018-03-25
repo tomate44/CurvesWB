@@ -29,8 +29,8 @@ class BlendCurveFP:
         
         obj.addProperty("App::PropertyVectorList",      "CurvePts",   "BlendCurve", "CurvePts")
 
-        obj.Scale1 = (1.,-5.0,5.0,0.1)
-        obj.Scale2 = (1.,-5.0,5.0,0.1)
+        obj.Scale1 = (1.,-5.0,5.0,0.05)
+        obj.Scale2 = (1.,-5.0,5.0,0.05)
         obj.Parameter1 = ( 1.0, 0.0, 1.0, 0.05 )
         obj.Parameter2 = ( 1.0, 0.0, 1.0, 0.05 )
         obj.Proxy = self
@@ -74,14 +74,17 @@ class BlendCurveFP:
         elif prop == "Scale1":
             if fp.Scale1 == 0:
                 fp.Scale1 = 0.0001
+            self.execute(fp)
         elif prop == "Scale2":
             if fp.Scale2 == 0:
                 fp.Scale2 = 0.0001
+            self.execute(fp)
         elif prop == "DegreeMax":
             if fp.DegreeMax < 1:
                 fp.DegreeMax = 1
             elif fp.DegreeMax > 9:
                 fp.DegreeMax = 9
+
 
     def getContinuity(self, cont):
         if cont == "C0":
