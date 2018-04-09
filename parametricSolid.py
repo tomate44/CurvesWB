@@ -1,66 +1,25 @@
-import os
-import FreeCAD, FreeCADGui, Part
-import dummy
+# -*- coding: utf-8 -*-
 
-path_curvesWB = os.path.dirname(dummy.__file__)
-path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
+__title__ = "Parametric solid"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = "Make a parametric solid from selected faces."
 
-DEBUG = 1
+import FreeCAD
+import FreeCADGui
+import Part
+import _utils
 
-def debug(string):
-    if DEBUG:
-        FreeCAD.Console.PrintMessage(string)
-        FreeCAD.Console.PrintMessage("\n")
-
-def increaseContinuity(c,tol):
-    #oc = c.Continuity
-    mults = [int(m) for m in c.getMultiplicities()]
-    #knots = c.getKnots()
-    try:
-        for i in range(len(mults))[1:-1]:
-            rk = c.removeKnot(i+1,mults[i]-1,tol)
-    except Part.OCCError:
-        debug('failed to increase continuity.')
-        debug("curve has %d poles."%len(c.getPoles()))
-    return(c)    
-
-def alignedTangents(c0, c1, Tol):
-    t0 = c0.tangent(c0.LastParameter)[0]
-    t1 = c1.tangent(c1.FirstParameter)[0]
-    t0.normalize()
-    t1.negative()
-    t1.normalize()
-    v = t0.sub(t1)
-    if v.Length < Tol:
-        return(True)
-    else:
-        return(False)
-    
-
+TOOL_ICON = _utils.iconsPath() + '/solid.svg'
 
 class solid:
-    "Make a parametric solid from selected faces"
+    """Make a parametric solid from selected faces"""
     def __init__(self, obj):
-        ''' Add the properties ''' 
-        obj.addProperty("App::PropertyLinkSubList",   "Faces",        "Solid",  "List of faces to build the solid")
-        #obj.addProperty("App::PropertyLink",         "Base",         "Join",   "Join all the edges of this base object")
-        #obj.addProperty("App::PropertyFloat",        "Tolerance",    "Join",   "Tolerance").Tolerance=0.001
-        #obj.addProperty("App::PropertyBool",         "CornerBreak",  "Join",   "Break on corners").CornerBreak = False
-        #obj.addProperty("App::PropertyBool",         "BadContinuity","Join",   "Break On Bad C0 Continuity").BadContinuity = False
+        obj.addProperty("App::PropertyLinkSubList", "Faces", "Solid", "List of faces to build the solid")
         obj.Proxy = self
 
-    def getFaces(self, obj):
-        res = []
-        if hasattr(obj, "Faces"):
-            for l in obj.Faces:
-                o = l[0]
-                for ss in l[1]:
-                    n = eval(ss.lstrip('Face'))
-                    res.append(o.Shape.Faces[n-1])
-        return(res)
-
     def execute(self, obj):
-        faces = self.getFaces(obj)
+        faces = _utils.getShape(obj,"Faces","Face")
         shell = Part.Shell(faces)
         obj.Shape = Part.Solid(shell)
 
@@ -69,33 +28,23 @@ class solidVP:
         vobj.Proxy = self
        
     def getIcon(self):
-        return (path_curvesWB_icons+'/solid.svg')
+        return (TOOL_ICON)
 
     def attach(self, vobj):
-        self.ViewObject = vobj
         self.Object = vobj.Object
-  
-    def setEdit(self,vobj,mode):
-        return False
-    
-    def unsetEdit(self,vobj,mode):
-        return
 
     def __getstate__(self):
-        return None
+        return({"name": self.Object.Name})
 
     def __setstate__(self,state):
-        return None
+        self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
+        return(None)
 
     #def claimChildren(self):
         #return None #[self.Object.Base, self.Object.Tool]
-        
-    def onDelete(self, feature, subelements): # subelements is a tuple of strings
-        return True
-
 
 class solidCommand:
-    "Make a parametric solid from selected faces"
+    """Make a parametric solid from selected faces"""
     def makeSolidFeature(self,source):
         solidFP = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Solid")
         solid(solidFP)
@@ -131,6 +80,6 @@ class solidCommand:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/solid.svg', 'MenuText': 'Make Solid', 'ToolTip': 'Make a parametric solid from selected faces'}
+        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Make Solid', 'ToolTip': 'Make a parametric solid from selected faces'}
 
 FreeCADGui.addCommand('solid', solidCommand())

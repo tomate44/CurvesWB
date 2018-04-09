@@ -23,13 +23,15 @@ class CurvesWorkbench(Workbench):
     Icon = main_CurvesWB_Icon
     
     def Initialize(self):
-        "This function is executed when FreeCAD starts"
+        """This function is executed when FreeCAD starts"""
         
         #import Sw2R
         #import PlateSurface
         #import Birail
         #import paramVector
         #import SurfaceEdit
+
+        # TODO changes module names to lower_with_underscore
 
         import lineFP # cleaned
         import bezierCurve
@@ -44,14 +46,14 @@ class CurvesWorkbench(Workbench):
         import ZebraTool
         import TrimFace
         import GeomInfo
-        import ExtractShapes
+        import ExtractShapes # cleaned
         import IsoCurve
         import Sketch_On_Surface
         import Sweep2Rails
         import hooks
         import curveOnSurfaceFP
         import blendSurfaceFP
-        import parametricSolid
+        import parametricSolid # cleaned
         import ProfileSketch
         import pasteSVG
         import pipeshellProfileFP

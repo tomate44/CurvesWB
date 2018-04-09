@@ -1,13 +1,19 @@
-import os
-import FreeCAD,FreeCADGui, Part
-from pivy.coin import *
-import dummy
+# -*- coding: utf-8 -*-
 
-path_curvesWB = os.path.dirname(dummy.__file__)
-path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
+__title__ = "Extract subshape"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = "Extract selected subshapes from objects."
+
+import FreeCAD
+import FreeCADGui
+import Part
+import _utils
+
+TOOL_ICON = _utils.iconsPath() + '/extract.svg'
 
 class extract:
-    "this class will extract the selected shapes from objects"
+    """Extract the selected shapes from objects"""
     def Activated(self):
         s = FreeCADGui.Selection.getSelectionEx()
         for o in s:
@@ -20,6 +26,6 @@ class extract:
         FreeCAD.ActiveDocument.recompute()
 
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/extract.svg', 'MenuText': 'Extract', 'ToolTip': 'Extract selected shapes from objects'}
+        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Extract', 'ToolTip': 'Extract selected subshapes from objects'}
 
 FreeCADGui.addCommand('extract', extract()) 
