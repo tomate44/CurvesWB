@@ -6,6 +6,7 @@ def error(s):
     FreeCAD.Console.PrintError(s)
 
 def getTrimmedCurve(e):
+    """Get a trimmed BSpline curve from an edge."""
     c = e.Curve.copy().toBSpline()
     if (not e.FirstParameter == c.FirstParameter) or (not e.LastParameter == c.LastParameter):
         c.segment(e.FirstParameter, e.LastParameter)
@@ -13,6 +14,8 @@ def getTrimmedCurve(e):
     return(c)
 
 def trim(curve,min,max,length,tol):
+    """recursive function to trim a geometry curve to a given length.
+    Should not be useful anymore."""
     c = curve.copy()
     mid = (max + min) * 0.5
     c.segment(c.FirstParameter,mid)
@@ -29,6 +32,7 @@ def trim(curve,min,max,length,tol):
     
 
 def trimToLength(ed, l, tol = 1e-5):
+    """Trim an edge to a given length."""
     if l > ed.Length:
         return(False)
     r = trim(ed.Curve,ed.Curve.FirstParameter,ed.Curve.LastParameter,l,tol)

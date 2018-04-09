@@ -1,24 +1,23 @@
-import os
+# -*- coding: utf-8 -*-
+
+__title__ = "Curve extend"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = "Extend an edge by a given distance."
+
 import FreeCAD
 import FreeCADGui
 import Part
-import dummy
+import _utils
 import curveExtend
 
-path_curvesWB = os.path.dirname(dummy.__file__)
-path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
-
-DEBUG = 1
-
-def debug(string):
-    if DEBUG:
-        FreeCAD.Console.PrintMessage(string)
-        FreeCAD.Console.PrintMessage("\n")
+TOOL_ICON = _utils.iconsPath() + '/extendcurve.svg'
+debug = _utils.debug
+debug = _utils.doNothing
 
 class extend:
-    "extends the selected edge"
+    """Extends the selected edge"""
     def __init__(self, obj):
-        ''' Add the properties '''
         obj.addProperty("App::PropertyLinkSub",      "Edge",       "Extend", "Input edge to extend")
         obj.addProperty("App::PropertyFloat",        "Length",     "Extend", "Extension Length").Length=1.0
         obj.addProperty("App::PropertyEnumeration",  "Location",   "Extend", "Edge extremity to extend").Location = ["Start","End","Both"]
@@ -29,22 +28,13 @@ class extend:
         obj.Output = "SingleEdge"
         obj.Proxy = self
 
-    def getEdges(self, obj):
-        res = []
-        if hasattr(obj, "Edge"):
-            o = obj.Edge[0]
-            ss = obj.Edge[1][0]
-            n = eval(ss.lstrip('Edge'))
-            res.append(o.Shape.Edges[n-1])
-        return(res)
-
     def onChanged(self, fp, prop):
         if prop == "Length":
             if fp.Length < 0:
                 fp.Length = 0
 
     def execute(self, obj):
-        edge = self.getEdges(obj)[0]
+        edge = _utils.getShape(obj, "Edge", "Edge")
         if hasattr(obj, "Length"):
             if obj.Length <= 0:
                 obj.Shape = edge
@@ -81,33 +71,21 @@ class extendVP:
         vobj.Proxy = self
        
     def getIcon(self):
-        return (path_curvesWB_icons+'/extendcurve.svg')
+        return (TOOL_ICON)
 
     def attach(self, vobj):
         self.ViewObject = vobj
         self.Object = vobj.Object
-  
-    def setEdit(self,vobj,mode):
-        return False
-    
-    def unsetEdit(self,vobj,mode):
-        return
-
-    def __getstate__(self):
-        return None
-
-    def __setstate__(self,state):
-        return None
 
     def claimChildren(self):
         return [self.Object.Edge[0]]
         
-    def onDelete(self, feature, subelements): # subelements is a tuple of strings
+    def onDelete(self, feature, subelements):
         return True
 
 
 class extendCommand:
-    "extendss the selected edges"
+    """Extends the selected edge"""
     def makeExtendFeature(self,source):
         if source is not []:
             for o in source:
@@ -131,9 +109,6 @@ class extendCommand:
                     if isinstance(selobj.SubObjects[i], Part.Edge):
                         edges.append((selobj.Object, selobj.SubElementNames[i]))
                         selobj.Object.ViewObject.Visibility=False
-            #else:
-                #self.makeJoinFeature(selobj.Object)
-                #selobj.Object.ViewObject.Visibility=False
         if edges:
             self.makeExtendFeature(edges)
         
@@ -146,6 +121,6 @@ class extendCommand:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/extendcurve.svg', 'MenuText': 'Extend Curve', 'ToolTip': 'Extends the selected edge'}
+        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Extend Curve', 'ToolTip': 'Extends the selected edge'}
 
 FreeCADGui.addCommand('extend', extendCommand())

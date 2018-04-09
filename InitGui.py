@@ -1,59 +1,69 @@
-#import FreeCADGui
-import os, sys
-import dummy
+# -*- coding: utf-8 -*-
 
-path_curvesWB = os.path.dirname(dummy.__file__)
+__title__ = "Curves workbench"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = "FreeCAD workbench that offers a collection of tools mainly related to Nurbs curves and surfaces."
+
+import os
+import sys
+import _utils
+
+path_curvesWB = os.path.dirname(_utils.__file__)
 sys.path.append(os.path.join(path_curvesWB, 'Gui'))
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
+_utils.setIconsPath(path_curvesWB_icons)
 global main_CurvesWB_Icon
 main_CurvesWB_Icon = os.path.join( path_curvesWB_icons , 'blendSurf.svg')
 
-class CurvesWorkbench (Workbench):
+class CurvesWorkbench(Workbench):
+    """FreeCAD workbench that offers a collection of tools mainly related to Nurbs curves and surfaces."""
     MenuText = "Curves"
     global main_CurvesWB_Icon
     Icon = main_CurvesWB_Icon
+    
     def Initialize(self):
         "This function is executed when FreeCAD starts"
-        import lineFP
+        
+        #import Sw2R
+        #import PlateSurface
+        #import Birail
+        #import paramVector
+        #import SurfaceEdit
+
+        import lineFP # cleaned
         import bezierCurve
-        import paramVector
         import editableSpline
-        import curveExtendFP
+        import curveExtendFP # TODO use basisSpline
         import JoinCurves
+        import splitCurves
         import Discretize
         import approximate
         import ParametricBlendCurve
         import ParametricComb
         import ZebraTool
-        import SurfaceEdit
         import TrimFace
         import GeomInfo
         import ExtractShapes
         import IsoCurve
         import Sketch_On_Surface
-        #import Sw2R
-        import PlateSurface
-        #import Birail
         import Sweep2Rails
         import hooks
         import curveOnSurfaceFP
         import blendSurfaceFP
         import parametricSolid
         import ProfileSketch
-        import splitCurves
         import pasteSVG
         import pipeshellProfileFP
         import pipeshellFP
 
-        stablelist = ["line","bezierCurve","editableSpline","extend","join","split","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","SurfaceEditTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface","pasteSVG","profile","pipeshell"]
-        #devellist = ["Vector","Plate"]
-        #FreeCADGui.addIconPath( ':/CurvesWB/icons' )
+        stablelist = ["line","bezierCurve","editableSpline","extend","join","split","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface","pasteSVG","profile","pipeshell"]
         self.appendToolbar("Curves",stablelist)
-        #self.appendToolbar("Devel",devellist)
+        self.appendMenu("Curves",stablelist)
         
 
     def Activated(self):
-        "This function is executed when the workbench is activated"
+        """This function is executed when the workbench is activated"""
         if FreeCAD.GuiUp:
             self.isObserving = True
             self.Selection = []
@@ -61,45 +71,38 @@ class CurvesWorkbench (Workbench):
         return
 
     def Deactivated(self):
-        "This function is executed when the workbench is deactivated"
+        """This function is executed when the workbench is deactivated"""
         if self.isObserving:
             FreeCADGui.Selection.removeObserver(self)
             self.isObserving = False
         return
 
-    def addSelection(self,doc,obj,sub,pnt):               # Selection object
-        #self.Selection.append((doc,obj,sub,pnt))
+    def addSelection(self,doc,obj,sub,pnt):
+        """Custom selection observer that keeps selection order."""
         self.Selection.append(Gui.Selection.getSelectionObject(doc,obj,sub,pnt))
 
-    def removeSelection(self,doc,obj,sub):                # Delete the selected object
-        #FreeCAD.Console.PrintMessage("removeSelection"+ "\n")
+    def removeSelection(self,doc,obj,sub):
         nl = []
         for o in self.Selection:
             if not o == Gui.Selection.getSelectionObject(doc,obj,sub):
                 nl.append(o)
         self.Selection= nl
-                
-    #def setSelection(self,doc):                           # Selection in ComboView
-        #FreeCAD.Console.PrintMessage("setSelection"+ "\n")
-        #self.Selection.append((doc,None,None,None))
-    def clearSelection(self,doc):                         # If click on the screen, clear the selection
-        #FreeCAD.Console.PrintMessage("clearSelection"+ "\n")
+
+    def clearSelection(self,doc):
         self.Selection = []
 
-
     def ContextMenu(self, recipient):
-        "This is executed whenever the user right-clicks on screen"
-        # "recipient" will be either "view" or "tree"
-        # FreeCAD.Console.PrintMessage(recipient)
+        """This is executed whenever the user right-clicks on screen.
+        recipient" will be either 'view' or 'tree'"""
         if recipient == "View":
-            contextlist = ["ParametricComb","ZebraTool","GeomInfo","extract"]
-            self.appendContextMenu("Curves",contextlist) # add commands to the context menu
+            contextlist = [] # list of commands
+            self.appendContextMenu("Curves",contextlist)
         elif recipient == "Tree":
-            contextlist = ["ZebraTool"]
-            self.appendContextMenu("Curves",contextlist) # add commands to the context menu
+            contextlist = [] # list of commands
+            self.appendContextMenu("Curves",contextlist)
 
     def GetClassName(self): 
-        # this function is mandatory if this is a full python workbench
+        """This function is mandatory if this is a full python workbench"""
         return "Gui::PythonWorkbench"
         
 Gui.addWorkbench(CurvesWorkbench())

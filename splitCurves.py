@@ -1,22 +1,22 @@
-import os
-import FreeCAD, FreeCADGui, Part
-from pivy.coin import *
-import dummy
+# -*- coding: utf-8 -*-
 
-path_curvesWB = os.path.dirname(dummy.__file__)
-path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
+__title__ = "Split curve"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = "Splits the selected edge."
 
-DEBUG = 1
+import FreeCAD
+import FreeCADGui
+import Part
+import _utils
 
-def debug(string):
-    if DEBUG:
-        FreeCAD.Console.PrintMessage(string)
-        FreeCAD.Console.PrintMessage("\n")
+TOOL_ICON = _utils.iconsPath() + '/splitcurve.svg'
+debug = _utils.debug
+#debug = _utils.doNothing
 
 class split:
-    "splits the selected edge"
+    """Splits the selected edge."""
     def __init__(self, obj, e):
-        ''' Add the properties '''
         obj.addProperty("App::PropertyLinkSub",      "Edge",     "Split",  "Edge to split").Edge = e
         obj.addProperty("App::PropertyEnumeration",  "Method",   "Split",  "Splitting method").Method = ['Parameter','Distance','Percent']
         obj.addProperty("App::PropertyFloat",        "Value",    "Split",  "Split at given parameter")
@@ -26,27 +26,14 @@ class split:
         obj.Value = 50.0
         obj.Proxy = self
 
-    def getEdge(self, obj):
-        if hasattr(obj, "Edge"):
-            try:
-                o  = obj.Edge[0]
-                ss = obj.Edge[1][0]
-                n = eval(ss.lstrip('Edge'))
-                return(o.Shape.Edges[n-1])
-            except:
-                return(None)
-        else:
-            FreeCAD.Console.PrintError("Object has no attribute 'Edge'\n")
-            return(None)
-
     def onChanged(self, fp, prop):
-        e = self.getEdge(fp)
+        e = _utils.getShape(fp, "Edge", "Edge")
         if not e:
             return
         if prop == "Edge":
-            debug("Split : Edge changed\n")
+            debug("Split : Edge changed")
         if prop == "Method":
-            debug("Split : Method changed\n")
+            debug("Split : Method changed")
             if fp.Method == "Percent":
                 fp.Value = self.ParamToPercent(e, fp.Param)
             elif fp.Method == "Distance":
@@ -74,7 +61,6 @@ class split:
                 fp.Param = fp.Value
             self.execute(fp)
 
-
     def PercentToParam(self, e, per):
         prange = e.LastParameter - e.FirstParameter
         return (e.FirstParameter + 0.01*per*prange)
@@ -98,7 +84,7 @@ class split:
         return (dis)
 
     def execute(self, obj):
-        e = self.getEdge(obj)
+        e = _utils.getShape(obj, "Edge", "Edge")
         p = obj.Value
         if   obj.Method == "Percent":
             p = self.PercentToParam(e, obj.Value)
@@ -115,33 +101,17 @@ class splitVP:
         vobj.Proxy = self
        
     def getIcon(self):
-        return (path_curvesWB_icons+'/splitcurve.svg')
+        return (TOOL_ICON)
 
     def attach(self, vobj):
         self.ViewObject = vobj
         self.Object = vobj.Object
-  
-    def setEdit(self,vobj,mode):
-        return False
-    
-    def unsetEdit(self,vobj,mode):
-        return
 
-    def __getstate__(self):
-        return None
-
-    def __setstate__(self,state):
-        return None
-
-    #def claimChildren(self):
-        #return None #[self.Object.Base, self.Object.Tool]
-        
-    def onDelete(self, feature, subelements): # subelements is a tuple of strings
-        return True
-
+    def claimChildren(self):
+        return [self.Object.Edge[0]]
 
 class splitCommand:
-    "splits the selected edges"
+    """Splits the selected edges."""
     def makeSplitFeature(self,e):
         splitCurve = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","SplitCurve")
         split(splitCurve, e)
@@ -172,6 +142,6 @@ class splitCommand:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/splitcurve.svg', 'MenuText': 'Split Curve', 'ToolTip': 'Splits the selected edge'}
+        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Split Curve', 'ToolTip': 'Splits the selected edge'}
 
 FreeCADGui.addCommand('split', splitCommand())
