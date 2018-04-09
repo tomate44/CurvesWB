@@ -125,8 +125,14 @@ class joinVP:
         return (path_curvesWB_icons+'/joincurve.svg')
 
     def attach(self, vobj):
-        self.ViewObject = vobj
         self.Object = vobj.Object
+
+    def __getstate__(self):
+        return({"name": self.Object.Name})
+
+    def __setstate__(self,state):
+        self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
+        return(None)
   
     def setEdit(self,vobj,mode):
         return False
@@ -134,16 +140,10 @@ class joinVP:
     def unsetEdit(self,vobj,mode):
         return
 
-    def __getstate__(self):
-        return None
-
-    def __setstate__(self,state):
-        return None
-
     #def claimChildren(self):
         #return None #[self.Object.Base, self.Object.Tool]
         
-    def onDelete(self, feature, subelements): # subelements is a tuple of strings
+    def onDelete(self, feature, subelements):
         return True
 
 

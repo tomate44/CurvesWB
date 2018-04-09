@@ -104,8 +104,14 @@ class splitVP:
         return (TOOL_ICON)
 
     def attach(self, vobj):
-        self.ViewObject = vobj
         self.Object = vobj.Object
+
+    def __getstate__(self):
+        return({"name": self.Object.Name})
+
+    def __setstate__(self,state):
+        self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
+        return(None)
 
     def claimChildren(self):
         return [self.Object.Edge[0]]

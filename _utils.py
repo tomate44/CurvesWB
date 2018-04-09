@@ -23,12 +23,14 @@ def doNothing(string):
     return(None)
 
 def getSubShape(shape, shape_type, n):
-    if shape_type == "Vertex":
+    if shape_type == "Vertex" and len(shape.Vertexes) >= n:
         return(shape.Vertexes[n-1])
-    elif shape_type == "Edge":
+    elif shape_type == "Edge" and len(shape.Edges) >= n:
         return(shape.Edges[n-1])
-    elif shape_type == "Face":
+    elif shape_type == "Face" and len(shape.Faces) >= n:
         return(shape.Faces[n-1])
+    else:
+        return(None)
 
 def getShape(obj, prop, shape_type):
     if hasattr(obj, prop):

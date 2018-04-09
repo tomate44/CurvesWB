@@ -93,7 +93,7 @@ def curvematch(c1, c2, par1, level=0, scale=1.0):
     len1 = c1.length()
     len2 = c2.length()
     # scale the knot vector of C2
-    seq2 = knotSeqScale(c2.KnotSequence, abs(scale) * len2)
+    seq2 = knotSeqScale(c2.KnotSequence, 0.5 * abs(scale) * len2)
     # get a scaled / reversed copy of C1
     if scale < 0:
         bs1 = bsplineCopy(c1, True, len1) # reversed

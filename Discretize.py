@@ -1,28 +1,26 @@
-from __future__ import division # allows floating point division from integers
-import FreeCAD, Part, math
-import os, dummy, FreeCADGui
-from FreeCAD import Base
-from pivy import coin
+# -*- coding: utf-8 -*-
 
-path_curvesWB = os.path.dirname(dummy.__file__)
-path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
+__title__ = "Discretize"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = "Discretize an edge or a wire."
 
-DEBUG = 0
+import FreeCAD
+import FreeCADGui
+import Part
+import _utils
 
-def debug(string):
-    if DEBUG:
-        FreeCAD.Console.PrintMessage(string)
-        FreeCAD.Console.PrintMessage("\n")
-
+TOOL_ICON = _utils.iconsPath() + '/discretize.svg'
+debug = _utils.debug
+#debug = _utils.doNothing
 
 class Discretization:
     def __init__(self, obj , edge):
-        ''' Add the properties '''
-        debug("\nDiscretization class Init\n")
+        debug("Discretization class Init")
         obj.addProperty("App::PropertyLinkSub",      "Edge",      "Discretization",   "Edge").Edge = edge
         obj.addProperty("App::PropertyEnumeration",  "Target",    "Discretization",   "Tool target").Target=["Edge","Wire"]
         obj.addProperty("App::PropertyEnumeration",  "Algorithm", "Method",   "Discretization Method").Algorithm=["Number","QuasiNumber","Distance","Deflection","QuasiDeflection","Angular-Curvature"]
-        obj.addProperty("App::PropertyInteger",      "Number",    "Method",   "Number of edge points").Number = 10
+        obj.addProperty("App::PropertyInteger",      "Number",    "Method",   "Number of edge points").Number = 100
         obj.addProperty("App::PropertyFloat",        "Distance",  "Method",   "Distance between edge points").Distance=1.0
         obj.addProperty("App::PropertyFloat",        "Deflection","Method",   "Distance for deflection Algorithm").Deflection=1.0
         obj.addProperty("App::PropertyFloat",        "Angular",   "Method",   "Angular value for Angular-Curvature Algorithm").Angular=0.1
@@ -31,23 +29,14 @@ class Discretization:
         obj.addProperty("App::PropertyFloat",        "ParameterFirst",     "Parameters",   "Start parameter")
         obj.addProperty("App::PropertyFloat",        "ParameterLast",      "Parameters",   "End parameter")
         obj.addProperty("App::PropertyVectorList",   "Points",    "Discretization",   "Points")
-        #obj.addProperty("App::PropertyVectorList",   "Tangents",   "Discretization",   "Tangents")
-        #obj.addProperty("App::PropertyVectorList",   "Normals",    "Discretization",   "Normals")
-        #obj.addProperty("Part::PropertyPartShape",   "Shape",     "Discretization",   "Shape")
         obj.Proxy = self
         self.obj = obj
-        obj.Points = []
         obj.Algorithm = "Number"
         obj.Target = "Edge"
-        #self.edge = None
-        #self.wire = None
-        #self.target = None
-        #self.setEdge(obj)
         edge = self.getTarget(obj, False)
         obj.ParameterFirst = edge.FirstParameter
         obj.ParameterLast = edge.LastParameter
         self.execute(obj)
-
 
     def edgeBounds(self, obj):
         o = obj.Edge[0]
@@ -83,7 +72,7 @@ class Discretization:
             target = self.getTarget(obj, True)
             if not target:
                 debug("Failed to get wire")
-                return False
+                return(False)
             if   obj.Algorithm == "Number":
                 obj.Points = target.discretize( Number = obj.Number)
             elif obj.Algorithm == "QuasiNumber":
@@ -100,7 +89,7 @@ class Discretization:
             target = self.getTarget(obj, False)
             if not target:
                 debug("Failed to get edge")
-                return False
+                return(False)
             if   obj.Algorithm == "Number":
                 obj.Points = target.discretize( Number = obj.Number,         First = obj.ParameterFirst, Last = obj.ParameterLast)
             elif obj.Algorithm == "QuasiNumber":
@@ -117,21 +106,19 @@ class Discretization:
         return True
 
     def execute(self, obj):
-        debug("\n* Discretization : execute *\n")
-        #self.setEdge( obj)
+        debug("* Discretization : execute *")
         if self.buildPoints( obj):
             obj.Shape = Part.Compound([Part.Vertex(i) for i in obj.Points])
-            #self.obj = obj
 
     def onChanged(self, fp, prop):
         #print fp
         if not fp.Edge:
             return
         if prop == "Edge":
-            debug("Discretization : Edge changed\n")
+            debug("Discretization : Edge changed")
             #self.setEdge( fp)
         if prop == "Target":
-            debug("Discretization : Target changed\n")
+            debug("Discretization : Target changed")
             #self.setEdge( fp)
             if fp.Target == "Wire":
                 fp.setEditorMode("ParameterFirst", 2)
@@ -141,7 +128,7 @@ class Discretization:
                 fp.setEditorMode("ParameterLast", 0)
                 
         if prop == "Algorithm":
-            debug("Discretization : Algorithm changed\n")
+            debug("Discretization : Algorithm changed")
             if fp.Algorithm in ("Number","QuasiNumber"):
                 fp.setEditorMode("Number", 0)
                 fp.setEditorMode("Distance", 2)
@@ -173,42 +160,41 @@ class Discretization:
         if prop == "Number":
             if fp.Number <= 1:
                 fp.Number = 2
-            debug("Discretization : Number changed to "+str(fp.Number)+"\n")
+            debug("Discretization : Number changed to %s"%str(fp.Number))
         if prop == "Distance":
             if fp.Distance <= 0.0:
                 fp.Distance = 0.0001
-            debug("Discretization : Distance changed to "+str(fp.Distance)+"\n")
+            debug("Discretization : Distance changed to %s"%str(fp.Distance))
         if prop == "Deflection":
             if fp.Deflection <= 0.0:
                 fp.Deflection = 0.0001
-            debug("Discretization : Deflection changed to "+str(fp.Deflection)+"\n")
+            debug("Discretization : Deflection changed to %s"%str(fp.Deflection))
         if prop == "Angular":
             if fp.Angular <= 0.0:
                 fp.Angular = 0.0001
-            debug("Discretization : Angular changed to "+str(fp.Angular)+"\n")
+            debug("Discretization : Angular changed to %s"%str(fp.Angular))
         if prop == "Curvature":
             if fp.Curvature <= 0.0:
                 fp.Curvature = 0.0001
-            debug("Discretization : Curvature changed to "+str(fp.Curvature)+"\n")
+            debug("Discretization : Curvature changed to %s"%str(fp.Curvature))
         if prop == "Minimum":
             if fp.Minimum < 2:
                 fp.Minimum = 2
-            debug("Discretization : Minimum changed to "+str(fp.Minimum)+"\n")
+            debug("Discretization : Minimum changed to %s"%str(fp.Minimum))
         if prop == "ParameterFirst":
             if fp.ParameterFirst < self.edgeBounds(fp)[0]:
                 fp.ParameterFirst = self.edgeBounds(fp)[0]
-            debug("Discretization : ParameterFirst changed to "+str(fp.ParameterFirst)+"\n")
+            debug("Discretization : ParameterFirst changed to %s"%str(fp.ParameterFirst))
         if prop == "ParameterLast":
             if fp.ParameterLast > self.edgeBounds(fp)[1]:
                 fp.ParameterLast = self.edgeBounds(fp)[1]
-            debug("Discretization : ParameterLast changed to "+str(fp.ParameterLast)+"\n")
-        #self.execute(fp) # Infinite loop
+            debug("Discretization : ParameterLast changed to %s"%str(fp.ParameterLast))
             
     def __getstate__(self):
         out = {"name": self.obj.Name,
                "algo": self.obj.Algorithm,
                "target": self.obj.Target}
-        return out
+        return(out)
 
     def __setstate__(self,state):
         self.obj = FreeCAD.ActiveDocument.getObject(state["name"])
@@ -218,42 +204,34 @@ class Discretization:
             self.obj.addProperty("App::PropertyEnumeration",  "Target",    "Discretization",   "Tool target").Target=["Edge","Wire"]
         self.obj.Algorithm = state["algo"]
         self.obj.Target = state["target"]
-        return None
+        return(None)
 
 class ViewProviderDisc:
     def __init__(self,vobj):
         vobj.Proxy = self
        
     def getIcon(self):
-        return (path_curvesWB_icons+'/discretize.svg')
+        return (TOOL_ICON)
 
     def attach(self, vobj):
-        self.ViewObject = vobj
         self.Object = vobj.Object
-  
-    def setEdit(self,vobj,mode):
-        return False
-    
-    def unsetEdit(self,vobj,mode):
-        return
 
     def __getstate__(self):
-        return None
+        return({"name": self.Object.Name})
 
     def __setstate__(self,state):
-        return None
+        self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
+        return(None)
 
     def claimChildren(self):
         return [self.Object.Edge[0]]
         
-    def onDelete(self, feature, subelements): # subelements is a tuple of strings
+    def onDelete(self, feature, subelements):
         try:
             self.Object.Edge[0].ViewObject.Visibility=True
-            #self.Object.Tool.ViewObject.show()
         except Exception as err:
             App.Console.PrintError("Error in onDelete: " + err.message)
         return True
-
 
 class discretize:
     def parseSel(self, selectionObject):
@@ -271,7 +249,7 @@ class discretize:
         s = FreeCADGui.Selection.getSelectionEx()
         edges = self.parseSel(s)
         for e in edges:
-            obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Discretized_Edge") #add object to document
+            obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Discretized_Edge")
             Discretization(obj,e)
             ViewProviderDisc(obj.ViewObject)
             obj.ViewObject.PointSize = 3.00000
@@ -287,7 +265,7 @@ class discretize:
 
 
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/discretize.svg', 'MenuText': 'Discretize', 'ToolTip': 'Discretizes edge or wire'}
+        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Discretize', 'ToolTip': 'Discretize an edge or a wire'}
 
 FreeCADGui.addCommand('Discretize', discretize())
 

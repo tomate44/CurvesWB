@@ -36,10 +36,10 @@ class CurvesWorkbench(Workbench):
         import editableSpline
         import curveExtendFP # TODO use basisSpline
         import JoinCurves
-        import splitCurves
-        import Discretize
+        import splitCurves # cleaned
+        import Discretize # cleaned
         import approximate
-        import ParametricBlendCurve
+        import ParametricBlendCurve # cleaned
         import ParametricComb
         import ZebraTool
         import TrimFace

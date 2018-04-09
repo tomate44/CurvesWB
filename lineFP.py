@@ -28,6 +28,8 @@ class line:
         if v1 and v2:
             l = Part.LineSegment(v1.Point, v2.Point)
             obj.Shape = l.toShape()
+        else:
+            FreeCAD.Console.PrintError("%s broken !\n"%obj.Label)
 
 class lineVP:
     def __init__(self,vobj):
@@ -37,8 +39,14 @@ class lineVP:
         return(TOOL_ICON)
 
     def attach(self, vobj):
-        self.ViewObject = vobj
         self.Object = vobj.Object
+
+    def __getstate__(self):
+        return({"name": self.Object.Name})
+
+    def __setstate__(self,state):
+        self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
+        return(None)
 
 class lineCommand:
     """Creates a parametric line between two vertexes"""
