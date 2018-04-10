@@ -1,87 +1,10 @@
 import math
 import FreeCAD
 import Part
-import bsplineBasis
+import nurbs_tools
 
 def error(s):
     FreeCAD.Console.PrintError(s)
-
-def knotSeqReverse(knots):
-    '''Reverse a knot vector
-    revKnots = knotSeqReverse(knots)'''
-    ma = max(knots)
-    mi = min(knots)
-    newknots = [ma+mi-k for k in knots]
-    newknots.reverse()
-    return(newknots)
-
-def knotSeqNormalize(knots):
-    '''Normalize a knot vector
-    normKnots = knotSeqNormalize(knots)'''
-    ma = max(knots)
-    mi = min(knots)
-    ran = ma-mi
-    newknots = [(k-mi)/ran for k in knots]
-    return(newknots)
-
-def knotSeqScale(knots, length = 1.0):
-    '''Scales a knot vector to a given length
-    newknots = knotSeqScale(knots, length = 1.0)'''
-    ma = max(knots)
-    mi = min(knots)
-    ran = ma-mi
-    newknots = [length * (k-mi)/ran for k in knots]
-    return(newknots)
-
-def paramReverse(pa,fp,lp):
-    '''Returns the image of parameter param when knot sequence [fp,lp] is reversed.
-    newparam = paramReverse(param,fp,lp)'''
-    seq = [fp,pa,lp]
-    return(knotSeqReverse(seq)[1])
-
-def bsplineCopy(bs, reverse = False, scale = 1.0):
-    '''Copy a BSplineCurve, with knotvector optionally reversed and scaled
-    newbspline = bsplineCopy(bspline, reverse = False, scale = 1.0)'''
-    # Part.BSplineCurve.buildFromPolesMultsKnots( poles, mults , knots, periodic, degree, weights, CheckRational )
-    mults = bs.getMultiplicities()
-    weights = bs.getWeights()
-    poles = bs.getPoles()
-    knots = bs.getKnots()
-    perio = bs.isPeriodic()
-    ratio = bs.isRational()
-    if scale:
-        knots = knotSeqScale(knots, scale)
-    if reverse:
-        mults.reverse()
-        weights.reverse()
-        poles.reverse()
-        knots = knotSeqReverse(knots)
-    bspline = Part.BSplineCurve()
-    bspline.buildFromPolesMultsKnots(poles, mults , knots, perio, bs.Degree, weights, ratio)
-    return(bspline)
-
-def createKnots(degree, nbPoles):
-    '''Create a uniform knotVector from given degree and Nb of poles
-    knotVector = createKnots(degree, nbPoles)'''
-    if degree >= nbPoles:
-        error("createKnots : degree >= nbPoles")
-    else:
-        nbIntKnots = nbPoles - degree - 1
-        start = [0.0 for k in range(degree+1)]
-        mid = [float(k) for k in range(1,nbIntKnots+1)]
-        end = [float(nbIntKnots+1) for k in range(degree+1)]
-        return(start+mid+end)
-
-def createKnotsMults(degree, nbPoles):
-    '''Create a uniform knotVector and a multiplicities list from given degree and Nb of poles
-    knots, mults = createKnotsMults(degree, nbPoles)'''
-    if degree >= nbPoles:
-        error("createKnotsMults : degree >= nbPoles")
-    else:
-        nbIntKnots = nbPoles - degree - 1
-        knots = [0.0] + [float(k) for k in range(1,nbIntKnots+1)] + [float(nbIntKnots+1)]
-        mults = [degree+1] + [1 for k in range(nbIntKnots)] + [degree+1]
-        return(knots, mults)
 
 def curvematch(c1, c2, par1, level=0, scale=1.0):
     '''Modifies the start of curve C2 so that it joins curve C1 at parameter par1
@@ -93,22 +16,22 @@ def curvematch(c1, c2, par1, level=0, scale=1.0):
     len1 = c1.length()
     len2 = c2.length()
     # scale the knot vector of C2
-    seq2 = knotSeqScale(c2.KnotSequence, 0.5 * abs(scale) * len2)
+    seq2 = nurbs_tools.knotSeqScale(c2.KnotSequence, 0.5 * abs(scale) * len2)
     # get a scaled / reversed copy of C1
     if scale < 0:
-        bs1 = bsplineCopy(c1, True, len1) # reversed
+        bs1 = nurbs_tools.bspline_copy(c1, True, len1) # reversed
     else:
-        bs1 = bsplineCopy(c1, False, len1) # not reversed
+        bs1 = nurbs_tools.bspline_copy(c1, False, len1) # not reversed
     pt1 = c1.value(par1) # point on input curve C1
     par1 = bs1.parameter(pt1) # corresponding parameter on reversed / scaled curve bs1
 
     p1 = bs1.getPoles()
-    basis1 = bsplineBasis.bsplineBasis()
+    basis1 = nurbs_tools.BsplineBasis()
     basis1.knots = bs1.KnotSequence
     basis1.degree = bs1.Degree
     
     p2 = c2.getPoles()
-    basis2 = bsplineBasis.bsplineBasis()
+    basis2 = nurbs_tools.BsplineBasis()
     basis2.knots = seq2
     basis2.degree = c2.Degree
     
@@ -125,7 +48,7 @@ def curvematch(c1, c2, par1, level=0, scale=1.0):
             poles1 += 1.0*ev1[i]*p1[i]
         val = ev2[l]
         if val == 0:
-            FreeCAD.Console.PrintError("Zero !\n")
+            error("Zero !")
             break
         else:
             poles2 = FreeCAD.Vector()
@@ -178,12 +101,12 @@ class blendCurve:
         degree = nbPoles - 1
         if degree > self.maxDegree:
             degree = self.maxDegree
-        knots, mults = createKnotsMults(degree, nbPoles)
+        knots, mults = nurbs_tools.createKnotsMults(degree, nbPoles)
         weights = [1.0 for k in range(nbPoles)]
         be = Part.BSplineCurve()
         be.buildFromPolesMultsKnots(poles, mults , knots, False, degree, weights, False)
         nc = curvematch(self.edge1.Curve, be, self.param1, self.cont1, self.scale1)
-        rev = bsplineCopy(nc, True, False)
+        rev = nurbs_tools.bspline_copy(nc, True, False)
         self.Curve = curvematch(self.edge2.Curve, rev, self.param2, self.cont2, self.scale2)
 
     def getPoles(self):

@@ -1,14 +1,22 @@
-from __future__ import division # allows floating point division from integers
-import FreeCAD, Part, math
-import os, dummy, FreeCADGui
-from FreeCAD import Base
-from pivy import coin
+# -*- coding: utf-8 -*-
 
-path_curvesWB = os.path.dirname(dummy.__file__)
-path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
+__title__ = "Approximate"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = "Approximate a set of points."
+
+import FreeCAD
+import FreeCADGui
+import Part
+import _utils
+
+TOOL_ICON = _utils.iconsPath() + '/approximate.svg'
+debug = _utils.debug
+debug = _utils.doNothing
+
 
 # ********************************************************
-# **** Part.BSplineCurve.interpolate() documentation *****
+# **** Part.BSplineCurve.approximate() documentation *****
 # ********************************************************
 
 #Replaces this B-Spline curve by approximating a set of points.
@@ -229,7 +237,6 @@ class Approximate:
                 fp.DegreeMin = 1
             elif fp.DegreeMin > fp.DegreeMax:
                 fp.DegreeMin = fp.DegreeMax
-            #fp.DegreeMax = fp.DegreeMax
             debug("Approximate : DegreeMin changed to "+str(fp.DegreeMin))
         if prop == "DegreeMax":
             if fp.DegreeMax < fp.DegreeMin:
@@ -243,7 +250,6 @@ class Approximate:
                 elif fp.Continuity == "C1":
                     if fp.DegreeMax < 3:
                         fp.DegreeMax = 3
-                #fp.DegreeMin = fp.DegreeMin
             debug("Approximate : DegreeMax changed to "+str(fp.DegreeMax))
         if prop == "ApproxTolerance":
             if fp.ApproxTolerance < 1e-6:
@@ -286,10 +292,9 @@ class ViewProviderApp:
         vobj.Proxy = self
        
     def getIcon(self):
-        return (path_curvesWB_icons+'/approximate.svg')
+        return (TOOL_ICON)
 
     def attach(self, vobj):
-        self.ViewObject = vobj
         self.Object = vobj.Object
   
     def setEdit(self,vobj,mode):
@@ -299,21 +304,21 @@ class ViewProviderApp:
         return
 
     def __getstate__(self):
-        return None
+        return({"name": self.Object.Name})
 
     def __setstate__(self,state):
-        return None
+        self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
+        return(None)
 
     def claimChildren(self):
         return [self.Object.PointObject]
         
-    def onDelete(self, feature, subelements): # subelements is a tuple of strings
+    def onDelete(self, feature, subelements):
         try:
             self.Object.PointObject.ViewObject.Visibility=True
-            #self.Object.Tool.ViewObject.show()
         except Exception as err:
             App.Console.PrintError("Error in onDelete: " + err.message)
-        return True
+        return(True)
 
 
 
@@ -350,7 +355,7 @@ class approx:
         FreeCAD.ActiveDocument.recompute()
             
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/approximate.svg', 'MenuText': 'Approximate', 'ToolTip': 'Approximate points to NURBS curve or surface'}
+        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Approximate', 'ToolTip': 'Approximate points to NURBS curve or surface'}
 
 FreeCADGui.addCommand('Approximate', approx())
 

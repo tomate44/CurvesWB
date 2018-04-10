@@ -12,7 +12,7 @@ import _utils
 
 TOOL_ICON = _utils.iconsPath() + '/discretize.svg'
 debug = _utils.debug
-#debug = _utils.doNothing
+debug = _utils.doNothing
 
 class Discretization:
     def __init__(self, obj , edge):
