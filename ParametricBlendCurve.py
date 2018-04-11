@@ -11,7 +11,7 @@ import Part
 import _utils
 
 from pivy import coin
-import BlendCurve
+import nurbs_tools
 import CoinNodes
 
 TOOL_ICON = _utils.iconsPath() + '/blend.svg'
@@ -42,7 +42,7 @@ class BlendCurveFP:
         e1 = _utils.getShape(fp, "Edge1", "Edge")
         e2 = _utils.getShape(fp, "Edge2", "Edge")
         if e1 and e2:
-            bc = BlendCurve.blendCurve(e1,e2)
+            bc = nurbs_tools.blendCurve(e1,e2)
             bc.param1 = e1.FirstParameter + fp.Parameter1 * (e1.LastParameter - e1.FirstParameter)
             bc.param2 = e2.FirstParameter + fp.Parameter2 * (e2.LastParameter - e2.FirstParameter)
             bc.cont1 = self.getContinuity(fp.Continuity1)
