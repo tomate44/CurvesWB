@@ -411,6 +411,50 @@ class blendCurve(object):
         self.compute()
         return(self.Curve)
 
+# ---------------------------------------------------
+
+def move_param(c,p1,p2):
+    c1 = c.copy()
+    c2 = c.copy()
+    c1.segment(c.FirstParameter,p2)
+    c2.segment(p2,c.LastParameter)
+    #print("\nSegment 1 -> %r"%c1.getKnots())
+    #print("Segment 2 -> %r"%c2.getKnots())
+    knots1 = nurbs_tools.knotSeqScale(c1.KnotSequence, p1-c.FirstParameter)
+    knots2 = nurbs_tools.knotSeqScale(c2.KnotSequence, c.LastParameter-p1)
+    c1.setKnots(list(set(knots1)))
+    c2.setKnots(list(set(knots2)))
+    #print("New 1 -> %r"%c1.getKnots())
+    #print("New 2 -> %r"%c2.getKnots())
+    return(c1,c2)
+
+def join_curve(c1,c2):
+    c = Part.BSplineCurve()
+    # poles (sequence of Base.Vector), [mults , knots, periodic, degree, weights (sequence of float), CheckRational]
+    new_poles = c1.getPoles()
+    new_poles.extend(c2.getPoles()[1:])
+    new_weights = c1.getWeights()
+    new_weights.extend(c2.getWeights()[1:])
+    new_mults = c1.getMultiplicities()[:-1]
+    new_mults.append(c1.Degree)
+    new_mults.extend(c2.getMultiplicities()[1:])
+    knots1 = c1.getKnots()
+    knots2 = [knots1[-1] + k for k in c2.getKnots()]
+    new_knots = knots1
+    new_knots.extend(knots2[1:])
+    print("poles   -> %r"%new_poles)
+    print("weights -> %r"%new_weights)
+    print("mults   -> %r"%new_mults)
+    print("knots   -> %r"%new_knots)
+    c.buildFromPolesMultsKnots(new_poles, new_mults, new_knots, False, c1.Degree, new_weights, True)
+    return(c)
+
+def reparametrize(c, p1, p2):
+    '''Reparametrize a BSplineCurve so that parameter p1 is moved to p2'''
+    c1,c2 = move_param(c, p1, p2)
+    c = join_curve(c1,c2)
+    return(c)
+
 
 
 
