@@ -232,7 +232,7 @@ def knotSeqNormalize(knots):
     newknots = [(k-mi)/ran for k in knots]
     return(newknots)
 
-def knotSeqScale(knots, length = 1.0):
+def knotSeqScale(knots, length = 1.0, start = 0.0):
     """Scales a knot vector to a given length
     newknots = knotSeqScale(knots, length = 1.0)"""
     if length <= 0.0:
@@ -241,7 +241,7 @@ def knotSeqScale(knots, length = 1.0):
         ma = max(knots)
         mi = min(knots)
         ran = ma-mi
-        newknots = [length * (k-mi)/ran for k in knots]
+        newknots = [start+(length*(k-mi)/ran) for k in knots]
         return(newknots)
 
 def paramReverse(pa,fp,lp):
@@ -416,17 +416,32 @@ class blendCurve(object):
 def move_param(c,p1,p2):
     c1 = c.copy()
     c2 = c.copy()
-    c1.segment(c.FirstParameter,p2)
-    c2.segment(p2,c.LastParameter)
+    c1.segment(c.FirstParameter,float(p2))
+    c2.segment(float(p2),c.LastParameter)
     #print("\nSegment 1 -> %r"%c1.getKnots())
     #print("Segment 2 -> %r"%c2.getKnots())
-    knots1 = nurbs_tools.knotSeqScale(c1.KnotSequence, p1-c.FirstParameter)
-    knots2 = nurbs_tools.knotSeqScale(c2.KnotSequence, c.LastParameter-p1)
-    c1.setKnots(list(set(knots1)))
-    c2.setKnots(list(set(knots2)))
+    knots1 = knotSeqScale(c1.getKnots(), p1-c.FirstParameter)
+    knots2 = knotSeqScale(c2.getKnots(), c.LastParameter-p1)
+    c1.setKnots(knots1)
+    c2.setKnots(knots2)
     #print("New 1 -> %r"%c1.getKnots())
     #print("New 2 -> %r"%c2.getKnots())
     return(c1,c2)
+
+def move_params(c,p1,p2):
+    curves = list()
+    p1.insert(0,c.FirstParameter)
+    p1.append(c.LastParameter)
+    p2.insert(0,c.FirstParameter)
+    p2.append(c.LastParameter)
+    for i in range(len(p1)-1):
+        c1 = c.copy()
+        c1.segment(p2[i],p2[i+1])
+        knots1 = knotSeqScale(c1.getKnots(), p1[i+1]-p1[i], p1[i])
+        print("%s -> %s"%(c1.getKnots(),knots1))
+        c1.setKnots(knots1)
+        curves.append(c1)
+    return(curves)
 
 def join_curve(c1,c2):
     c = Part.BSplineCurve()
@@ -449,11 +464,22 @@ def join_curve(c1,c2):
     c.buildFromPolesMultsKnots(new_poles, new_mults, new_knots, False, c1.Degree, new_weights, True)
     return(c)
 
+def join_curves(curves):
+    c0 = curves[0]
+    for c in curves[1:]:
+        c0 = join_curve(c0,c)
+    return(c0)
+
 def reparametrize(c, p1, p2):
     '''Reparametrize a BSplineCurve so that parameter p1 is moved to p2'''
-    c1,c2 = move_param(c, p1, p2)
-    c = join_curve(c1,c2)
-    return(c)
+    if not isinstance(p1,(list, tuple)):
+        c1,c2 = move_param(c, p1, p2)
+        c = join_curve(c1,c2)
+        return(c)
+    else:
+        curves = move_params(c, p1, p2)
+        c = join_curves(curves)
+        return(c)
 
 
 
