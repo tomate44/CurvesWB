@@ -400,15 +400,44 @@ class blendCurve(object):
         self.Curve = curvematch(self.edge2.Curve, rev, self.param2, self.cont2, self.scale2)
 
     def getPoles(self):
-        self.compute()
+        #self.compute()
         return(self.Curve.getPoles())
+    
+    def getCurves(self):
+        e1 = self.edge1.Curve.copy()
+        e2 = self.edge2.Curve.copy()
+        if self.scale1 < 0:
+            if self.param1 > e1.FirstParameter:
+                e1.segment(e1.FirstParameter, self.param1)
+        else:
+            if self.param1 < e1.LastParameter:
+                e1.segment(self.param1, e1.LastParameter)
+        if self.scale2 < 0:
+            if self.param2 > e2.FirstParameter:
+                e2.segment(e2.FirstParameter, self.param2)
+        else:
+            if self.param2 < e2.LastParameter:
+                e2.segment(self.param2, e2.LastParameter)
+        return([e1,self.Curve,e2])
+    
+    def getEdges(self):
+        return([c.toShape() for c in self.getCurves()])
+
+    def getWire(self):
+        return(Part.Wire(Part.__sortEdges__(self.getEdges())))
+    
+    def getJoinedCurve(self):
+        c1,c2,c3 = self.getCurves()
+        c1.join(c2)
+        c1.join(c3)
+        return(c1)        
 
     def shape(self):
-        self.compute()
+        #self.compute()
         return(self.Curve.toShape())
 
     def curve(self):
-        self.compute()
+        #self.compute()
         return(self.Curve)
 
 # ---------------------------------------------------

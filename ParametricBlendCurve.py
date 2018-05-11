@@ -22,16 +22,17 @@ class BlendCurveFP:
     def __init__(self, obj , edges):
         debug("BlendCurve class Init")
         
-        obj.addProperty("App::PropertyLinkSub",         "Edge1",      "BlendCurve", "Edge 1").Edge1 = edges[0]
-        obj.addProperty("App::PropertyLinkSub",         "Edge2",      "BlendCurve", "Edge 2").Edge2 = edges[1]
+        obj.addProperty("App::PropertyLinkSub",         "Edge1",      "Edge1", "Edge 1").Edge1 = edges[0]
+        obj.addProperty("App::PropertyLinkSub",         "Edge2",      "Edge2", "Edge 2").Edge2 = edges[1]
         obj.addProperty("App::PropertyInteger",         "DegreeMax",  "BlendCurve", "Max degree of the Blend curve").DegreeMax = 9
-        obj.addProperty("App::PropertyFloatConstraint", "Parameter1", "BlendCurve", "Location of blend curve")
-        obj.addProperty("App::PropertyFloatConstraint", "Scale1",     "BlendCurve", "Scale of blend curve")
-        obj.addProperty("App::PropertyEnumeration",     "Continuity1","BlendCurve", "Continuity").Continuity1=["C0","G1","G2","G3","G4"]
-        obj.addProperty("App::PropertyFloatConstraint", "Parameter2", "BlendCurve", "Location of blend curve")
-        obj.addProperty("App::PropertyFloatConstraint", "Scale2",     "BlendCurve", "Scale of blend curve")
-        obj.addProperty("App::PropertyEnumeration",     "Continuity2","BlendCurve", "Continuity").Continuity2=["C0","G1","G2","G3","G4"]
+        obj.addProperty("App::PropertyFloatConstraint", "Parameter1", "Edge1", "Location of blend curve")
+        obj.addProperty("App::PropertyFloatConstraint", "Scale1",     "Edge1", "Scale of blend curve")
+        obj.addProperty("App::PropertyEnumeration",     "Continuity1","Edge1", "Continuity").Continuity1=["C0","G1","G2","G3","G4"]
+        obj.addProperty("App::PropertyFloatConstraint", "Parameter2", "Edge2", "Location of blend curve")
+        obj.addProperty("App::PropertyFloatConstraint", "Scale2",     "Edge2", "Scale of blend curve")
+        obj.addProperty("App::PropertyEnumeration",     "Continuity2","Edge2", "Continuity").Continuity2=["C0","G1","G2","G3","G4"]
         obj.addProperty("App::PropertyVectorList",      "CurvePts",   "BlendCurve", "CurvePts")
+        obj.addProperty("App::PropertyEnumeration",     "Output",     "BlendCurve", "Output type").Output=["Wire","Joined","Single"]
         obj.Scale1 = (1.,-5.0,5.0,0.05)
         obj.Scale2 = (1.,-5.0,5.0,0.05)
         obj.Parameter1 = ( 1.0, 0.0, 1.0, 0.05 )
@@ -51,8 +52,13 @@ class BlendCurveFP:
             bc.scale2 = fp.Scale2
             bc.maxDegree = fp.DegreeMax
             bc.compute()
-            fp.Shape = bc.Curve.toShape()
             fp.CurvePts = bc.Curve.getPoles()
+            if fp.Output == "Wire":
+                fp.Shape = bc.getWire()
+            elif fp.Output == "Joined":
+                fp.Shape = bc.getJoinedCurve().toShape()
+            else:
+                fp.Shape = bc.Curve.toShape()
 
     def onChanged(self, fp, prop):
         if prop == "Parameter1":
@@ -78,6 +84,13 @@ class BlendCurveFP:
                 fp.DegreeMax = 1
             elif fp.DegreeMax > 9:
                 fp.DegreeMax = 9
+        elif prop == "Output":
+            if hasattr(fp,"ViewObject"):
+                if hasattr(fp.ViewObject.Proxy,"children"):
+                    if fp.Output in ("Wire","Joined"):
+                        fp.ViewObject.Proxy.children = [fp.Edge1[0], fp.Edge2[0]]
+                    else:
+                        fp.ViewObject.Proxy.children = []
 
     def getContinuity(self, cont):
         if cont == "C0":
@@ -97,6 +110,13 @@ class BlendCurveVP:
         debug("VP init")
         obj.Proxy = self
         self.build()
+        self.children = []
+
+    def claimChildren(self):
+        if hasattr(self,"children"):
+            return(self.children)
+        else:
+            return([])
 
     def build(self):
         self.active = False
@@ -228,6 +248,7 @@ class ParametricBlendCurve:
                 obj.Parameter2 = self.normalizedParam(edges[i+1], param[i+1], True)
                 obj.Continuity1 = "G1"
                 obj.Continuity2 = "G1"
+                obj.Output = "Single"
                 ori1, ori2 = self.getOrientation(edges[i], param[i], edges[i+1], param[i+1])
                 obj.Scale1 = ori1
                 obj.Scale2 = ori2
