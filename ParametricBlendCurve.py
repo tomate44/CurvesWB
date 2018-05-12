@@ -61,17 +61,7 @@ class BlendCurveFP:
                 fp.Shape = bc.Curve.toShape()
 
     def onChanged(self, fp, prop):
-        if prop == "Parameter1":
-            if fp.Parameter1 < 0:
-                fp.Parameter1 = 0
-            elif fp.Parameter1 > 1:
-                fp.Parameter1 = 1
-        elif prop == "Parameter2":
-            if fp.Parameter2 < 0:
-                fp.Parameter2 = 0
-            elif fp.Parameter2 > 1:
-                fp.Parameter2 = 1
-        elif prop == "Scale1":
+        if prop == "Scale1":
             if fp.Scale1 == 0:
                 fp.Scale1 = 0.0001
             self.execute(fp)
@@ -79,18 +69,20 @@ class BlendCurveFP:
             if fp.Scale2 == 0:
                 fp.Scale2 = 0.0001
             self.execute(fp)
+        elif prop in ("Parameter1","Parameter2"):
+            self.execute(fp)
         elif prop == "DegreeMax":
             if fp.DegreeMax < 1:
                 fp.DegreeMax = 1
             elif fp.DegreeMax > 9:
                 fp.DegreeMax = 9
-        elif prop == "Output":
-            if hasattr(fp,"ViewObject"):
-                if hasattr(fp.ViewObject.Proxy,"children"):
-                    if fp.Output in ("Wire","Joined"):
-                        fp.ViewObject.Proxy.children = [fp.Edge1[0], fp.Edge2[0]]
-                    else:
-                        fp.ViewObject.Proxy.children = []
+
+    def onDocumentRestored(self, fp):
+        debug("%s restored !"%fp.Label)
+        fp.Scale1 = (fp.Scale1,-5.0,5.0,0.05)
+        fp.Scale2 = (fp.Scale2,-5.0,5.0,0.05)
+        fp.Parameter1 = ( fp.Parameter1, 0.0, 1.0, 0.05 )
+        fp.Parameter2 = ( fp.Parameter2, 0.0, 1.0, 0.05 )
 
     def getContinuity(self, cont):
         if cont == "C0":
@@ -110,7 +102,7 @@ class BlendCurveVP:
         debug("VP init")
         obj.Proxy = self
         self.build()
-        self.children = []
+        #self.children = []
 
     def claimChildren(self):
         if hasattr(self,"children"):
@@ -137,15 +129,32 @@ class BlendCurveVP:
             self.switch.addChild(self.node)
             self.sg.addChild(self.switch)
 
+    def setVisi(self, objs, vis):
+        for o in objs:
+            o.ViewObject.Visibility = vis
+
     def attach(self, vobj):
         debug("VP attach")
         self.Object = vobj.Object
+        self.children = []
+        #self.claimed = False
 
     def updateData(self, fp, prop):
         if prop == "CurvePts":
             if hasattr(self,'coord') and hasattr(self,'poly'):
                 self.coord.points = fp.CurvePts
                 self.poly.vertices = self.coord.points
+        elif prop == "Output":
+            if fp.Output in ("Wire","Joined"):
+                if self.children == []:
+                    self.children = [fp.Edge1[0], fp.Edge2[0]]
+                    self.setVisi(self.children, False)
+                    #self.claimed = True
+            else:
+                if not self.children == []:
+                    self.setVisi(self.children, True)
+                    #self.claimed = True
+                    self.children = []
 
     def doubleClicked(self,vobj):
         if not hasattr(self,'active'):

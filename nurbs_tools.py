@@ -356,8 +356,8 @@ def curvematch(c1, c2, par1, level=0, scale=1.0):
 class blendCurve(object):
     def __init__(self, e1 = None, e2 = None):
         if e1 and e2:
-            self.edge1 = e1
-            self.edge2 = e2
+            self.edge1 = e1.Curve.toBSpline(e1.FirstParameter, e1.LastParameter)
+            self.edge2 = e2.Curve.toBSpline(e2.FirstParameter, e2.LastParameter)
             self.param1 = e1.FirstParameter
             self.param2 = e2.FirstParameter
             self.cont1 = 0
@@ -372,8 +372,8 @@ class blendCurve(object):
             error("blendCurve initialisation error")
     
     def getChord(self):
-        v1 = self.edge1.valueAt(self.param1)
-        v2 = self.edge2.valueAt(self.param2)
+        v1 = self.edge1.value(self.param1)
+        v2 = self.edge2.value(self.param2)
         ls = Part.LineSegment(v1,v2)
         return(ls)
     
@@ -395,30 +395,36 @@ class blendCurve(object):
         weights = [1.0 for k in range(nbPoles)]
         be = Part.BSplineCurve()
         be.buildFromPolesMultsKnots(poles, mults , knots, False, degree, weights, False)
-        nc = curvematch(self.edge1.Curve, be, self.param1, self.cont1, self.scale1)
+        nc = curvematch(self.edge1, be, self.param1, self.cont1, self.scale1)
         rev = bspline_copy(nc, True, False)
-        self.Curve = curvematch(self.edge2.Curve, rev, self.param2, self.cont2, self.scale2)
+        self.Curve = curvematch(self.edge2, rev, self.param2, self.cont2, self.scale2)
 
     def getPoles(self):
         #self.compute()
         return(self.Curve.getPoles())
     
     def getCurves(self):
-        e1 = self.edge1.Curve.copy()
-        e2 = self.edge2.Curve.copy()
-        if self.scale1 < 0:
+        result = []
+        e1 = self.edge1.copy()
+        e2 = self.edge2.copy()
+        if self.scale1 > 0:
             if self.param1 > e1.FirstParameter:
                 e1.segment(e1.FirstParameter, self.param1)
-        else:
+                result.append(e1)
+        elif self.scale1 < 0:
             if self.param1 < e1.LastParameter:
                 e1.segment(self.param1, e1.LastParameter)
-        if self.scale2 < 0:
+                result.append(e1)
+        result.append(self.Curve)
+        if self.scale2 > 0:
             if self.param2 > e2.FirstParameter:
                 e2.segment(e2.FirstParameter, self.param2)
-        else:
+                result.append(e2)
+        elif self.scale2 < 0:
             if self.param2 < e2.LastParameter:
                 e2.segment(self.param2, e2.LastParameter)
-        return([e1,self.Curve,e2])
+                result.append(e2)
+        return(result)
     
     def getEdges(self):
         return([c.toShape() for c in self.getCurves()])
@@ -427,10 +433,11 @@ class blendCurve(object):
         return(Part.Wire(Part.__sortEdges__(self.getEdges())))
     
     def getJoinedCurve(self):
-        c1,c2,c3 = self.getCurves()
-        c1.join(c2)
-        c1.join(c3)
-        return(c1)        
+        c = self.getCurves()
+        c0 = c[0]
+        for cu in c[1:]:
+            c0.join(cu)
+        return(c0)        
 
     def shape(self):
         #self.compute()

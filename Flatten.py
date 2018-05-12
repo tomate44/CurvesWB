@@ -106,7 +106,7 @@ for e in edges:
 plane = Part.Plane()
 
 for c in c2d:
-    Part.show(c[0].toShape(plane))
+    Part.show(c[0].toShape(plane,c[1],c[2]))
 
 
             
