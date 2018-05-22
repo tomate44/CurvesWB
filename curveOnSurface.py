@@ -1,6 +1,7 @@
 from __future__ import division # allows floating point division from integers
 import FreeCAD
 import Part
+from Part import Geom2d
 from FreeCAD import Base
 
 
@@ -153,8 +154,51 @@ class curveOnSurface:
                             res.append(FreeCAD.Vector(e.X,e.Y,e.Z).sub(v))
         return(res)
 
+    def build_param_list(self, num):
+        if num < 2:
+            num = 2
+        ran = self.lastParameter - self.firstParameter
+        self.param_list = list()
+        for i in range(num):
+            self.param_list.append(self.firstParameter + float(i) * ran / (num - 1))
+        return(True)
 
+    def dot(self, v1, v2):
+        v13 = FreeCAD.Vector(v1.x, v1.y, 0.0)
+        v23 = FreeCAD.Vector(v2.x, v2.y, 0.0)
+        return(v13.dot(v23))
 
+    def cross(self, v1, v2):
+        v13 = FreeCAD.Vector(v1.x, v1.y, 0.0)
+        v23 = FreeCAD.Vector(v2.x, v2.y, 0.0)
+        return(v13.cross(v23))
 
+    def orientation(self, v1, v2):
+        v13 = FreeCAD.Vector(v1.x, v1.y, 0.0)
+        v23 = FreeCAD.Vector(v2.x, v2.y, 0.0)
+        cross3d = v13.cross(v23)
+        z = FreeCAD.Vector(0.0, 0.0, 1.0)
+        dot = z.dot(cross3d)
+        print(dot)
+        if dot < 0:
+            return(-1.0)
+        else:
+            return(1.0)
 
-     
+    def get_cross_curves(self, num, scale):
+        if scale == 0:
+            scale = 1.0
+        self.build_param_list(num)
+        curves = list()
+        for p in self.param_list:
+            p0 = self.curve2D.value(p)
+            no = self.curve2D.normal(p)
+            ta = self.curve2D.tangent(p)
+            fac = scale * self.orientation(ta,no)
+            p1 = Base.Vector2d(p0.x + no.x * fac, p0.y + no.y * fac)
+            ls1 = Geom2d.Line2dSegment(p0, p1)
+            edge1 = ls1.toShape(self.face, ls1.FirstParameter, ls1.LastParameter)
+            curves.append(edge1)
+        return(curves)
+
+            
