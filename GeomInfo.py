@@ -215,56 +215,78 @@ def surfNode(surf):
 
         # *** Set knots ***
         uknotPoints = []
+        nb_curves = 0
         for k in uknots:
-            uIso = surf.uIso(k)
-            epts = uIso.toShape().discretize(100)
-            for p in epts:
-                uknotPoints.append((p.x,p.y,p.z))
-        
+            try:
+                uIso = surf.uIso(k)
+                epts = uIso.toShape().discretize(100)
+                if len(epts) == 100:
+                    for p in epts:
+                        uknotPoints.append((p.x,p.y,p.z))
+                    nb_curves += 1
+            except:
+                FreeCAD.Console.PrintError("Error computing surface U Iso\n")
+            
         uknotsnode = coinNodes.coordinate3Node(uknotPoints)
         uCurves = coinNodes.rowNode((1.0,0.5,0.3),3)
-        uCurves.vertices=(len(uknots),100)
+        uCurves.vertices=(nb_curves,100)
         #debug(str(uCurves.vertices))
         
         vknotPoints = []
+        nb_curves = 0
         for k in vknots:
-            vIso = surf.vIso(k)
-            epts = vIso.toShape().discretize(100)
-            for p in epts:
-                vknotPoints.append((p.x,p.y,p.z))
+            try:
+                vIso = surf.vIso(k)
+                epts = vIso.toShape().discretize(100)
+                if len(epts) == 100:
+                    for p in epts:
+                        vknotPoints.append((p.x,p.y,p.z))
+                    nb_curves += 1
+            except:
+                FreeCAD.Console.PrintError("Error computing surface V Iso\n")
         
         vknotsnode = coinNodes.coordinate3Node(vknotPoints)
         vCurves = coinNodes.rowNode((0.3,0.5,1.0),3)
-        vCurves.vertices=(len(vknots),100)
+        vCurves.vertices=(nb_curves,100)
 
         # ***** isoCurves ******
         
         uparam = paramList(16,u0,u1)
         uisoPoints = []
+        nb_curves = 0
         for k in uparam:
-            uIso = surf.uIso(k)
-            epts = uIso.toShape().discretize(100)
-            for p in epts:
-                uisoPoints.append((p.x,p.y,p.z))
-        
+            try:
+                uIso = surf.uIso(k)
+                epts = uIso.toShape().discretize(100)
+                if len(epts) == 100:
+                    for p in epts:
+                        uisoPoints.append((p.x,p.y,p.z))
+                    nb_curves += 1
+            except:
+                FreeCAD.Console.PrintError("Error computing surface U Iso\n")
         uisonode = coinNodes.coordinate3Node(uisoPoints)
         uisoCurves = coinNodes.rowNode((0.0,0.0,0.0),1)
         uisoCurves.transparency = 0.8
-        uisoCurves.vertices=(len(uparam),100)
+        uisoCurves.vertices=(nb_curves,100)
         #debug(str(uCurves.vertices))
         
         vparam = paramList(16,v0,v1)
         visoPoints = []
+        nb_curves = 0
         for k in vparam:
-            vIso = surf.vIso(k)
-            epts = vIso.toShape().discretize(100)
-            for p in epts:
-                visoPoints.append((p.x,p.y,p.z))
-        
+            try:
+                vIso = surf.vIso(k)
+                epts = vIso.toShape().discretize(100)
+                if len(epts) == 100:
+                    for p in epts:
+                        vknotPoints.append((p.x,p.y,p.z))
+                    nb_curves += 1
+            except:
+                FreeCAD.Console.PrintError("Error computing surface V Iso\n")
         visonode = coinNodes.coordinate3Node(visoPoints)
         visoCurves = coinNodes.rowNode((0.0,0.0,0.0),1)
         visoCurves.transparency = 0.8
-        visoCurves.vertices=(len(vparam),100)
+        visoCurves.vertices=(nb_curves,100)
 
 
 
@@ -291,12 +313,12 @@ def surfNode(surf):
     if bspline:
         vizSep.addChild(uknotsnode)
         vizSep.addChild(uCurves)
-        vizSep.addChild(vknotsnode)
-        vizSep.addChild(vCurves)
+        #vizSep.addChild(vknotsnode)
+        #vizSep.addChild(vCurves)
         vizSep.addChild(uisonode)
         vizSep.addChild(uisoCurves)
-        vizSep.addChild(visonode)
-        vizSep.addChild(visoCurves)
+        #vizSep.addChild(visonode)
+        #vizSep.addChild(visoCurves)
     return vizSep
 
 
