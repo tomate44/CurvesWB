@@ -47,6 +47,23 @@ class blendSurface:
             bz.setPoles(poles)
             self.curves.append(bz)
 
+    def cross_curves(self):
+        import nurbs_tools
+        c1 = self.cos1.get_cross_curves(self.railSamples, 1.0)
+        if self.untwist:
+            c2 = self.cos2.get_cross_curves(self.railSamples, 1.0, True)
+        else:
+            c2 = self.cos2.get_cross_curves(self.railSamples, 1.0)
+        blends = list()
+        for e1,e2 in zip(c1,c2):
+            b = nurbs_tools.blendCurve(e1,e2)
+            b.cont1 = 3
+            b.cont2 = 3
+            b.compute()
+            blends.append(b.shape())
+        return(blends)
+            
+
     def getPoints(self):
         pts = []
         for c in self.curves:

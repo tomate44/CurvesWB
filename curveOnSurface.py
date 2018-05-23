@@ -185,10 +185,12 @@ class curveOnSurface:
         else:
             return(1.0)
 
-    def get_cross_curves(self, num, scale):
+    def get_cross_curves(self, num=10, scale=1.0, untwist=False):
         if scale == 0:
             scale = 1.0
         self.build_param_list(num)
+        if untwist:
+            self.param_list = self.param_list[::-1]
         curves = list()
         for p in self.param_list:
             p0 = self.curve2D.value(p)
@@ -201,4 +203,3 @@ class curveOnSurface:
             curves.append(edge1)
         return(curves)
 
-            
