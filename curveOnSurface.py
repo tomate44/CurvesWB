@@ -185,6 +185,15 @@ class curveOnSurface:
         else:
             return(1.0)
 
+    def normal2D(self, v):
+        v3 = FreeCAD.Vector(v.x, v.y, 0.0)
+        if self.reverseNormal:
+            z = FreeCAD.Vector(0.0, 0.0, -1.0)
+        else:
+            z = FreeCAD.Vector(0.0, 0.0, 1.0)
+        cr = z.cross(v3)
+        return(Base.Vector2d(cr.x, cr.y))
+
     def get_cross_curves(self, num=10, scale=1.0, untwist=False):
         if scale == 0:
             scale = 1.0
@@ -194,9 +203,9 @@ class curveOnSurface:
         curves = list()
         for p in self.param_list:
             p0 = self.curve2D.value(p)
-            no = self.curve2D.normal(p)
             ta = self.curve2D.tangent(p)
-            fac = scale * self.orientation(ta,no)
+            no = self.normal2D(ta)
+            fac = scale # * self.orientation(ta,no)
             p1 = Base.Vector2d(p0.x + no.x * fac, p0.y + no.y * fac)
             ls1 = Geom2d.Line2dSegment(p0, p1)
             edge1 = ls1.toShape(self.face, ls1.FirstParameter, ls1.LastParameter)

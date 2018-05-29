@@ -245,10 +245,10 @@ class cosCommand:
         if edge and face:
             cos = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","CurveOnSurface")
             cosFP(cos)
-            cosVP(cos.ViewObject)
             cos.InputEdge = edge
             cos.Face = face
             cos.Placement = edge[0].Placement
+            cosVP(cos.ViewObject)
             FreeCAD.ActiveDocument.recompute()
             
             #cos.ViewObject.DrawStyle = "Dashed"

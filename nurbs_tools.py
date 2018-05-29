@@ -275,10 +275,11 @@ def createKnotsMults(degree, nbPoles):
 
 # ---------------------------------------------------
 
+
 def bspline_copy(bs, reverse = False, scale = 1.0):
     """Copy a BSplineCurve, with knotvector optionally reversed and scaled
-    newbspline = bspline_copy(bspline, reverse = False, scale = 1.0)"""
-    # Part.BSplineCurve.buildFromPolesMultsKnots( poles, mults , knots, periodic, degree, weights, CheckRational )
+    newbspline = bspline_copy(bspline, reverse = False, scale = 1.0)
+    Part.BSplineCurve.buildFromPolesMultsKnots( poles, mults , knots, periodic, degree, weights, CheckRational )"""
     mults = bs.getMultiplicities()
     weights = bs.getWeights()
     poles = bs.getPoles()
@@ -306,7 +307,7 @@ def curvematch(c1, c2, par1, level=0, scale=1.0):
     len1 = c1.length()
     len2 = c2.length()
     # scale the knot vector of C2
-    seq2 = knotSeqScale(c2.KnotSequence, 0.5 * abs(scale) * len2)
+    seq2 = knotSeqScale(c2.KnotSequence, 1.0 * abs(scale) * len2)
     # get a scaled / reversed copy of C1
     if scale < 0:
         bs1 = bspline_copy(c1, True, len1) # reversed
