@@ -58,8 +58,9 @@ class CurvesWorkbench(Workbench):
         import pasteSVG
         import pipeshellProfileFP
         import pipeshellFP
+        import toConsole
 
-        stablelist = ["line","bezierCurve","editableSpline","extend","join","split","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface","pasteSVG","profile","pipeshell"]
+        stablelist = ["line","bezierCurve","editableSpline","extend","join","split","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface","pasteSVG","profile","pipeshell","to_console"]
         self.appendToolbar("Curves",stablelist)
         self.appendMenu("Curves",stablelist)
         
