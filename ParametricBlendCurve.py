@@ -14,7 +14,7 @@ from pivy import coin
 import nurbs_tools
 import CoinNodes
 
-TOOL_ICON = _utils.iconsPath() + '/blend.svg'
+TOOL_ICON = _utils.iconsPath() + '/blend1.svg'
 debug = _utils.debug
 #debug = _utils.doNothing
 
@@ -165,6 +165,8 @@ class BlendCurveVP:
         else:
             self.active = False
             self.switch.whichChild = 0
+        #self.Object.DegreeMax = self.Object.DegreeMax
+        #FreeCAD.ActiveDocument.recompute()
         return(True)
 
     def setEdit(self,vobj,mode):
@@ -176,6 +178,8 @@ class BlendCurveVP:
         return(True)
 
     def getIcon(self):
+        #if self.active:
+            #return(_utils.iconsPath() + '/blend2.svg')
         return(TOOL_ICON)
 
     def __getstate__(self):
