@@ -3,6 +3,25 @@ import FreeCADGui
 import math
 from pivy import coin
 
+# -------- Example of the gridNode object
+
+#import grid
+
+#g = grid.gridNode()
+#sg = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
+#cam = FreeCADGui.ActiveDocument.ActiveView.getCameraNode()
+
+#sg.addChild(g)
+#g.linkTo(cam)
+#g.factor = 1.
+#g.maxviz = 1.0
+#g.vector1dir = (1,0,0)
+#g.vector2dir = (0,1,0)
+#g.factor = 100.0
+
+##sg.removeChild(g)
+
+
 class gridNode(coin.SoSeparator):
     def __init__(self):
         super(gridNode, self).__init__()
