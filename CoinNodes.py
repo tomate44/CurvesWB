@@ -131,7 +131,7 @@ class colorNode(coin.SoSeparator):
         super(colorNode, self).__init__()
         self.coinColor = coin.SoMaterial()
         self.binding = coin.SoMaterialBinding()
-        self.binding.value = coin.SoMaterialBinding.OVERALL
+        self.binding.value = coin.SoMaterialBinding.PER_PART
         self.addChild(self.binding)
         self.addChild(self.coinColor)
         self.color = color
@@ -199,13 +199,19 @@ class polygonNode(styleNode):
 
     @vertices.setter
     def vertices(self, arr):
-        a = range(len(arr))
-        a.append(-1)
-        self.lines.coordIndex.setValue(0)
-        self.lines.coordIndex.setValues(0, len(a), a)
-        self._numVertices = a
-        col = self.color[0]
-        self.color = [col]*len(a)
+        if len(arr) == 0:
+            self.lines.coordIndex.setValue(0)
+            self._numVertices = 0
+            col = self.color[0]
+            self.color = [col]
+        else:
+            a = range(len(arr))
+            a.append(-1)
+            self.lines.coordIndex.setValue(0)
+            self.lines.coordIndex.setValues(0, len(a), a)
+            self._numVertices = a
+            col = self.color[0]
+            self.color = [col]*len(a)
 
     def setFirstColor(self, col):
         collist = self.color
@@ -338,7 +344,7 @@ class markerSetNode(colorNode):
         super(markerSetNode, self).__init__()
         self.markers = coin.SoMarkerSet()
         self.addChild(self.markers)
-        self.color = color
+        self.color = [color]
         self.marker = marker
 
     @property

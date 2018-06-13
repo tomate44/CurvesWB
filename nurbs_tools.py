@@ -305,7 +305,8 @@ def curvematch(c1, c2, par1, level=0, scale=1.0):
     c1 = c1.toNurbs()
     c2 = c2.toNurbs()
     len1 = c1.length()
-    len2 = c2.length()
+    #len2 = c2.length()
+    len2 = c2.EndPoint.distanceToPoint(c2.StartPoint)
     # scale the knot vector of C2
     seq2 = knotSeqScale(c2.KnotSequence, 1.0 * abs(scale) * len2)
     # get a scaled / reversed copy of C1
@@ -365,30 +366,42 @@ class blendCurve(object):
             self.cont2 = 0
             self.scale1 = 1.0
             self.scale2 = 1.0
-            self.Curve = Part.BSplineCurve()
-            self.getChordLength()
+            self.Curve = None
+            #self.getChordLength()
             self.autoScale = True
-            self.maxDegree = int(self.Curve.MaxDegree)
+            self.maxDegree = 25 # int(Part.BSplineCurve().MaxDegree)
         else:
             error("blendCurve initialisation error")
     
     def getChord(self):
         v1 = self.edge1.value(self.param1)
         v2 = self.edge2.value(self.param2)
-        ls = Part.LineSegment(v1,v2)
-        return(ls)
+        try:
+            return(Part.LineSegment(v1,v2))
+        except Part.OCCError: # v1 == v2
+            return(False)
     
-    def getChordLength(self):
-        ls = self.getChord()
-        self.chordLength = ls.length()
-        if self.chordLength < 1e-6:
-            error("error : chordLength < 1e-6")
-            self.chordLength = 1.0
+    #def getChordLength(self):
+        #ls = self.getChord()
+        #if not ls:
+            #self.chordLength = 0
+        #else:
+            #self.chordLength = ls.length()
+        #if self.chordLength < 1e-6:
+            #error("error : chordLength < 1e-6")
+            #self.chordLength = 1.0
 
     def compute(self):
         nbPoles = self.cont1 + self.cont2 + 2
         e = self.getChord()
-        poles = e.discretize(nbPoles)
+        if not e:
+            self.Curve = None
+            return()
+        try:
+            poles = e.discretize(nbPoles)
+        except Part.OCCError:
+            self.Curve = None
+            return()
         degree = nbPoles - 1
         if degree > self.maxDegree:
             degree = self.maxDegree
@@ -401,8 +414,8 @@ class blendCurve(object):
         self.Curve = curvematch(self.edge2, rev, self.param2, self.cont2, self.scale2)
 
     def getPoles(self):
-        #self.compute()
-        return(self.Curve.getPoles())
+        if self.Curve:
+            return(self.Curve.getPoles())
     
     def getCurves(self):
         result = []
@@ -416,7 +429,8 @@ class blendCurve(object):
             if self.param1 < e1.LastParameter:
                 e1.segment(self.param1, e1.LastParameter)
                 result.append(e1)
-        result.append(self.Curve)
+        if self.Curve:
+            result.append(self.Curve)
         if self.scale2 > 0:
             if self.param2 > e2.FirstParameter:
                 e2.segment(e2.FirstParameter, self.param2)
@@ -441,12 +455,14 @@ class blendCurve(object):
         return(c0)        
 
     def shape(self):
-        #self.compute()
-        return(self.Curve.toShape())
+        if self.Curve:
+            return(self.Curve.toShape())
+        else:
+            return(None)
 
     def curve(self):
-        #self.compute()
         return(self.Curve)
+            
 
 # ---------------------------------------------------
 

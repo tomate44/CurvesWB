@@ -52,13 +52,17 @@ class BlendCurveFP:
             bc.scale2 = fp.Scale2
             bc.maxDegree = fp.DegreeMax
             bc.compute()
-            fp.CurvePts = bc.Curve.getPoles()
-            if fp.Output == "Wire":
-                fp.Shape = bc.getWire()
-            elif fp.Output == "Joined":
-                fp.Shape = bc.getJoinedCurve().toShape()
+            if bc.Curve is None:
+                fp.CurvePts = []
+                fp.Shape = Part.Shape()
             else:
-                fp.Shape = bc.Curve.toShape()
+                fp.CurvePts = bc.Curve.getPoles()
+                if fp.Output == "Wire":
+                    fp.Shape = bc.getWire()
+                elif fp.Output == "Joined":
+                    fp.Shape = bc.getJoinedCurve().toShape()
+                else:
+                    fp.Shape = bc.Curve.toShape()
 
     def onChanged(self, fp, prop):
         if prop == "Scale1":
@@ -144,6 +148,7 @@ class BlendCurveVP:
             if hasattr(self,'coord') and hasattr(self,'poly'):
                 self.coord.points = fp.CurvePts
                 self.poly.vertices = self.coord.points
+                self.marker.color = [(1,0,0)]*(len(fp.CurvePts)-1) + [(1,1,0)]
         elif prop == "Output":
             if fp.Output in ("Wire","Joined"):
                 if self.children == []:
