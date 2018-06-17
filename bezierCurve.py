@@ -46,7 +46,7 @@ class bezierCurve:
 
         self.info = ["LMB : add pole",
                      "Del : remove last pole",
-                     "Page Up / Down : degree",
+                     "I / D : degree",
                      "Left CTRL : snap",
                      "Enter : Accept",
                      "Esc : Abort"]
@@ -181,9 +181,9 @@ class bezierCurve:
                 self.finish()
             elif key == coin.SoKeyboardEvent.BACKSPACE and event.getState() == coin.SoButtonEvent.UP:
                 self.removePole()
-            elif key == coin.SoKeyboardEvent.PAGE_UP and event.getState() == coin.SoButtonEvent.UP:
+            elif key == coin.SoKeyboardEvent.I and event.getState() == coin.SoButtonEvent.UP:
                 self.increaseDegree()
-            elif key == coin.SoKeyboardEvent.PAGE_DOWN and event.getState() == coin.SoButtonEvent.UP:
+            elif key == coin.SoKeyboardEvent.D and event.getState() == coin.SoButtonEvent.UP:
                 self.decreaseDegree()
             elif key == coin.SoKeyboardEvent.ESCAPE:
                 self.abort()
