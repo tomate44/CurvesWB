@@ -1,5 +1,5 @@
 import Part
-import curveOnSurface
+from curveOnSurface import curveOnSurface
 
 
 class blendSurface:
@@ -10,16 +10,16 @@ class blendSurface:
         f1 = self.getFace(o1)
         f2 = self.getFace(o2)
 
-        self.cos1 = curveOnSurface.curveOnSurface(e1,f1)
-        self.cos2 = curveOnSurface.curveOnSurface(e2,f2)
+        self.cos1 = curveOnSurface(e1,f1)
+        self.cos2 = curveOnSurface(e2,f2)
 
-        self.cos1.reverseTangent =  o1.ReverseTangent
-        self.cos1.reverseNormal =   o1.ReverseNormal
-        self.cos1.reverseBinormal = o1.ReverseBinormal
+        #self.cos1.reverseTangent =  o1.ReverseTangent
+        #self.cos1.reverseNormal =   o1.ReverseNormal
+        #self.cos1.reverseBinormal = o1.ReverseBinormal
 
-        self.cos2.reverseTangent =  o2.ReverseTangent
-        self.cos2.reverseNormal =   o2.ReverseNormal
-        self.cos2.reverseBinormal = o2.ReverseBinormal
+        #self.cos2.reverseTangent =  o2.ReverseTangent
+        #self.cos2.reverseNormal =   o2.ReverseNormal
+        #self.cos2.reverseBinormal = o2.ReverseBinormal
 
         self.railSamples = 20
         self.profSamples = 20
