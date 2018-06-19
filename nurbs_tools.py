@@ -275,6 +275,18 @@ def createKnotsMults(degree, nbPoles):
 
 # ---------------------------------------------------
 
+def nearest_parameter(bs,pt):
+    try:
+        par = bs.parameter(pt)
+    except Part.OCCError:
+        # failed. We try with distToShape
+        error("parameter error at %f"%par)
+        v = Part.Vertex(pt)
+        e = bs.toShape()
+        d,p,i = v.distToShape(e)
+        pt1 = p[0][1]
+        par = bs.parameter(pt1)
+    return(par)
 
 def bspline_copy(bs, reverse = False, scale = 1.0):
     """Copy a BSplineCurve, with knotvector optionally reversed and scaled
@@ -314,8 +326,14 @@ def curvematch(c1, c2, par1, level=0, scale=1.0):
         bs1 = bspline_copy(c1, True, len1) # reversed
     else:
         bs1 = bspline_copy(c1, False, len1) # not reversed
-    pt1 = c1.value(par1) # point on input curve C1
-    par1 = bs1.parameter(pt1) # corresponding parameter on reversed / scaled curve bs1
+    if par1 <= c1.FirstParameter:
+        par = c1.FirstParameter
+    elif par1 >= c1.LastParameter:
+        par = c1.LastParameter
+    else:
+        par = par1
+    pt1 = c1.value(par) # point on input curve C1
+    npar = nearest_parameter(bs1,pt1)
 
     p1 = bs1.getPoles()
     basis1 = BsplineBasis()
@@ -331,7 +349,7 @@ def curvematch(c1, c2, par1, level=0, scale=1.0):
     l = 0
     while l <= level:
         #FreeCAD.Console.PrintMessage("\nDerivative %d\n"%l)
-        ev1 = basis1.evaluate(par1,d=l)
+        ev1 = basis1.evaluate(npar,d=l)
         ev2 = basis2.evaluate(c2.FirstParameter,d=l)
         #FreeCAD.Console.PrintMessage("Basis %d - %r\n"%(l,ev1))
         #FreeCAD.Console.PrintMessage("Basis %d - %r\n"%(l,ev2))
@@ -346,7 +364,7 @@ def curvematch(c1, c2, par1, level=0, scale=1.0):
             poles2 = FreeCAD.Vector()
             for i in range(l):
                 poles2 += 1.0*ev2[i]*p2[i]
-            np = (1.0*poles1-poles2)/val
+            np = (poles1-poles2)*1.0/val
             #FreeCAD.Console.PrintMessage("Moving P%d from (%0.2f,%0.2f,%0.2f) to (%0.2f,%0.2f,%0.2f)\n"%(l,p2[l].x,p2[l].y,p2[l].z,np.x,np.y,np.z))
             p2[l] = np
         l += 1
@@ -357,21 +375,35 @@ def curvematch(c1, c2, par1, level=0, scale=1.0):
 
 class blendCurve(object):
     def __init__(self, e1 = None, e2 = None):
+        self.param1 = 0.0
+        self.param2 = 0.0
+        self.cont1 = 1
+        self.cont2 = 1
+        self.scale1 = 1.0
+        self.scale2 = 1.0
+        self.Curve = None
+        self.autoScale = True
+        self.maxDegree = 25 # int(Part.BSplineCurve().MaxDegree)
+        self.setEdges(e1,e2)
+
+    def setEdges(self, e1, e2):
         if e1 and e2:
             self.edge1 = e1.Curve.toBSpline(e1.FirstParameter, e1.LastParameter)
             self.edge2 = e2.Curve.toBSpline(e2.FirstParameter, e2.LastParameter)
-            self.param1 = e1.FirstParameter
-            self.param2 = e2.FirstParameter
-            self.cont1 = 0
-            self.cont2 = 0
-            self.scale1 = 1.0
-            self.scale2 = 1.0
-            self.Curve = None
-            #self.getChordLength()
-            self.autoScale = True
-            self.maxDegree = 25 # int(Part.BSplineCurve().MaxDegree)
+            if self.param1 < e1.FirstParameter:
+                self.param1 = e1.FirstParameter
+            elif self.param1 > e1.LastParameter:
+                self.param1 = e1.LastParameter
+            if self.param2 < e2.FirstParameter:
+                self.param2 = e2.FirstParameter
+            elif self.param2 > e2.LastParameter:
+                self.param2 = e2.LastParameter
         else:
             error("blendCurve initialisation error")
+            self.edge1 = None
+            self.edge2 = None
+            self.param1 = 0.0
+            self.param2 = 0.0
     
     def getChord(self):
         v1 = self.edge1.value(self.param1)

@@ -3,6 +3,7 @@ import FreeCADGui
 import Part
 from FreeCAD import Vector
 from FreeCAD import Base
+import nurbs_tools
 
 #doc = FreeCAD.ActiveDocument or FreeCAD.newDocument()
 
@@ -17,9 +18,13 @@ class interp(object):
             if self.dat_gt(v, self.value[-1]):
                 self.param.append(p)
                 self.value.append(v)
+            else:
+                FreeCAD.Console.PrintWarning("skipping keyframe %s - %s.\n"%(p,v))
+                return()
         else:
             self.param.append(p)
             self.value.append(v)
+        FreeCAD.Console.PrintMessage("add keyframe %s - %s.\n"%(p,v))
         self.build()
     def data_to_vec(self, dat):
         if isinstance(dat,(int, float)):
@@ -80,7 +85,7 @@ class interp(object):
             v = self.value[0]
         else:
             v = self.vec_to_data(self.bs.value(p))
-        print(p,v)
+        #print(p,v)
         return(v)
     def paramAt(self,v):
         if len(self.param) == 0:
@@ -123,39 +128,40 @@ def ruled_surface(e1,e2):
         return(Part.makeRuledSurface(e1,e2))
 
 class Ribbon(object):
-    def __init__(self, o1, o2):
+    def __init__(self, e1, f1, e2, f2):
+        self.surf = ruled_surface(e1,e2).Surface
+        c1 = self.surf.vIso(0.0).toShape()
+        c2 = self.surf.vIso(1.0).toShape()
         from curveOnSurface import curveOnSurface
-        if isinstance(o1,curveOnSurface) and isinstance(o2,curveOnSurface):
-            self.rail1 = o1
-            self.rail2 = o2
-            self.build_param_ortho()
-        else:
-            self.rail1 = None
-            self.rail2 = None
-    def build_param_ortho(self, num=50):
-        surf = ruled_surface(self.rail1.edge, self.rail2.edge).Surface
-        mid = surf.vIso(0.5)
-        c0 = surf.vIso(0.0)
-        c1 = surf.vIso(1.0)
-        v0 = c0.toShape()
-        v1 = c1.toShape()
+        self.rail1 = curveOnSurface(c1,f1)
+        self.rail2 = curveOnSurface(c2,f2)
+        self.build_param_ortho()
+    def build_param_ortho(self, num=20):
+        #surf = ruled_surface(self.rail1.edge, self.rail2.edge).Surface
+        mid = self.surf.vIso(0.5)
+        #c0 = surf.vIso(0.0)
+        #c1 = surf.vIso(1.0)
+        #v0 = c0.toShape()
+        #v1 = c1.toShape()
         self.inter = interp()
         self.inter.add(0,(self.rail1.edge.Curve.FirstParameter,self.rail2.edge.Curve.FirstParameter))
         pl = Part.Plane()
         for i in range(1,num):
-            v = float(i)/num
+            v = float(i)/(num)
             pt = mid.value(v)
             tan = mid.tangent(v)[0]
             pl.Position = pt
             pl.Axis = tan
-            pts0 = c0.intersectCS(pl)[0]
-            pts1 = c1.intersectCS(pl)[0]
+            pts0 = self.rail1.edge.Curve.intersectCS(pl)[0]
+            pts1 = self.rail2.edge.Curve.intersectCS(pl)[0]
             pt0 = closest_point(pts0,pt)
             pt1 = closest_point(pts1,pt)
             if isinstance(pt0,FreeCAD.Vector) and isinstance(pt1,FreeCAD.Vector):
-                self.inter.add(v, (self.rail1.edge.Curve.parameter(pt0), self.rail2.edge.Curve.parameter(pt1)))
+                p1 = nurbs_tools.nearest_parameter(self.rail1.edge.Curve, pt0)
+                p2 = nurbs_tools.nearest_parameter(self.rail2.edge.Curve, pt1)
+                self.inter.add(v, (p1, p2)) # (self.rail1.edge.Curve.parameter(pt0), self.rail2.edge.Curve.parameter(pt1)))
             else:
-                FreeCAD.Console.PrintError("Failed to compute points.\n")
+                FreeCAD.Console.PrintError("Failed to compute points at %f.\n"%v)
         self.inter.add(1,(self.rail1.edge.Curve.LastParameter, self.rail2.edge.Curve.LastParameter))
     def valueAt(self,p):
         if (p < 0.0) or (p > 1.0):
@@ -179,6 +185,30 @@ class Ribbon(object):
             if (len(sh1.Edges) > 0) and (len(sh2.Edges) > 0):
                 notches.append((sh1.Edges[0], sh2.Edges[0]))
         return(notches)
+    def get_blend_curves(self, num=20, l1=2, s1=1.0, l2=2, s2=1.0):
+        n = self.getNotches(num)
+        bcl = list()
+        bc = nurbs_tools.blendCurve()
+        #bc.param1 = 1.0
+        #bc.param2 = 0.0
+        bc.cont1 = l1
+        bc.cont2 = l2
+        bc.scale1 = s1
+        bc.scale2 = -s2
+        for tup in n:
+            bc.param1 = tup[0].LastParameter
+            bc.param2 = tup[1].FirstParameter
+            bc.setEdges(tup[0],tup[1])
+            bc.compute()
+            bcl.append(bc.shape())
+        return(bcl)
+    def get_loft(self, num=20, l1=2, s1=1.0, l2=2, s2=1.0):
+        bc = self.get_blend_curves(num, l1, s1, l2, s2)
+        w = [Part.Wire([e]) for e in bc]
+        loft = Part.makeLoft(w)
+        return(loft)
+
+            
 
 
         
