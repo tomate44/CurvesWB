@@ -130,8 +130,8 @@ class CurveNetworkSorter(object):
         prof_start, guide_start, guideMustBeReversed = self.GetStartCurveIndices()
 
         # put start curves first in array
-        swapProfiles(0, prof_start)
-        swapGuides(0, guide_start)
+        self.swapProfiles(0, prof_start)
+        self.swapGuides(0, guide_start)
 
         if guideMustBeReversed:
             self.reverseGuide(0)
@@ -150,7 +150,7 @@ class CurveNetworkSorter(object):
         r.reverse()
         for n in r: #(int n = nProf; n > 1; n = n - 1) {
             for i in range(1,n-1): #(int i = 1; i < n - 1; ++i) {
-                if self.parmsIntersGuides[i][0] > m_parmsIntersGuides[i+1][0]:
+                if self.parmsIntersGuides[i][0] > self.parmsIntersGuides[i+1][0]:
                     self.swapProfiles(i, i+1)
 
         # reverse profiles, if necessary
@@ -163,52 +163,33 @@ class CurveNetworkSorter(object):
                 self.reverseGuide(iGuid)
 
         self.has_performed = True
-
     def reverseProfile(self, profileIdx):
-        Standard_Integer pIdx = static_cast<Standard_Integer>(profileIdx);
-
-        Handle(Geom_Curve) profile = m_profiles[profileIdx];
-        Standard_Real lastParm = !profile.IsNull() ?
-                    profile->LastParameter() :
-                    m_parmsIntersProfiles(pIdx, static_cast<Standard_Integer>(maxRowIndex(m_parmsIntersProfiles, pIdx)));
-
-        Standard_Real firstParm = !profile.IsNull() ?
-                    profile->FirstParameter() :
-                    m_parmsIntersProfiles(pIdx, static_cast<Standard_Integer>(minRowIndex(m_parmsIntersProfiles, pIdx)));
-
-
-        // compute new parameters
-        for (int icol = 0; icol < static_cast<int>(NGuides()); ++icol) {
-            m_parmsIntersProfiles(pIdx, icol) = -m_parmsIntersProfiles(pIdx, icol) + firstParm + lastParm;
-        }
-
-        if (!profile.IsNull()) {
-            profile->Reverse();
-        }
-
-        m_profIdx[profileIdx] = "-" + m_profIdx[profileIdx];
-    }
-
+        pIdx = int(profileIdx)
+        profile = self.profiles[profileIdx]
+        if not profile is None: #.IsNull()
+            firstParm = profile.FirstParameter
+            lastParm =  profile.LastParameter
+        else:
+            firstParm = self.parmsIntersProfiles[pIdx][int(minRowIndex(self.parmsIntersProfiles, pIdx))]
+            lastParm =  self.parmsIntersProfiles[pIdx][int(maxRowIndex(self.parmsIntersProfiles, pIdx))]
+        # compute new parameters
+        for icol in range(len(self.guides)): #(int icol = 0; icol < static_cast<int>(NGuides()); ++icol) {
+            self.parmsIntersProfiles[pIdx][icol] = -self.parmsIntersProfiles[pIdx][icol] + firstParm + lastParm
+        if not profile is None: #.IsNull()
+            profile.reverse()
+        self.profIdx[profileIdx] = "-" + self.profIdx[profileIdx]
     def reverseGuide(self, guideIdx):
-        Standard_Integer gIdx = static_cast<Standard_Integer>(guideIdx);
-
-        Handle(Geom_Curve) guide = m_guides[guideIdx];
-        Standard_Real lastParm = !guide.IsNull() ?
-                    guide->LastParameter() :
-                    m_parmsIntersGuides(static_cast<Standard_Integer>(maxColIndex(m_parmsIntersGuides, gIdx)), gIdx);
-
-        Standard_Real firstParm = !guide.IsNull() ?
-                    guide->FirstParameter() :
-                    m_parmsIntersGuides(static_cast<Standard_Integer>(minColIndex(m_parmsIntersGuides, gIdx)), gIdx);
-
-        // compute new parameter
-        for (int irow = 0; irow < static_cast<int>(NProfiles()); ++irow) {
-            m_parmsIntersGuides(irow, gIdx) = -m_parmsIntersGuides(irow, gIdx) + firstParm + lastParm;
-        }
-
-        if (!guide.IsNull()) {
-            guide->Reverse();
-        }
-
-        m_guidIdx[guideIdx] = "-" + m_guidIdx[guideIdx];
-    }
+        gIdx = int(guideIdx)
+        guide = self.guides[guideIdx]
+        if not guide is None: #.IsNull()
+            firstParm = guide.FirstParameter
+            lastParm =  guide.LastParameter
+        else:
+            firstParm = self.parmsIntersGuides[int(minColIndex(self.parmsIntersGuides, gIdx))][gIdx]
+            lastParm =  self.parmsIntersGuides[int(maxColIndex(self.parmsIntersGuides, gIdx))][gIdx]
+        # compute new parameters
+        for irow in range(len(self.profiles)):
+            self.parmsIntersGuides[irow][gIdx] = -self.parmsIntersGuides[irow][gIdx] + firstParm + lastParm
+        if not guide is None: #.IsNull()
+            guide.reverse()
+        self.guidIdx[guideIdx] = "-" + self.guidIdx[guideIdx]
