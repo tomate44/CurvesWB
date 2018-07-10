@@ -23,10 +23,14 @@ class SurfAdapterView(object):
         return(self.getDegree())
 
     def insertKnot(self, knot, mult, tolerance=1e-15):
-        if self.d == 0:
-            self.s.insertUKnot(knot, mult, tolerance)
-        else:
-            self.s.insertVKnot(knot, mult, tolerance)
+        try:
+            if self.d == 0:
+                self.s.insertUKnot(knot, mult, tolerance)
+            else:
+                self.s.insertVKnot(knot, mult, tolerance)
+        except Part.OCCError:
+            debug("insertUKnot : %f - %d - %f"%(knot, mult, tolerance))
+            raise RuntimeError
     def getKnot(self, idx):
         if self.d == 0:
             return(self.s.getUKnot(idx))
@@ -72,8 +76,10 @@ class SurfAdapterView(object):
 
 class BSplineAlgorithms(object):
     """Various BSpline algorithms"""
-    def __init__(self):
-        self.REL_TOL_CLOSED = 1e-8
+    def __init__(self, tol=1e-8):
+        self.REL_TOL_CLOSED = tol
+        if tol > 0.0:
+            self.tol = tol # parametric tolerance
     def error(self,mes):
         print(mes)
     def scale(self, c):
@@ -94,7 +100,7 @@ class BSplineAlgorithms(object):
                 dist = pFirst.distanceToPoint(points[uidx][vidx])
                 theScale = max(theScale, dist)
         return theScale
-    def intersections(self, spline1, spline2, tol):
+    def intersections(self, spline1, spline2, tol3d):
         # light weight simple minimizer
         # check parametrization of B-splines beforehand
         # find out the average scale of the two B-splines in order to being able to handle a more approximate curves and find its intersections
@@ -102,61 +108,69 @@ class BSplineAlgorithms(object):
         intersection_params_vector = []
         inters = spline1.intersectCC(spline2)
         #GeomAPI_ExtremaCurveCurve intersectionObj(spline1, spline2);
-        debug("intersectCC results")
-        if len(inters) == 0:
-            self.error("intersectCC failed !")
-            e1 = spline1.toShape()
-            e2 = spline2.toShape()
-            d,pts,info = e1.distToShape(e2)
-            if d > tol:
-                self.error("distToShape over tolerance !")
-            self.error("using average point")
-            p1,p2 = pts[0]
-            av = .5*(p1+p2)
-            inters = [av]
-            
+        #debug("intersectCC results")
+        if len(inters) >= 2:
+            debug("\n*********************\n2 intersectCC results\n*********************")
+            p1 = FreeCAD.Vector(inters[0].X, inters[0].Y, inters[0].Z)
+            p2 = FreeCAD.Vector(inters[1].X, inters[1].Y, inters[1].Z)
+            if (p1.distanceToPoint(p2) < tol3d * splines_scale):
+                inters = [p1]
         for intpt in inters:
             if isinstance(intpt,Part.Point):
                 inter = FreeCAD.Vector(intpt.X, intpt.Y, intpt.Z)
             else:
                 inter = intpt
-            debug(intpt)
+            #debug(intpt)
             param1 = spline1.parameter(inter)
             param2 = spline2.parameter(inter)
             #intersectionObj.Parameters(intersect_idx, param1, param2);
             # filter out real intersections
             point1 = spline1.value(param1);
             point2 = spline2.value(param2);
-            if (point1.distanceToPoint(point2) < tol * splines_scale):
+            if (point1.distanceToPoint(point2) < tol3d * splines_scale):
                 intersection_params_vector.append([param1, param2])
             else:
                 debug("Curves do not intersect each other")
+                
             # for closed B-splines:
-            if (len(inters) == 1 and spline1.isClosed() and abs(param1 - spline1.getKnot(1)) < 1e-6):
-                # GeomAPI_ExtremaCurveCurve doesn't find second intersection point at the end of the closed curve, so add it by hand
-                intersection_params_vector.append([spline1.getKnot(spline1.NbKnots), param2])
-            if (len(inters) == 1 and spline1.isClosed() and abs(param1 - spline1.getKnot(spline1.NbKnots)) < 1e-6):
-                # GeomAPI_ExtremaCurveCurve doesn't find second intersection point at the beginning of the closed curve, so add it by hand
-                intersection_params_vector.append([spline1.getKnot(1), param2])
-            if (len(inters) == 1 and spline2.isClosed() and abs(param2 - spline2.getKnot(1)) < 1e-6):
-                # GeomAPI_ExtremaCurveCurve doesn't find second intersection point at the end of the closed curve, so add it by hand
-                intersection_params_vector.append([param1, spline2.getKnot(spline2.NbKnots)])
-            if (len(inters) == 1 and spline2.isClosed() and abs(param2 - spline2.getKnot(spline2.NbKnots)) < 1e-6):
-                # GeomAPI_ExtremaCurveCurve doesn't find second intersection point at the beginning of the closed curve, so add it by hand
-                intersection_params_vector.append([param1, spline2.getKnot(1)])
-        #debug(intersection_params_vector)
+            if len(inters) == 1:
+                if spline1.isClosed():
+                    if abs(param1 - spline1.getKnot(1)) < self.tol:
+                        # GeomAPI_ExtremaCurveCurve doesn't find second intersection point at the end of the closed curve, so add it by hand
+                        intersection_params_vector.append([spline1.getKnot(spline1.NbKnots), param2])
+                    elif  abs(param1 - spline1.getKnot(spline1.NbKnots)) < self.tol:
+                        # GeomAPI_ExtremaCurveCurve doesn't find second intersection point at the beginning of the closed curve, so add it by hand
+                        intersection_params_vector.append([spline1.getKnot(1), param2])
+                elif  spline2.isClosed():
+                    if abs(param2 - spline2.getKnot(1)) < self.tol:
+                        # GeomAPI_ExtremaCurveCurve doesn't find second intersection point at the end of the closed curve, so add it by hand
+                        intersection_params_vector.append([param1, spline2.getKnot(spline2.NbKnots)])
+                    elif abs(param2 - spline2.getKnot(spline2.NbKnots)) < self.tol:
+                        # GeomAPI_ExtremaCurveCurve doesn't find second intersection point at the beginning of the closed curve, so add it by hand
+                        intersection_params_vector.append([param1, spline2.getKnot(1)])
+
+        if len(inters) == 0:
+            self.error("intersectCC failed !")
+            e1 = spline1.toShape()
+            e2 = spline2.toShape()
+            d,pts,info = e1.distToShape(e2)
+            if d > tol3d * splines_scale:
+                self.error("distToShape over tolerance !")
+            p1,p2 = pts[0]
+            intersection_params_vector.append([spline1.parameter(p1), spline2.parameter(p2)])
         return(intersection_params_vector)
+
     def isUDirClosed(self, points, tolerance):
         uDirClosed = True
         # check that first row and last row are the same
         for v_idx in range(len(points[0])): #(int v_idx = points.LowerCol(); v_idx <= points.UpperCol(); ++v_idx) {
-            uDirClosed = uDirClosed & (points[0][v_idx].distanceToPoint(points[-1][v_idx]) < tolerance)
+            uDirClosed = uDirClosed and (points[0][v_idx].distanceToPoint(points[-1][v_idx]) < tolerance)
         return(uDirClosed)
     def isVDirClosed(self, points, tolerance):
         vDirClosed = True
         # check that first row and last row are the same
         for u_idx in range(len(points)): #(int v_idx = points.LowerCol(); v_idx <= points.UpperCol(); ++v_idx) {
-            vDirClosed = vDirClosed & (points[u_idx][0].distanceToPoint(points[u_idx][-1]) < tolerance)
+            vDirClosed = vDirClosed and (points[u_idx][0].distanceToPoint(points[u_idx][-1]) < tolerance)
         return(vDirClosed)
     def curvesToSurface(self, curves, vParameters, continuousIfClosed):
         # check amount of given parameters
@@ -171,7 +185,7 @@ class BSplineAlgorithms(object):
         nCurves = len(curves)
 
         # create a common knot vector for all splines
-        compatSplines = self.createCommonKnotsVectorCurve(curves, 1e-15)
+        compatSplines = self.createCommonKnotsVectorCurve(curves, self.tol)
 
         firstCurve = compatSplines[0]
         numControlPointsU = firstCurve.NbPoles
@@ -197,10 +211,10 @@ class BSplineAlgorithms(object):
                 interpPointsVDir[cpVIdx] = compatSplines[cpVIdx].getPole(cpUIdx+1)
             interpSpline = Part.BSplineCurve()
             print("interpSpline")
-            print(len(interpPointsVDir))
+            print(interpPointsVDir[:2])
             print(vParameters)
             print(makeClosed)
-            interpSpline.interpolate(Points=interpPointsVDir, Parameters=vParameters, PeriodicFlag=makeClosed, Tolerance=1e-5)
+            interpSpline.interpolate(Points=interpPointsVDir, Parameters=vParameters, PeriodicFlag=makeClosed, Tolerance=self.tol)
 
             if makeClosed:
                 self.clampBSpline(interpSpline)
@@ -264,8 +278,8 @@ class BSplineAlgorithms(object):
     def pointsToSurface(self, points, uParams, vParams, uContinousIfClosed, vContinousIfClosed):
         debug("-   pointsToSurface")
         tolerance = self.REL_TOL_CLOSED * self.scale_pt_array(points)
-        makeVDirClosed = vContinousIfClosed & self.isVDirClosed(points, tolerance)
-        makeUDirClosed = uContinousIfClosed & self.isUDirClosed(points, tolerance)
+        makeVDirClosed = vContinousIfClosed and self.isVDirClosed(points, tolerance)
+        makeUDirClosed = uContinousIfClosed and self.isUDirClosed(points, tolerance)
 
         # GeomAPI_Interpolate does not want to have the last point,
         # if the curve should be closed. It internally uses the first point
@@ -282,7 +296,7 @@ class BSplineAlgorithms(object):
             for iPointU in range(nPointsUpper):#for (int iPointU = points_u->Lower(); iPointU <= points_u->Upper(); ++iPointU) {
                 points_u[iPointU] = points[iPointU][cpVIdx]
             curve = Part.BSplineCurve()
-            curve.interpolate(Points=points_u, Parameters=uParams, PeriodicFlag=makeUDirClosed, Tolerance=1e-15)
+            curve.interpolate(Points=points_u, Parameters=uParams, PeriodicFlag=makeUDirClosed, Tolerance=self.tol)
 
             if makeUDirClosed:
                 self.clampBSpline(curve)
@@ -297,7 +311,7 @@ class BSplineAlgorithms(object):
         splines_adapter = [c.copy() for c in curves]
         self.makeGeometryCompatibleImpl(splines_adapter, tol)
         return(splines_adapter)
-    def createCommonKnotsVectorSurface(self, old_surfaces_vector):
+    def createCommonKnotsVectorSurface(self, old_surfaces_vector, tol):
         # all B-spline surfaces must have the same parameter range in u- and v-direction
         # TODO: Match parameter range
 
@@ -306,20 +320,20 @@ class BSplineAlgorithms(object):
         for i in range(len(old_surfaces_vector)): #(size_t i = 0; i < old_surfaces_vector.size(); ++i) {
             adapterSplines.append(SurfAdapterView(old_surfaces_vector[i].copy(), 0))
         # first in u direction
-        self.makeGeometryCompatibleImpl(adapterSplines, 1e-15)
+        self.makeGeometryCompatibleImpl(adapterSplines, tol)
 
         for i in range(len(old_surfaces_vector)): #(size_t i = 0; i < old_surfaces_vector.size(); ++i) adapterSplines[i].setDir(vdir);
             adapterSplines[i].d = 1
 
         # now in v direction
-        self.makeGeometryCompatibleImpl(adapterSplines, 1e-15)
+        self.makeGeometryCompatibleImpl(adapterSplines, tol)
 
         return([ads.s for ads in adapterSplines])
     def getKinkParameters(self, curve):
         if not curve:
             raise ValueError("Null Pointer curve")
 
-        eps = 1e-8
+        eps = self.tol
 
         kinks = list()
         for knotIndex in range(2,curve.NbKnots): #(int knotIndex = 2; knotIndex < curve->NbKnots(); ++knotIndex) {
@@ -514,7 +528,8 @@ class BSplineAlgorithms(object):
 
 class GordonSurfaceBuilder(object):
     """Build a Gordon surface from a network of curves"""
-    def __init__(self, profiles, guides, params_u, params_v, tol=1e-5):
+    def __init__(self, profiles, guides, params_u, params_v, tol=1e-5, par_tol=1e-7):
+        self.par_tol = 1e-7
         debug("-- GordonSurfaceBuilder initialisation")
         debug("%d profiles and %d guides"%(len(profiles),len(guides)))
         debug(params_u)
@@ -529,6 +544,8 @@ class GordonSurfaceBuilder(object):
         self.has_performed = False
         if tol > 0.0:
             self.tolerance = tol
+        if par_tol > 0.0:
+            self.par_tol = par_tol
     def error(self,mes):
         print(mes)
     def perform(self):
@@ -586,13 +603,13 @@ class GordonSurfaceBuilder(object):
                 intersection_pnts[intersection_idx][spline_idx] = spline_u.value(parameter)
 
         # check, whether to build a closed continous surface
-        bsa = BSplineAlgorithms()
+        bsa = BSplineAlgorithms(self.par_tol)
         curve_u_tolerance = bsa.REL_TOL_CLOSED * bsa.scale(guides)
         curve_v_tolerance = bsa.REL_TOL_CLOSED * bsa.scale(profiles)
         tp_tolerance      = bsa.REL_TOL_CLOSED * bsa.scale_pt_array(intersection_pnts)
                                                                                     # TODO No IsEqual in FreeCAD
-        makeUClosed = bsa.isUDirClosed(intersection_pnts, tp_tolerance) and guides[0].toShape().isPartner(guides[-1].toShape()) #.isEqual(guides[-1], curve_u_tolerance);
-        makeVClosed = bsa.isVDirClosed(intersection_pnts, tp_tolerance) and profiles[0].toShape().IsPartner(profiles[-1].toShape())
+        makeUClosed = bsa.isUDirClosed(intersection_pnts, tp_tolerance)# and guides[0].toShape().isPartner(guides[-1].toShape()) #.isEqual(guides[-1], curve_u_tolerance);
+        makeVClosed = bsa.isVDirClosed(intersection_pnts, tp_tolerance)# and profiles[0].toShape().IsPartner(profiles[-1].toShape())
 
         # Skinning in v-direction with u directional B-Splines
         debug("-   Skinning profiles")
@@ -623,7 +640,7 @@ class GordonSurfaceBuilder(object):
         surfaces_vector_unmod = [surfGuides, surfProfiles, tensorProdSurf]
 
         # create common knot vector for all three surfaces
-        surfaces_vector = bsa.createCommonKnotsVectorSurface(surfaces_vector_unmod)
+        surfaces_vector = bsa.createCommonKnotsVectorSurface(surfaces_vector_unmod, self.par_tol)
 
         assert(len(surfaces_vector) == 3)
 
@@ -650,7 +667,7 @@ class GordonSurfaceBuilder(object):
                 self.gordonSurf.setPole(cp_u_idx, cp_v_idx, cp_surf_u + cp_surf_v - cp_tensor)
     def check_curve_network_compatibility(self, profiles, guides, intersection_params_spline_u, intersection_params_spline_v, tol):
         # find out the 'average' scale of the B-splines in order to being able to handle a more approximate dataset and find its intersections
-        bsa = BSplineAlgorithms()
+        bsa = BSplineAlgorithms(self.par_tol)
         splines_scale = 0.5 * (bsa.scale(profiles) + bsa.scale(guides))
 
         if abs(intersection_params_spline_u[0]) > (splines_scale * tol) or abs(intersection_params_spline_u[-1] - 1.) > (splines_scale * tol):
@@ -676,8 +693,9 @@ class GordonSurfaceBuilder(object):
 
 class InterpolateCurveNetwork(object):
     """Bspline surface interpolating a network of curves"""
-    def __init__(self, profiles, guides, tol=1e-5):
+    def __init__(self, profiles, guides, tol=1e-5, tol2=1e-10):
         self.tolerance = 1e-5
+        self.par_tolerance = 1e-10
         self.has_performed = False
         if (len(profiles) < 2) or (len(guides) < 2):
             self.error("Not enough guides or profiles")
@@ -686,6 +704,8 @@ class InterpolateCurveNetwork(object):
             self.guides = guides
         if tol > 0.0:
             self.tolerance = tol
+        if tol2 > 0.0:
+            self.par_tolerance = tol2
     def error(self,mes):
         print(mes)
     def perform(self):
@@ -727,17 +747,17 @@ class InterpolateCurveNetwork(object):
         for spline_u_idx in range(len(self.profiles)):
             for spline_v_idx in range(len(self.guides)):
                 
-                currentIntersections = BSplineAlgorithms().intersections(self.profiles[spline_u_idx], self.guides[spline_v_idx], self.tolerance)
+                currentIntersections = BSplineAlgorithms(self.par_tolerance).intersections(self.profiles[spline_u_idx], self.guides[spline_v_idx], self.par_tolerance)
                 if len(currentIntersections) < 1:
                     self.error("U-directional B-spline and v-directional B-spline don't intersect each other!")
                     self.error("profile %d / guide %d"%(spline_u_idx, spline_v_idx))
                 elif len(currentIntersections) == 1:
                     intersection_params_u[spline_u_idx][spline_v_idx] = currentIntersections[0][0]
                     intersection_params_v[spline_u_idx][spline_v_idx] = currentIntersections[0][1]
-                    debug("%dx%d = (%.4f, %.4f)"%(spline_u_idx, spline_v_idx, intersection_params_u[spline_u_idx][spline_v_idx], intersection_params_v[spline_u_idx][spline_v_idx]))
                     # for closed curves
                 elif len(currentIntersections) == 2:
                     debug("*** 2 intersections")
+                    debug(currentIntersections)
                     # only the u-directional B-spline curves are closed
                     if (self.profiles[0].isClosed()):
                         debug("U-closed")
@@ -757,11 +777,11 @@ class InterpolateCurveNetwork(object):
                             intersection_params_v[spline_u_idx][spline_v_idx] = max(currentIntersections[0][1], currentIntersections[1][1])
                         # intersection_params_vector[0].first == intersection_params_vector[1].first
                         intersection_params_u[spline_u_idx][spline_v_idx] = currentIntersections[0][0]
-
-                # TODO: both u-directional splines and v-directional splines are closed
-                # elif len(currentIntersections) == 4:
-                elif len(currentIntersections) > 2:
+                    # TODO: both u-directional splines and v-directional splines are closed
+                    # elif len(currentIntersections) == 4:
+                else:
                     self.error("U-directional B-spline and v-directional B-spline have more than two intersections with each other!")
+                debug("%dx%d = (%.4f, %.4f)"%(spline_u_idx, spline_v_idx, intersection_params_u[spline_u_idx][spline_v_idx], intersection_params_v[spline_u_idx][spline_v_idx]))
 
     def sort_curves(self, intersection_params_u, intersection_params_v):
         import curve_network_sorter
@@ -789,9 +809,9 @@ class InterpolateCurveNetwork(object):
         # reparametrize into [0,1]
         bsa = BSplineAlgorithms()
         for c in self.profiles:
-            bsa.reparametrizeBSpline(c, 0., 1., 1e-15)
+            bsa.reparametrizeBSpline(c, 0., 1., self.par_tolerance)
         for c in self.guides:
-            bsa.reparametrizeBSpline(c, 0., 1., 1e-15)
+            bsa.reparametrizeBSpline(c, 0., 1., self.par_tolerance)
         # now the parameter range of all  profiles and guides is [0, 1]
 
         nGuides = len(self.guides)
@@ -822,7 +842,7 @@ class InterpolateCurveNetwork(object):
                 summ += intersection_params_v[spline_u_idx - 1][spline_v_idx - 1]
             newParametersGuides.append(summ / nGuides)
 
-        if (newParametersProfiles[0] > 1e-5 or newParametersGuides[0] > 1e-5):
+        if (newParametersProfiles[0] > self.tolerance or newParametersGuides[0] > self.tolerance):
             self.error("At least one B-splines has no intersection at the beginning.")
 
         # Get maximum number of control points to figure out detail of spline
@@ -855,14 +875,14 @@ class InterpolateCurveNetwork(object):
             for spline_v_idx in range(nGuides):
                 oldParametersProfile.append(intersection_params_u[spline_u_idx][spline_v_idx])
             # eliminate small inaccuracies at the first knot
-            if (abs(oldParametersProfile[0]) < 1e-5):
+            if (abs(oldParametersProfile[0]) < self.tolerance):
                 oldParametersProfile[0] = 0.
-            if (abs(newParametersProfiles[0]) < 1e-5):
+            if (abs(newParametersProfiles[0]) < self.tolerance):
                 newParametersProfiles[0] = 0.
             # eliminate small inaccuracies at the last knot
-            if (abs(oldParametersProfile[-1] - 1.) < 1e-5):
+            if (abs(oldParametersProfile[-1] - 1.) < self.tolerance):
                 oldParametersProfile[-1] = 1.
-            if (abs(newParametersProfiles[-1] - 1.) < 1e-5):
+            if (abs(newParametersProfiles[-1] - 1.) < self.tolerance):
                 newParametersProfiles[-1] = 1.
 
             profile = self.profiles[spline_u_idx]
@@ -874,14 +894,14 @@ class InterpolateCurveNetwork(object):
             for spline_u_idx in range(nProfiles):
                 oldParameterGuide.append(intersection_params_v[spline_u_idx][spline_v_idx])
             # eliminate small inaccuracies at the first knot
-            if (abs(oldParameterGuide[0]) < 1e-5):
+            if (abs(oldParameterGuide[0]) < self.tolerance):
                 oldParameterGuide[0] = 0.
-            if (abs(newParametersGuides[0]) < 1e-5):
+            if (abs(newParametersGuides[0]) < self.tolerance):
                 newParametersGuides[0] = 0.
             # eliminate small inaccuracies at the last knot
-            if (abs(oldParameterGuide[-1] - 1.) < 1e-5):
+            if (abs(oldParameterGuide[-1] - 1.) < self.tolerance):
                 oldParameterGuide[-1] = 1.
-            if (abs(newParametersGuides[-1] - 1.) < 1e-5):
+            if (abs(newParametersGuides[-1] - 1.) < self.tolerance):
                 newParametersGuides[-1] = 1.
 
             guide = self.guides[spline_v_idx]
@@ -893,31 +913,31 @@ class InterpolateCurveNetwork(object):
     def eliminate_inaccuracies_network_intersections(self, sortedProfiles, sortedGuides, intersection_params_u, intersection_params_v):
         nProfiles = len(sortedProfiles)
         nGuides = len(sortedGuides)
-        tol = 0.001
+        #tol = 0.001
         # eliminate small inaccuracies of the intersection parameters:
 
         # first intersection
         for spline_u_idx in range(nProfiles):
-            if (abs(intersection_params_u[spline_u_idx][0] - sortedProfiles[0].getKnot(1)) < tol):
-                if (abs(sortedProfiles[0].getKnot(1)) < 1e-10):
+            if (abs(intersection_params_u[spline_u_idx][0] - sortedProfiles[0].getKnot(1)) < self.tolerance):
+                if (abs(sortedProfiles[0].getKnot(1)) < self.par_tolerance):
                     intersection_params_u[spline_u_idx][0] = 0
                 else:
                     intersection_params_u[spline_u_idx][0] = sortedProfiles[0].getKnot(1)
 
         for spline_v_idx in range(nGuides):
-            if (abs(intersection_params_v[0][spline_v_idx] - sortedGuides[0].getKnot(1)) < tol):
-                if (abs(sortedGuides[0].getKnot(1)) < 1e-10):
+            if (abs(intersection_params_v[0][spline_v_idx] - sortedGuides[0].getKnot(1)) < self.tolerance):
+                if (abs(sortedGuides[0].getKnot(1)) < self.par_tolerance):
                     intersection_params_v[0][spline_v_idx] = 0
                 else:
                     intersection_params_v[0][spline_v_idx] = sortedGuides[0].getKnot(1)
 
         # last intersection
         for spline_u_idx in range(nProfiles):
-            if (abs(intersection_params_u[spline_u_idx][nGuides - 1] - sortedProfiles[0].getKnot(sortedProfiles[0].NbKnots)) < tol):
+            if (abs(intersection_params_u[spline_u_idx][nGuides - 1] - sortedProfiles[0].getKnot(sortedProfiles[0].NbKnots)) < self.tolerance):
                 intersection_params_u[spline_u_idx][nGuides - 1] = sortedProfiles[0].getKnot(sortedProfiles[0].NbKnots)
 
         for spline_v_idx in range(nGuides):
-            if (abs(intersection_params_v[nProfiles - 1][spline_v_idx] - sortedGuides[0].getKnot(sortedGuides[0].NbKnots)) < tol):
+            if (abs(intersection_params_v[nProfiles - 1][spline_v_idx] - sortedGuides[0].getKnot(sortedGuides[0].NbKnots)) < self.tolerance):
                 intersection_params_v[nProfiles - 1][spline_v_idx] = sortedGuides[0].getKnot(sortedGuides[0].NbKnots)
 
 

@@ -19,29 +19,37 @@ class gordon:
     def __init__(self, obj):
         """Add the properties"""
         obj.addProperty("App::PropertyLinkList", "Sources", "Gordon", "Curve network")
+        obj.addProperty("App::PropertyFloat", "Tol3D", "Gordon", "3D tolerance").Tol3D = 1e-5
+        obj.addProperty("App::PropertyFloat", "Tol2D", "Gordon", "Parametric tolerance").Tol2D = 1e-8
         obj.Proxy = self
 
     def execute(self, obj):
-        tol = 1e-5
-        edges = list()
-        for o in obj.Sources:
-            edges += o.Shape.Edges
-        profiles = list()
-        e0 = edges[0]
-        guides = [e0]
-        for e in edges[1:]:
-            d,pts,info = e0.distToShape(e)
-            if d < tol:
-                profiles.append(e)
-            else:
-                guides.append(e)
+        if len(obj.Sources) == 0:
+            return()
+        elif len(obj.Sources) == 2:
+            guides = obj.Sources[0].Shape.Edges
+            profiles = obj.Sources[1].Shape.Edges
+        else:
+            edges = list()
+            for o in obj.Sources:
+                edges += o.Shape.Edges
+            profiles = list()
+            e0 = edges[0]
+            guides = [e0]
+            for e in edges[1:]:
+                d,pts,info = e0.distToShape(e)
+                if d < obj.Tol3D:
+                    profiles.append(e)
+                else:
+                    guides.append(e)
         
         import gordon
+        reload(gordon)
         guide_curves = [e.Curve.toBSpline() for e in guides]
         profile_curves = [e.Curve.toBSpline() for e in profiles]
 
         # create the gordon surface
-        gordon = gordon.InterpolateCurveNetwork(profile_curves, guide_curves, 1e-5)
+        gordon = gordon.InterpolateCurveNetwork(profile_curves, guide_curves, obj.Tol3D, obj.Tol2D)
 
         # display curves and resulting surface
         obj.Shape = gordon.surface().toShape()
