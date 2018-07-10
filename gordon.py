@@ -165,7 +165,7 @@ class BSplineAlgorithms(object):
 
         # check if all curves are closed
         tolerance = self.scale(curves) * self.REL_TOL_CLOSED
-        makeClosed = continuousIfClosed & curves[0].toShape().isPartner(curves[-1].toShape())
+        makeClosed = continuousIfClosed and curves[0].toShape().isPartner(curves[-1].toShape())
 
         self.matchDegree(curves)
         nCurves = len(curves)
@@ -197,7 +197,7 @@ class BSplineAlgorithms(object):
                 interpPointsVDir[cpVIdx] = compatSplines[cpVIdx].getPole(cpUIdx+1)
             interpSpline = Part.BSplineCurve()
             print("interpSpline")
-            #print(interpPointsVDir)
+            print(len(interpPointsVDir))
             print(vParameters)
             print(makeClosed)
             interpSpline.interpolate(Points=interpPointsVDir, Parameters=vParameters, PeriodicFlag=makeClosed, Tolerance=1e-5)
@@ -477,22 +477,40 @@ class BSplineAlgorithms(object):
                 if (splKnotIdx > -1):
                     resultMults[knotIdx] = max(resultMults[knotIdx], spline.getMultiplicity(splKnotIdx+1))
 
-        debug("---\n%s\n%s"%(resultKnots, resultMults))
-        # now insert missing knots in all splines
         for spline in splines_vector:
             debug("\n%d - %d poles\n%s\n%s"%(spline.Degree, spline.NbPoles, spline.getKnots(), spline.getMultiplicities()))
-            for knotIdx in range(len(resultKnots)):
-                knots = spline.getKnots()
-                for k in knots:
-                    if abs(resultKnots[knotIdx]-k) < par_tolerance:
-                        if spline.getMultiplicity(knotIdx+1) > resultMults[knotIdx]:
-                            debug("increasing mult %f / %d"%(resultKnots[knotIdx], resultMults[knotIdx]))
-                            spline.increaseMultiplicity(knotIdx+1, resultMults[knotIdx])
-                    #cur = spline.getMultiplicity(knotIdx+1)
-                    else:
-                        debug("inserting knot %f / %d"%(resultKnots[knotIdx], resultMults[knotIdx]))
-                        spline.insertKnot(resultKnots[knotIdx], resultMults[knotIdx], par_tolerance)
-            debug("%d - %d poles\n%s\n%s"%(spline.Degree, spline.NbPoles, spline.getKnots(), spline.getMultiplicities()))
+            for knotIdx in range(len(resultKnots)): #(unsigned int knotIdx = 0; knotIdx < resultKnots.size(); ++knotIdx) {
+                # get multiplicity of current knot in surface
+                splKnotIdx = self.findKnot(spline, resultKnots[knotIdx], par_tolerance)
+                if (splKnotIdx > -1):
+                    if int(spline.getMultiplicity(knotIdx+1)) < resultMults[knotIdx]:
+                        debug("increasing mult %f / %d"%(resultKnots[knotIdx], resultMults[knotIdx]))
+                        spline.increaseMultiplicity(knotIdx+1, resultMults[knotIdx])
+                else:
+                    debug("inserting knot %f / %d"%(resultKnots[knotIdx], resultMults[knotIdx]))
+                    spline.insertKnot(resultKnots[knotIdx], resultMults[knotIdx], par_tolerance)
+
+        #debug("---Mult increase\n%s\n%s"%(resultKnots, resultMults))
+        ## now insert missing knots in all splines
+        #for spline in splines_vector:
+            #debug("\n%d - %d poles\n%s\n%s"%(spline.Degree, spline.NbPoles, spline.getKnots(), spline.getMultiplicities()))
+            #for knotIdx in range(len(resultKnots)):
+                #knots = spline.getKnots()
+                #for k in knots:
+                    #if abs(resultKnots[knotIdx]-k) < par_tolerance:
+                        #if int(spline.getMultiplicity(knotIdx+1)) > resultMults[knotIdx]:
+                            #debug("increasing mult %f / %d"%(resultKnots[knotIdx], resultMults[knotIdx]))
+                            #spline.increaseMultiplicity(knotIdx+1, resultMults[knotIdx])
+            #debug("\n%d - %d poles\n%s\n%s"%(spline.Degree, spline.NbPoles, spline.getKnots(), spline.getMultiplicities()))
+                    ##cur = spline.getMultiplicity(knotIdx+1)
+        #debug("---Mult increase\n%s\n%s"%(resultKnots, resultMults))
+        #for spline in splines_vector:
+            #for knotIdx in range(len(resultKnots)):
+                #curmult = int(spline.getMultiplicity(knotIdx+1))
+                #if int(resultMults[knotIdx]-curmult) > 0:
+                    #debug("inserting knot %f / %d"%(resultKnots[knotIdx], resultMults[knotIdx]))
+                    #spline.insertKnot(resultKnots[knotIdx], resultMults[knotIdx], par_tolerance)
+            #debug("%d - %d poles\n%s\n%s"%(spline.Degree, spline.NbPoles, spline.getKnots(), spline.getMultiplicities()))
 
 class GordonSurfaceBuilder(object):
     """Build a Gordon surface from a network of curves"""
@@ -573,8 +591,8 @@ class GordonSurfaceBuilder(object):
         curve_v_tolerance = bsa.REL_TOL_CLOSED * bsa.scale(profiles)
         tp_tolerance      = bsa.REL_TOL_CLOSED * bsa.scale_pt_array(intersection_pnts)
                                                                                     # TODO No IsEqual in FreeCAD
-        makeUClosed = bsa.isUDirClosed(intersection_pnts, tp_tolerance) and guides[0].isPartner(guides[-1]) #.isEqual(guides[-1], curve_u_tolerance);
-        makeVClosed = bsa.isVDirClosed(intersection_pnts, tp_tolerance) and profiles[0].IsPartner(profiles[-1])
+        makeUClosed = bsa.isUDirClosed(intersection_pnts, tp_tolerance) and guides[0].toShape().isPartner(guides[-1].toShape()) #.isEqual(guides[-1], curve_u_tolerance);
+        makeVClosed = bsa.isVDirClosed(intersection_pnts, tp_tolerance) and profiles[0].toShape().IsPartner(profiles[-1].toShape())
 
         # Skinning in v-direction with u directional B-Splines
         debug("-   Skinning profiles")
@@ -911,7 +929,9 @@ def main():
     import Part
     
     data = ["test-S2R-2","Compound","Compound001"]
-    #data = ["test-birail-3","Compound","Compound001"]
+    #data = ["Gordon-sphere","Compound","Compound001"]
+    data = ["test-birail-3","Compound","Compound001"]
+    #data = ["Gordon-2","profiles","guides"]
     
     doc = FreeCAD.open(u"/home/tomate/.FreeCAD/Mod/CurvesWB/TestFiles/%s.fcstd"%data[0])
 
@@ -930,7 +950,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-else:
-    main()
+
 
 
