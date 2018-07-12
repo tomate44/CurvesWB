@@ -176,7 +176,9 @@ class CurveNetworkSorter(object):
         for icol in range(len(self.guides)): #(int icol = 0; icol < static_cast<int>(NGuides()); ++icol) {
             self.parmsIntersProfiles[pIdx][icol] = -self.parmsIntersProfiles[pIdx][icol] + firstParm + lastParm
         if not profile is None: #.IsNull()
-            profile.reverse()
+            import nurbs_tools
+            profile = nurbs_tools.bspline_copy(profile, reverse = True, scale = 1.0)
+            #profile.reverse()
         self.profIdx[profileIdx] = "-" + self.profIdx[profileIdx]
     def reverseGuide(self, guideIdx):
         gIdx = int(guideIdx)
@@ -191,5 +193,7 @@ class CurveNetworkSorter(object):
         for irow in range(len(self.profiles)):
             self.parmsIntersGuides[irow][gIdx] = -self.parmsIntersGuides[irow][gIdx] + firstParm + lastParm
         if not guide is None: #.IsNull()
-            guide.reverse()
+            import nurbs_tools
+            guide = nurbs_tools.bspline_copy(guide, reverse = True, scale = 1.0)
+            #guide.reverse()
         self.guidIdx[guideIdx] = "-" + self.guidIdx[guideIdx]
