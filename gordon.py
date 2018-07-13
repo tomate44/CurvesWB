@@ -107,13 +107,13 @@ class BSplineApproxInterp(object):
         iteration = 0;
 
         # solve system
-        result, error = self.solve(parms, occKnots, occMults) # TODO occKnots, occMults ???? See above
+        result, error = self.python_solve(parms, occKnots, occMults) # TODO occKnots, occMults ???? See above
         old_error = error * 2
 
         while ( (error>0) and ((old_error-error)/max(error, 1e-6) > 1e-3) and (iteration < maxIter) ):
             old_error = error
             self.optimizeParameters(result, parms)
-            result, error = self.solve(parms, occKnots, occMults)
+            result, error = self.python_solve(parms, occKnots, occMults)
             iteration += 1
         
         return(result,error)
@@ -193,8 +193,185 @@ class BSplineApproxInterp(object):
         #std::find(m_indexOfInterpolated.begin(), m_indexOfInterpolated.end(), m_pnts.Length() - 1) != m_indexOfInterpolated.end();
         return(first and last)
 
+    def python_solve(self, params, knots, mults):
+        import numpy as np
+        from scipy import linalg
+        return()
+        # TODO knots and mults are OCC arrays (1-based)
+        # TODO The following OCC objects need to be ported:
+        #math_Matrix (Init, Set, Transposed, Multiplied, )
+        #math_Gauss (Solve, IsDone)
+        #math_Vector (Set)
+        # compute flat knots to solve system
+        
+        # TODO check code below !!!
+        #nFlatKnots = BSplCLib::KnotSequenceLength(mults, self.degree, False)
+        #TColStd_Array1OfReal flatKnots(1, nFlatKnots)
+        #BSplCLib::KnotSequence(knots, mults, flatKnots)
+        flatKnots = []
+        for i in range(len(knots)):
+            flatKnots += [knots[i]]*mults[i]
+            
+
+        n_apprxmated = len(self.indexOfApproximated)
+        n_intpolated = len(self.indexOfInterpolated)
+        n_continuityConditions = 0
+        if self.isClosed() and self.C2Continuous:
+            # C0, C1, C2
+            n_continuityConditions = 3
+            if self.firstAndLastInterpolated():
+                # Remove C0 as they are already equal by design
+                n_continuityConditions -= 1
+        
+        # Number of control points required
+        nCtrPnts = len(flatKnots) - self.degree - 1
+
+        if (nCtrPnts < n_intpolated + n_continuityConditions or nCtrPnts < self.degree + 1 + n_continuityConditions):
+            raise RuntimeError("Too few control points for curve interpolation!")
+
+        if (n_apprxmated == 0 and not nCtrPnts == n_intpolated + n_continuityConditions):
+            raise RuntimeError("Wrong number of control points for curve interpolation!")
+
+        # Build left hand side of the equation
+        n_vars = nCtrPnts + n_intpolated + n_continuityConditions
+        lhs = np.array([[0.]*(n_vars) for i in range(n_vars)])
+        #math_Matrix lhs(1, n_vars, 1, n_vars)
+        #lhs.Init(0.)
+        
+        # Allocate right hand side
+        #math_Vector rhsx(1, n_vars)
+        #math_Vector rhsy(1, n_vars)
+        #math_Vector rhsz(1, n_vars)
+        rhsx = np.array([0.]*n_vars)
+        rhsy = np.array([0.]*n_vars)
+        rhsz = np.array([0.]*n_vars)
+
+        if (n_apprxmated > 0):
+            # Write b vector. These are the points to be approximated
+            appParams = list() # TColStd_Array1OfReal appParams(1, n_apprxmated)
+            #math_Vector bx(1, n_apprxmated)
+            #math_Vector by(1, n_apprxmated)
+            #math_Vector bz(1, n_apprxmated)
+            bx = np.array([0.]*n_apprxmated)
+            by = np.array([0.]*n_apprxmated)
+            bz = np.array([0.]*n_apprxmated)
+        
+            appIndex = 1
+            for it_idx in range(len(self.indexOfApproximated)): #for (std::vector<size_t>::const_iterator it_idx = m_indexOfApproximated.begin() it_idx != m_indexOfApproximated.end() ++it_idx) {
+                ipnt = it_idx # + 1
+                p = self.pnts[ipnt]
+                bx[appIndex] = p.x
+                by[appIndex] = p.y
+                bz[appIndex] = p.z
+                appParams[appIndex] = params[self.indexOfApproximated[it_idx]]
+                appIndex += 1
+
+            # Solve constrained linear least squares
+            # min(Ax - b) s.t. Cx = d
+            # Create left hand side block matrix
+            # A.T*A  C.T
+            # C      0
+            #math_Matrix A = CTiglBSplineAlgorithms::bsplineBasisMat(m_degree, flatKnots, appParams)
+            #math_Matrix At = A.Transposed()
+            bsa = BSplineAlgorithms(self.par_tol)
+            A = bsa.bsplineBasisMat(m_degree, flatKnots, appParams)
+            At = A.T
+
+            #lhs.Set(1, nCtrPnts, 1, nCtrPnts, At.Multiplied(A))
+
+            #rhsx.Set(1, nCtrPnts, At.Multiplied(bx))
+            #rhsy.Set(1, nCtrPnts, At.Multiplied(by))
+            #rhsz.Set(1, nCtrPnts, At.Multiplied(bz))
+        #}
+
+        #if (n_intpolated + n_continuityConditions > 0) {
+            ## Write d vector. These are the points that should be interpolated as well as the continuity constraints for closed curve
+            #math_Vector dx(1, n_intpolated + n_continuityConditions, 0.)
+            #math_Vector dy(1, n_intpolated + n_continuityConditions, 0.)
+            #math_Vector dz(1, n_intpolated + n_continuityConditions, 0.)
+            #if(n_intpolated > 0) {
+                #TColStd_Array1OfReal interpParams(1, n_intpolated)
+                #Standard_Integer intpIndex = 1
+                #for (std::vector<size_t>::const_iterator it_idx = m_indexOfInterpolated.begin() it_idx != m_indexOfInterpolated.end() ++it_idx) {
+                    #Standard_Integer ipnt = static_cast<Standard_Integer>(*it_idx + 1)
+                    #const gp_Pnt& p = m_pnts.Value(ipnt)
+                    #dx(intpIndex) = p.X()
+                    #dy(intpIndex) = p.Y()
+                    #dz(intpIndex) = p.Z()
+                    #interpParams(intpIndex) = params[*it_idx]
+                    #intpIndex++
+                #}
+                #math_Matrix C = CTiglBSplineAlgorithms::bsplineBasisMat(m_degree, flatKnots, interpParams)
+                #math_Matrix Ct = C.Transposed()
+                #lhs.Set(1, nCtrPnts, nCtrPnts + 1, nCtrPnts + n_intpolated, Ct)
+                #lhs.Set(nCtrPnts + 1,  nCtrPnts + n_intpolated, 1, nCtrPnts, C)
+            #}
+
+            ## sets the C2 continuity constraints for closed curves on the left hand side if requested
+            #if (isClosed() && m_C2Continuous) {
+                #math_Matrix continuity_entries = getContinuityMatrix(nCtrPnts, n_continuityConditions, params, flatKnots)
+                #lhs.Set(nCtrPnts + n_intpolated + 1, nCtrPnts + n_intpolated + n_continuityConditions, 1, nCtrPnts, continuity_entries)
+                #lhs.Set(1, nCtrPnts, nCtrPnts + n_intpolated + 1, nCtrPnts + n_intpolated + n_continuityConditions, continuity_entries.Transposed())
+            #}
+            #rhsx.Set(nCtrPnts + 1, n_vars, dx)
+            #rhsy.Set(nCtrPnts + 1, n_vars, dy)
+            #rhsz.Set(nCtrPnts + 1, n_vars, dz)
+        #}
+
+        #math_Gauss solver(lhs)
+
+        #math_Vector cp_x(1, n_vars)
+        #math_Vector cp_y(1, n_vars)
+        #math_Vector cp_z(1, n_vars)
+
+        #solver.Solve(rhsx, cp_x)
+        #if (!solver.IsDone()) {
+            #raise RuntimeError("Singular Matrix")
+        #}
+
+        #solver.Solve(rhsy, cp_y)
+        #if (!solver.IsDone()) {
+            #raise RuntimeError("Singular Matrix")
+        #}
+
+        #solver.Solve(rhsz, cp_z)
+        #if (!solver.IsDone()) {
+            #raise RuntimeError("Singular Matrix")
+        #}
+
+        #TColgp_Array1OfPnt poles(1, nCtrPnts)
+        #for (Standard_Integer icp = 1 icp <= nCtrPnts ++icp) {
+            #gp_Pnt pnt(cp_x.Value(icp), cp_y.Value(icp), cp_z.Value(icp))
+            #poles.SetValue(icp, pnt)
+        #}
+
+        #CTiglApproxResult result
+        #result.curve = new Geom_BSplineCurve(poles, knots, mults, m_degree, false)
+
+        ## compute error
+        #double max_error = 0.
+        #for (std::vector<size_t>::const_iterator it_idx = m_indexOfApproximated.begin() it_idx != m_indexOfApproximated.end() ++it_idx) {
+            #Standard_Integer ipnt = static_cast<Standard_Integer>(*it_idx + 1)
+            #const gp_Pnt& p = m_pnts.Value(ipnt)
+            #double par = params[*it_idx]
+
+            #double error = result.curve->Value(par).Distance(p)
+            #max_error = std::max(max_error, error)
+        #}
+        #result.error = max_error
+
+        #return result
+    #}
+
+       
+
     def solve(self, params, knots, mults):
         return()
+        ## TODO knots and mults are OCC arrays (1-based)
+        ## TODO The following OCC objects need to be ported:
+        # math_Matrix (Init, Set, Transposed, Multiplied, )
+        # math_Gauss (Solve, IsDone)
+        # math_Vector (Set)
         ## compute flat knots to solve system
         
         ## TODO check code below !!!
@@ -500,6 +677,42 @@ class BSplineAlgorithms(object):
                 dist = pFirst.distanceToPoint(points[uidx][vidx])
                 theScale = max(theScale, dist)
         return theScale
+    
+    def bsplineBasisMat(self, degree, knots, params, derivOrder):
+        import numpy as np
+        from scipy import linalg
+        ncp = len(knots) - degree - 1
+        mx = np.array([[0.]*ncp for i in range(len(params))])
+        #math_Matrix mx(1, params.Length(), 1, ncp);
+        #mx.Init(0.);
+        bspl_basis = np.array([[0.]*(degree + 1) for i in range(derivOrder + 1)])
+        #math_Matrix bspl_basis(1, derivOrder + 1, 1, degree + 1);
+        #bspl_basis.Init(0.);
+        for iparm in range(len(params)): # for (Standard_Integer iparm = 1; iparm <= params.Length(); ++iparm) {
+            basis_start_index = 0
+            from nurbs_tools import BsplineBasis
+            bb = BsplineBasis()
+            bb.knots = knots
+            bb.degree = degree
+            span = bb.find_span(params[iparm])
+            res = bb.ders_basis_funs( span, u, n)
+            for irow in range(len(res)):
+                for ival in range(len(row)):
+                    bspl_basis[irow][ival+span] = res[irow][ival]
+    ##if OCC_VERSION_HEX >= VERSION_HEX_CODE(7,1,0)
+            #BSplCLib::EvalBsplineBasis(derivOrder, degree + 1, knots, params.Value(iparm), basis_start_index, bspl_basis);
+    ##else
+            #BSplCLib::EvalBsplineBasis(1, derivOrder, degree + 1, knots, params.Value(iparm), basis_start_index, bspl_basis);
+    ##endif
+            if(derivOrder > 0):
+                #help_vector = np.array([0.]*ncp) #(1, ncp);
+                ##help_vector.Init(0.);
+                #help_vector.Set(basis_start_index, basis_start_index + degree, bspl_basis.Row(derivOrder + 1));
+                mx[iparm] = bspl_basis[derivOrder] #mx.SetRow(iparm, help_vector);
+            else:
+                mx[iparm] = bspl_basis[derivOrder] #  mx.Set(iparm, iparm, basis_start_index, basis_start_index + degree, bspl_basis);
+        return(mx)
+    
     def intersections(self, spline1, spline2, tol3d):
         # light weight simple minimizer
         # check parametrization of B-splines beforehand
