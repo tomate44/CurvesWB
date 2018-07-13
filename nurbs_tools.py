@@ -569,11 +569,11 @@ def reparametrize(c, p1, p2):
 
 
 
-def test():
+def test(parm):
     bb = BsplineBasis()
     bb.knots = [0.,0.,0.,0.,1.,2.,3.,3.,3.,3.]
     bb.degree = 3
-    parm = 3.0
+    #parm = 2.5
 
     span = bb.find_span(parm)
     print("Span index : %d"%span)

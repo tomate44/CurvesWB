@@ -72,12 +72,15 @@ class BSplineApproxInterp(object):
         self.degree = degree
         self.ncp = nControlPoints
         self.C2Continuous = continuous_if_closed
+        self.indexOfInterpolated = list()
+        self.indexOfKinks = list()
 
     def InterpolatePoint(self, pointIndex, withKink):
         if not pointIndex in self.indexOfApproximated:
-            raise RuntimeError("Invalid index in CTiglBSplineApproxInterp::InterpolatePoint")
-        self.indexOfApproximated.pop(pointIndex)
-        self.indexOfInterpolated.append(pointIndex)
+            debug("Invalid index in CTiglBSplineApproxInterp::InterpolatePoint")
+        else:
+            self.indexOfApproximated.remove(pointIndex)
+            self.indexOfInterpolated.append(pointIndex)
         if withKink:
             self.indexOfKinks.append(pointIndex)
 
@@ -93,10 +96,8 @@ class BSplineApproxInterp(object):
             raise RuntimeError("Number of parameters don't match number of points")
 
         # Compute knots from parameters
-        knots = list()
-        mults = list()
-        self.computeKnots(self.ncp, parms, knots, mults)
-
+        knots, mults = self.computeKnots(self.ncp, parms)
+        #debug("python_solve(ncp, params, knots, ):\n%s\n%s\n%s"%(self.ncp, parms, knots))
         #TColStd_Array1OfInteger occMults(1, static_cast<Standard_Integer>(mults.size()));
         #TColStd_Array1OfReal occKnots(1, static_cast<Standard_Integer>(knots.size()));
         #for (size_t i = 0; i < knots.size(); ++i) {
@@ -107,7 +108,7 @@ class BSplineApproxInterp(object):
         iteration = 0;
 
         # solve system
-        result, error = self.python_solve(parms, occKnots, occMults) # TODO occKnots, occMults ???? See above
+        result, error = self.python_solve(parms, knots, mults) # TODO occKnots, occMults ???? See above
         old_error = error * 2
 
         while ( (error>0) and ((old_error-error)/max(error, 1e-6) > 1e-3) and (iteration < maxIter) ):
@@ -141,7 +142,7 @@ class BSplineApproxInterp(object):
         t[nPoints - 1] = 1.0
         return(t)
 
-    def computeKnots(self, ncp, parms, knots, mults):
+    def computeKnots(self, ncp, parms):
         order = self.degree + 1
         if (ncp < order):
             raise RuntimeError("Number of control points to small!")
@@ -151,6 +152,7 @@ class BSplineApproxInterp(object):
 
         knots = [0]*(ncp - self.degree + 1)
         mults = [0]*(ncp - self.degree + 1)
+        #debug("computeKnots(ncp, params, knots, mults):\n%s\n%s\n%s\n%s"%(ncp, parms, knots, mults))
 
         # fill multiplicity at start
         knots[0] = umin
@@ -171,9 +173,11 @@ class BSplineApproxInterp(object):
             #size_t idx = *it;
         for i in range(len(self.indexOfKinks)):
             insertKnot(parms[i], self.degree, self.degree, knots, mults, 1e-4)
+            
+        #debug("computeKnots(ncp, params, knots, mults):\n%s\n%s\n%s\n%s"%(ncp, parms, knots, mults))
+        return(knots, mults)
 
     def maxDistanceOfBoundingBox(self, points):
-        distance
         maxDistance = 0.
         for i in range(len(points)): #(int i = points.Lower(); i <= points.Upper(); ++i) {
             for j in range(len(points)): #for (int j = points.Lower(); j <= points.Upper(); ++j) {
@@ -193,12 +197,45 @@ class BSplineApproxInterp(object):
         #std::find(m_indexOfInterpolated.begin(), m_indexOfInterpolated.end(), m_pnts.Length() - 1) != m_indexOfInterpolated.end();
         return(first and last)
 
+    def matrix(self,nrow,ncol, val=0. ):
+        return(np.array([[val]*ncol for i in range(nrow)]))
+
+    def getContinuityMatrix(self, nCtrPnts, contin_cons, params, flatKnots):
+        continuity_entries = self.matrix(contin_cons, nCtrPnts)
+        continuity_params1 = [params[0]] # TColStd_Array1OfReal continuity_params1(params[0], 1, 1);
+        continuity_params2 = [params[-1]] # TColStd_Array1OfReal continuity_params2(params[params.size() - 1], 1, 1);
+
+        bsa = BSplineAlgorithms(self.par_tol)
+        diff1_1 = bsa.bsplineBasisMat(self.degree, flatKnots, continuity_params1, 1)
+        diff1_2 = bsa.bsplineBasisMat(self.degree, flatKnots, continuity_params2, 1)
+        # math_Matrix diff1_1 = CTiglBSplineAlgorithms::bsplineBasisMat(m_degree, flatKnots, continuity_params1, 1);
+        # math_Matrix diff1_2 = CTiglBSplineAlgorithms::bsplineBasisMat(m_degree, flatKnots, continuity_params2, 1);
+        diff2_1 = bsa.bsplineBasisMat(self.degree, flatKnots, continuity_params1, 2)
+        diff2_2 = bsa.bsplineBasisMat(self.degree, flatKnots, continuity_params2, 2)
+        # math_Matrix diff2_1 = CTiglBSplineAlgorithms::bsplineBasisMat(m_degree, flatKnots, continuity_params1, 2);
+        # math_Matrix diff2_2 = CTiglBSplineAlgorithms::bsplineBasisMat(m_degree, flatKnots, continuity_params2, 2);
+
+        # Set C1 condition
+        continuity_entries[0] = diff1_1 - diff1_2
+        # Set C2 consition
+        continuity_entries[1] = diff2_1 - diff2_2
+        
+        if not self.firstAndLastInterpolated():
+            diff0_1 = bsa.bsplineBasisMat(self.degree, flatKnots, continuity_params1, 0)
+            diff0_2 = bsa.bsplineBasisMat(self.degree, flatKnots, continuity_params2, 0)
+            # math_Matrix diff0_1 = CTiglBSplineAlgorithms::bsplineBasisMat(m_degree, flatKnots, continuity_params1, 0);
+            # math_Matrix diff0_2 = CTiglBSplineAlgorithms::bsplineBasisMat(m_degree, flatKnots, continuity_params2, 0);
+            continuity_entries[2] = diff0_1 - diff0_2
+
+        return(continuity_entries)
+
     def python_solve(self, params, knots, mults):
         import numpy as np
-        from scipy import linalg
-        return()
+        #debug("python_solve(params, knots, mults):\n%s\n%s\n%s"%(params, knots, mults))
+        #from scipy import linalg
+        #return()
         # TODO knots and mults are OCC arrays (1-based)
-        # TODO The following OCC objects need to be ported:
+        # TODO I replaced the following OCC objects with numpy arrays:
         #math_Matrix (Init, Set, Transposed, Multiplied, )
         #math_Gauss (Solve, IsDone)
         #math_Vector (Set)
@@ -227,6 +264,7 @@ class BSplineApproxInterp(object):
         nCtrPnts = len(flatKnots) - self.degree - 1
 
         if (nCtrPnts < n_intpolated + n_continuityConditions or nCtrPnts < self.degree + 1 + n_continuityConditions):
+            debug("nCtrPnts %d n_intpolated %d n_continuityConditions %d self.degree %d "%(nCtrPnts, n_intpolated, n_continuityConditions, self.degree))
             raise RuntimeError("Too few control points for curve interpolation!")
 
         if (n_apprxmated == 0 and not nCtrPnts == n_intpolated + n_continuityConditions):
@@ -248,7 +286,7 @@ class BSplineApproxInterp(object):
 
         if (n_apprxmated > 0):
             # Write b vector. These are the points to be approximated
-            appParams = list() # TColStd_Array1OfReal appParams(1, n_apprxmated)
+            appParams = np.array([0.]*n_apprxmated) # TColStd_Array1OfReal appParams(1, n_apprxmated)
             #math_Vector bx(1, n_apprxmated)
             #math_Vector by(1, n_apprxmated)
             #math_Vector bz(1, n_apprxmated)
@@ -256,9 +294,9 @@ class BSplineApproxInterp(object):
             by = np.array([0.]*n_apprxmated)
             bz = np.array([0.]*n_apprxmated)
         
-            appIndex = 1
+            appIndex = 0
             for it_idx in range(len(self.indexOfApproximated)): #for (std::vector<size_t>::const_iterator it_idx = m_indexOfApproximated.begin() it_idx != m_indexOfApproximated.end() ++it_idx) {
-                ipnt = it_idx # + 1
+                ipnt = self.indexOfApproximated[it_idx] # + 1
                 p = self.pnts[ipnt]
                 bx[appIndex] = p.x
                 by[appIndex] = p.y
@@ -273,50 +311,63 @@ class BSplineApproxInterp(object):
             # C      0
             #math_Matrix A = CTiglBSplineAlgorithms::bsplineBasisMat(m_degree, flatKnots, appParams)
             #math_Matrix At = A.Transposed()
-            bsa = BSplineAlgorithms(self.par_tol)
-            A = bsa.bsplineBasisMat(m_degree, flatKnots, appParams)
+            
+            bsa = BSplineAlgorithms(1e-6)
+            A = bsa.bsplineBasisMat(self.degree, flatKnots, appParams, 0)
             At = A.T
+            mul = np.matmul(At,A)
+            for i in range(nCtrPnts):
+                lhs[i] = mul[i]
 
-            #lhs.Set(1, nCtrPnts, 1, nCtrPnts, At.Multiplied(A))
+            rhsx[0] = np.matmul(At,bx)
+            rhsy[0] = np.matmul(At,by)
+            rhsz[0] = np.matmul(At,bz)
 
-            #rhsx.Set(1, nCtrPnts, At.Multiplied(bx))
-            #rhsy.Set(1, nCtrPnts, At.Multiplied(by))
-            #rhsz.Set(1, nCtrPnts, At.Multiplied(bz))
-        #}
-
-        #if (n_intpolated + n_continuityConditions > 0) {
-            ## Write d vector. These are the points that should be interpolated as well as the continuity constraints for closed curve
+        if (n_intpolated + n_continuityConditions > 0):
+            # Write d vector. These are the points that should be interpolated as well as the continuity constraints for closed curve
             #math_Vector dx(1, n_intpolated + n_continuityConditions, 0.)
-            #math_Vector dy(1, n_intpolated + n_continuityConditions, 0.)
-            #math_Vector dz(1, n_intpolated + n_continuityConditions, 0.)
-            #if(n_intpolated > 0) {
-                #TColStd_Array1OfReal interpParams(1, n_intpolated)
-                #Standard_Integer intpIndex = 1
+            dx = np.array([0.]*(n_intpolated + n_continuityConditions))
+            dy = np.array([0.]*(n_intpolated + n_continuityConditions))
+            dz = np.array([0.]*(n_intpolated + n_continuityConditions))
+            if(n_intpolated > 0):
+                interpParams = [0]*n_intpolated
+                intpIndex = 1
                 #for (std::vector<size_t>::const_iterator it_idx = m_indexOfInterpolated.begin() it_idx != m_indexOfInterpolated.end() ++it_idx) {
                     #Standard_Integer ipnt = static_cast<Standard_Integer>(*it_idx + 1)
-                    #const gp_Pnt& p = m_pnts.Value(ipnt)
-                    #dx(intpIndex) = p.X()
-                    #dy(intpIndex) = p.Y()
-                    #dz(intpIndex) = p.Z()
-                    #interpParams(intpIndex) = params[*it_idx]
-                    #intpIndex++
-                #}
-                #math_Matrix C = CTiglBSplineAlgorithms::bsplineBasisMat(m_degree, flatKnots, interpParams)
-                #math_Matrix Ct = C.Transposed()
+                for it_idx in range(len(self.indexOfInterpolated)): #for (std::vector<size_t>::const_iterator it_idx = m_indexOfApproximated.begin() it_idx != m_indexOfApproximated.end() ++it_idx) {
+                    ipnt = it_idx # + 1
+                    p = self.pnts[ipnt]
+                    dx[intpIndex] = p.x
+                    dy[intpIndex] = p.y
+                    dz[intpIndex] = p.z
+                    interpParams[intpIndex] = params[self.indexOfInterpolated[it_idx]]
+                    intpIndex += 1
+
+                C = bsa.bsplineBasisMat(self.degree, flatKnots, interpParams, 0)
+                Ct = C.T
+                for i in range(nCtrPnts):
+                    for j in range(n_intpolated):
+                        lhs[i][j + nCtrPnts] = Ct[i][j]
+                        lhs[j + nCtrPnts][i] = C[i][j]
                 #lhs.Set(1, nCtrPnts, nCtrPnts + 1, nCtrPnts + n_intpolated, Ct)
                 #lhs.Set(nCtrPnts + 1,  nCtrPnts + n_intpolated, 1, nCtrPnts, C)
-            #}
 
-            ## sets the C2 continuity constraints for closed curves on the left hand side if requested
-            #if (isClosed() && m_C2Continuous) {
-                #math_Matrix continuity_entries = getContinuityMatrix(nCtrPnts, n_continuityConditions, params, flatKnots)
+            # sets the C2 continuity constraints for closed curves on the left hand side if requested
+            if (isClosed() and self.C2Continuous):
+                continuity_entries = self.getContinuityMatrix(nCtrPnts, n_continuityConditions, params, flatKnots)
+                continuity_entriest = continuity_entries.T
+                for i in range(n_continuityConditions):
+                    for j in range(nCtrPnts):
+                        lhs[nCtrPnts + n_intpolated + i][j] = continuity_entries[i][j]
+                        lhs[j][nCtrPnts + n_intpolated + i] = continuity_entriest[i][j]
                 #lhs.Set(nCtrPnts + n_intpolated + 1, nCtrPnts + n_intpolated + n_continuityConditions, 1, nCtrPnts, continuity_entries)
                 #lhs.Set(1, nCtrPnts, nCtrPnts + n_intpolated + 1, nCtrPnts + n_intpolated + n_continuityConditions, continuity_entries.Transposed())
-            #}
-            #rhsx.Set(nCtrPnts + 1, n_vars, dx)
+
+            rhsx[nCtrPnts:n_vars+1] = dx
+            rhsy[nCtrPnts:n_vars+1] = dy
+            rhsz[nCtrPnts:n_vars+1] = dz
             #rhsy.Set(nCtrPnts + 1, n_vars, dy)
             #rhsz.Set(nCtrPnts + 1, n_vars, dz)
-        #}
 
         #math_Gauss solver(lhs)
 
@@ -328,42 +379,49 @@ class BSplineApproxInterp(object):
         #if (!solver.IsDone()) {
             #raise RuntimeError("Singular Matrix")
         #}
+        cp_x = np.linalg.solve(lhs, rhsx)
+        if not np.allclose(np.dot(lhs, cp_x), rhsx):
+            raise RuntimeError("Singular Matrix")
 
         #solver.Solve(rhsy, cp_y)
         #if (!solver.IsDone()) {
             #raise RuntimeError("Singular Matrix")
         #}
-
+        cp_y = np.linalg.solve(lhs, rhsy)
+        if not np.allclose(np.dot(lhs, cp_y), rhsy):
+            raise RuntimeError("Singular Matrix")
+        
         #solver.Solve(rhsz, cp_z)
         #if (!solver.IsDone()) {
             #raise RuntimeError("Singular Matrix")
         #}
-
+        cp_z = np.linalg.solve(lhs, rhsz)
+        if not np.allclose(np.dot(lhs, cp_z), rhsz):
+            raise RuntimeError("Singular Matrix")
+        
+        poles = [FreeCAD.Vector(cp_x[i], cp_y[i], cp_z[i]) for i in range(nCtrPnts)]
         #TColgp_Array1OfPnt poles(1, nCtrPnts)
         #for (Standard_Integer icp = 1 icp <= nCtrPnts ++icp) {
             #gp_Pnt pnt(cp_x.Value(icp), cp_y.Value(icp), cp_z.Value(icp))
             #poles.SetValue(icp, pnt)
         #}
 
-        #CTiglApproxResult result
-        #result.curve = new Geom_BSplineCurve(poles, knots, mults, m_degree, false)
+        result = Part.BSplineCurve()
+        result.buildFromPolesMultsKnots(poles, mults, knots, False, self.degree)
 
-        ## compute error
-        #double max_error = 0.
+        # compute error
+        max_error = 0.
         #for (std::vector<size_t>::const_iterator it_idx = m_indexOfApproximated.begin() it_idx != m_indexOfApproximated.end() ++it_idx) {
             #Standard_Integer ipnt = static_cast<Standard_Integer>(*it_idx + 1)
-            #const gp_Pnt& p = m_pnts.Value(ipnt)
-            #double par = params[*it_idx]
+        for it_idx in range(len(self.indexOfApproximated)):
+            ipnt = it_idx # + 1
+            p = self.pnts[ipnt]
+            par = params[self.indexOfApproximated[it_idx]]
 
-            #double error = result.curve->Value(par).Distance(p)
-            #max_error = std::max(max_error, error)
-        #}
-        #result.error = max_error
-
-        #return result
-    #}
-
-       
+            error = result.value(par).distanceToPoint(p)
+            max_error = max(max_error, error)
+        return(result, max_error)
+ 
 
     def solve(self, params, knots, mults):
         return()
@@ -681,6 +739,7 @@ class BSplineAlgorithms(object):
     def bsplineBasisMat(self, degree, knots, params, derivOrder):
         import numpy as np
         from scipy import linalg
+        from nurbs_tools import BsplineBasis
         ncp = len(knots) - degree - 1
         mx = np.array([[0.]*ncp for i in range(len(params))])
         #math_Matrix mx(1, params.Length(), 1, ncp);
@@ -690,22 +749,23 @@ class BSplineAlgorithms(object):
         #bspl_basis.Init(0.);
         for iparm in range(len(params)): # for (Standard_Integer iparm = 1; iparm <= params.Length(); ++iparm) {
             basis_start_index = 0
-            from nurbs_tools import BsplineBasis
+            
             bb = BsplineBasis()
             bb.knots = knots
             bb.degree = degree
             span = bb.find_span(params[iparm])
-            res = bb.ders_basis_funs( span, u, n)
-            for irow in range(len(res)):
-                for ival in range(len(row)):
-                    bspl_basis[irow][ival+span] = res[irow][ival]
+            res = bb.ders_basis_funs( span, params[iparm], derivOrder)
+            for irow in range(derivOrder):
+                bspl_basis[irow] = bb.evaluate(params[iparm],d=irow)
+                #for ival in range(len(res[irow])):
+                    #bspl_basis[irow][ival+span] = res[irow][ival]
     ##if OCC_VERSION_HEX >= VERSION_HEX_CODE(7,1,0)
             #BSplCLib::EvalBsplineBasis(derivOrder, degree + 1, knots, params.Value(iparm), basis_start_index, bspl_basis);
     ##else
             #BSplCLib::EvalBsplineBasis(1, derivOrder, degree + 1, knots, params.Value(iparm), basis_start_index, bspl_basis);
     ##endif
             if(derivOrder > 0):
-                #help_vector = np.array([0.]*ncp) #(1, ncp);
+                help_vector = np.array([0.]*ncp) #(1, ncp);
                 ##help_vector.Init(0.);
                 #help_vector.Set(basis_start_index, basis_start_index + degree, bspl_basis.Row(derivOrder + 1));
                 mx[iparm] = bspl_basis[derivOrder] #mx.SetRow(iparm, help_vector);
@@ -970,7 +1030,7 @@ class BSplineAlgorithms(object):
         return(kinks)
 
     def reparametrizeBSplineContinuouslyApprox(self, spline, old_parameters, new_parameters, n_control_pnts):
-        return(spline)
+        # return(spline)
         from FreeCAD import Base
         vec2d = Base.Vector2d
         if not len(old_parameters) == len(new_parameters):
@@ -979,7 +1039,7 @@ class BSplineAlgorithms(object):
         # create a B-spline as a function for reparametrization
         old_parameters_pnts = [0]*len(old_parameters) #new TColgp_HArray1OfPnt2d(1, old_parameters.size());
         for parameter_idx in range(len(old_parameters)): #(size_t parameter_idx = 0; parameter_idx < old_parameters.size(); ++parameter_idx) {
-            occIdx = parameter_idx + 1
+            occIdx = parameter_idx # + 1
             old_parameters_pnts[occIdx] = vec2d(old_parameters[parameter_idx], 0)
 
         reparametrizing_spline = Part.Geom2d.BSplineCurve2d()
@@ -1023,25 +1083,27 @@ class BSplineAlgorithms(object):
         # Compute points on spline at the new parameters
         # Those will be approximated later on
         points = list()
-        for i in range(1,len(parameters)+1): #(size_t i = 1; i <= parameters.size(); ++i) {
-            oldParameter = reparametrizing_spline.value(parameters[i-1]).x
-            points[i] = spline.value(oldParameter)
+        for i in range(len(parameters)): #(size_t i = 1; i <= parameters.size(); ++i) {
+            oldParameter = reparametrizing_spline.value(parameters[i]).x
+            points.append(spline.value(oldParameter))
 
         makeContinous = spline.isClosed() and (spline.tangent(spline.FirstParameter).getAngle(spline.tangent(spline.LastParameter)) < 6./180. * pi)
 
         ## Create the new spline as a interpolation of the old one
         #CTiglBSplineApproxInterp approximationObj(points, static_cast<int>(n_control_pnts), 3, makeContinous);
+        approximationObj = BSplineApproxInterp(points, n_control_pnts, 3, makeContinous)
 
-        #breaks.insert(breaks.begin(), new_parameters.front());
-        #breaks.push_back(new_parameters.back());
+        breaks.insert(0, new_parameters[0])
+        breaks.append(new_parameters[-1])
         ## Interpolate points at breaking parameters (required for gordon surface)
         #for (size_t ibreak = 0; ibreak < breaks.size(); ++ibreak) {
-            #double thebreak = breaks[ibreak];
+        for ibreak in range(len(breaks)):
+            thebreak = breaks[ibreak]
+            pos = IsInsideTolerance(parameters, thebreak, par_tol)
             #size_t idx = static_cast<size_t>(
                 #std::find_if(parameters.begin(), parameters.end(), IsInsideTolerance(thebreak)) -
                 #parameters.begin());
-            #approximationObj.InterpolatePoint(idx);
-        #}
+            approximationObj.InterpolatePoint(pos, False)
 
     ###ifdef MODEL_KINKS
         ##for (size_t ikink = 0; ikink < kinks.size(); ++ikink) {
@@ -1053,12 +1115,13 @@ class BSplineAlgorithms(object):
         ##}
     ###endif
 
-        #CTiglApproxResult result = approximationObj.FitCurveOptimal(parameters);
+        result, error = approximationObj.FitCurveOptimal(parameters, 10)
+        if not isinstance(result, Part.BSplineCurve):
+            raise ValueError("FitCurveOptimal failed to compute a valid curve")
         #Handle(Geom_BSplineCurve) reparametrized_spline = result.curve;
-
         #assert(!reparametrized_spline.IsNull());
-
         #return(reparametrized_spline)
+        return(result)
 
     def clampBSpline(self, curve):
         if not curve.isPeriodic():
