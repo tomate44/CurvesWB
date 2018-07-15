@@ -215,11 +215,11 @@ class BSplineApproxInterp(object):
         last = (len(self.pnts) - 1) in self.indexOfInterpolated
         #std::find(m_indexOfInterpolated.begin(), m_indexOfInterpolated.end(), m_pnts.Length() - 1) != m_indexOfInterpolated.end();
         return(first and last)
-    #def matrix(self,nrow,ncol, val=0. ):
-        #import numpy as np
-        #return(np.array([[val]*ncol for i in range(nrow)]))
+    def matrix(self,nrow,ncol, val=0. ):
+        import numpy as np
+        return(np.array([[val]*ncol for i in range(nrow)]))
     def getContinuityMatrix(self, nCtrPnts, contin_cons, params, flatKnots):
-        continuity_entries = [[0.]*nCtrPnts for i in range(contin_cons)] #self.matrix(contin_cons, nCtrPnts)
+        continuity_entries = self.matrix(contin_cons, nCtrPnts)
         continuity_params1 = [params[0]] # TColStd_Array1OfReal continuity_params1(params[0], 1, 1);
         continuity_params2 = [params[-1]] # TColStd_Array1OfReal continuity_params2(params[params.size() - 1], 1, 1);
 
