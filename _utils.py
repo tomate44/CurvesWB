@@ -50,6 +50,35 @@ def getShape(obj, prop, shape_type):
         FreeCAD.Console.PrintError("CurvesWB._utils.getShape: %r has no property %r\n"%(obj, prop))
         return(None)
 
+def ruled_surface(e1,e2):
+    """ creates a ruled surface between 2 edges, with automatic orientation."""
+    # Automatic orientation
+    # /src/Mod/Part/App/PartFeatures.cpp#171
+    import Part
+    p1 = e1.valueAt(e1.FirstParameter)
+    p2 = e1.valueAt(e1.LastParameter)
+    p3 = e2.valueAt(e2.FirstParameter)
+    p4 = e2.valueAt(e2.LastParameter)
+    if e1.Orientation == 'Reversed':
+        p = p1
+        p1 = p2
+        p2 = p
+    if e2.Orientation == 'Reversed':
+        p = p3
+        p3 = p4
+        p4 = p
+    v1 = p2 - p1
+    v2 = p3 - p1
+    n1 = v1.cross(v2)
+    v3 = p3 - p4
+    v4 = p2 - p4
+    n2 = v3.cross(v4)
+    if (n1.dot(n2) < 0):
+        e = e2.copy()
+        e.reverse()
+        return(Part.makeRuledSurface(e1,e))
+    else:
+        return(Part.makeRuledSurface(e1,e2))
 
 
 class EasyProxy(object):

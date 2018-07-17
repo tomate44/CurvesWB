@@ -3,7 +3,7 @@ import FreeCAD
 import Part
 from Part import Geom2d
 from FreeCAD import Base
-
+import _utils
 
 
 #Find the minimum distance to another shape.
@@ -212,3 +212,52 @@ class curveOnSurface:
             curves.append(edge1)
         return(curves)
 
+    def normalFace(self, samp, dist, sym=False):
+        if sym:
+            dist /=2.0
+        ran = self.lastParameter - self.firstParameter
+        pts = list()
+        pars = list()
+        for i in range(samp):
+            t = self.firstParameter + float(i) * ran / (samp-1)
+            pts.append(self.valueAt(t).add(self.normalAt(t)*float(dist)))
+            pars.append(t)
+        bs = Part.BSplineCurve()
+        bs.interpolate(Points = pts, Parameters = pars)
+        if sym:
+            pts = list()
+            pars = list()
+            for i in range(samp):
+                t = self.firstParameter + float(i) * ran / (samp-1)
+                pts.append(self.valueAt(t).sub(self.normalAt(t)*float(dist)))
+                pars.append(t)
+            bs2 = Part.BSplineCurve()
+            bs2.interpolate(Points = pts, Parameters = pars)
+            return(_utils.ruled_surface(bs2.toShape(), bs.toShape()))
+        else:
+            return(_utils.ruled_surface(self.edgeOnFace, bs.toShape()))
+
+    def binormalFace(self, samp, dist, sym=False):
+        if sym:
+            dist /=2.0
+        ran = self.lastParameter - self.firstParameter
+        pts = list()
+        pars = list()
+        for i in range(samp):
+            t = self.firstParameter + float(i) * ran / (samp-1)
+            pts.append(self.valueAt(t).add(self.binormalAt(t)*float(dist)))
+            pars.append(t)
+        bs = Part.BSplineCurve()
+        bs.interpolate(Points = pts, Parameters = pars)
+        if sym:
+            pts = list()
+            pars = list()
+            for i in range(samp):
+                t = self.firstParameter + float(i) * ran / (samp-1)
+                pts.append(self.valueAt(t).sub(self.binormalAt(t)*float(dist)))
+                pars.append(t)
+            bs2 = Part.BSplineCurve()
+            bs2.interpolate(Points = pts, Parameters = pars)
+            return(_utils.ruled_surface(bs2.toShape(), bs.toShape()))
+        else:
+            return(_utils.ruled_surface(self.edgeOnFace, bs.toShape()))
