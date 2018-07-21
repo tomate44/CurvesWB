@@ -49,4 +49,4 @@ Feedback, suggestions, and patches (via Pull Request) are all appreciated. If yo
 - Birail object to be used as support for a "Sweep On 2 Rails" tool
 
 ## License  
-CurvesWB is released under the LGPL2+ license
+CurvesWB is released under the LGPL2.1+ license
