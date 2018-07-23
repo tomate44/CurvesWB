@@ -1,3 +1,12 @@
+# This file is a python port of the following files :
+#
+# /src/geometry/CTiglBSplineAlgorithms.cpp
+# /src/geometry/CTiglBSplineApproxInterp.cpp
+# /src/geometry/CTiglGordonSurfaceBuilder.cpp
+# /src/geometry/CTiglInterpolateCurveNetwork.cpp
+#
+# from the Tigl library : https://github.com/DLR-SC/tigl under Apache-2 license
+
 import FreeCAD
 import Part
 from math import pi
