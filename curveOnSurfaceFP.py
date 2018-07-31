@@ -22,7 +22,7 @@ class cosFP:
         ''' Add the properties '''
         obj.addProperty("App::PropertyLinkSub",    "InputEdge",      "CurveOnSurface",   "Input edge")
         obj.addProperty("App::PropertyLinkSub",    "Face",           "CurveOnSurface",   "Support face")
-        #obj.addProperty("App::PropertyFloat",      "Tolerance",      "CurveOnSurface",   "Tolerance").Tolerance=0.001
+        obj.addProperty("App::PropertyFloat",      "Tolerance",      "CurveOnSurface",   "Tolerance").Tolerance=0.0001
         obj.addProperty("App::PropertyBool",       "ReverseTangent", "Orientation",   "Reverse tangent").ReverseTangent = False
         obj.addProperty("App::PropertyBool",       "ReverseNormal",  "Orientation",   "Reverse normal").ReverseNormal = False
         obj.addProperty("App::PropertyBool",       "ReverseBinormal","Orientation",   "Reverse binormal").ReverseBinormal = False
@@ -30,7 +30,8 @@ class cosFP:
         obj.addProperty("App::PropertyEnumeration","Output",         "CurveOnSurface",   "Output type").Output = ["Curve only","Normal face","Binormal face"]
         obj.addProperty("App::PropertyInteger",    "Samples",        "CurveOnSurface", "Number of samples").Samples=100
         obj.addProperty("App::PropertyDistance",   "FaceWidth",      "CurveOnSurface", "Width of the output face").FaceWidth='1mm'
-        obj.addProperty("App::PropertyBool",       "Symetric",       "CurveOnSurface", "Face symetyric across curve").Symetric = False
+        obj.addProperty("App::PropertyBool",       "Symetric",       "CurveOnSurface", "Face symetric across curve").Symetric = False
+        obj.addProperty("App::PropertyBool",       "Closed",         "CurveOnSurface", "Close the curve").Closed = False
         obj.Output = "Curve only"
         obj.Proxy = self
 
@@ -50,13 +51,15 @@ class cosFP:
         edge = _utils.getShape(obj, 'InputEdge', 'Edge') # self.getEdge(obj)
         face = _utils.getShape(obj, 'Face', 'Face') # self.getFace(obj)
         cos = curveOnSurface.curveOnSurface(edge, face)
+        if obj.Closed:
+            cos.closed = True
         cos.reverseTangent = obj.ReverseTangent
         cos.reverseNormal = obj.ReverseNormal
         cos.reverseBinormal = obj.ReverseBinormal
         if obj.Output == "Normal face":
-            obj.Shape = cos.normalFace(obj.Samples, float(obj.FaceWidth), obj.Symetric)
+            obj.Shape = cos.normalFace(obj.Samples, float(obj.FaceWidth), obj.Tolerance, obj.Symetric)
         elif obj.Output == "Binormal face":
-            obj.Shape = cos.binormalFace(obj.Samples, float(obj.FaceWidth), obj.Symetric)
+            obj.Shape = cos.binormalFace(obj.Samples, float(obj.FaceWidth), obj.Tolerance, obj.Symetric)
         else:
             obj.Shape = cos.edgeOnFace
 

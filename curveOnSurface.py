@@ -30,7 +30,7 @@ import _utils
 #    vertices, params is None. For edges, params is one float, u. For faces,
 #    params is a tuple (u,v). 
 
-
+debug = _utils.debug
 
 class curveOnSurface:
     
@@ -45,6 +45,16 @@ class curveOnSurface:
         self.reverseNormal   = False
         self.reverseBinormal = False
         self.isValid = False
+        self._closed = False
+        self.validate()
+
+    @property
+    def closed(self):
+        return self._closed
+
+    @closed.setter
+    def closed(self, c):
+        self._closed = c
         self.validate()
 
     def setEdge(self, edge):
@@ -77,6 +87,7 @@ class curveOnSurface:
                 self.firstParameter = c2d[1]
                 self.lastParameter  = c2d[2]
                 self.edgeOnFace = self.curve2D.toShape(self.face, self.firstParameter, self.lastParameter)
+
                 if isinstance(self.edgeOnFace, Part.Edge):
                     self.isValid = True
                 else:
@@ -87,6 +98,11 @@ class curveOnSurface:
                 self.firstParameter = self.edge.FirstParameter
                 self.lastParameter  = self.edge.LastParameter
                 self.edgeOnFace = self.edge
+            if self._closed:
+                curve = self.edgeOnFace.Curve.copy()
+                curve.setPeriodic()
+                self.edgeOnFace = curve.toShape()
+                print("edgeOnFace is periodic : %s"%curve.isPeriodic())
         return(self.isValid)
 
     def valueAt(self, t):
@@ -212,7 +228,8 @@ class curveOnSurface:
             curves.append(edge1)
         return(curves)
 
-    def normalFace(self, samp, dist, sym=False):
+    def normalFace(self, samp, dist, tol=1e-5, sym=False):
+        face = None
         if sym:
             dist /=2.0
         ran = self.lastParameter - self.firstParameter
@@ -222,8 +239,11 @@ class curveOnSurface:
             t = self.firstParameter + float(i) * ran / (samp-1)
             pts.append(self.valueAt(t).add(self.normalAt(t)*float(dist)))
             pars.append(t)
+        #if self._closed:
+            #pts = pts[:-1]
         bs = Part.BSplineCurve()
-        bs.interpolate(Points = pts, Parameters = pars)
+        #bs.interpolate(Points = pts, Parameters = pars, PeriodicFlag = self._closed)
+        bs.approximate(Points = pts, Parameters = pars, DegMin = 3, DegMax = 7, Tolerance = tol)
         if sym:
             pts = list()
             pars = list()
@@ -231,13 +251,22 @@ class curveOnSurface:
                 t = self.firstParameter + float(i) * ran / (samp-1)
                 pts.append(self.valueAt(t).sub(self.normalAt(t)*float(dist)))
                 pars.append(t)
+            #if self._closed:
+                #pts = pts[:-1]
             bs2 = Part.BSplineCurve()
-            bs2.interpolate(Points = pts, Parameters = pars)
-            return(_utils.ruled_surface(bs2.toShape(), bs.toShape()))
+            #bs2.interpolate(Points = pts, Parameters = pars, PeriodicFlag = self._closed)
+            bs2.approximate(Points = pts, Parameters = pars, DegMin = 3, DegMax = 7, Tolerance = tol)
+            face = _utils.ruled_surface(bs2.toShape(), bs.toShape())
         else:
-            return(_utils.ruled_surface(self.edgeOnFace, bs.toShape()))
+            face = _utils.ruled_surface(self.edgeOnFace, bs.toShape())
+        if self._closed:
+            surf = face.Surface.copy()
+            surf.setUPeriodic()
+            face = surf.toShape()
+        return(face)
 
-    def binormalFace(self, samp, dist, sym=False):
+    def binormalFace(self, samp, dist, tol=1e-5, sym=False):
+        face = None
         if sym:
             dist /=2.0
         ran = self.lastParameter - self.firstParameter
@@ -247,8 +276,10 @@ class curveOnSurface:
             t = self.firstParameter + float(i) * ran / (samp-1)
             pts.append(self.valueAt(t).add(self.binormalAt(t)*float(dist)))
             pars.append(t)
+        #if self._closed:
+            #pts = pts[:-1]
         bs = Part.BSplineCurve()
-        bs.interpolate(Points = pts, Parameters = pars)
+        bs.approximate(Points = pts, Parameters = pars, DegMin = 3, DegMax = 7, Tolerance = tol)
         if sym:
             pts = list()
             pars = list()
@@ -256,8 +287,15 @@ class curveOnSurface:
                 t = self.firstParameter + float(i) * ran / (samp-1)
                 pts.append(self.valueAt(t).sub(self.binormalAt(t)*float(dist)))
                 pars.append(t)
+            #if self._closed:
+                #pts = pts[:-1]
             bs2 = Part.BSplineCurve()
-            bs2.interpolate(Points = pts, Parameters = pars)
-            return(_utils.ruled_surface(bs2.toShape(), bs.toShape()))
+            bs.approximate(Points = pts, Parameters = pars, DegMin = 3, DegMax = 7, Tolerance = tol)
+            face = _utils.ruled_surface(bs2.toShape(), bs.toShape())
         else:
-            return(_utils.ruled_surface(self.edgeOnFace, bs.toShape()))
+            face = _utils.ruled_surface(self.edgeOnFace, bs.toShape())
+        if self._closed:
+            surf = face.Surface.copy()
+            surf.setUPeriodic()
+            face = surf.toShape()
+        return(face)

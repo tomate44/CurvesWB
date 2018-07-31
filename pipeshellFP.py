@@ -3,6 +3,7 @@ import FreeCAD
 import FreeCADGui
 import Part
 import dummy
+import _utils
 
 path_curvesWB = os.path.dirname(dummy.__file__)
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
@@ -18,7 +19,7 @@ class pipeShell:
     "PipeShell featurePython object"
     def __init__(self, obj):
         ''' Add the properties '''
-        obj.addProperty("App::PropertyLink",       "Spine",       "Main", "Sweep path")
+        obj.addProperty("App::PropertyLinkSubList","Spine",       "Main", "Sweep path")
         obj.addProperty("App::PropertyLinkList",   "Profiles",    "Main", "Profiles that are swept along spine")
         obj.addProperty("App::PropertyLink",       "Support",     "Mode", "Shape of the ShapeSupport mode")
         obj.addProperty("App::PropertyLink",       "Auxiliary",   "Mode", "Auxiliary spine")
@@ -177,8 +178,10 @@ class pipeShell:
         debug("\n\nExecuting PipeShell\n")
         path = None
         profs = []
-        path =  self.getWires( obj, "Spine")
-        debug("spine : %s"%path)
+        edges =  _utils.getShape(obj, "Spine", "Edge")
+        path = Part.Wire(Part.__sortEdges__(edges))
+        if path.isValid():
+            debug("Valid spine : %s"%path)
         if hasattr(obj, "Profiles"):
             profs = obj.Profiles
         if not (path and profs):
@@ -333,26 +336,31 @@ class pipeShellCommand:
             pipeShellVP(psfp.ViewObject)
             #psfp.ViewObject.LineWidth = 2.0
             #psfp.ViewObject.LineColor = (0.5,0.8,0.3)
+            psfp.Mode = "DiscreteTrihedron"
             FreeCAD.ActiveDocument.recompute()
+            
         
 
     def Activated(self):
-        path = None
-        profs = []
-        sel = FreeCADGui.Selection.getSelection()
-        if sel == []:
-            FreeCAD.Console.PrintError("Select at least 1 path object and 1 profile object !\n")
+        path = list()
+        profs = list()
+        sel = FreeCADGui.Selection.getSelectionEx()
         for selobj in sel:
-            if hasattr(selobj,'Proxy'):
-                if selobj.Proxy.__module__ == 'pipeshellProfileFP':
-                    profs.append(selobj)
-                elif selobj.Shape.Wires or selobj.Shape.Edges:
-                    path = selobj
-            elif selobj.Shape.Wires or selobj.Shape.Edges:
-                path = selobj
+            if selobj.HasSubObjects:
+                for sub in selobj.SubElementNames:
+                    FreeCAD.Console.PrintMessage(sub+"\n")
+                    if sub[0:4] == 'Edge':
+                        path.append((selobj.Object,(sub,)))
+            elif hasattr(selobj.Object,'Proxy'):
+                if selobj.Object.Proxy.__module__ == 'pipeshellProfileFP':
+                    profs.append(selobj.Object)
+        FreeCAD.Console.PrintMessage(str(path)+"\n")
+        FreeCAD.Console.PrintMessage(str(profs)+"\n")
         if path and profs:
-            path.ViewObject.LineColor = (1.0,0.3,0.0)
+            #path.ViewObject.LineColor = (1.0,0.3,0.0)
             self.makePipeShellFeature(path,profs)
+        else:
+            FreeCAD.Console.PrintError("\nYou must select:\n- in the 3D view, the edges that build the sweep path\n- in the Tree view, one or more 'pipeshellProfile' objects\n")
         
     def IsActive(self):
         if FreeCAD.ActiveDocument:
