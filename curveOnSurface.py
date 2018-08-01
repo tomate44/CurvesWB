@@ -92,12 +92,12 @@ class curveOnSurface:
                     self.isValid = True
                 else:
                     self.isValid = False
-                    self.edgeOnFace = self.edge
+                    self.edgeOnFace = Part.Edge(self.edge.Curve, self.firstParameter, self.lastParameter)
             else:
                 self.isValid = False
                 self.firstParameter = self.edge.FirstParameter
                 self.lastParameter  = self.edge.LastParameter
-                self.edgeOnFace = self.edge
+                self.edgeOnFace = Part.Edge(self.edge.Curve, self.firstParameter, self.lastParameter)
             if self._closed:
                 curve = self.edgeOnFace.Curve.copy()
                 curve.setPeriodic()
