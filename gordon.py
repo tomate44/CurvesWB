@@ -846,11 +846,11 @@ class BSplineAlgorithms(object):
             if (abs(spline.getKnot(curSplineKnotIdx+1) - knot) < tolerance):
                 return curSplineKnotIdx
         return -1
-    def pointsToSurface(self, points, uParams, vParams, uContinousIfClosed, vContinousIfClosed):
+    def pointsToSurface(self, points, uParams, vParams, uContinuousIfClosed, vContinuousIfClosed):
         debug("-   pointsToSurface")
         tolerance = self.REL_TOL_CLOSED * self.scale_pt_array(points)
-        makeVDirClosed = vContinousIfClosed and self.isVDirClosed(points, tolerance)
-        makeUDirClosed = uContinousIfClosed and self.isUDirClosed(points, tolerance)
+        makeVDirClosed = vContinuousIfClosed and self.isVDirClosed(points, tolerance)
+        makeUDirClosed = uContinuousIfClosed and self.isUDirClosed(points, tolerance)
 
         # GeomAPI_Interpolate does not want to have the last point,
         # if the curve should be closed. It internally uses the first point
@@ -982,11 +982,11 @@ class BSplineAlgorithms(object):
             oldParameter = reparametrizing_spline.value(parameters[i]).x
             points.append(spline.value(oldParameter))
 
-        makeContinous = spline.isClosed() and (spline.tangent(spline.FirstParameter)[0].getAngle(spline.tangent(spline.LastParameter)[0]) < 6./180. * pi)
+        makeContinuous = spline.isClosed() and (spline.tangent(spline.FirstParameter)[0].getAngle(spline.tangent(spline.LastParameter)[0]) < 6./180. * pi)
 
         ## Create the new spline as a interpolation of the old one
-        #CTiglBSplineApproxInterp approximationObj(points, static_cast<int>(n_control_pnts), 3, makeContinous);
-        approximationObj = BSplineApproxInterp(points, n_control_pnts, 3, makeContinous)
+        #CTiglBSplineApproxInterp approximationObj(points, static_cast<int>(n_control_pnts), 3, makeContinuous);
+        approximationObj = BSplineApproxInterp(points, n_control_pnts, 3, makeContinuous)
 
         breaks.insert(0, new_parameters[0])
         breaks.append(new_parameters[-1])
