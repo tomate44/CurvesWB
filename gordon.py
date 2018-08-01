@@ -118,7 +118,7 @@ class BSplineApproxInterp(object):
             self.indexOfKinks.append(pointIndex)
     def FitCurveOptimal(self, initialParms, maxIter):
         parms = list()
-        # compute initial parameters, if initialParms emtpy
+        # compute initial parameters, if initialParms empty
         if len(initialParms) == 0:
             parms = self.computeParameters(0.5)
         else:
@@ -929,7 +929,7 @@ class BSplineAlgorithms(object):
         from FreeCAD import Base
         vec2d = Base.Vector2d
         if not len(old_parameters) == len(new_parameters):
-            self.error("parameter sizes dont match")
+            self.error("parameter sizes don't match")
 
         # create a B-spline as a function for reparametrization
         old_parameters_pnts = [0]*len(old_parameters) #new TColgp_HArray1OfPnt2d(1, old_parameters.size());
@@ -1171,7 +1171,7 @@ class GordonSurfaceBuilder(object):
                 parameter = intersection_params_spline_u[intersection_idx]
                 intersection_pnts[intersection_idx][spline_idx] = spline_u.value(parameter)
 
-        # check, whether to build a closed continous surface
+        # check, whether to build a closed continuous surface
         bsa = BSplineAlgorithms(self.par_tol)
         curve_u_tolerance = bsa.REL_TOL_CLOSED * bsa.scale(guides)
         curve_v_tolerance = bsa.REL_TOL_CLOSED * bsa.scale(profiles)
@@ -1244,7 +1244,7 @@ class GordonSurfaceBuilder(object):
         if abs(intersection_params_spline_v[0]) > (splines_scale * tol) or abs(intersection_params_spline_v[-1] - 1.) > (splines_scale * tol):
             self.error("WARNING: B-splines in v-direction mustn't stick out, spline network must be 'closed'!")
 
-        # check compatibilty of network
+        # check compatibility of network
         for u_param_idx in range(len(intersection_params_spline_u)): #(size_t u_param_idx = 0; u_param_idx < intersection_params_spline_u.size(); ++u_param_idx) {
             spline_u_param = intersection_params_spline_u[u_param_idx]
             spline_v = guides[u_param_idx]

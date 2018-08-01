@@ -138,7 +138,7 @@ class BsplineBasis(object):
         return(f)
 
 # This KnotVector class is equivalent to the following knotSeq* functions
-# I am not sure what is best: a class or a set of independant functions ?
+# I am not sure what is best: a class or a set of independent functions ?
 
 class KnotVector(object):
     """Knot vector object to use in Bsplines"""
