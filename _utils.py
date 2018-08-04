@@ -16,6 +16,15 @@ def iconsPath():
     global icons_path
     return(icons_path)
 
+def info(string):
+    FreeCAD.Console.PrintMessage("%s\n"%string)
+    
+def warn(string):
+    FreeCAD.Console.PrintWarning("%s\n"%string)
+
+def error(string):
+    FreeCAD.Console.PrintError("%s\n"%string)
+
 def debug(string):
     FreeCAD.Console.PrintMessage("%s\n"%string)
 
