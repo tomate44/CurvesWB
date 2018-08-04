@@ -115,7 +115,7 @@ class cosCommand:
             cosFP(cos)
             cos.InputEdge = edge
             cos.Face = face
-            cos.Placement = edge[0].Placement
+            #cos.Placement = edge[0].Placement
             cosVP(cos.ViewObject)
             FreeCAD.ActiveDocument.recompute()
             

@@ -27,7 +27,7 @@ class pipeShell:
         obj.addProperty("App::PropertyEnumeration","Output",      "Main", "Output shape").Output = ["Sections","Lofted sections","Surface"]
         obj.addProperty("App::PropertyBool",       "Solid",       "Settings",  "Make solid object").Solid = False
         obj.addProperty("App::PropertyInteger",    "MaxDegree",   "Settings",  "Maximum degree of the generated surface").MaxDegree = 5
-        obj.addProperty("App::PropertyInteger",    "MaxSegments", "Settings",  "Maximum number of segments of the generated surface").MaxSegments = 32
+        obj.addProperty("App::PropertyInteger",    "MaxSegments", "Settings",  "Maximum number of segments of the generated surface").MaxSegments = 999
         obj.addProperty("App::PropertyInteger",    "Samples",     "Settings",  "Number of samples for preview").Samples = 100
         obj.addProperty("App::PropertyFloat",      "Tol3d",       "Settings",  "Tolerance 3D").Tol3d = 1.0e-4
         obj.addProperty("App::PropertyFloat",      "TolBound",    "Settings",  "Tolerance boundary").TolBound = 1.0e-4
@@ -127,15 +127,15 @@ class pipeShell:
                 fp.setEditorMode("EquiCurvi", 0)
                 fp.setEditorMode("Contact", 0)
         if prop == "MaxDegree":
-            if fp.MaxDegree < 5:
-                fp.MaxDegree = 5
+            if fp.MaxDegree < 3:
+                fp.MaxDegree = 3
             elif fp.MaxDegree > 14:
                 fp.MaxDegree = 14
         if prop == "MaxSegments":
             if fp.MaxSegments < 1:
                 fp.MaxSegments = 1
-            elif fp.MaxSegments > 256:
-                fp.MaxSegments = 256
+            elif fp.MaxSegments > 999:
+                fp.MaxSegments = 999
         if prop == "Samples":
             if fp.Samples < 3:
                 fp.Samples = 3

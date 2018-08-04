@@ -92,12 +92,12 @@ class curveOnSurface:
                     self.isValid = True
                 else:
                     self.isValid = False
-                    self.edgeOnFace = self.edge
+                    self.edgeOnFace = Part.Edge(self.edge.Curve, self.firstParameter, self.lastParameter)
             else:
                 self.isValid = False
                 self.firstParameter = self.edge.FirstParameter
                 self.lastParameter  = self.edge.LastParameter
-                self.edgeOnFace = self.edge
+                self.edgeOnFace = Part.Edge(self.edge.Curve, self.firstParameter, self.lastParameter)
             if self._closed:
                 curve = self.edgeOnFace.Curve.copy()
                 curve.setPeriodic()
@@ -256,9 +256,9 @@ class curveOnSurface:
             bs2 = Part.BSplineCurve()
             #bs2.interpolate(Points = pts, Parameters = pars, PeriodicFlag = self._closed)
             bs2.approximate(Points = pts, Parameters = pars, DegMin = 3, DegMax = 7, Tolerance = tol)
-            face = _utils.ruled_surface(bs2.toShape(), bs.toShape())
+            face = Part.makeRuledSurface(bs2.toShape(), bs.toShape())
         else:
-            face = _utils.ruled_surface(self.edgeOnFace, bs.toShape())
+            face = Part.makeRuledSurface(self.edgeOnFace, bs.toShape())
         if self._closed:
             surf = face.Surface.copy()
             surf.setUPeriodic()
@@ -290,10 +290,10 @@ class curveOnSurface:
             #if self._closed:
                 #pts = pts[:-1]
             bs2 = Part.BSplineCurve()
-            bs.approximate(Points = pts, Parameters = pars, DegMin = 3, DegMax = 7, Tolerance = tol)
-            face = _utils.ruled_surface(bs2.toShape(), bs.toShape())
+            bs2.approximate(Points = pts, Parameters = pars, DegMin = 3, DegMax = 7, Tolerance = tol)
+            face = Part.makeRuledSurface(bs2.toShape(), bs.toShape())
         else:
-            face = _utils.ruled_surface(self.edgeOnFace, bs.toShape())
+            face = Part.makeRuledSurface(self.edgeOnFace, bs.toShape())
         if self._closed:
             surf = face.Surface.copy()
             surf.setUPeriodic()
