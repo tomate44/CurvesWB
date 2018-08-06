@@ -89,7 +89,7 @@ class Approximate:
         self.setTolerance(obj)
         #obj.ApproxTolerance = 0.05
         obj.LastIndex = len(self.Points)-1
-        self.execute(obj)
+        #self.execute(obj)
 
     def setTolerance(self, obj):
         try:

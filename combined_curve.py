@@ -9,6 +9,7 @@ import FreeCAD
 import FreeCADGui
 import Part
 import _utils
+import approximate_extension
 
 TOOL_ICON = _utils.iconsPath() + '/combined_curve.svg'
 debug = _utils.debug
@@ -55,7 +56,14 @@ class CombinedProjectionCurveFP:
         d1 = obj.Direction1 #.Rotation.Axis
         d2 = obj.Direction2
         cc = CombinedProjectionCurve(s1,s2,d1,d2)
-        obj.Shape = cc.shape()
+        if hasattr(obj,"ExtensionProxy"):
+            obj.Shape = obj.ExtensionProxy.approximate(obj,cc.shape())
+        else:
+            obj.Shape = cc.shape()
+
+    def onChanged(self, fp, prop):
+        if hasattr(fp,"ExtensionProxy"):
+            fp.ExtensionProxy.onChanged(fp, prop)
 
 class CombinedProjectionCurveVP:
     def __init__(self,vobj):
@@ -82,6 +90,8 @@ class CombinedProjectionCmd:
     def makeCPCFeature(self,o1,o2,d1,d2):
         cc = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Combined_projection_curve")
         CombinedProjectionCurveFP(cc, o1,o2,d1,d2)
+        approximate_extension.ApproximateExtension(cc)
+        cc.Active = False
         CombinedProjectionCurveVP(cc.ViewObject)
         FreeCAD.ActiveDocument.recompute()
 
@@ -91,8 +101,12 @@ class CombinedProjectionCmd:
             FreeCAD.Console.PrintError("Select 2 objects !\n")
         for selobj in sel:
             selobj.ViewObject.Visibility = False
-        d1 = FreeCAD.Vector(0,0,1)
-        d2 = FreeCAD.Vector(0,1,0)
+        pl = Part.Plane()
+        pl.transform(sel[0].Placement.toMatrix())
+        d1 = pl.Axis
+        pl = Part.Plane()
+        pl.transform(sel[1].Placement.toMatrix())
+        d2 = pl.Axis
         self.makeCPCFeature(sel[0],sel[1],d1,d2)
         
     def IsActive(self):
