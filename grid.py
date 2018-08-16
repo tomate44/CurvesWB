@@ -308,7 +308,7 @@ class gridObject:
         return()
     def onChanged(self, fp, prop):
         if prop == 'Placement':
-            FreeCAD.Console.PrintMessage('Placement udpate\n')
+            FreeCAD.Console.PrintMessage('Placement update\n')
             tr = fp.Placement.Base
             ro = fp.Placement.Rotation.Q
             fp.ViewObject.Proxy.trans.translation = coin.SbVec3f(tr.x,tr.y,tr.z)
@@ -465,7 +465,7 @@ class gridVP:
             self.xz.gridcolor = vp.GridColor
             self.yz.gridcolor = vp.GridColor
         if prop == 'Placement':
-            FreeCAD.Console.PrintMessage('Placement udpate\n')
+            FreeCAD.Console.PrintMessage('Placement update\n')
             tr = vp.Object.Placement.Base
             ro = vp.Object.Placement.Rotation.Q
             self.trans.translation = coin.SbVec3f(tr.x,tr.y,tr.z)
