@@ -1,3 +1,6 @@
+import sys
+if sys.version_info.major >= 3:
+    from importlib import reload
 import os
 import FreeCAD, FreeCADGui, Part
 from pivy import coin

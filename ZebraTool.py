@@ -1,5 +1,8 @@
+import sys
+if sys.version_info.major >= 3:
+    from importlib import reload
 import FreeCAD
-import os, dummy, FreeCADGui, sys
+import os, dummy, FreeCADGui
 import Part
 from PySide import QtGui, QtCore
 from pivy import coin

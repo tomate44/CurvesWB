@@ -5,6 +5,10 @@ __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = "Creates a surface that skins a network of curves."
 
+import sys
+if sys.version_info.major >= 3:
+    from importlib import reload
+
 import FreeCAD
 import FreeCADGui
 import Part
