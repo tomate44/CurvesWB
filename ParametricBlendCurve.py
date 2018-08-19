@@ -161,12 +161,20 @@ class BlendCurveVP:
                     #self.claimed = True
                     self.children = []
 
+    def onChanged(self, vp, prop):
+        if prop == "Visibility":
+            if (vp.Visibility is True) and (self.active is True):
+                self.switch.whichChild = 1
+            elif (vp.Visibility is False) and (self.active is True):
+                self.switch.whichChild = 0
+
     def doubleClicked(self,vobj):
         if not hasattr(self,'active'):
             self.active = False
         if not self.active:
             self.active = True
-            self.switch.whichChild = 1
+            if (vobj.Visibility is True):
+                self.switch.whichChild = 1
         else:
             self.active = False
             self.switch.whichChild = 0
