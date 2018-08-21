@@ -5,6 +5,21 @@ import _utils
 
 debug = _utils.debug
 
+try:
+    _fromUtf8 = QtCore.QString.fromUtf8
+except AttributeError:
+    def _fromUtf8(s):
+        return s
+
+try:
+    _encoding = QtGui.QApplication.UnicodeUTF8
+    def _translate(context, text, disambig):
+        return QtGui.QApplication.translate(context, text, disambig, _encoding)
+except AttributeError:
+    def _translate(context, text, disambig):
+        return QtGui.QApplication.translate(context, text, disambig)
+
+
 def getMainWindow():
    "returns the main window"
    # using QtGui.qApp.activeWindow() isn't very reliable because if another
@@ -58,7 +73,25 @@ class SubLinkEditorWidget(object):
         self.widget = QtGui.QDockWidget()
         self.widget.ui = myWidget_Ui(obj)
         self.widget.ui.setupUi(self.widget)
-        self.main_win.addDockWidget(QtCore.Qt.LeftDockWidgetArea,self.widget) 
+        
+        self.widget.ui.pushButton.clicked.connect(self.accept)
+        
+        self.main_win.addDockWidget(QtCore.Qt.RightDockWidgetArea,self.widget)
+        
+    def quit(self):
+        print("SubLinkEditorWidget quits")
+
+    def accept(self):
+        print 'accept and resetEdit'
+        FreeCADGui.ActiveDocument.resetEdit()
+        self.widget.close()
+        return(True)
+
+    def reject(self):
+        print 'reject and resetEdit'
+        FreeCADGui.ActiveDocument.resetEdit()
+        FreeCADGui.Control.closeDialog()
+        return(True)
 
 class myWidget_Ui(object):
     def __init__(self, obj):
@@ -77,56 +110,58 @@ class myWidget_Ui(object):
             elif obj.getTypeIdOfProperty(pro) == 'App::PropertyLinkSubList':
                 print("PropertyLinkSubList -> %s"%pro)
                 self.link_sub_list.append(pro)
-    def setupUi(self, myWidget):
-        myWidget.setObjectName("Sublinks Editor")
-        #myWidget.resize(QtCore.QSize(300,100).expandedTo(myWidget.minimumSizeHint())) # sets size of the widget
 
-#        self.label = QtGui.QLabel(myWidget) # creates a label
-#        self.label.setGeometry(QtCore.QRect(50,50,200,24)) # sets its size
-#        self.label.setObjectName("Editor") # sets its name, so it can be found by name
+    def setupGroup(self, Form, link):
+        Form.setObjectName(_fromUtf8("Form"))
+        Form.resize(555, 450)
+        self.verticalLayout = QtGui.QVBoxLayout(Form)
+        self.verticalLayout.setObjectName(_fromUtf8("verticalLayout"))
+        self.groupBox = QtGui.QGroupBox(Form)
+        self.groupBox.setObjectName(_fromUtf8("groupBox"))
+        self.verticalLayout_2 = QtGui.QVBoxLayout(self.groupBox)
+        self.verticalLayout_2.setObjectName(_fromUtf8("verticalLayout_2"))
+        self.tableWidget = QtGui.QTableWidget(self.groupBox)
+        self.tableWidget.setObjectName(_fromUtf8("tableWidget"))
+        self.tableWidget.setColumnCount(2)
+        self.tableWidget.setRowCount(4)
+        self.verticalLayout_2.addWidget(self.tableWidget)
+        self.horizontalLayout = QtGui.QHBoxLayout()
+        self.horizontalLayout.setObjectName(_fromUtf8("horizontalLayout"))
+        self.pushButton = QtGui.QPushButton(self.groupBox)
+        self.pushButton.setObjectName(_fromUtf8("pushButton"))
+        self.horizontalLayout.addWidget(self.pushButton)
+        self.pushButton_2 = QtGui.QPushButton(self.groupBox)
+        self.pushButton_2.setObjectName(_fromUtf8("pushButton_2"))
+        self.horizontalLayout.addWidget(self.pushButton_2)
+        self.verticalLayout_2.addLayout(self.horizontalLayout)
+        self.verticalLayout.addWidget(self.groupBox)
 
-        self.vbox_1 = QtGui.QVBoxLayout()
-        self.label_1 = QtGui.QLabel(myWidget)
-        self.label_1.setText('LinkSub')
-        self.vbox_1.addWidget(self.label_1, 1, QtCore.Qt.AlignCenter)
-
+    def setupUi(self, widget):
+        widget.setObjectName(_fromUtf8("Sublink Editor"))
+        widget.resize(240, 300)
+        self.verticalLayoutWidget = QtGui.QWidget(widget)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(10, 10, 320, 420))
+        self.verticalLayoutWidget.setObjectName(_fromUtf8("verticalLayoutWidget"))
+        self.verticalLayout = QtGui.QVBoxLayout(self.verticalLayoutWidget)
+        self.verticalLayout.setObjectName(_fromUtf8("verticalLayout"))
+        self.label = QtGui.QLabel(self.verticalLayoutWidget)
+        self.label.setObjectName(_fromUtf8("label"))
         for link in self.link_sub:
-            label_link = QtGui.QLabel(myWidget)
-            label_link.setText(link)
-            set_button = QtGui.QPushButton('Select')
-            set_button.clicked.connect(self.select)
-            done_button = QtGui.QPushButton('Done')
-            done_button.clicked.connect(self.endselect)
-            hbox = QtGui.QHBoxLayout()
-            self.vbox_1.addWidget(label_link, 1, QtCore.Qt.AlignCenter)
-            hbox.addWidget(set_button, 1, QtCore.Qt.AlignCenter)
-            hbox.addWidget(done_button, 1, QtCore.Qt.AlignCenter)
-            self.vbox_1.addLayout(hbox)
+            self.setupGroup(widget, link)
+        for link in self.link_sub_list:
+            self.setupGroup(widget, link)
+        spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        self.verticalLayout.addItem(spacerItem)
+        self.pushButton = QtGui.QPushButton(self.verticalLayoutWidget)
+        self.pushButton.setObjectName(_fromUtf8("pushButton"))
+        self.verticalLayout.addWidget(self.pushButton, QtCore.Qt.AlignHCenter)
 
-        ok_button = QtGui.QPushButton('OK')
-        ok_button.clicked.connect(self.ok)
+        self.retranslateUi(widget)
 
-        cancel_button = QtGui.QPushButton('Cancel')
-        cancel_button.clicked.connect(self.cancel)
-
-        hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(ok_button, 1, QtCore.Qt.AlignCenter)
-        hbox.addWidget(cancel_button, 1, QtCore.Qt.AlignCenter)
-        self.vbox_1.addStretch(1)
-        self.vbox_1.addLayout(hbox)
-
-        myWidget.setLayout(self.vbox_1)
-
-        desktop_widget = QtGui.QDesktopWidget()
-        right = desktop_widget.availableGeometry().width()
-
-        myWidget.setGeometry(right - 300, 0, 300, 150)
-        myWidget.setWindowTitle('Edit linkSub property')
-        #myWidget.show()
-
-    def retranslateUi(self, draftToolbar): # built-in QT function that manages translations of widgets
-        myWidget.setWindowTitle(QtGui.QApplication.translate("myWidget", "Sublinks Editor", None, QtGui.QApplication.UnicodeUTF8))
-        self.label.setText(QtGui.QApplication.translate("myWidget", "Sublinks Editor", None, QtGui.QApplication.UnicodeUTF8)) 
+    def retranslateUi(self, widget):
+        widget.setWindowTitle(_translate("widget", "Sublink Editor", None))
+        self.label.setText(_translate("widget", "Sublink Editor", None))
+        self.pushButton.setText(_translate("widget", "Quit", None))
 
     def select(self):
         return()
