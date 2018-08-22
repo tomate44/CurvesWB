@@ -25,6 +25,7 @@ class ToConsole:
         doc = ''
         obj = ''
         sob = ''
+        sublinks = '('
 
         doc_num = 0
         obj_num = 0
@@ -47,6 +48,7 @@ class ToConsole:
                 FreeCADGui.doCommand("obj%d = doc%d.getObject('%s')"%(obj_num,doc_num,obj))
             if selobj.HasSubObjects:
                 for sub in selobj.SubElementNames:
+                    sublinks += "(obj%d,('%s')),"%(obj_num,sub)
                     if 'Vertex' in sub:
                         vert_num += 1
                         FreeCADGui.doCommand("v%d = obj%d.Shape.%s"%(vert_num,obj_num,sub))
@@ -56,7 +58,9 @@ class ToConsole:
                     if 'Face' in sub:
                         face_num += 1
                         FreeCADGui.doCommand("f%d = obj%d.Shape.%s"%(face_num,obj_num,sub))
-
+        sublinks += ")"
+        if len(sublinks) > 2:
+            FreeCADGui.doCommand("_sub_link_buffer = %s"%sublinks)
     def IsActive(self):
         if FreeCAD.ActiveDocument:
             selection = FreeCADGui.Selection.getSelectionEx()
