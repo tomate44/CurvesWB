@@ -16,9 +16,13 @@ def debug(string):
 
 class profile:
     "Profile object for PipeShell"
-    def __init__(self, obj):
+    def __init__(self, obj, source):
         ''' Add the properties '''
-        obj.addProperty("App::PropertyLinkSubList",  "Profile",    "Profile", "SubShapes of the profile")
+        if isinstance(source,(list,tuple)):
+            obj.addProperty("App::PropertyLinkSubList",  "Profile",    "Profile", "SubShapes of the profile")
+        else:
+            obj.addProperty("App::PropertyLink",  "Profile",    "Profile", "source object of the profile")
+        obj.Profile = source
         obj.addProperty("App::PropertyLinkSub",      "Location",   "Profile", "Vertex location on spine")
         obj.addProperty("App::PropertyBool",         "Contact",    "Profile", "Translate profile to contact spine").Contact = False
         obj.addProperty("App::PropertyBool",         "Correction", "Profile", "Rotate profile to be orthogonal to spine").Correction = False
@@ -58,13 +62,22 @@ class profile:
 
     def execute(self, obj):
         #curvesWB = FreeCADGui.activeWorkbench()
-        edges = self.getEdgeList( obj, "Profile")
-        vert = self.getVertex( obj, "Location")
-        if edges:
-            w = Part.Wire(Part.__sortEdges__(edges))
-            obj.Shape = Part.Compound([w]+vert)
-        else:
-            FreeCAD.Console.PrintError("\nFailed to build wire\n")
+        proptype = obj.getTypeIdOfProperty("Profile")
+        if proptype == 'App::PropertyLink':
+            sh = obj.Profile.Shape.copy()
+            mat = obj.Profile.Shape.Placement.toMatrix()
+            obj.Shape = sh.transformGeometry(mat)
+        elif proptype == 'App::PropertyLinkSubList':
+            edges = self.getEdgeList( obj, "Profile")
+            #vert = self.getVertex( obj, "Location")
+            if edges:
+                w = Part.Wire(Part.__sortEdges__(edges))
+                if w:
+                    obj.Shape = w
+                else:
+                    FreeCAD.Console.PrintError("\nFailed to build wire\n")
+            else:
+                FreeCAD.Console.PrintError("\nFailed to extract edges\n")
 
 class profileVP:
     def __init__(self,vobj):
@@ -98,11 +111,11 @@ class profileVP:
 
 class profileCommand:
     "creates a profile feature python object"
-    def makeProfileFeature(self,edges,verts):
-        if edges is not []:
+    def makeProfileFeature(self,source,verts):
+        if source:
             proffp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Profile")
-            profile(proffp)
-            proffp.Profile = edges
+            profile(proffp,source)
+            #proffp.Profile = edges
             if verts:
                 proffp.Location = verts
             profileVP(proffp.ViewObject)
@@ -114,6 +127,7 @@ class profileCommand:
     def Activated(self):
         edges = []
         verts = []
+        source = None
         sel = FreeCADGui.Selection.getSelectionEx()
         if sel == []:
             FreeCAD.Console.PrintError("Select at least 1 edge !\n")
@@ -127,12 +141,12 @@ class profileCommand:
                         verts=(selobj.Object, selobj.SubElementNames[i])
                         #selobj.Object.ViewObject.Visibility=False
             else:
-                for i in range(len(selobj.Object.Shape.Edges)):
-                    edges.append((selobj.Object, "Edge"+str(i+1)))
+                source = selobj.Object
                 selobj.Object.ViewObject.Visibility=False
-        if edges:
-            self.makeProfileFeature(edges,verts)
-        
+        if source:
+            self.makeProfileFeature(source, verts)
+        elif edges:
+            self.makeProfileFeature(edges, verts)
     def IsActive(self):
         if FreeCAD.ActiveDocument:
             #f = FreeCADGui.Selection.Filter("SELECT Part::Feature SUBELEMENT Edge COUNT 1..1000")
