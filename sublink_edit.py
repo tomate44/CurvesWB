@@ -44,7 +44,9 @@ class proxy(object):
     """Feature python proxy"""
     def __init__(self, obj):
         obj.addProperty("App::PropertyLinkSubList",  "Profile",    "Profile", "SubShapes of the profile")
-        obj.addProperty("App::PropertyLinkSub",      "Location",   "Profile", "Vertex location on spine")
+        obj.addProperty("App::PropertyLinkSub",      "Location1",   "Profile", "Vertex location on spine")
+        obj.addProperty("App::PropertyLinkSub",      "Location2",   "Profile", "Vertex location on spine")
+        obj.addProperty("App::PropertyLinkSub",      "Location3",   "Profile", "Vertex location on spine")
         obj.Proxy = self
 
 class proxyVP(object):
@@ -93,10 +95,53 @@ class SubLinkEditorWidget(object):
         FreeCADGui.Control.closeDialog()
         return(True)
 
+class subGroup(QtGui.QGroupBox):
+    def __init__(self, widget, node, obj, prop):
+        super(subGroup, self).__init__(widget)
+        self.rootNode = node
+        self.obj = obj
+        self.prop = prop
+        self.widget = widget
+    def setupUi(self):
+        self.setObjectName(_fromUtf8(self.prop))
+        #self.resize(500, 400)
+        self.verticalLayout = QtGui.QVBoxLayout(self.widget)
+        self.verticalLayout.setObjectName(_fromUtf8("verticalLayout"))
+        self.groupBox = QtGui.QGroupBox(self.widget)
+        self.groupBox.setObjectName(_fromUtf8(self.prop))
+        self.horizontalLayout = QtGui.QHBoxLayout(self.groupBox)
+        self.horizontalLayout.setObjectName(_fromUtf8("horizontalLayout"))
+        self.pushButton = QtGui.QPushButton(self.groupBox)
+        self.pushButton.setObjectName(_fromUtf8("View"))
+        self.horizontalLayout.addWidget(self.pushButton)
+        self.pushButton_2 = QtGui.QPushButton(self.groupBox)
+        self.pushButton_2.setObjectName(_fromUtf8("Set"))
+        self.horizontalLayout.addWidget(self.pushButton_2)
+        self.verticalLayout.addWidget(self.groupBox)
+
+        self.retranslateUi(self.widget)
+        self.pushButton.clicked.connect(self.view)
+        self.pushButton_2.clicked.connect(self.setprop)
+
+    def view(self):
+        pass
+    
+    def setprop(self):
+        pass
+
+    def retranslateUi(self, Form):
+        #Form.setWindowTitle(_translate("Form", "Form", None))
+        self.groupBox.setTitle(_translate("Form", self.prop, None))
+        self.pushButton.setText(_translate("Form", "View", None))
+        self.pushButton_2.setText(_translate("Form", "Set", None))
+
+
+
 class myWidget_Ui(object):
     def __init__(self, obj):
         self.link_sub = list()
         self.link_sub_list = list()
+        self.obj = obj
         #sel = FreeCADGui.Selection.getSelection()
         #if sel == []:
             #self.cancel()
@@ -111,31 +156,6 @@ class myWidget_Ui(object):
                 print("PropertyLinkSubList -> %s"%pro)
                 self.link_sub_list.append(pro)
 
-    def setupGroup(self, Form, link):
-        Form.setObjectName(_fromUtf8("Form"))
-        Form.resize(555, 450)
-        self.verticalLayout = QtGui.QVBoxLayout(Form)
-        self.verticalLayout.setObjectName(_fromUtf8("verticalLayout"))
-        self.groupBox = QtGui.QGroupBox(Form)
-        self.groupBox.setObjectName(_fromUtf8("groupBox"))
-        self.verticalLayout_2 = QtGui.QVBoxLayout(self.groupBox)
-        self.verticalLayout_2.setObjectName(_fromUtf8("verticalLayout_2"))
-        self.tableWidget = QtGui.QTableWidget(self.groupBox)
-        self.tableWidget.setObjectName(_fromUtf8("tableWidget"))
-        self.tableWidget.setColumnCount(2)
-        self.tableWidget.setRowCount(4)
-        self.verticalLayout_2.addWidget(self.tableWidget)
-        self.horizontalLayout = QtGui.QHBoxLayout()
-        self.horizontalLayout.setObjectName(_fromUtf8("horizontalLayout"))
-        self.pushButton = QtGui.QPushButton(self.groupBox)
-        self.pushButton.setObjectName(_fromUtf8("pushButton"))
-        self.horizontalLayout.addWidget(self.pushButton)
-        self.pushButton_2 = QtGui.QPushButton(self.groupBox)
-        self.pushButton_2.setObjectName(_fromUtf8("pushButton_2"))
-        self.horizontalLayout.addWidget(self.pushButton_2)
-        self.verticalLayout_2.addLayout(self.horizontalLayout)
-        self.verticalLayout.addWidget(self.groupBox)
-
     def setupUi(self, widget):
         widget.setObjectName(_fromUtf8("Sublink Editor"))
         widget.resize(240, 300)
@@ -147,20 +167,25 @@ class myWidget_Ui(object):
         self.label = QtGui.QLabel(self.verticalLayoutWidget)
         self.label.setObjectName(_fromUtf8("label"))
         for link in self.link_sub:
-            self.setupGroup(widget, link)
+            self.verticalLayout.addWidget(subGroup(widget,0,self.obj,link), QtCore.Qt.AlignHCenter)
+        self.label_2 = QtGui.QLabel(self.verticalLayoutWidget)
+        self.label_2.setObjectName(_fromUtf8("label"))
         for link in self.link_sub_list:
-            self.setupGroup(widget, link)
+            self.verticalLayout.addWidget(subGroup(widget,0,self.obj,link), QtCore.Qt.AlignHCenter)
         spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         self.verticalLayout.addItem(spacerItem)
         self.pushButton = QtGui.QPushButton(self.verticalLayoutWidget)
         self.pushButton.setObjectName(_fromUtf8("pushButton"))
         self.verticalLayout.addWidget(self.pushButton, QtCore.Qt.AlignHCenter)
 
+        self.pushButton.clicked.connect(self.quit)
+
         self.retranslateUi(widget)
 
     def retranslateUi(self, widget):
         widget.setWindowTitle(_translate("widget", "Sublink Editor", None))
-        self.label.setText(_translate("widget", "Sublink Editor", None))
+        self.label.setText(_translate("widget", "LinkSub", None))
+        self.label_2.setText(_translate("widget", "LinkSubList", None))
         self.pushButton.setText(_translate("widget", "Quit", None))
 
     def select(self):
