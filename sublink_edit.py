@@ -66,6 +66,8 @@ class proxyVP(object):
 
     def unsetEdit(self,vobj,mode):
         debug("End Edit")
+        if self.edit_widget:
+            del(self.edit_widget)
         #self.combo.removeTab(self.tab.idx) 
         return(True)
 
@@ -76,7 +78,7 @@ class SubLinkEditorWidget(object):
         self.widget.ui = myWidget_Ui(obj)
         self.widget.ui.setupUi(self.widget)
         
-        self.widget.ui.pushButton.clicked.connect(self.accept)
+        self.widget.ui.pushButton_7.clicked.connect(self.accept)
         
         self.main_win.addDockWidget(QtCore.Qt.RightDockWidgetArea,self.widget)
         
@@ -95,119 +97,126 @@ class SubLinkEditorWidget(object):
         FreeCADGui.Control.closeDialog()
         return(True)
 
-class subGroup(QtGui.QGroupBox):
-    def __init__(self, widget, node, obj, prop):
-        super(subGroup, self).__init__(widget)
-        self.rootNode = node
+class myGrpBox(QtGui.QGroupBox):
+    def __init__(self, parent, link, obj):
+        super(myGrpBox, self).__init__(parent)
+        #self.rootNode = node
         self.obj = obj
-        self.prop = prop
-        self.widget = widget
+        self.link = link
+        self.parent = parent
+        self.setupUi()
+        
     def setupUi(self):
-        self.setObjectName(_fromUtf8(self.prop))
-        #self.resize(500, 400)
-        self.verticalLayout = QtGui.QVBoxLayout(self.widget)
-        self.verticalLayout.setObjectName(_fromUtf8("verticalLayout"))
-        self.groupBox = QtGui.QGroupBox(self.widget)
-        self.groupBox.setObjectName(_fromUtf8(self.prop))
-        self.horizontalLayout = QtGui.QHBoxLayout(self.groupBox)
+        #self.groupBox = QtGui.QGroupBox(self.dockWidgetContents)
+        self.setObjectName(_fromUtf8(self.link))
+        self.horizontalLayout = QtGui.QHBoxLayout(self)
         self.horizontalLayout.setObjectName(_fromUtf8("horizontalLayout"))
-        self.pushButton = QtGui.QPushButton(self.groupBox)
+        self.pushButton = QtGui.QPushButton(self)
         self.pushButton.setObjectName(_fromUtf8("View"))
         self.horizontalLayout.addWidget(self.pushButton)
-        self.pushButton_2 = QtGui.QPushButton(self.groupBox)
+        self.pushButton_2 = QtGui.QPushButton(self)
         self.pushButton_2.setObjectName(_fromUtf8("Set"))
         self.horizontalLayout.addWidget(self.pushButton_2)
-        self.verticalLayout.addWidget(self.groupBox)
+        self.pushButton.clicked.connect(self.view_link)
+        self.pushButton.pressed.connect(self.set_selection)
+        self.pushButton.released.connect(self.reset_selection)
+        self.pushButton_2.clicked.connect(self.set_link)
+        self.setTitle(self.link)
+        self.pushButton.setText("View")
+        self.pushButton_2.setText("Set")
 
-        self.retranslateUi(self.widget)
-        self.pushButton.clicked.connect(self.view)
-        self.pushButton_2.clicked.connect(self.setprop)
+    def set_selection(self):
+        self.obj.ViewObject.Visibility = False
+        self.selection_buffer = FreeCADGui.Selection.getSelectionEx()
+        FreeCADGui.Selection.clearSelection()
+        lnk = self.obj.getPropertyByName(self.link)
+        if lnk:
+            if not isinstance(lnk[0],(list,tuple)):
+                FreeCADGui.Selection.addSelection(lnk[0],lnk[1])
+            else:
+                for o in lnk:
+                    for n in o[1]:
+                        FreeCADGui.Selection.addSelection(o[0],n)
 
-    def view(self):
-        pass
-    
-    def setprop(self):
-        pass
+    def reset_selection(self):
+        self.obj.ViewObject.Visibility = True
+        FreeCADGui.Selection.clearSelection()
+        for o in self.selection_buffer:
+            if o.HasSubObjects:
+                for n in o.SubElementNames:
+                    FreeCADGui.Selection.addSelection(o.Object,n)
 
-    def retranslateUi(self, Form):
-        #Form.setWindowTitle(_translate("Form", "Form", None))
-        self.groupBox.setTitle(_translate("Form", self.prop, None))
-        self.pushButton.setText(_translate("Form", "View", None))
-        self.pushButton_2.setText(_translate("Form", "Set", None))
+    def view_link(self):
+        debug("%s.%s = %s"%(self.obj.Label, self.link, self.obj.getPropertyByName(self.link)))
+        #FreeCADGui.doCommand("print(FreeCAD.ActiveDocument.getObject('%s').%s)"%(self.obj.Name, self.link))
 
+    def set_link(self):
+        #debug("%s.%s -> Set button pressed"%(self.obj.Label, self.link))
+        subs = list()
+        sel = FreeCADGui.Selection.getSelectionEx()
+        if sel == []:
+            FreeCAD.Console.PrintError("Nothing selected !\n")
+        for selobj in sel:
+            if selobj.HasSubObjects:
+                subs.append(("(FreeCAD.ActiveDocument.getObject('%s'),%s)"%(selobj.Object.Name, selobj.SubElementNames)))
+        if self.obj.getTypeIdOfProperty(self.link) == 'App::PropertyLinkSub':
+            if not len(subs) == 1:
+                FreeCAD.Console.PrintError("This property accept only 1 subobject !\n")
+            else:
+                #FreeCADGui.doCommand("subobj = FreeCAD.ActiveDocument.getObject('%s')"%(subs[0][0].Name))
+                FreeCADGui.doCommand("FreeCAD.ActiveDocument.getObject('%s').%s = %s"%(self.obj.Name, self.link, subs[0]))
+        elif self.obj.getTypeIdOfProperty(self.link) == 'App::PropertyLinkSubList':
+                FreeCADGui.doCommand("FreeCAD.ActiveDocument.getObject('%s').%s = %s"%(self.obj.Name, self.link, self.concat(subs)))
+        self.view_link()
 
+    def concat(self,subs):
+        st = "("
+        for o in subs:
+            st += o+","
+        st += ")"
+        return(st)
 
 class myWidget_Ui(object):
     def __init__(self, obj):
         self.link_sub = list()
-        self.link_sub_list = list()
         self.obj = obj
-        #sel = FreeCADGui.Selection.getSelection()
-        #if sel == []:
-            #self.cancel()
-            #return(False)
-        #else:
-            #sel = sel[-1]
         for pro in obj.PropertiesList:
-            if obj.getTypeIdOfProperty(pro) == 'App::PropertyLinkSub':
-                print("PropertyLinkSub -> %s"%pro)
+            if obj.getTypeIdOfProperty(pro) in ('App::PropertyLinkSub', 'App::PropertyLinkSubList'):
+                print("%s (%s)"%(pro, obj.getTypeIdOfProperty(pro)))
                 self.link_sub.append(pro)
-            elif obj.getTypeIdOfProperty(pro) == 'App::PropertyLinkSubList':
-                print("PropertyLinkSubList -> %s"%pro)
-                self.link_sub_list.append(pro)
 
-    def setupUi(self, widget):
-        widget.setObjectName(_fromUtf8("Sublink Editor"))
-        widget.resize(240, 300)
-        self.verticalLayoutWidget = QtGui.QWidget(widget)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(10, 10, 320, 420))
-        self.verticalLayoutWidget.setObjectName(_fromUtf8("verticalLayoutWidget"))
-        self.verticalLayout = QtGui.QVBoxLayout(self.verticalLayoutWidget)
+    def setupUi(self, DockWidget):
+        DockWidget.setObjectName(_fromUtf8("DockWidget"))
+        DockWidget.resize(400, 600)
+        self.dockWidgetContents = QtGui.QWidget()
+        self.dockWidgetContents.setObjectName(_fromUtf8("dockWidgetContents"))
+        self.verticalLayout = QtGui.QVBoxLayout(self.dockWidgetContents)
+        #self.verticalLayout.setMargin(0)
         self.verticalLayout.setObjectName(_fromUtf8("verticalLayout"))
-        self.label = QtGui.QLabel(self.verticalLayoutWidget)
-        self.label.setObjectName(_fromUtf8("label"))
+        
         for link in self.link_sub:
-            self.verticalLayout.addWidget(subGroup(widget,0,self.obj,link), QtCore.Qt.AlignHCenter)
-        self.label_2 = QtGui.QLabel(self.verticalLayoutWidget)
-        self.label_2.setObjectName(_fromUtf8("label"))
-        for link in self.link_sub_list:
-            self.verticalLayout.addWidget(subGroup(widget,0,self.obj,link), QtCore.Qt.AlignHCenter)
-        spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+            groupBox = myGrpBox(self.dockWidgetContents, link, self.obj)
+            self.verticalLayout.addWidget(groupBox)
+        
+        self.pushButton_7 = QtGui.QPushButton(self.dockWidgetContents)
+        self.pushButton_7.setObjectName(_fromUtf8("pushButton_7"))
+        self.verticalLayout.addWidget(self.pushButton_7, 0, QtCore.Qt.AlignHCenter)
+        spacerItem = QtGui.QSpacerItem(20, 237, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         self.verticalLayout.addItem(spacerItem)
-        self.pushButton = QtGui.QPushButton(self.verticalLayoutWidget)
-        self.pushButton.setObjectName(_fromUtf8("pushButton"))
-        self.verticalLayout.addWidget(self.pushButton, QtCore.Qt.AlignHCenter)
+        DockWidget.setWidget(self.dockWidgetContents)
 
-        self.pushButton.clicked.connect(self.quit)
+        self.retranslateUi(DockWidget)
+        QtCore.QMetaObject.connectSlotsByName(DockWidget)
 
-        self.retranslateUi(widget)
+    def retranslateUi(self, DockWidget):
+        DockWidget.setWindowTitle(_translate("DockWidget", "DockWidget", None))
+        self.pushButton_7.setText(_translate("DockWidget", "Quit", None))
 
-    def retranslateUi(self, widget):
-        widget.setWindowTitle(_translate("widget", "Sublink Editor", None))
-        self.label.setText(_translate("widget", "LinkSub", None))
-        self.label_2.setText(_translate("widget", "LinkSubList", None))
-        self.pushButton.setText(_translate("widget", "Quit", None))
+def main():
+    doc = FreeCAD.ActiveDocument
+    obj = doc.addObject("Part::FeaturePython","test")
+    proxy(obj)
+    proxyVP(obj.ViewObject)
 
-    def select(self):
-        return()
-
-    def endselect(self):
-        return()
-
-    def ok(self):
-        self.quit()
-
-    def cancel(self):
-        self.quit()
-    
-    def quit(self):
-        pass
-
-
-
-doc = FreeCAD.ActiveDocument
-obj = doc.addObject("Part::FeaturePython","test")
-proxy(obj)
-proxyVP(obj.ViewObject)
-
-
+if __name__ == '__main__':
+    main()
