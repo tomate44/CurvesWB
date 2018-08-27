@@ -1,8 +1,17 @@
+# -*- coding: utf-8 -*-
+
+__title__ = "Sublink Editor"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = "Editor widget for sublink properties of objects"
+
+
 import FreeCAD
 import FreeCADGui
 from PySide import QtGui,QtCore
 import _utils
 
+TOOL_ICON = _utils.iconsPath() + '/sublink_edit.svg'
 debug = _utils.debug
 
 try:
@@ -73,6 +82,7 @@ class proxyVP(object):
 
 class SubLinkEditorWidget(object):
     def __init__(self, obj):
+        self.obj = obj
         self.main_win = FreeCADGui.getMainWindow()
         self.widget = QtGui.QDockWidget()
         self.widget.ui = myWidget_Ui(obj)
@@ -81,6 +91,10 @@ class SubLinkEditorWidget(object):
         self.widget.ui.pushButton_7.clicked.connect(self.accept)
         
         self.main_win.addDockWidget(QtCore.Qt.RightDockWidgetArea,self.widget)
+        self.widget.setFloating(True)
+        
+        self.initial_visibility = self.obj.ViewObject.Visibility
+        self.obj.ViewObject.Visibility = False
         
     def quit(self):
         print("SubLinkEditorWidget quits")
@@ -89,6 +103,8 @@ class SubLinkEditorWidget(object):
         print 'accept and resetEdit'
         FreeCADGui.ActiveDocument.resetEdit()
         self.widget.close()
+        self.obj.ViewObject.Visibility = self.initial_visibility
+        FreeCAD.ActiveDocument.recompute()
         return(True)
 
     def reject(self):
@@ -125,26 +141,42 @@ class myGrpBox(QtGui.QGroupBox):
         self.pushButton.setText("View")
         self.pushButton_2.setText("Set")
 
+    def getSelection(self):
+        s = FreeCADGui.Selection.getSelectionEx()
+        sel = list()
+        if not s == []:
+            for o in s:
+                sel.append((o, o.Object.ViewObject.Visibility))
+        return(sel)
+
     def set_selection(self):
-        self.obj.ViewObject.Visibility = False
-        self.selection_buffer = FreeCADGui.Selection.getSelectionEx()
+        #self.obj.ViewObject.Visibility = False
+        self.selection_buffer = self.getSelection()
         FreeCADGui.Selection.clearSelection()
         lnk = self.obj.getPropertyByName(self.link)
+        self.sublink_viz = list()
         if lnk:
             if not isinstance(lnk[0],(list,tuple)):
+                self.sublink_viz.append((lnk[0],lnk[0].ViewObject.Visibility))
+                lnk[0].ViewObject.Visibility = True
                 FreeCADGui.Selection.addSelection(lnk[0],lnk[1])
             else:
                 for o in lnk:
+                    self.sublink_viz.append((o[0],o[0].ViewObject.Visibility))
+                    o[0].ViewObject.Visibility = True
                     for n in o[1]:
                         FreeCADGui.Selection.addSelection(o[0],n)
 
     def reset_selection(self):
-        self.obj.ViewObject.Visibility = True
+        #self.obj.ViewObject.Visibility = True
         FreeCADGui.Selection.clearSelection()
         for o in self.selection_buffer:
-            if o.HasSubObjects:
-                for n in o.SubElementNames:
-                    FreeCADGui.Selection.addSelection(o.Object,n)
+            if o[0].HasSubObjects:
+                for n in o[0].SubElementNames:
+                    FreeCADGui.Selection.addSelection(o[0].Object,n)
+                    o[0].Object.ViewObject.Visibility = o[1]
+        for t in self.sublink_viz:
+            t[0].ViewObject.Visibility = t[1]
 
     def view_link(self):
         debug("%s.%s = %s"%(self.obj.Label, self.link, self.obj.getPropertyByName(self.link)))
@@ -187,7 +219,7 @@ class myWidget_Ui(object):
 
     def setupUi(self, DockWidget):
         DockWidget.setObjectName(_fromUtf8("DockWidget"))
-        DockWidget.resize(400, 600)
+        DockWidget.resize(400, 200)
         self.dockWidgetContents = QtGui.QWidget()
         self.dockWidgetContents.setObjectName(_fromUtf8("dockWidgetContents"))
         self.verticalLayout = QtGui.QVBoxLayout(self.dockWidgetContents)
@@ -209,8 +241,36 @@ class myWidget_Ui(object):
         QtCore.QMetaObject.connectSlotsByName(DockWidget)
 
     def retranslateUi(self, DockWidget):
-        DockWidget.setWindowTitle(_translate("DockWidget", "DockWidget", None))
+        DockWidget.setWindowTitle( self.obj.Label+" sublink editor")
         self.pushButton_7.setText(_translate("DockWidget", "Quit", None))
+
+
+class sle:
+    def Activated(self):
+        s = FreeCADGui.Selection.getSelection()
+        if not len(s) == 1:
+            FreeCAD.Console.PrintError("Select 1 object !\n")
+        else:
+            hasSubLink = False
+            for p in s[0].PropertiesList:
+                if s[0].getTypeIdOfProperty(p) in ('App::PropertyLinkSub', 'App::PropertyLinkSubList'):
+                    hasSubLink = True
+        if hasSubLink:
+            self.sle = SubLinkEditorWidget(s[0])
+            
+    def IsActive(self):
+        if FreeCAD.ActiveDocument:
+            selection = FreeCADGui.Selection.getSelection()
+            if len(selection) == 1:
+                return True
+        return False
+
+    def GetResources(self):
+        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Sublink editor', 'ToolTip': 'Editor widget for sublink properties of objects'}
+
+FreeCADGui.addCommand('SublinkEditor', sle())
+
+
 
 def main():
     doc = FreeCAD.ActiveDocument

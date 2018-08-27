@@ -62,8 +62,9 @@ class CurvesWorkbench(Workbench):
         import toConsole
         import combined_curve
         import curve_to_script
+        import sublink_edit
 
-        stablelist = ["line","bezierCurve","combined_projection","editableSpline","extend","join","split","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface","pasteSVG","profile","pipeshell","gordon","to_console"]
+        stablelist = ["line","bezierCurve","combined_projection","editableSpline","extend","join","split","Discretize","Approximate","ParametricBlendCurve","ParametricComb","ZebraTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface","pasteSVG","profile","pipeshell","gordon","to_console","SublinkEditor"]
         self.appendToolbar("Curves",stablelist)
         self.appendMenu("Curves",stablelist)
         self.appendMenu("Curves",["bspline_to_console"])
