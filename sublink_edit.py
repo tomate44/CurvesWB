@@ -100,7 +100,7 @@ class SubLinkEditorWidget(object):
         print("SubLinkEditorWidget quits")
 
     def accept(self):
-        print 'accept and resetEdit'
+        print('accept and resetEdit')
         FreeCADGui.ActiveDocument.resetEdit()
         self.widget.close()
         self.obj.ViewObject.Visibility = self.initial_visibility
