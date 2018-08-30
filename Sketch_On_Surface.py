@@ -1,10 +1,20 @@
-from __future__ import division # allows floating point division from integers
-import FreeCAD, Part, Draft
-import os, dummy, FreeCADGui
-from FreeCAD import Base
+# -*- coding: utf-8 -*-
 
-path_curvesWB = os.path.dirname(dummy.__file__)
-path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
+__title__ = "Sketch on surface"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = "Maps a sketch on a surface"
+
+import FreeCAD
+import FreeCADGui
+import Part
+from FreeCAD import Base
+import _utils
+
+TOOL_ICON = _utils.iconsPath() + '/sketch_surf.svg'
+debug = _utils.debug
+#debug = _utils.doNothing
+vec = FreeCAD.Vector
 
 ## create a circular face
 #circle=Part.makeCircle(4,App.Vector(5,5,0))
@@ -26,9 +36,6 @@ path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 #face=Part.Face(nurbs_surf,Part.Wire([edge]))
 #Part.show(face)
 
-
-
-
 #skedges = [i.toShape() for i in obj.Geometry]
 #comp = Part.Compound(skedges)
 #comp.BoundBox
@@ -36,28 +43,16 @@ path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 
 #Draft.scale([FreeCAD.ActiveDocument.Sketch],delta=FreeCAD.Vector(0.5,1.0,1.0),center=FreeCAD.Vector(3.91884532988,4.14834510717,7.07470992358),copy=True)
 
-DEBUG = 1
-
-def debug(string):
-    if DEBUG:
-        FreeCAD.Console.PrintMessage(string)
-        FreeCAD.Console.PrintMessage("\n")
-
-
 
 def Points2D(pts):
     if isinstance(pts,FreeCAD.Vector):
         return Base.Vector2d(pts.x,pts.y)
     elif isinstance(pts,(list,tuple)):
-        l = []
-        for p in pts:
-            l.append(Base.Vector2d(p.x,p.y))
+        l = [Points2D(p) for p in pts]
         return l
     else:
         App.Console.PrintError("Failed to convert points to 2D\n")
         return None
-
-
 
 def toShape(curves2d,surf, Approx = 32):
     edges = []
@@ -71,7 +66,6 @@ def toShape(curves2d,surf, Approx = 32):
             edges.append(c.toShape(surf))
     com = Part.Compound(edges)
     return com
-
 
 def to2D(geom):
     if isinstance(geom,list):
@@ -156,14 +150,13 @@ def to2D(geom):
     #print(curve2D)
     return(curve2D)
 
-
 class sketchOnSurface:
     "This feature object maps a sketch on a surface"
     def __init__(self, obj):
         obj.addProperty("App::PropertyLinkSub", "Face",   "SketchOnSurface", "Input face")
         obj.addProperty("App::PropertyLink",    "Sketch", "SketchOnSurface", "Input Sketch")
-        obj.addProperty("App::PropertyBool",    "ConstructionBounds", "SketchOnSurface", "include construction geometry in sketch bounds").ConstructionBounds = False
-        obj.addProperty("App::PropertyBool",    "Scale",  "SketchOnSurface", "Scale sketch geometries").Scale = False
+        obj.addProperty("App::PropertyBool",    "ConstructionBounds", "SketchOnSurface", "include construction geometry in sketch bounds").ConstructionBounds = True
+        obj.addProperty("App::PropertyBool",    "Scale",  "SketchOnSurface", "Scale sketch geometries").Scale = True
         obj.addProperty("App::PropertyBool",    "Fill",   "SketchOnSurface", "Fill face").Fill = False
         obj.Proxy = self
 
@@ -234,7 +227,10 @@ class sketchOnSurface:
         for g in obj.Sketch.Geometry:
             if hasattr(g,'Construction'):
                 if not g.Construction:
-                    bs = g.toBSpline()
+                    try:
+                        bs = g.toBSpline()
+                    except AttributeError:
+                        debug("Failed to convert %s to BSpline"%str(g))
                     if hasattr(obj,'Scale'):
                         if obj.Scale:
                             sbs = self.scaleGeom(bs)
@@ -308,6 +304,82 @@ class sketchOnSurface:
     def __setstate__(self,state):
         return None
 
+class sosVP:
+    def __init__(self,vobj):
+        vobj.Proxy = self
+       
+    def getIcon(self):
+        return(TOOL_ICON)
+
+    def attach(self, vobj):
+        self.ViewObject = vobj
+        self.Object = vobj.Object
+        if self.Object.Sketch:
+            self.children = [self.Object.Sketch]
+        else:
+            self.children = []
+  
+    def setEdit(self,vobj,mode):
+        return False
+    
+    def unsetEdit(self,vobj,mode):
+        return
+
+    def __getstate__(self):
+        return None
+
+    def __setstate__(self,state):
+        return None
+
+    def claimChildren(self):
+        return(self.children)
+        
+    def onDelete(self, feature, subelements): # subelements is a tuple of strings
+        if self.children:
+            self.children.ViewObject.Visibility = True
+        return(True)
+
+
+
+
+def build_sketch(sk, fa):
+    import Sketcher
+    # add the bounding box of the face to the sketch
+    u0,u1,v0,v1 = fa.ParameterRange
+    geoList = list()
+    geoList.append(Part.LineSegment(vec(u0,v0,0),vec(u1,v0,0)))
+    geoList.append(Part.LineSegment(vec(u1,v0,0),vec(u1,v1,0)))
+    geoList.append(Part.LineSegment(vec(u1,v1,0),vec(u0,v1,0)))
+    geoList.append(Part.LineSegment(vec(u0,v1,0),vec(u0,v0,0)))
+    sk.addGeometry(geoList,False)
+    conList = list()
+    conList.append(Sketcher.Constraint('Coincident',0,2,1,1))
+    conList.append(Sketcher.Constraint('Coincident',1,2,2,1))
+    conList.append(Sketcher.Constraint('Coincident',2,2,3,1))
+    conList.append(Sketcher.Constraint('Coincident',3,2,0,1))
+    conList.append(Sketcher.Constraint('Horizontal',0))
+    conList.append(Sketcher.Constraint('Horizontal',2))
+    conList.append(Sketcher.Constraint('Vertical',1))
+    conList.append(Sketcher.Constraint('Vertical',3))
+    conList.append(Sketcher.Constraint('DistanceX',2,2,2,1,u1-u0)) 
+    conList.append(Sketcher.Constraint('DistanceY',1,1,1,2,v1-v0)) 
+    conList.append(Sketcher.Constraint('DistanceX',0,1,-1,1,-u0)) 
+    conList.append(Sketcher.Constraint('DistanceY',0,1,-1,1,-v0)) 
+    sk.addConstraint(conList)
+
+    outer_edges_2d = [fa.curveOnSurface(e) for w in fa.Wires for e in w.Edges]
+    pl = Part.Plane()
+    outer = list()
+    for e in outer_edges_2d:
+        e3d = e[0].toShape(pl, e[1], e[2])
+        if isinstance(e3d.Curve,Part.Line):
+            ls = Part.LineSegment(e3d.valueAt(e3d.FirstParameter), e3d.valueAt(e3d.LastParameter))
+            outer.append(ls)
+        else:
+            outer.append(e3d.Curve)
+    sk.addGeometry(outer,False)
+    for i in range(len(sk.Geometry)):
+        sk.toggleConstruction(i)
 
 class SoS:
     def Activated(self):
@@ -322,25 +394,33 @@ class SoS:
             elif selobj.HasSubObjects:
                 if issubclass(type(selobj.SubObjects[0]),Part.Face):
                     face = (selobj.Object,[selobj.SubElementNames[0]])
+                    fa = selobj.SubObjects[0]
                     faceFound = True
             else:
                 if selobj.Object.Shape.Faces:
                     face = (selobj.Object,['Face1'])
                     faceFound = True
 
-        if sketchFound & faceFound:
+        if faceFound:
             doc = FreeCAD.ActiveDocument
+            if not sketchFound:
+                sketch = doc.addObject('Sketcher::SketchObject','Mapped_Sketch')
+                build_sketch(sketch, fa)
             sos = doc.addObject("Part::FeaturePython","Sketch On Surface")
             sketchOnSurface(sos)
-            sos.ViewObject.Proxy=0
             sos.Sketch = sketch
+            sketch.ViewObject.Visibility = False
             sos.Face = face
+            if not sketchFound:
+                sos.ConstructionBounds = False
+                sos.Scale = False
+            sosVP(sos.ViewObject)
             doc.recompute()
         else:
-            FreeCAD.Console.PrintMessage("Please select exactly 1 face (in the 3D view) and 1 sketch\n")
+            FreeCAD.Console.PrintMessage("Please select 1 face (in the 3D view) and optionally 1 sketch\n")
 
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/sketch_surf.svg', 'MenuText': 'SoS', 'ToolTip': 'Maps a sketch on a surface'}
+        return {'Pixmap' : TOOL_ICON, 'MenuText': 'SoS', 'ToolTip': 'Maps a sketch on a surface'}
 
 FreeCADGui.addCommand('SoS', SoS())
         
