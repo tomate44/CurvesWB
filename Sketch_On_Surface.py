@@ -8,6 +8,7 @@ __doc__ = "Maps a sketch on a surface"
 import FreeCAD
 import FreeCADGui
 import Part
+import Sketcher
 from FreeCAD import Base
 import _utils
 
@@ -339,46 +340,60 @@ class sosVP:
             self.children.ViewObject.Visibility = True
         return(True)
 
+def addFaceWireToSketch(fa, w, sk):
+    curves = list()
+    const = list()
+    pl = Part.Plane()
+    for idx in range(len(w.Edges)):
+        e = fa.curveOnSurface(w.Edges[idx])
+        e3d = e[0].toShape(pl)
+        tc = e3d.Curve.trim(e[1],e[2])
+        curves.append(tc)
+    o = int(sk.GeometryCount)
+    sk.addGeometry(curves,False)
+    
+    # Coincident constraints
+    #ar = range(len(curves))+[0]
+    #for idx in range(len(curves)):
+        #const.append(Sketcher.Constraint('Coincident',o+idx,2,o+ar[idx+1],1))
+    
+    for idx in range(len(curves)):
+        const.append(Sketcher.Constraint('Block',o+idx))
+    sk.addConstraint(const)
 
-
-
-def build_sketch(sk, fa):
-    import Sketcher
-    # add the bounding box of the face to the sketch
-    u0,u1,v0,v1 = fa.ParameterRange
+def addFaceBoundsToSketch(fa, sk):
     geoList = list()
+    conList = list()
+    u0,u1,v0,v1 = fa.ParameterRange
     geoList.append(Part.LineSegment(vec(u0,v0,0),vec(u1,v0,0)))
     geoList.append(Part.LineSegment(vec(u1,v0,0),vec(u1,v1,0)))
     geoList.append(Part.LineSegment(vec(u1,v1,0),vec(u0,v1,0)))
     geoList.append(Part.LineSegment(vec(u0,v1,0),vec(u0,v0,0)))
+    o = int(sk.GeometryCount)
     sk.addGeometry(geoList,False)
-    conList = list()
-    conList.append(Sketcher.Constraint('Coincident',0,2,1,1))
-    conList.append(Sketcher.Constraint('Coincident',1,2,2,1))
-    conList.append(Sketcher.Constraint('Coincident',2,2,3,1))
-    conList.append(Sketcher.Constraint('Coincident',3,2,0,1))
-    conList.append(Sketcher.Constraint('Horizontal',0))
-    conList.append(Sketcher.Constraint('Horizontal',2))
-    conList.append(Sketcher.Constraint('Vertical',1))
-    conList.append(Sketcher.Constraint('Vertical',3))
-    conList.append(Sketcher.Constraint('DistanceX',2,2,2,1,u1-u0)) 
-    conList.append(Sketcher.Constraint('DistanceY',1,1,1,2,v1-v0)) 
-    conList.append(Sketcher.Constraint('DistanceX',0,1,-1,1,-u0)) 
-    conList.append(Sketcher.Constraint('DistanceY',0,1,-1,1,-v0)) 
+    
+    conList.append(Sketcher.Constraint('Coincident',o+0,2,o+1,1))
+    conList.append(Sketcher.Constraint('Coincident',o+1,2,o+2,1))
+    conList.append(Sketcher.Constraint('Coincident',o+2,2,o+3,1))
+    conList.append(Sketcher.Constraint('Coincident',o+3,2,o+0,1))
+    conList.append(Sketcher.Constraint('Horizontal',o+0))
+    conList.append(Sketcher.Constraint('Horizontal',o+2))
+    conList.append(Sketcher.Constraint('Vertical',o+1))
+    conList.append(Sketcher.Constraint('Vertical',o+3))
+    conList.append(Sketcher.Constraint('DistanceX',o+2,2,o+2,1,u1-u0)) 
+    conList.append(Sketcher.Constraint('DistanceY',o+1,1,o+1,2,v1-v0)) 
+    conList.append(Sketcher.Constraint('DistanceX',o+0,1,-1,1,-u0)) 
+    conList.append(Sketcher.Constraint('DistanceY',o+0,1,-1,1,-v0)) 
     sk.addConstraint(conList)
 
-    outer_edges_2d = [fa.curveOnSurface(e) for w in fa.Wires for e in w.Edges]
-    pl = Part.Plane()
-    outer = list()
-    for e in outer_edges_2d:
-        e3d = e[0].toShape(pl, e[1], e[2])
-        if isinstance(e3d.Curve,Part.Line):
-            ls = Part.LineSegment(e3d.valueAt(e3d.FirstParameter), e3d.valueAt(e3d.LastParameter))
-            outer.append(ls)
-        else:
-            outer.append(e3d.Curve)
-    sk.addGeometry(outer,False)
-    for i in range(len(sk.Geometry)):
+def build_sketch(sk, fa):
+    # add the bounding box of the face to the sketch
+    addFaceBoundsToSketch(fa, sk)
+    
+    for w in fa.Wires:
+        addFaceWireToSketch(fa, w, sk)
+    
+    for i in range(int(sk.GeometryCount)):
         sk.toggleConstruction(i)
 
 class SoS:
