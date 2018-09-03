@@ -19,19 +19,6 @@ debug = _utils.doNothing
 class adjacentfacesCommand:
     """Select the Adjacent faces of the selected subshape"""
 
-    def find_subobject(self, shape, subname):
-        sub = None
-        if 'Face' in subname:
-            n = eval(subname.lstrip('Face'))
-            sub = shape.Faces[n-1]
-        elif 'Edge' in subname:
-            n = eval(subname.lstrip('Edge'))
-            sub = shape.Edges[n-1]
-        elif 'Vertex' in subname:
-            n = eval(subname.lstrip('Vertex'))
-            sub = shape.Vertexes[n-1]
-        return(sub)
-
     def get_subname(self, shape, sub):
         if isinstance(sub, Part.Face):
             for i in range(len(shape.Faces)):
@@ -58,15 +45,13 @@ class adjacentfacesCommand:
                 obj = selo.Object
                 shape = obj.Shape.copy()
                 for subname in selo.SubElementNames:
-                    #print(subname)
-                    sub = self.find_subobject(shape, subname)
+                    sub = shape.getElement(subname)
                     if isinstance(sub, Part.Face):
                         subs += sub.Edges
                     else:
                         subs.append(sub)
                 for sub in subs:
                     anc = shape.ancestorsOfType(sub, search_type)
-                    #print(anc)
                     result += anc
                     for a in anc:
                         FreeCADGui.Selection.addSelection(obj, self.get_subname(shape, a))
