@@ -2,7 +2,7 @@
 
 ![Curves Workbench](https://github.com/tomate44/CurvesWB/raw/master/docFiles/GeomInfo_01.jpg)
 
-This is a python workbench, with a collection of tools for NURBS curves and surfaces. This workbench is developed with FreeCAD Master (currently 0.17dev) and OCC 7.1. 
+This is a python workbench, with a collection of tools for NURBS curves and surfaces. This workbench is developed with FreeCAD Master (currently 0.18) and OCC 7.3 
 Some tools may not work with earlier versions.
 
 **Note:** I am a very bad programer, and this workbench is full of dirty, crappy code ;-) Please don't use these tools for any serious work.
@@ -19,7 +19,7 @@ There are 2 methods to install Curves WB:
 "Curves" workbench should now show up in the workbench dropdown list.
 
 ## Feedback  
-Feedback, suggestions, and patches (via Pull Request) are all appreciated. If you find a problem with this workbench please open an issue in the issue queue. 
+Feedback, suggestions, and patches (via Pull Request) are all appreciated. If you find a problem with this workbench please open an issue in the issue queue, or join the following discussion of FreeCAD's forum : [Curves workbench](https://forum.freecadweb.org/viewtopic.php?f=8&t=22675)
  
 
 ## Curves WB Tools 
