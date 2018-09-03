@@ -364,7 +364,8 @@ def curvematch(c1, c2, par1, level=0, scale=1.0):
             poles2 = FreeCAD.Vector()
             for i in range(l):
                 poles2 += 1.0*ev2[i]*p2[i]
-            np = (poles1-poles2)*1.0/val
+            np = (poles1-poles2)
+            np.multiply(1.0/val)
             #FreeCAD.Console.PrintMessage("Moving P%d from (%0.2f,%0.2f,%0.2f) to (%0.2f,%0.2f,%0.2f)\n"%(l,p2[l].x,p2[l].y,p2[l].z,np.x,np.y,np.z))
             p2[l] = np
         l += 1

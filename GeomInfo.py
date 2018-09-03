@@ -43,12 +43,10 @@ def getString(weights):
 def cleanString(arr):
     strArr = ""
     for w in arr:
-        if isinstance(w,long):
-            strArr += "%d, "%int(w)
-        #elif w.is_integer():
-            #strArr += "%d, "%int(w)
-        else:
+        if isinstance(w,float):
             strArr += "%0.2f, "%w
+        else:
+            strArr += "%d, "%int(w)
     return(strArr[:-2])
 
 def coordStr(v):

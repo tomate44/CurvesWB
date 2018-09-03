@@ -205,7 +205,7 @@ class polygonNode(styleNode):
             col = self.color[0]
             self.color = [col]
         else:
-            a = range(len(arr))
+            a = list(range(len(arr)))
             a.append(-1)
             self.lines.coordIndex.setValue(0)
             self.lines.coordIndex.setValues(0, len(a), a)
@@ -274,7 +274,7 @@ class sensorPolyNode(styleNode):
     def updateCB(self, *args):
         points = self.sensor.getTriggerField()
         l = len(points)
-        a = range(l)
+        a = list(range(l))
         a.append(-1)
         self.lines.coordIndex.setValue(0)
         self.lines.coordIndex.setValues(0, len(a), a)

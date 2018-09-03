@@ -108,7 +108,7 @@ class SubLinkEditorWidget(object):
         return(True)
 
     def reject(self):
-        print 'reject and resetEdit'
+        print('reject and resetEdit')
         FreeCADGui.ActiveDocument.resetEdit()
         FreeCADGui.Control.closeDialog()
         return(True)
