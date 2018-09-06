@@ -168,9 +168,11 @@ class MyProxy(EasyProxy):
 
     def ep_add_properties(self, fp):
         debug("---MyProxy.ep_add_properties")
-        fp.addProperty("App::PropertyInteger", "mprop", "Test", "a property").mprop = 1
-        fp.addProperty("App::PropertyInteger", "aprop", "Test", "a property").aprop = 2
-        fp.addProperty("App::PropertyInteger", "zprop", "Test", "a property").zprop = 3
+        fp.addProperty("App::PropertyVector", "position", "Test", "a property")
+        fp.addProperty("App::PropertyVector", "direction", "Test", "a property")
+        fp.addProperty("App::PropertyFloat", "Length", "Test", "a property").Length = 10.0
+        fp.addProperty("App::PropertyFloat", "Width", "Test", "a property").Width = 5.0
+        fp.addProperty("App::PropertyFloat", "Height", "Test", "a property").Height = 1.0
 
     def ep_init(self, fp):
         debug("---MyProxy.ep_init(%s)"%fp.Label)
