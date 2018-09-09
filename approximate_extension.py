@@ -49,7 +49,7 @@ class ApproximateExtension:
         ''' Add the properties '''
         debug("\nApproximate extension Init\n")
         obj.addProperty("App::PropertyInteger",        "Samples",        "ShapeApproximation", "Number of samples").Samples = 100
-        obj.addProperty("App::PropertyBool",           "Active",         "ShapeApproximation", "Use approxiamtion").Active = False
+        obj.addProperty("App::PropertyBool",           "Active",         "ShapeApproximation", "Use approximation").Active = False
         obj.addProperty("App::PropertyInteger",        "DegreeMin",      "ShapeApproximation", "Minimum degree of the curve").DegreeMin = 3
         obj.addProperty("App::PropertyInteger",        "DegreeMax",      "ShapeApproximation", "Maximum degree of the curve").DegreeMax = 5
         obj.addProperty("App::PropertyFloat",          "ApproxTolerance","ShapeApproximation", "Approximation tolerance")
