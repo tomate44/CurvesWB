@@ -66,7 +66,7 @@ class cosFP:
 class cosVP:
     def __init__(self,vobj):
         vobj.Proxy = self
-       
+
     def getIcon(self):
         return(TOOL_ICON)
 
@@ -82,7 +82,7 @@ class cosVP:
 
     def claimChildren(self):
         return [self.Object.InputEdge[0]]
-        
+
     def onDelete(self, feature, subelements):
         try:
             self.Object.InputEdge[0].ViewObject.Visibility=True
@@ -118,7 +118,7 @@ class cosCommand:
             #cos.Placement = edge[0].Placement
             cosVP(cos.ViewObject)
             FreeCAD.ActiveDocument.recompute()
-            
+
             #cos.ViewObject.DrawStyle = "Dashed"
             #cos.ViewObject.LineColor = (1.0,0.67,0.0)
             #cos.ViewObject.LineWidth = 3.0

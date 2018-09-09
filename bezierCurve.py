@@ -15,7 +15,7 @@ class bezierCurve:
         self.viewer = self.view.getViewer()
         self.oldRadius = self.viewer.getPickRadius()
         self.viewer.setPickRadius(25.0)
-        
+
         self.obj = FreeCAD.ActiveDocument.addObject("Part::Spline","BSplineCurve")
 
         self.stack = [FreeCAD.Vector(0,0,0)]
@@ -27,7 +27,7 @@ class bezierCurve:
         self.degree = 1
         self.mults = [2,2]
         self.knots = [0.]
-        
+
         self.clicCB     = self.view.addEventCallbackPivy( coin.SoMouseButtonEvent.getClassTypeId(), self.clic_cb)
         self.keyboardCB = self.view.addEventCallbackPivy( coin.SoKeyboardEvent.getClassTypeId(), self.kb_cb)
         self.cursorCB   = self.view.addEventCallbackPivy( coin.SoLocation2Event.getClassTypeId(), self.cursor_cb)
@@ -153,11 +153,11 @@ class bezierCurve:
         self.view.removeEventCallbackPivy( coin.SoLocation2Event.getClassTypeId(), self.cursorCB)
         self.view.removeEventCallbackPivy( coin.SoKeyboardEvent.getClassTypeId(), self.keyboardCB)
         self.view.removeEventCallbackPivy( coin.SoMouseButtonEvent.getClassTypeId(), self.clicCB)
-        
+
         #self.polygon.unlink()
         self.myHud.remove()
         self.viewer.setPickRadius(self.oldRadius)
-        
+
         self.switch.whichChild = 1
 
     def abort(self):
@@ -198,7 +198,7 @@ class bezierCurve:
             elif key == coin.SoKeyboardEvent.ESCAPE:
                 self.abort()
                 self.finish()
-            
+
     def clic_cb(self, event_callback):
         event = event_callback.getEvent()
         if (type(event) == coin.SoMouseButtonEvent and
@@ -213,9 +213,8 @@ class bezierCurve:
         if self.snap:
             self.getSnapPoint(pos)
         self.cursorUpdate()
-        
+
 
     def GetResources(self):
         return {'Pixmap' : path_curvesWB_icons+'/bezier.svg', 'MenuText': 'BSpline Curve', 'ToolTip': 'Creates a BSpline curve'}
 FreeCADGui.addCommand('bezierCurve', bezierCurve())
- 
