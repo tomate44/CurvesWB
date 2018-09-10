@@ -38,11 +38,18 @@ class bezierCurve:
         self.sg = self.view.getSceneGraph()
         self.coord = CoinNodes.coordinate3Node([(0,0,0)])
         self.markers = CoinNodes.markerSetNode((1,0.35,0.8),70)
-        self.polygon = CoinNodes.sensorPolyNode((0.0,0.5,0.0),1)
+        self.polygon = coin.SoLineSet() #CoinNodes.sensorPolyNode((0.0,0.5,0.0),1)
         self.polygon.transparency = 0.7
-        self.polygon.linkTo(self.coord)
-        self.sg.addChild(self.coord)
-        self.sg.addChild(self.markers)
+        #self.polygon.linkTo(self.coord)
+        self.switch = coin.SoSwitch()
+        self.empty = coin.SoSeparator()
+        self.sepa = coin.SoSeparator()
+        self.switch.addChild(self.sepa)
+        self.switch.addChild(self.empty)
+        self.switch.whichChild = 0
+        self.sepa.addChild(self.coord)
+        self.sepa.addChild(self.markers)
+        self.sg.addChild(self.switch)
 
         self.info = ["LMB : add pole",
                      "Del : remove last pole",
@@ -60,10 +67,12 @@ class bezierCurve:
 
     def getGeomPoint(self):
         obj = FreeCAD.getDocument(self.snapShape[0]).getObject(self.snapShape[1])
-        FreeCAD.Console.PrintMessage('%s\n'%str(self.snapShape[2]))
+        FreeCAD.Console.PrintMessage('%s\n'%str(self.snapShape))
         if 'Vertex' in self.snapShape[2]:
             n = eval(self.snapShape[2].lstrip('Vertex'))
             shape = obj.Shape.Vertexes[n-1]
+        if 'Point' in self.snapShape[2]: # Datum Point
+            shape = obj.Shape
         elif 'Edge' in self.snapShape[2]:
             n = eval(self.snapShape[2].lstrip('Edge'))
             shape = obj.Shape.Edges[n-1]
@@ -103,7 +112,7 @@ class bezierCurve:
         self.knots.append(self.knots[-1]+1.)
         self.updateCurve()
         if len(self.stack) == 2:
-            self.sg.addChild(self.polygon) # polygon can be added several times !!!!
+            self.sepa.addChild(self.polygon) # polygon can be added several times !!!!
         elif len(self.stack) >= 24:
             self.finish()
 
@@ -141,14 +150,15 @@ class bezierCurve:
         self.updateCurve()
 
     def finish(self):
-        self.myHud.remove()
-        self.viewer.setPickRadius(self.oldRadius)
-        self.sg.removeChild(self.polygon)
-        self.sg.removeChild(self.markers)
-        self.sg.removeChild(self.coord)
         self.view.removeEventCallbackPivy( coin.SoLocation2Event.getClassTypeId(), self.cursorCB)
         self.view.removeEventCallbackPivy( coin.SoKeyboardEvent.getClassTypeId(), self.keyboardCB)
         self.view.removeEventCallbackPivy( coin.SoMouseButtonEvent.getClassTypeId(), self.clicCB)
+        
+        #self.polygon.unlink()
+        self.myHud.remove()
+        self.viewer.setPickRadius(self.oldRadius)
+        
+        self.switch.whichChild = 1
 
     def abort(self):
         FreeCAD.ActiveDocument.removeObject(self.obj.Name)

@@ -262,7 +262,10 @@ class ParametricBlendCurve:
         return(r1,r2)
 
     def Activated(self):
-        s = FreeCADGui.activeWorkbench().Selection
+        try:
+            s = FreeCADGui.activeWorkbench().Selection
+        except AttributeError:
+            s = FreeCADGui.Selection.getSelectionEx()
         edges, param = self.parseSel(s)
         if len(edges) > 1:
             for j in range(int(len(edges)/2)):
