@@ -1,28 +1,27 @@
-import os
-import FreeCAD, FreeCADGui, Part
-from pivy.coin import *
-import dummy
+# -*- coding: utf-8 -*-
 
-path_curvesWB = os.path.dirname(dummy.__file__)
-path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
+__title__ = "joinCurves"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = "Joins the selected edges into BSpline Curves"
 
-DEBUG = 1
+import FreeCAD
+import FreeCADGui
+import Part
+import _utils
 
-def debug(string):
-    if DEBUG:
-        FreeCAD.Console.PrintMessage(string)
-        FreeCAD.Console.PrintMessage("\n")
+TOOL_ICON = _utils.iconsPath() + '/joincurve.svg'
+debug = _utils.debug
+#debug = _utils.doNothing
 
-def increaseContinuity(c,tol):
-    #oc = c.Continuity
+def forceC1Continuity(c,tol):
     mults = [int(m) for m in c.getMultiplicities()]
-    #knots = c.getKnots()
-    try:
-        for i in range(len(mults))[1:-1]:
-            rk = c.removeKnot(i+1,mults[i]-1,tol)
-    except Part.OCCError:
-        debug('failed to increase continuity.')
-        debug("curve has %d poles."%len(c.getPoles()))
+    for i in range(len(mults))[1:-1]:
+        if mults[i] >= c.Degree:
+            try:
+                rk = c.removeKnot(i+1,c.Degree-1,tol)
+            except Part.OCCError:
+                debug('failed to increase continuity.')
     return(c)    
 
 def alignedTangents(c0, c1, Tol):
@@ -36,8 +35,31 @@ def alignedTangents(c0, c1, Tol):
         return(True)
     else:
         return(False)
-    
 
+def forceJoin(c0,c):
+    p1 = c0.getPole(1)
+    p2 = c0.getPole(c0.NbPoles)
+    q1 = c.getPole(1)
+    q2 = c.getPole(c.NbPoles)
+    d1 = p1.distanceToPoint(q1)
+    d2 = p1.distanceToPoint(q2)
+    d3 = p2.distanceToPoint(q1)
+    d4 = p2.distanceToPoint(q2)
+    distmin = min([d1,d2,d3,d4])
+    if   distmin == d1:
+        c.setPole(1,p1)
+    elif distmin == d2:
+        c.setPole(c.NbPoles,p1)
+    elif distmin == d3:
+        c.setPole(1,p2)
+    elif distmin == d4:
+        c.setPole(c.NbPoles,p2)
+    r = c0.join(c)
+    if r:
+        debug("Gap detected, successfully fixed")
+    else:
+        debug("ERROR : Failed to fix gap")
+    return(r)
 
 class join:
     "joins the selected edges into a single BSpline Curve"
@@ -46,8 +68,9 @@ class join:
         obj.addProperty("App::PropertyLinkSubList",  "Edges",        "Join",   "List of edges to join")
         obj.addProperty("App::PropertyLink",         "Base",         "Join",   "Join all the edges of this base object")
         obj.addProperty("App::PropertyFloat",        "Tolerance",    "Join",   "Tolerance").Tolerance=0.01
-        obj.addProperty("App::PropertyBool",         "CornerBreak",  "Join",   "Break on corners").CornerBreak = True
-        #obj.addProperty("App::PropertyBool",         "BadContinuity","Join",   "Break On Bad C0 Continuity").BadContinuity = False
+        obj.addProperty("App::PropertyBool",         "CornerBreak",  "Join",   "Break on corners").CornerBreak = False
+        obj.addProperty("App::PropertyBool",         "ForceContact", "Join",   "Force connecion of edges").ForceContact = True
+        obj.addProperty("App::PropertyBool",         "ForceClosed",  "Join",   "Force closed curve").ForceClosed = False
         obj.Proxy = self
 
     def getEdges(self, obj):
@@ -65,46 +88,40 @@ class join:
 
     def execute(self, obj):
         edges = self.getEdges(obj)
-        tmp = []
+        tmp = list()
         for e in edges:
-            #c = e.Curve
-            #if not isinstance(c,Part.BSplineCurve):
-                #c = e.Curve.toBSpline()
-            #c.segment(e.FirstParameter,e.LastParameter)
-            #tmp.append(c)
             tmp += e.toNurbs().Edges
-
-        curves = []
+        curves = list()
         for e in tmp:
             c = e.Curve
-            if not isinstance(c,Part.BSplineCurve):
+            if not isinstance(e.Curve,Part.BSplineCurve):
                 c = e.Curve.toBSpline()
             c.segment(e.FirstParameter,e.LastParameter)
             curves.append(c)
-
         debug("Edges : \n%s"%str(curves))
+        
         c0 = curves[0].copy()
-        if not isinstance(c0,Part.BSplineCurve):
-            #FreeCAD.Console.PrintMessage("\nConverting c0 to BSplineCurve\n")
-            c0 = c0.toBSpline()
         outcurves = []
         for n,c in enumerate(curves[1:]):
-            debug("joining edge #%d"%(n+2))
-            i = False
+            debug("joining edges %d and %d"%(n+1,n+2))
+            #i = False
             tempCurve = c0.copy()
             tan = alignedTangents(c0,c,obj.Tolerance)
             if (tan is False) & obj.CornerBreak:
                 outcurves.append(c0)
                 c0 = c.copy()
-                debug("No tangency on edge #"+str(curves[1:].index(c)+2)+"\n")
+                debug("No tangency, adding breakpoint")
             else:
-                r = c0.join(c) #.toBSpline())
+                r = c0.join(c)
                 if r is False:  #  join operation failed
-                    outcurves.append(c0)
-                    c0 = c.copy()
-                    debug("Failed to join edge #"+str(curves[1:].index(c)+2)+"\n")
-                else:
-                    i = increaseContinuity(c0,obj.Tolerance)
+                    if obj.ForceContact:
+                        r = forceJoin(c0,c)
+                    else:
+                        outcurves.append(c0)
+                        c0 = c.copy()
+                        debug("Joining failed, adding breakpoint")
+                if r:
+                    i = forceC1Continuity(c0,obj.Tolerance)
                     if (not (i.Continuity == 'C1')) & obj.CornerBreak:
                         outcurves.append(tempCurve)
                         c0 = c.copy()
@@ -122,7 +139,7 @@ class joinVP:
         vobj.Proxy = self
        
     def getIcon(self):
-        return (path_curvesWB_icons+'/joincurve.svg')
+        return (TOOL_ICON)
 
     def attach(self, vobj):
         self.Object = vobj.Object
@@ -193,6 +210,6 @@ class joinCommand:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/joincurve.svg', 'MenuText': 'Join Curves', 'ToolTip': 'Joins the selected edges into BSpline Curves'}
+        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Join Curves', 'ToolTip': 'Joins the selected edges into BSpline Curves'}
 
 FreeCADGui.addCommand('join', joinCommand())
