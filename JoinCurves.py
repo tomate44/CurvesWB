@@ -61,6 +61,18 @@ def forceJoin(c0,c):
         debug("ERROR : Failed to fix gap")
     return(r)
 
+def forceClosed(curves, tol=1e-7):
+    if len(curves) == 1:
+        p1 = curves[0].getPole(1)
+        p2 = curves[0].getPole(curves[0].NbPoles)
+        if p1.distanceToPoint(p2) > tol:
+            curves[0].setPole(curves[0].NbPoles, p1)
+    elif len(curves) > 1:
+        p1 = curves[0].getPole(1)
+        p2 = curves[-1].getPole(curves[-1].NbPoles)
+        if p1.distanceToPoint(p2) > tol:
+            curves[-1].setPole(curves[-1].NbPoles, p1)
+
 class join:
     "joins the selected edges into a single BSpline Curve"
     def __init__(self, obj):
@@ -127,12 +139,10 @@ class join:
                         c0 = c.copy()
                         debug("Failed to smooth edge #"+str(curves[1:].index(c)+2)+"\n")
         outcurves.append(c0)
-
+        if obj.ForceClosed:
+            forceClosed(outcurves)
         outEdges = [Part.Edge(c) for c in outcurves]
         obj.Shape = Part.Wire(outEdges)
-        #for selobj in sel:
-            #if selobj.Object:                
-                #selobj.Object.ViewObject.Visibility = False
 
 class joinVP:
     def __init__(self,vobj):
