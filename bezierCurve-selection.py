@@ -93,7 +93,7 @@ class bezierCurve:
                     self.snap = False
             elif key == coin.SoKeyboardEvent.RETURN:
                 self.finish()
-            
+
     def clic_cb(self, event_callback):
         event = event_callback.getEvent()
         if (type(event) == coin.SoMouseButtonEvent and
@@ -114,7 +114,7 @@ class bezierCurve:
         if len(self.stack) >1:
             self.curve.setPoles(self.stack)
             self.obj.Shape = self.curve.toShape()
-        
+
 
     def GetResources(self):
         return {'Pixmap' : path_curvesWB_icons+'/bezier.svg', 'MenuText': 'Bezier Curve', 'ToolTip': 'Creates a Bezier curve by clicking 4 points on the screen'}

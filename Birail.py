@@ -46,7 +46,7 @@ class birail:
             self.normNor = fp.NormalizeNormal
         if prop == "NormalizeBinormal":
             self.normBin = fp.NormalizeBinormal
-            
+
     def getEdge(self, prop):
         o = prop[0]
         e = prop[1][0]
@@ -56,7 +56,7 @@ class birail:
             return(edge)
         except:
             return(None)
-        
+
     def ruledSurface(self):
         if isinstance(self.edge1,Part.Edge) and isinstance(self.edge2,Part.Edge):
             self.ruled = Part.makeRuledSurface(self.edge1, self.edge2)
@@ -111,22 +111,22 @@ class birail:
                       u.z,v.z,w.z,t.z,
                       0.0,0.0,0.0,1.0)
         return(m)
-    
+
 
 class birailVP:
     def __init__(self, obj):
         obj.Proxy = self
-        
+
     def getIcon(self):
         return (path_curvesWB_icons+'/birail.svg')
 
     def attach(self, vobj):
         self.ViewObject = vobj
         self.Object = vobj.Object
-  
+
     def setEdit(self,vobj,mode):
         return False
-    
+
     def unsetEdit(self,vobj,mode):
         return
 
@@ -139,7 +139,7 @@ class birailVP:
     def claimChildren(self):
         #return([self.Object.Edge1[0], self.Object.Edge2[0]])
         return()
-        
+
     def onDelete(self, feature, subelements): # subelements is a tuple of strings
         try:
             self.Object.Edge1[0].ViewObject.show()
@@ -174,13 +174,8 @@ class birailcommand:
         myBirail.Edge1[0].ViewObject.Visibility = False
         myBirail.Edge2[0].ViewObject.Visibility = False
         FreeCAD.ActiveDocument.recompute()
-            
+
     def GetResources(self):
         return {'Pixmap' : path_curvesWB_icons+'/birail.svg', 'MenuText': 'Birail', 'ToolTip': 'Birail object to use with Sweep on 2 rails tool'}
 
 FreeCADGui.addCommand('Birail', birailcommand())
-
-
-
-
-

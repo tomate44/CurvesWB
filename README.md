@@ -5,7 +5,7 @@
 This is a python workbench, with a collection of tools for NURBS curves and surfaces. This workbench is developed with FreeCAD Master (currently 0.18) and OCC 7.3 
 Some tools may not work with earlier versions.
 
-**Note:** I am a very bad programer, and this workbench is full of dirty, crappy code ;-) Please don't use these tools for any serious work.
+**Note:** I am a very bad programmer, and this workbench is full of dirty, crappy code ;-) Please don't use these tools for any serious work.
 
 ## Installation 
 There are 2 methods to install Curves WB:

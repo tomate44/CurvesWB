@@ -49,7 +49,7 @@ class ApproximateExtension:
         ''' Add the properties '''
         debug("\nApproximate extension Init\n")
         obj.addProperty("App::PropertyInteger",        "Samples",        "ShapeApproximation", "Number of samples").Samples = 100
-        obj.addProperty("App::PropertyBool",           "Active",         "ShapeApproximation", "Use approxiamtion").Active = False
+        obj.addProperty("App::PropertyBool",           "Active",         "ShapeApproximation", "Use approximation").Active = False
         obj.addProperty("App::PropertyInteger",        "DegreeMin",      "ShapeApproximation", "Minimum degree of the curve").DegreeMin = 3
         obj.addProperty("App::PropertyInteger",        "DegreeMax",      "ShapeApproximation", "Maximum degree of the curve").DegreeMax = 5
         obj.addProperty("App::PropertyFloat",          "ApproxTolerance","ShapeApproximation", "Approximation tolerance")
@@ -117,7 +117,7 @@ class ApproximateExtension:
 #Replaces this B-Spline curve by approximating a set of points.
 #The function accepts keywords as arguments.
 
-#approximate2(Points = list_of_points) 
+#approximate2(Points = list_of_points)
 
 #Optional arguments :
 
@@ -128,9 +128,9 @@ class ApproximateExtension:
 #Possible values : 'C0','G1','C1','G2','C2','C3','CN'
 
 #LengthWeight = float, CurvatureWeight = float, TorsionWeight = float
-#If one of these arguments is not null, the functions approximates the 
-#points using variational smoothing algorithm, which tries to minimize 
-#additional criterium: 
+#If one of these arguments is not null, the functions approximates the
+#points using variational smoothing algorithm, which tries to minimize
+#additional criterium:
 #LengthWeight*CurveLength + CurvatureWeight*Curvature + TorsionWeight*Torsion
 #Continuity must be C0, C1 or C2, else defaults to C2.
 
@@ -140,5 +140,5 @@ class ApproximateExtension:
 #ParamType = string ('Uniform','Centripetal' or 'ChordLength')
 #Parameterization type. Only used if weights and Parameters above aren't specified.
 
-#Note : Continuity of the spline defaults to C2. However, it may not be applied if 
+#Note : Continuity of the spline defaults to C2. However, it may not be applied if
 #it conflicts with other parameters ( especially DegMax ).    parametrization

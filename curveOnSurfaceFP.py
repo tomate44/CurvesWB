@@ -30,7 +30,7 @@ class cosFP:
         obj.addProperty("App::PropertyEnumeration","Output",         "CurveOnSurface",   "Output type").Output = ["Curve only","Normal face","Binormal face"]
         obj.addProperty("App::PropertyInteger",    "Samples",        "CurveOnSurface", "Number of samples").Samples=100
         obj.addProperty("App::PropertyDistance",   "FaceWidth",      "CurveOnSurface", "Width of the output face").FaceWidth='1mm'
-        obj.addProperty("App::PropertyBool",       "Symetric",       "CurveOnSurface", "Face symetric across curve").Symetric = False
+        obj.addProperty("App::PropertyBool",       "Symmetric",      "CurveOnSurface", "Face symmetric across curve").Symmetric = False
         obj.addProperty("App::PropertyBool",       "Closed",         "CurveOnSurface", "Close the curve").Closed = False
         obj.Output = "Curve only"
         obj.Proxy = self
@@ -57,16 +57,16 @@ class cosFP:
         cos.reverseNormal = obj.ReverseNormal
         cos.reverseBinormal = obj.ReverseBinormal
         if obj.Output == "Normal face":
-            obj.Shape = cos.normalFace(obj.Samples, float(obj.FaceWidth), obj.Tolerance, obj.Symetric)
+            obj.Shape = cos.normalFace(obj.Samples, float(obj.FaceWidth), obj.Tolerance, obj.Symmetric)
         elif obj.Output == "Binormal face":
-            obj.Shape = cos.binormalFace(obj.Samples, float(obj.FaceWidth), obj.Tolerance, obj.Symetric)
+            obj.Shape = cos.binormalFace(obj.Samples, float(obj.FaceWidth), obj.Tolerance, obj.Symmetric)
         else:
             obj.Shape = cos.edgeOnFace
 
 class cosVP:
     def __init__(self,vobj):
         vobj.Proxy = self
-       
+
     def getIcon(self):
         return(TOOL_ICON)
 
@@ -82,7 +82,7 @@ class cosVP:
 
     def claimChildren(self):
         return [self.Object.InputEdge[0]]
-        
+
     def onDelete(self, feature, subelements):
         try:
             self.Object.InputEdge[0].ViewObject.Visibility=True
@@ -118,7 +118,7 @@ class cosCommand:
             #cos.Placement = edge[0].Placement
             cosVP(cos.ViewObject)
             FreeCAD.ActiveDocument.recompute()
-            
+
             #cos.ViewObject.DrawStyle = "Dashed"
             #cos.ViewObject.LineColor = (1.0,0.67,0.0)
             #cos.ViewObject.LineWidth = 3.0
