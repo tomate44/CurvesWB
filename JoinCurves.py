@@ -62,16 +62,10 @@ def forceJoin(c0,c):
     return(r)
 
 def forceClosed(curves, tol=1e-7):
-    if len(curves) == 1:
-        p1 = curves[0].getPole(1)
-        p2 = curves[0].getPole(curves[0].NbPoles)
-        if p1.distanceToPoint(p2) > tol:
-            curves[0].setPole(curves[0].NbPoles, p1)
-    elif len(curves) > 1:
-        p1 = curves[0].getPole(1)
-        p2 = curves[-1].getPole(curves[-1].NbPoles)
-        if p1.distanceToPoint(p2) > tol:
-            curves[-1].setPole(curves[-1].NbPoles, p1)
+    p1 = curves[0].getPole(1)
+    p2 = curves[-1].getPole(curves[-1].NbPoles)
+    if p1.distanceToPoint(p2) > tol:
+        curves[-1].setPole(curves[-1].NbPoles, p1)
 
 class join:
     "joins the selected edges into a single BSpline Curve"
