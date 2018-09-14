@@ -7,6 +7,10 @@ def error(s):
 
 def getTrimmedCurve(e):
     """Get a trimmed BSpline curve from an edge."""
+    if isinstance(e.Curve, Part.Line): # BsplineCurve.segment has a bug on Part.Line
+        bez = Part.BezierCurve()
+        bez.setPoles([e.valueAt(e.FirstParameter), e.valueAt(e.LastParameter)])
+        return(bez.toBSpline())
     c = e.Curve.copy().toBSpline()
     if (not e.FirstParameter == c.FirstParameter) or (not e.LastParameter == c.LastParameter):
         c.segment(e.FirstParameter, e.LastParameter)
