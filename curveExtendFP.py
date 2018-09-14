@@ -18,38 +18,46 @@ debug = _utils.doNothing
 class extend:
     """Extends the selected edge"""
     def __init__(self, obj):
-        obj.addProperty("App::PropertyLinkSub",      "Edge",       "Extend", "Input edge to extend")
-        obj.addProperty("App::PropertyFloat",        "Length",     "Extend", "Extension Length").Length=1.0
-        obj.addProperty("App::PropertyEnumeration",  "Location",   "Extend", "Edge extremity to extend").Location = ["Start","End","Both"]
-        obj.addProperty("App::PropertyEnumeration",  "Type",       "Extend", "Extension type").Type = ["Straight","G2 curve"]
-        obj.addProperty("App::PropertyEnumeration",  "Output",     "Extend", "Output shape").Output = ["SingleEdge","Wire"]
-        obj.Location = "Start"
-        obj.Type = "Straight"
+        obj.addProperty("App::PropertyLinkSub",      "Edge",       "Base", "Input edge to extend")
+        obj.addProperty("App::PropertyEnumeration",  "Output",     "Base", "Output shape").Output = ["SingleEdge","Wire"]
+
+        obj.addProperty("App::PropertyFloat",        "LengthStart","Beginning", "Start Extension Length").LengthStart=10.0
+        obj.addProperty("App::PropertyEnumeration",  "TypeStart",  "Beginning", "Start Extension type").TypeStart = ["Straight","G2 curve"]
+
+        obj.addProperty("App::PropertyFloat",        "LengthEnd",  "End", "End Extension Length").LengthEnd=10.0
+        obj.addProperty("App::PropertyEnumeration",  "TypeEnd",    "End", "End Extension type").TypeEnd = ["Straight","G2 curve"]
+        
+        obj.TypeStart = "Straight"
+        obj.TypeEnd = "Straight"
         obj.Output = "SingleEdge"
         obj.Proxy = self
 
     def onChanged(self, fp, prop):
-        if prop == "Length":
-            if fp.Length < 0:
-                fp.Length = 0
+        if prop == "LengthStart":
+            if fp.LengthStart < 0:
+                fp.LengthStart = 0
+        elif prop == "LengthEnd":
+            if fp.LengthEnd < 0:
+                fp.LengthEnd = 0
 
     def execute(self, obj):
         edge = _utils.getShape(obj, "Edge", "Edge")
-        if hasattr(obj, "Length"):
-            if obj.Length <= 0:
-                obj.Shape = edge
-                return()
         curve = curveExtend.getTrimmedCurve(edge)
-        cont = 1
-        if hasattr(obj, "Type"):
-            if obj.Type == "G2 curve":
-                cont = 2
+
+        cont_start = 1
+        if hasattr(obj, "TypeStart"):
+            if obj.TypeStart == "G2 curve":
+                cont_start = 2
+        cont_end = 1
+        if hasattr(obj, "TypeEnd"):
+            if obj.TypeEnd == "G2 curve":
+                cont_end = 2
+
         ext = []
-        if hasattr(obj, "Location"):
-            if obj.Location in ["Start","Both"]:
-                ext.append(curveExtend.extendCurve( curve, 0, obj.Length, cont))
-            if obj.Location in ["End","Both"]:
-                ext.append(curveExtend.extendCurve( curve, 1, obj.Length, cont))
+        if obj.LengthStart > 0:
+            ext.append(curveExtend.extendCurve( curve, 0, obj.LengthStart, cont_start))
+        if obj.LengthEnd > 0:
+            ext.append(curveExtend.extendCurve( curve, 1, obj.LengthEnd, cont_end))
         if not ext == []:
             if hasattr(obj, "Output"):
                 if obj.Output == "SingleEdge":
@@ -83,6 +91,12 @@ class extendVP:
     def onDelete(self, feature, subelements):
         return True
 
+    def __getstate__(self):
+        return({"name": self.Object.Name})
+
+    def __setstate__(self,state):
+        self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
+        return(None)
 
 class extendCommand:
     """Extends the selected edge"""
