@@ -7,14 +7,15 @@ def error(s):
 
 def getTrimmedCurve(e):
     """Get a trimmed BSpline curve from an edge."""
-    if isinstance(e.Curve, Part.Line): # BsplineCurve.segment has a bug on Part.Line
-        bez = Part.BezierCurve()
-        bez.setPoles([e.valueAt(e.FirstParameter), e.valueAt(e.LastParameter)])
-        return(bez.toBSpline())
-    c = e.Curve.copy().toBSpline()
+    edges = e.toNurbs().Edges
+    c = edges[0].Curve.copy()
+    if len(edges) > 1:
+        FreeCAD.Console.PrintWarning("Trimming input edge returns multiple edges !\n")
+        for edge in edges[1:]:
+            c.join(edge.Curve)
     if (not e.FirstParameter == c.FirstParameter) or (not e.LastParameter == c.LastParameter):
+        FreeCAD.Console.PrintWarning("Segmenting input curve\n")
         c.segment(e.FirstParameter, e.LastParameter)
-        return(c)
     return(c)
 
 def trim(curve,min,max,length,tol):
