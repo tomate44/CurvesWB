@@ -12,7 +12,7 @@ import _utils
 
 TOOL_ICON = _utils.iconsPath() + '/interpolate.svg'
 debug = _utils.debug
-#debug = _utils.doNothing
+debug = _utils.doNothing
 
 
 # ********************************************************
@@ -57,12 +57,15 @@ class Interpolate:
         obj.addProperty("App::PropertyLinkSubList",    "PointList",      "General",    "Point list to interpolate").PointList = source
         obj.addProperty("App::PropertyBool",           "Periodic",       "General",    "Set the curve closed").Periodic = False
         obj.addProperty("App::PropertyFloat",          "Tolerance",      "General",    "Interpolation tolerance").Tolerance = 1e-7
+        obj.addProperty("App::PropertyBool",           "CustomTangents", "General",    "User specified tangents").CustomTangents = False
         obj.addProperty("App::PropertyFloatList",      "Parameters",     "Parameters", "Parameters of interpolated points")
         obj.addProperty("App::PropertyEnumeration",    "Parametrization","Parameters", "Parametrization type").Parametrization=["ChordLength","Centripetal","Uniform","Custom"]
-        obj.addProperty("App::PropertyVectorList",     "Tangents",       "Tangents",   "Weight of curve length for smoothing algorithm").LengthWeight=1.0
-        obj.addProperty("App::PropertyBoolList",       "TangentFlags",   "Tangents",   "Weight of curve curvature for smoothing algorithm").CurvatureWeight=1.0
+        obj.addProperty("App::PropertyVectorList",     "Tangents",       "General",   "Tangents at interpolated points")
+        obj.addProperty("App::PropertyBoolList",       "TangentFlags",   "General",   "Activation flag of tangents")
         obj.Proxy = self
+        self.obj = obj
         obj.Parametrization = "ChordLength"
+        obj.setEditorMode("CustomTangents", 2)
 
     def setTolerance(self, obj):
         try:
@@ -72,120 +75,83 @@ class Interpolate:
             obj.ApproxTolerance = 0.001
 
     def getPoints( self, obj):
-        return(_utils.getShape(obj, "PointList", "Vertex")) 
+        vl = _utils.getShape(obj, "PointList", "Vertex")
+        return([v.Point for v in vl]) 
 
     def execute(self, obj):
-        debug("\n* Interpolate : execute *\n")
+        debug("* Interpolate : execute *")
         pts = self.getPoints( obj)
         bs = Part.BSplineCurve()
-        bs.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Parameters=obj.Parameters, Tangents=obj.Tangents, TangentFlags=obj.TangentFlags)
+        if obj.CustomTangents:
+            if (len(obj.Tangents) == len(pts) and len(obj.TangentFlags) == len(pts)):
+                bs.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Parameters=obj.Parameters, Tangents=obj.Tangents, TangentFlags=obj.TangentFlags)
+            else:
+                bs.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Parameters=obj.Parameters)
+                obj.Tangents = [bs.tangent(p)[0] for p in obj.Parameters]
+                obj.TangentFlags = [True]*len(pts)
+        else:
+            bs.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Parameters=obj.Parameters)
         obj.Shape = bs.toShape()
 
+    def setParameters(self, obj, val):
+        # Computes a knot Sequence for a set of points
+        # fac (0-1) : parameterization factor
+        # fac=0 -> Uniform / fac=0.5 -> Centripetal / fac=1.0 -> Chord-Length
+        pts = self.getPoints( obj)
+        if obj.Periodic: # we need to add the first point as the end point
+            pts.append(pts[0])
+        params = [0]
+        for i in range(1,len(pts)):
+            p = pts[i].sub(pts[i-1])
+            pl = pow(p.Length,val)
+            params.append(params[-1] + pl)
+        m = float(max(params))
+        obj.Parameters = [p/m for p in params]
 
+    def touch_parametrization(self, fp):
+        p = fp.Parametrization
+        fp.Parametrization = p
+            
     def onChanged(self, fp, prop):
         #print fp
-        if not fp.PointObject:
+        if not fp.PointList:
             return
-        if prop == "PointObject":
-            debug("Approximate : PointObject changed\n")
-            num = len(self.Points)
-            diff = num - fp.LastIndex -1
-            self.getPoints( fp)
-            #fp.FirstIndex = 0
-            fp.LastIndex = len(self.Points)-diff
 
         if prop == "Parametrization":
             debug("Approximate : Parametrization changed\n")
-            props = ["ClampEnds","DegreeMin","DegreeMax","Continuity"]
-            if fp.Parametrization == "Curvilinear":
-                if hasattr(fp.PointObject,"Distance"):
-                    for p in props:
-                        fp.setEditorMode(p, 2)
-                else:
-                    fp.Parametrization == "ChordLength"
+            if fp.Parametrization == "Custom":
+                fp.setEditorMode("Parameters", 0)
             else:
-                for p in props:
-                    fp.setEditorMode(p, 0)   
+                fp.setEditorMode("Parameters", 2)
+                if fp.Parametrization == "ChordLength":
+                    self.setParameters(fp, 1.0)
+                elif fp.Parametrization == "Centripetal":
+                    self.setParameters(fp, 0.5)
+                elif fp.Parametrization == "Uniform":
+                    self.setParameters(fp, 0.0)
+        #if prop == "CustomTangents":
+            #if fp.CustomTangents:
+                #fp.setEditorMode("Tangents", 0)
+                #fp.setEditorMode("TangentFlags", 0)
+            #else:
+                #fp.setEditorMode("Tangents", 2)
+                #fp.setEditorMode("TangentFlags", 2)
+        if prop in ["Periodic","PointList"]:
+            self.touch_parametrization(fp)
+        if prop == "Parameters":
+            self.execute(fp)
 
-        if prop == "Method":
-            debug("Approximate : Method changed\n")
-            if fp.Method == "Parametrization":
-                fp.setEditorMode("Parametrization", 0)
-                fp.setEditorMode("LengthWeight", 2)
-                fp.setEditorMode("CurvatureWeight", 2)
-                fp.setEditorMode("TorsionWeight", 2)
-            elif fp.Method == "Smoothing Algorithm":
-                fp.setEditorMode("Parametrization", 2)
-                fp.setEditorMode("LengthWeight", 0)
-                fp.setEditorMode("CurvatureWeight", 0)
-                fp.setEditorMode("TorsionWeight", 0)
-                if fp.Continuity in ["C3","CN"]:
-                    fp.Continuity = 'C2'
-                    
-        if prop == "Continuity":
-            if fp.Method == "Smoothing Algorithm":
-                if fp.Continuity == 'C1':
-                    if fp.DegreeMax < 3:
-                        fp.DegreeMax = 3
-                elif fp.Continuity in ['G1','G2','C2']:
-                    if fp.DegreeMax < 5:
-                        fp.DegreeMax = 5
-            debug("Approximate : Continuity changed to "+str(fp.Continuity))
+    def onDocumentRestored(self, fp):
+        fp.setEditorMode("CustomTangents", 2)
+        self.touch_parametrization(fp)
 
-        if prop == "DegreeMin":
-            if fp.DegreeMin < 1:
-                fp.DegreeMin = 1
-            elif fp.DegreeMin > fp.DegreeMax:
-                fp.DegreeMin = fp.DegreeMax
-            debug("Approximate : DegreeMin changed to "+str(fp.DegreeMin))
-        if prop == "DegreeMax":
-            if fp.DegreeMax < fp.DegreeMin:
-                fp.DegreeMax = fp.DegreeMin
-            elif fp.DegreeMax > 14:
-                fp.DegreeMax = 14
-            if fp.Method == "Smoothing Algorithm":
-                if fp.Continuity in ['G1','G2','C2']:
-                    if fp.DegreeMax < 5:
-                        fp.DegreeMax = 5
-                elif fp.Continuity == "C1":
-                    if fp.DegreeMax < 3:
-                        fp.DegreeMax = 3
-            debug("Approximate : DegreeMax changed to "+str(fp.DegreeMax))
-        if prop == "ApproxTolerance":
-            if fp.ApproxTolerance < 1e-6:
-                fp.ApproxTolerance = 1e-6
-            elif fp.ApproxTolerance > 1000.0:
-                fp.ApproxTolerance = 1000.0
-            debug("Approximate : ApproxTolerance changed to "+str(fp.ApproxTolerance))
-
-        if prop == "FirstIndex":
-            if fp.FirstIndex < 0:
-                fp.FirstIndex = 0
-            elif fp.FirstIndex > fp.LastIndex-1:
-                fp.FirstIndex = fp.LastIndex-1
-            debug("Approximate : FirstIndex changed to "+str(fp.FirstIndex))
-        if prop == "LastIndex":
-            if fp.LastIndex < fp.FirstIndex+1:
-                fp.LastIndex = fp.FirstIndex+1
-            elif fp.LastIndex > len(self.Points)-1:
-                fp.LastIndex = len(self.Points)-1
-            debug("Approximate : LastIndex changed to "+str(fp.LastIndex))
-
-            
     def __getstate__(self):
-        out = {"name": self.obj.Name,
-               "Method": self.obj.Method}
-        return out
+        out = {"name": self.obj.Name}
+        return(out)
 
     def __setstate__(self,state):
         self.obj = FreeCAD.ActiveDocument.getObject(state["name"])
-        if not "Method" in self.obj.PropertiesList:
-            self.obj.addProperty("App::PropertyEnumeration",  "Method",       "General",     "Approximation method").Method=["Parametrization","Smoothing Algorithm"]
-        if not "TorsionWeight" in self.obj.PropertiesList:
-            self.obj.addProperty("App::PropertyFloatConstraint",        "TorsionWeight",   "Parameters",       "Weight of curve torsion for smoothing algorithm")
-        self.obj.Method = state["Method"]
-        self.getPoints(self.obj)
-        return None
+        return(None)
 
 class ViewProviderInterpolate:
     def __init__(self,vobj):
@@ -228,14 +194,20 @@ class interpolate:
                 for n in obj.SubElementNames:
                     if 'Vertex' in n:
                         verts.append((obj.Object,[n]))
-        if res:
-            return(res)
+            else:
+                for i in range(len(obj.Object.Shape.Vertexes)):
+                    verts.append((obj.Object,"Vertex%d"%(i+1)))
+        if verts:
+            return(verts)
         else:
             FreeCAD.Console.PrintMessage("\nPlease select an object that has at least 2 vertexes")
             return(None)
 
     def Activated(self):
-        s = FreeCADGui.Selection.getSelectionEx()
+        try:
+            s = FreeCADGui.activeWorkbench().Selection
+        except AttributeError:
+            s = FreeCADGui.Selection.getSelectionEx()
         source = self.parseSel(s)
         if not source:
             return(False)
