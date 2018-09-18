@@ -49,8 +49,9 @@ def getShape(obj, prop, shape_type):
         elif obj.getTypeIdOfProperty(prop) == "App::PropertyLinkSubList":
             res = []
             for tup in obj.getPropertyByName(prop):
-                n = eval(tup[1][0].lstrip(shape_type))
-                res.append(getSubShape(tup[0].Shape, shape_type, n))
+                for ss in tup[1]:
+                    n = eval(ss.lstrip(shape_type))
+                    res.append(getSubShape(tup[0].Shape, shape_type, n))
             return(res)
         else:
             FreeCAD.Console.PrintError("CurvesWB._utils.getShape: wrong property type.\n")
