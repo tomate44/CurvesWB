@@ -12,7 +12,7 @@ import _utils
 
 TOOL_ICON = _utils.iconsPath() + '/interpolate.svg'
 debug = _utils.debug
-debug = _utils.doNothing
+#debug = _utils.doNothing
 
 
 # ********************************************************
@@ -58,6 +58,7 @@ class Interpolate:
         obj.addProperty("App::PropertyBool",           "Periodic",       "General",    "Set the curve closed").Periodic = False
         obj.addProperty("App::PropertyFloat",          "Tolerance",      "General",    "Interpolation tolerance").Tolerance = 1e-7
         obj.addProperty("App::PropertyBool",           "CustomTangents", "General",    "User specified tangents").CustomTangents = False
+        obj.addProperty("App::PropertyBool",           "DetectAligned",  "General",    "interpolate 3 aligned points with a line").DetectAligned = True
         obj.addProperty("App::PropertyFloatList",      "Parameters",     "Parameters", "Parameters of interpolated points")
         obj.addProperty("App::PropertyEnumeration",    "Parametrization","Parameters", "Parametrization type").Parametrization=["ChordLength","Centripetal","Uniform","Custom"]
         obj.addProperty("App::PropertyVectorList",     "Tangents",       "General",   "Tangents at interpolated points")
@@ -78,19 +79,44 @@ class Interpolate:
         vl = _utils.getShape(obj, "PointList", "Vertex")
         return([v.Point for v in vl]) 
 
+    def detect_aligned_pts(self, fp, pts):
+        tol = .99
+        tans = fp.Tangents
+        flags = [False]*len(pts) #list(fp.TangentFlags)
+        for i in range(len(pts)-2):
+            v1 = pts[i+1]-pts[i]
+            v2 = pts[i+2]-pts[i+1]
+            l1 = v1.Length
+            l2 = v2.Length
+            v1.normalize()
+            v2.normalize()
+            if v1.dot(v2) > tol:
+                debug("aligned points detected : %d - %d - %d"%(i,i+1,i+2))
+                tans[i] = v1.multiply(l1/3.0)
+                tans[i+2] = v2.multiply(l2/3.0)
+                tans[i+1] = (v1+v2).multiply(min(l1,l2)/6.0)
+                flags[i] = True
+                flags[i+1] = True
+                flags[i+2] = True
+        fp.Tangents = tans
+        fp.TangentFlags = flags
+        
+
     def execute(self, obj):
         debug("* Interpolate : execute *")
         pts = self.getPoints( obj)
         bs = Part.BSplineCurve()
-        if obj.CustomTangents:
-            if (len(obj.Tangents) == len(pts) and len(obj.TangentFlags) == len(pts)):
-                bs.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Parameters=obj.Parameters, Tangents=obj.Tangents, TangentFlags=obj.TangentFlags)
+        bs.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Parameters=obj.Parameters)
+        if not (len(obj.Tangents) == len(pts) and len(obj.TangentFlags) == len(pts)) or obj.DetectAligned:
+            if obj.Periodic:
+                obj.Tangents = [bs.tangent(p)[0] for p in obj.Parameters[0:-1]]
             else:
-                bs.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Parameters=obj.Parameters)
                 obj.Tangents = [bs.tangent(p)[0] for p in obj.Parameters]
-                obj.TangentFlags = [True]*len(pts)
-        else:
-            bs.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Parameters=obj.Parameters)
+            obj.TangentFlags = [True]*len(pts)
+        if obj.CustomTangents or obj.DetectAligned:
+            if obj.DetectAligned:
+                self.detect_aligned_pts(obj, pts)
+            bs.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Parameters=obj.Parameters, Tangents=obj.Tangents, TangentFlags=obj.TangentFlags) #, Scale=False)
         obj.Shape = bs.toShape()
 
     def setParameters(self, obj, val):
@@ -204,10 +230,13 @@ class interpolate:
             return(None)
 
     def Activated(self):
+        s = FreeCADGui.Selection.getSelectionEx()
         try:
-            s = FreeCADGui.activeWorkbench().Selection
+            ordered = FreeCADGui.activeWorkbench().Selection
+            if ordered:
+                s = ordered
         except AttributeError:
-            s = FreeCADGui.Selection.getSelectionEx()
+            pass
         source = self.parseSel(s)
         if not source:
             return(False)
