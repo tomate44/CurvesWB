@@ -1,3 +1,6 @@
+import FreeCAD
+import Part
+
 DEBUG = 1
 
 def debug(string):
@@ -256,7 +259,7 @@ def old_main():
     #Part.show(surf2.toShape())
 
 def main():
-    doc   = App.getDocument("Gordon_1")
+    doc   = FreeCAD.getDocument("Gordon_1")
     
     loft = doc.getObject("Loft")
     profloft  = loft.Shape.Face1
@@ -264,7 +267,7 @@ def main():
     inter = doc.getObject("Shape")
     interpts  = inter.Shape.Face1
     
-    loft2 = doc.getObject("Loft001")
+    loft2 = doc.getObject("Ruled_Surface")
     railloft = loft2.Shape.Face1
 
 
