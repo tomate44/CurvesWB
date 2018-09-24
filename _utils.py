@@ -45,13 +45,21 @@ def getShape(obj, prop, shape_type):
     if hasattr(obj, prop):
         if obj.getTypeIdOfProperty(prop) == "App::PropertyLinkSub":
             n = eval(obj.getPropertyByName(prop)[1][0].lstrip(shape_type))
-            return(getSubShape(obj.getPropertyByName(prop)[0].Shape, shape_type, n))
+            sh = getSubShape(obj.getPropertyByName(prop)[0].Shape, shape_type, n)
+            if hasattr(obj, "getGlobalPlacement"):
+                pl = obj.getGlobalPlacement()
+                sh.transformShape(pl.toMatrix())
+            return(sh)
         elif obj.getTypeIdOfProperty(prop) == "App::PropertyLinkSubList":
             res = []
             for tup in obj.getPropertyByName(prop):
                 for ss in tup[1]:
                     n = eval(ss.lstrip(shape_type))
-                    res.append(getSubShape(tup[0].Shape, shape_type, n))
+                    sh = getSubShape(tup[0].Shape, shape_type, n)
+                    if hasattr(obj, "getGlobalPlacement"):
+                        pl = obj.getGlobalPlacement()
+                        sh.transformShape(pl.toMatrix())
+                    res.append(sh)
             return(res)
         else:
             FreeCAD.Console.PrintError("CurvesWB._utils.getShape: wrong property type.\n")
