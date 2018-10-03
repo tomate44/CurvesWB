@@ -12,6 +12,11 @@ class blendSurface:
 
         self.cos1 = curveOnSurface(e1,f1)
         self.cos2 = curveOnSurface(e2,f2)
+        
+        self.cont1 = 2
+        self.cont2 = 2
+        self.scale1 = 1.0
+        self.scale2 = 1.0
 
         #self.cos1.reverseTangent =  o1.ReverseTangent
         #self.cos1.reverseNormal =   o1.ReverseNormal
@@ -26,7 +31,7 @@ class blendSurface:
         self.untwist = False
         self.curves = []
 
-    def buildCurves(self):
+    def buildCurves(self): # -----------------------DEPRECATED ---------------------
         for i in range(self.railSamples):
             t1 = self.cos1.firstParameter + (1.0 * i * self.paramRange(self.cos1) / (self.railSamples - 1))
             if not self.untwist:
@@ -48,6 +53,7 @@ class blendSurface:
             self.curves.append(bz)
 
     def cross_curves(self):
+        self.curves = list()
         import nurbs_tools
         c1 = self.cos1.get_cross_curves(self.railSamples, 1.0)
         if self.untwist:
@@ -57,12 +63,19 @@ class blendSurface:
         blends = list()
         for e1,e2 in zip(c1,c2):
             b = nurbs_tools.blendCurve(e1,e2)
-            b.cont1 = 3
-            b.cont2 = 3
+            b.cont1 = self.cont1
+            b.cont2 = self.cont2
+            b.scale1 = self.scale1
+            b.scale2 = self.scale2
             b.compute()
             blends.append(b.shape())
+            self.curves.append(b)
         return(blends)
-            
+
+    def get_gordon_shapes(self):
+        com1 = Part.Compound([self.cos1.edge, self.cos2.edge])
+        com2 = Part.Compound(self.cross_curves())
+        return(Part.Compound([com1, com2]))
 
     def getPoints(self):
         pts = []

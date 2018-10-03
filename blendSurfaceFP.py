@@ -39,15 +39,21 @@ class blendSurfFP:
         obj.addProperty("App::PropertyLink",       "Edge2",          "Base",   "Second edge")
         #obj.addProperty("App::PropertyEnumeration","Blending",       "Base",   "Blending method").Blending = ["Average","Blend","Rail1","Rail2"]
         obj.addProperty("App::PropertyPlacement",  "Placement",      "Base",   "Placement")
+        obj.addProperty("App::PropertyFloatConstraint", "Scale1",     "Edge1", "Scale of blend curve")
+        obj.addProperty("App::PropertyEnumeration",     "Continuity1","Edge1", "Continuity").Continuity1=["C0","G1","G2","G3","G4"]
+        obj.addProperty("App::PropertyFloatConstraint", "Scale2",     "Edge2", "Scale of blend curve")
+        obj.addProperty("App::PropertyEnumeration",     "Continuity2","Edge2", "Continuity").Continuity2=["C0","G1","G2","G3","G4"]
         obj.addProperty("App::PropertyInteger",    "ProfileSamples", "BlendSurface",   "Profile Samples")
         obj.addProperty("App::PropertyInteger",    "RailSamples",    "BlendSurface",   "Edge Samples")
         obj.addProperty("App::PropertyBool",       "Untwist",        "BlendSurface",   "Untwist surface")
         obj.addProperty("App::PropertyVectorList", "Points",         "BlendSurface",   "Points")
-        obj.addProperty("Part::PropertyPartShape", "Shape",          "BlendSurface",   "Shape")
-        #obj.Blending = "Blend"
+        #obj.addProperty("Part::PropertyPartShape", "Shape",          "BlendSurface",   "Shape")
+        obj.Continuity1 = "G2"
+        obj.Continuity2 = "G2"
         obj.ProfileSamples = 20
         obj.RailSamples = 20
-        #obj.Parametrization = 0.0
+        obj.Scale1 = (1.,-5.0,5.0,0.05)
+        obj.Scale2 = (1.,-5.0,5.0,0.05)
         obj.Untwist = False
 
 
@@ -59,13 +65,28 @@ class blendSurfFP:
                 bs.railSamples = obj.RailSamples
                 bs.profSamples = obj.ProfileSamples
                 bs.untwist = obj.Untwist
+                bs.cont1 = self.getContinuity(obj.Continuity1)
+                bs.scale1 = obj.Scale1
+                bs.cont2 = self.getContinuity(obj.Continuity2)
+                bs.scale2 = obj.Scale2
                 
                 bs.buildCurves()
                 pts = bs.getPoints()
                 
                 obj.Points = downgradeArray(pts)
-                obj.Shape = shapeCloud(pts)
-                
+                obj.Shape = bs.get_gordon_shapes() #shapeCloud(pts)
+
+    def getContinuity(self, cont):
+        if cont == "C0":
+            return(0)
+        elif cont == "G1":
+            return(1)
+        elif cont == "G2":
+            return(2)
+        elif cont == "G3":
+            return(3)
+        else:
+            return(4)
 
     def onChanged(self, fp, prop):
         FreeCAD.Console.PrintMessage('%s changed\n'%prop)
@@ -83,7 +104,14 @@ class blendSurfFP:
                 fp.RailSamples = 2
             elif fp.RailSamples > 1000:
                 fp.RailSamples = 1000
-
+        if prop == "Scale1":
+            if fp.Scale1 == 0:
+                fp.Scale1 = 0.0001
+            self.execute(fp)
+        elif prop == "Scale2":
+            if fp.Scale2 == 0:
+                fp.Scale2 = 0.0001
+            self.execute(fp)
 
 
 class blendSurfVP:
@@ -98,74 +126,74 @@ class blendSurfVP:
         #self.ViewObject = vobj
         self.Object = vobj.Object
         
-        self.gridDM = coin.SoGroup()
-        self.pointsDM = coin.SoGroup()
-        self.ProfDM = coin.SoGroup()
-        self.railDM = coin.SoGroup()
+        #self.gridDM = coin.SoGroup()
+        #self.pointsDM = coin.SoGroup()
+        #self.ProfDM = coin.SoGroup()
+        #self.railDM = coin.SoGroup()
         
-        self.coord = CoinNodes.coordinate3Node(self.Object.Points)
-        self.row = CoinNodes.rowNode((0.8,0.4,0.4),1.0)
-        self.col = CoinNodes.colNode((0.4,0.4,0.8),1.0)
-        self.pointSet = coin.SoPointSet()
-        self.style = CoinNodes.styleNode((0,0,0),1.0,2.0)
-        self.style.addChild(self.pointSet)
+        #self.coord = CoinNodes.coordinate3Node(self.Object.Points)
+        #self.row = CoinNodes.rowNode((0.8,0.4,0.4),1.0)
+        #self.col = CoinNodes.colNode((0.4,0.4,0.8),1.0)
+        #self.pointSet = coin.SoPointSet()
+        #self.style = CoinNodes.styleNode((0,0,0),1.0,2.0)
+        #self.style.addChild(self.pointSet)
         
-        #vobj.addChild(self.coord)
+        ##vobj.addChild(self.coord)
         
-        self.ProfDM.addChild(self.coord)
-        self.ProfDM.addChild(self.row)
+        #self.ProfDM.addChild(self.coord)
+        #self.ProfDM.addChild(self.row)
         
-        self.railDM.addChild(self.coord)
-        self.railDM.addChild(self.col)
+        #self.railDM.addChild(self.coord)
+        #self.railDM.addChild(self.col)
         
-        self.gridDM.addChild(self.coord)
-        self.gridDM.addChild(self.row)
-        self.gridDM.addChild(self.col)
+        #self.gridDM.addChild(self.coord)
+        #self.gridDM.addChild(self.row)
+        #self.gridDM.addChild(self.col)
 
-        self.pointsDM.addChild(self.coord)
-        self.pointsDM.addChild(self.style)
-        #self.points.addChild(self.pointSet)
+        #self.pointsDM.addChild(self.coord)
+        #self.pointsDM.addChild(self.style)
+        ##self.points.addChild(self.pointSet)
         
-        vobj.addDisplayMode(self.gridDM,"Wireframe")
-        vobj.addDisplayMode(self.pointsDM,"Points")
-        vobj.addDisplayMode(self.ProfDM,"Profiles")
-        vobj.addDisplayMode(self.railDM,"Rails")
-        #self.onChanged(vobj,"DisplayMode")
-        #if "Wireframe" in vobj.listDisplayModes():
-            #vobj.DisplayMode = "Wireframe"
+        #vobj.addDisplayMode(self.gridDM,"Wireframe")
+        #vobj.addDisplayMode(self.pointsDM,"Points")
+        #vobj.addDisplayMode(self.ProfDM,"Profiles")
+        #vobj.addDisplayMode(self.railDM,"Rails")
+        ##self.onChanged(vobj,"DisplayMode")
+        ##if "Wireframe" in vobj.listDisplayModes():
+            ##vobj.DisplayMode = "Wireframe"
 
-    def updateData(self, fp, prop):
-        FreeCAD.Console.PrintMessage("updateDate : " + str(prop) + "\n")
-        if len(fp.Points) == fp.RailSamples * fp.ProfileSamples :
-            self.coord.points = fp.Points
-            self.row.vertices = (fp.RailSamples, fp.ProfileSamples)
-            self.col.vertices = (fp.RailSamples, fp.ProfileSamples)
-            colors1 = [(0.0,0.8,0.0)] * (fp.ProfileSamples - 1)
-            colors2 = [(0.8,0.4,0.4)] * (fp.RailSamples - 2)* (fp.ProfileSamples-1)
-            colors3 = [(0.8,0.8,0.0)] * (fp.ProfileSamples - 1)
-            colors = colors1 + colors2 + colors3
-            self.row.binding.value = coin.SoMaterialBinding.PER_PART
-            self.row.coinColor.diffuseColor.setValues(0,len(colors),colors)
+    #def updateData(self, fp, prop):
+        #FreeCAD.Console.PrintMessage("updateDate : " + str(prop) + "\n")
+        #if len(fp.Points) == fp.RailSamples * fp.ProfileSamples :
+            #self.coord.points = fp.Points
+            #self.row.vertices = (fp.RailSamples, fp.ProfileSamples)
+            #self.col.vertices = (fp.RailSamples, fp.ProfileSamples)
+            #colors1 = [(0.0,0.8,0.0)] * (fp.ProfileSamples - 1)
+            #colors2 = [(0.8,0.4,0.4)] * (fp.RailSamples - 2)* (fp.ProfileSamples-1)
+            #colors3 = [(0.8,0.8,0.0)] * (fp.ProfileSamples - 1)
+            #colors = colors1 + colors2 + colors3
+            #self.row.binding.value = coin.SoMaterialBinding.PER_PART
+            #self.row.coinColor.diffuseColor.setValues(0,len(colors),colors)
 
-    def onChanged(self, vp, prop):
-        "Here we can do something when a single property got changed"
-        FreeCAD.Console.PrintMessage("Change property: " + str(prop) + "\n")
+    #def onChanged(self, vp, prop):
+        #"Here we can do something when a single property got changed"
+        #FreeCAD.Console.PrintMessage("Change property: " + str(prop) + "\n")
 
-    def getDisplayModes(self,obj):
-         "Return a list of display modes."
-         modes=[]
-         modes.append("Points")
-         modes.append("Profiles")
-         modes.append("Rails")
-         modes.append("Wireframe")
-         return modes
+    #def getDisplayModes(self,obj):
+         #"Return a list of display modes."
+         #modes=[]
+         #modes.append("Points")
+         #modes.append("Profiles")
+         #modes.append("Rails")
+         #modes.append("Wireframe")
+         #return modes
 
-    def getDefaultDisplayMode(self):
-         "Return the name of the default display mode. It must be defined in getDisplayModes."
-         return "Wireframe"
+    #def getDefaultDisplayMode(self):
+         #"Return the name of the default display mode. It must be defined in getDisplayModes."
+         #return "Wireframe"
 
-    def setDisplayMode(self,mode):
-         return mode
+    #def setDisplayMode(self,mode):
+         #return mode
   
     def setEdit(self,vobj,mode):
         return False
@@ -206,7 +234,7 @@ class blendSurfCommand:
             FreeCAD.Console.PrintError("Select 2 CurveOnSurface objects.\n")
             return
             
-        myblSu = FreeCAD.ActiveDocument.addObject("App::FeaturePython","Blend_Surface")
+        myblSu = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Blend_Surface")
         blendSurfFP(myblSu)
         blendSurfVP(myblSu.ViewObject)
 
