@@ -211,6 +211,7 @@ class curveOnSurface:
         return(Base.Vector2d(cr.x, cr.y))
 
     def get_cross_curves(self, num=10, scale=1.0, untwist=False):
+        pl = self.edge.Placement
         if scale == 0:
             scale = 1.0
         self.build_param_list(num)
@@ -225,6 +226,7 @@ class curveOnSurface:
             p1 = Base.Vector2d(p0.x + no.x * fac, p0.y + no.y * fac)
             ls1 = Geom2d.Line2dSegment(p0, p1)
             edge1 = ls1.toShape(self.face, ls1.FirstParameter, ls1.LastParameter)
+            edge1.Placement = pl
             curves.append(edge1)
         return(curves)
 
