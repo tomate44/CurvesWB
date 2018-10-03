@@ -100,7 +100,7 @@ class BSplineApproxInterp(object):
     # used in BSplineAlgorithms.reparametrizeBSplineContinuouslyApprox (around line 1100)
     def __init__(self, points, nControlPoints, degree, continuous_if_closed):
         self.pnts = points
-        self.indexOfApproximated = range(len(points))
+        self.indexOfApproximated = list(range(len(points)))
         self.degree = degree
         self.ncp = nControlPoints
         self.C2Continuous = continuous_if_closed
@@ -476,7 +476,7 @@ class BSplineApproxInterp(object):
         #*/
         # optimize each parameter by finding it's position on the curve
         # for (std::vector<size_t>::const_iterator it_idx = m_indexOfApproximated.begin(); it_idx != m_indexOfApproximated.end(); ++it_idx) {
-        for i in range(len(self.indexOfApproximated)):
+        for i in self.indexOfApproximated: #range(len(self.indexOfApproximated)):
             parameter, error = self.projectOnCurve(self.pnts[i], curve, m_t[i])
 
             # store optimised parameter
@@ -743,7 +743,7 @@ class BSplineAlgorithms(object):
         nCurves = len(curves)
 
         # create a common knot vector for all splines
-        compatSplines = self.createCommonKnotsVectorCurve(curves, self.tol)
+        compatSplines = self.createCommonKnotsVectorCurve(curves, tolerance)
 
         firstCurve = compatSplines[0]
         numControlPointsU = firstCurve.NbPoles
@@ -772,7 +772,7 @@ class BSplineAlgorithms(object):
             #print(interpPointsVDir[:2])
             #print(vParameters)
             #print(makeClosed)
-            interpSpline.interpolate(Points=interpPointsVDir, Parameters=vParameters, PeriodicFlag=makeClosed, Tolerance=self.tol)
+            interpSpline.interpolate(Points=interpPointsVDir, Parameters=vParameters, PeriodicFlag=makeClosed, Tolerance=tolerance)
             
             #debug(interpSpline)
             if makeClosed:
@@ -867,7 +867,7 @@ class BSplineAlgorithms(object):
             for iPointU in range(nPointsUpper):#for (int iPointU = points_u->Lower(); iPointU <= points_u->Upper(); ++iPointU) {
                 points_u[iPointU] = points[iPointU][cpVIdx]
             curve = Part.BSplineCurve()
-            curve.interpolate(Points=points_u, Parameters=uParams, PeriodicFlag=makeUDirClosed, Tolerance=self.tol)
+            curve.interpolate(Points=points_u, Parameters=uParams, PeriodicFlag=makeUDirClosed, Tolerance=tolerance)
 
             if makeUDirClosed:
                 self.clampBSpline(curve)
@@ -889,7 +889,7 @@ class BSplineAlgorithms(object):
         # Create a copy that we can modify
         adapterSplines = list() #[s.copy() for s in old_surfaces_vector]
         for i in range(len(old_surfaces_vector)): #(size_t i = 0; i < old_surfaces_vector.size(); ++i) {
-            debug(old_surfaces_vector[i])
+            #debug(old_surfaces_vector[i])
             adapterSplines.append(SurfAdapterView(old_surfaces_vector[i].copy(), 0))
         # first in u direction
         self.makeGeometryCompatibleImpl(adapterSplines, tol)
@@ -952,8 +952,16 @@ class BSplineAlgorithms(object):
         ##define MODEL_KINKS
         ##ifdef MODEL_KINKS
             ## remove kinks from breaks
-            #kinks = self.getKinkParameters(spline)
-            #for ikink in range(len(kinks)): #(size_t ikink = 0; ikink < kinks.size(); ++ikink) {
+        kinks = self.getKinkParameters(spline)
+        # convert kink parameters into reparamtetrized parameter using the
+        # inverse reparametrization function
+        for ikink in range(len(kinks)): #(size_t ikink = 0; ikink < kinks.size(); ++ikink) {
+            kinks[ikink] = reparametrizing_spline.parameter(vec2d(kinks[ikink], 0.))
+
+        for kink in kinks: #(size_t ikink = 0; ikink < kinks.size(); ++ikink) {
+            pos = IsInsideTolerance(breaks, kink, par_tol)
+            if pos >= 0:
+                breaks.pop(pos)
                 #kink = kinks[ikink]
                 #std::vector<double>::iterator it = std::find_if(breaks.begin(), breaks.end(), IsInsideTolerance(kink, par_tol));
                 #if (it != breaks.end()) {
@@ -967,8 +975,10 @@ class BSplineAlgorithms(object):
         
         ##ifdef MODEL_KINKS
             ## insert kinks into parameters array at the correct position
-            #for (size_t ikink = 0; ikink < kinks.size(); ++ikink) {
-                #double kink = kinks[ikink];
+        for kink in kinks: #for (size_t ikink = 0; ikink < kinks.size(); ++ikink) {
+            #double kink = kinks[ikink];
+            parameters.append(kink)
+        parameters.sort()
                 #parameters.insert( 
                     #std::upper_bound( parameters.begin(), parameters.end(), kink),
                     #kink);
@@ -992,15 +1002,20 @@ class BSplineAlgorithms(object):
         breaks.append(new_parameters[-1])
         ## Interpolate points at breaking parameters (required for gordon surface)
         #for (size_t ibreak = 0; ibreak < breaks.size(); ++ibreak) {
-        for ibreak in range(len(breaks)):
-            thebreak = breaks[ibreak]
+        for thebreak in breaks:
+            #thebreak = breaks[ibreak]
             pos = IsInsideTolerance(parameters, thebreak, par_tol)
             #size_t idx = static_cast<size_t>(
                 #std::find_if(parameters.begin(), parameters.end(), IsInsideTolerance(thebreak)) -
                 #parameters.begin());
-            approximationObj.InterpolatePoint(thebreak, False)
+            if pos >= 0:
+                approximationObj.InterpolatePoint(pos, False)
 
         ###ifdef MODEL_KINKS
+        for kink in kinks:
+            pos = IsInsideTolerance(parameters, kink, par_tol)
+            if pos >= 0:
+                approximationObj.InterpolatePoint(pos, True)
             ##for (size_t ikink = 0; ikink < kinks.size(); ++ikink) {
                 ##double kink = kinks[ikink];
                 ##size_t idx = static_cast<size_t>(
@@ -1183,11 +1198,13 @@ class GordonSurfaceBuilder(object):
         # Skinning in v-direction with u directional B-Splines
         debug("-   Skinning profiles")
         surfProfiles = bsa.curvesToSurface(profiles, intersection_params_spline_v, makeVClosed)
+        debug(surfProfiles)
         # therefore reparametrization before this method
 
         # Skinning in u-direction with v directional B-Splines
         debug("-   Skinning guides")
         surfGuides = bsa.curvesToSurface(guides, intersection_params_spline_u, makeUClosed)
+        debug(surfGuides)
 
         # flipping of the surface in v-direction; flipping is redundant here, therefore the next line is a comment!
         surfGuides = bsa.flipSurface(surfGuides)
@@ -1196,6 +1213,7 @@ class GordonSurfaceBuilder(object):
 
         # Open CASCADE doesn't have a B-spline surface interpolation method where one can give the u- and v-directional parameters as arguments
         tensorProdSurf = bsa.pointsToSurface(intersection_pnts, intersection_params_spline_u, intersection_params_spline_v, makeUClosed, makeVClosed)
+        debug(tensorProdSurf)
 
         # match degree of all three surfaces
         degreeU = max(max(surfGuides.UDegree, surfProfiles.UDegree), tensorProdSurf.UDegree)
@@ -1205,6 +1223,10 @@ class GordonSurfaceBuilder(object):
         surfGuides.increaseDegree(degreeU, degreeV)
         surfProfiles.increaseDegree(degreeU, degreeV)
         tensorProdSurf.increaseDegree(degreeU, degreeV)
+        print("** Matching to degree %dx%d**"%(degreeU, degreeV))
+        print("surfProfiles : %d x %d"%(surfProfiles.NbUPoles, surfProfiles.NbVPoles))
+        print("surfGuides : %d x %d"%(surfGuides.NbUPoles, surfGuides.NbVPoles))
+        print("tensorProdSurf : %d x %d"%(tensorProdSurf.NbUPoles, tensorProdSurf.NbVPoles))
 
         surfaces_vector_unmod = [surfGuides, surfProfiles, tensorProdSurf]
 
@@ -1217,7 +1239,7 @@ class GordonSurfaceBuilder(object):
         self.skinningSurfProfiles = surfaces_vector[1]
         self.tensorProdSurf = surfaces_vector[2]
 
-        print("Number of Poles")
+        print("After createCommonKnotsVectorSurface L1234")
         print("skinningSurfGuides : %d x %d"%(self.skinningSurfGuides.NbUPoles, self.skinningSurfGuides.NbVPoles))
         print("skinningSurfProfiles : %d x %d"%(self.skinningSurfProfiles.NbUPoles, self.skinningSurfProfiles.NbVPoles))
         print("tensorProdSurf : %d x %d"%(self.tensorProdSurf.NbUPoles, self.tensorProdSurf.NbVPoles))
@@ -1282,7 +1304,7 @@ class InterpolateCurveNetwork(object):
         debug("-> ")
         self.make_curves_compatible()
         debug("-> make_curves_compatible -> OK")
-        builder = GordonSurfaceBuilder(self.profiles, self.guides, self.intersectionParamsU, self.intersectionParamsV, self.tolerance)
+        builder = GordonSurfaceBuilder(self.profiles, self.guides, self.intersectionParamsU, self.intersectionParamsV, self.tolerance, self.par_tolerance)
         debug("-> GordonSurfaceBuilder -> OK")
         self.gordon_surf = builder.surface_gordon()
         debug("-> builder.surface_gordon -> OK")

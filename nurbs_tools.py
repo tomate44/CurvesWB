@@ -424,6 +424,30 @@ class blendCurve(object):
             #error("error : chordLength < 1e-6")
             #self.chordLength = 1.0
 
+    # doesn't work
+    #def autoscale(self, w1, w2, w3, maxscale, numsteps):
+        #minscale = .01
+        #best = 1e50
+        #res = None
+        #old_scale1 = self.scale1
+        #old_scale2 = self.scale2
+        #sign1 = self.scale1 / abs(self.scale1)
+        #sign2 = self.scale2 / abs(self.scale2)
+        #r = [minscale + float(i)*(maxscale-minscale)/(numsteps-1) for i in range(numsteps)]
+        #for s1 in r:
+            #for s2 in r:
+                #self.scale1 = sign1 * s1
+                #self.scale2 = sign2 * s2
+                #self.compute()
+                #a,b,c = eval_smoothness(self.shape(), samples=10)
+                #score = a*w1 + b*w2 + c*w3
+                #if score < best:
+                    #best = score
+                    #res = (self.scale1, self.scale2)
+        #self.scale1 = old_scale1
+        #self.scale2 = old_scale2
+        #return(res)
+
     def compute(self):
         nbPoles = self.cont1 + self.cont2 + 2
         e = self.getChord()
@@ -573,20 +597,30 @@ def param_samples(edge, samples=10):
     ra = lp-fp
     return([fp+float(i)*ra/(samples-1) for i in range(samples)])
 
-def eval_smoothness(edge, samples=10):
-    params = param_samples(edge, samples)
-    # compute length score
-    chord = edge.valueAt(edge.LastParameter) - edge.valueAt(edge.FirstParameter)
-    if chord.Length > 1e-7: 
-        length_score = edge.Length / chord.Length
-    else:
-        length_score = None
-    # compute tangent and curvature scores
-    tans = list()
-    curv = list()
-    for p in params:
-        tans.append(edge.tangentAt(p))
-        curv.append(edge.curvatureAt(p))
+# doesn't work
+#def eval_smoothness(edge, samples=10):
+    #params = param_samples(edge, samples)
+    ## compute length score
+    #chord = edge.valueAt(edge.LastParameter) - edge.valueAt(edge.FirstParameter)
+    #if chord.Length > 1e-7: 
+        #length_score = (edge.Length / chord.Length) - 1.0
+    #else:
+        #length_score = None
+    ## compute tangent and curvature scores
+    #tans = list()
+    #curv = list()
+    #for p in params:
+        #tans.append(edge.tangentAt(p))
+        #curv.append(edge.curvatureAt(p))
+    #poly = Part.makePolygon(tans)
+    #tangent_score = poly.Length
+    #m = max(curv)
+    #if m > 1e-7:
+        #curvature_score = (m-min(curv))/m
+    #else:
+        #curvature_score = 0.0
+    #return(length_score,tangent_score,curvature_score)
+    
     
 
 
