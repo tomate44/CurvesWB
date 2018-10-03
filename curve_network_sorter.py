@@ -141,7 +141,7 @@ class CurveNetworkSorter(object):
 
         # perform a bubble sort for the guides,
         # such that the guides intersection of the first profile are ascending
-        r = range(2, nGuid+1)
+        r = list(range(2, nGuid+1))
         r.reverse()
         for n in r: #(int n = nGuid; n > 1; n = n - 1) {
             for j in range(1,n-1): #(int j = 1; j < n - 1; ++j) {
@@ -149,7 +149,7 @@ class CurveNetworkSorter(object):
                     self.swapGuides(j, j+1)
         # perform a bubble sort of the profiles,
         # such that the profiles are in ascending order of the first guide
-        r = range(2, nProf+1)
+        r = list(range(2, nProf+1))
         r.reverse()
         for n in r: #(int n = nProf; n > 1; n = n - 1) {
             for i in range(1,n-1): #(int i = 1; i < n - 1; ++i) {
