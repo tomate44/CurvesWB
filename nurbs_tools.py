@@ -567,7 +567,27 @@ def reparametrize(c, p1, p2):
         c = join_curves(curves)
         return(c)
 
+def param_samples(edge, samples=10):
+    fp = edge.FirstParameter
+    lp = edge.LastParameter
+    ra = lp-fp
+    return([fp+float(i)*ra/(samples-1) for i in range(samples)])
 
+def eval_smoothness(edge, samples=10):
+    params = param_samples(edge, samples)
+    # compute length score
+    chord = edge.valueAt(edge.LastParameter) - edge.valueAt(edge.FirstParameter)
+    if chord.Length > 1e-7: 
+        length_score = edge.Length / chord.Length
+    else:
+        length_score = None
+    # compute tangent and curvature scores
+    tans = list()
+    curv = list()
+    for p in params:
+        tans.append(edge.tangentAt(p))
+        curv.append(edge.curvatureAt(p))
+    
 
 
 def test(parm):
