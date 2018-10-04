@@ -69,19 +69,19 @@ class curveOnSurface:
         c2d = None
         if (not self.edge == None) and (not self.face == None):
             c2d = self.face.curveOnSurface(self.edge)
-            #if not isinstance(c2d,tuple):
-                #print("curveOnSurface error.")
-                #try:
-                    #newedge = self.face.project([self.edge]).Edges[0]
-                    #success = True
-                    #c2d = self.face.curveOnSurface(newedge)
-                    #print("Projection successful.")
-                #except Part.OCCError:
-                    #newface = self.face.Surface.toShape()
-                    #newedge = newface.project([self.edge]).Edges[0]
-                    #success = True
-                    #print("Projection failed. Fallback on surface.")
-                    #c2d = self.face.curveOnSurface(newedge)
+            if not isinstance(c2d,tuple):
+                print("curveOnSurface error.")
+                try:
+                    newedge = self.face.project([self.edge]).Edges[0]
+                    c2d = self.face.curveOnSurface(newedge)
+                    if isinstance(c2d,tuple):
+                        print("Projection successful.")
+                except Part.OCCError:
+                    newface = self.face.Surface.toShape()
+                    newedge = newface.project([self.edge]).Edges[0]
+                    c2d = self.face.curveOnSurface(newedge)
+                    if isinstance(c2d,tuple):
+                        print("Projection failed. Fallback on surface.")
             if isinstance(c2d,tuple):
                 self.curve2D = c2d[0]
                 self.firstParameter = c2d[1]
@@ -94,6 +94,8 @@ class curveOnSurface:
                     self.isValid = False
                     self.edgeOnFace = Part.Edge(self.edge.Curve, self.firstParameter, self.lastParameter)
             else:
+                e = self.face.project([self.edge]).Edges[0]
+                
                 self.isValid = False
                 self.firstParameter = self.edge.FirstParameter
                 self.lastParameter  = self.edge.LastParameter
