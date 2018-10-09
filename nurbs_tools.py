@@ -621,7 +621,96 @@ def param_samples(edge, samples=10):
         #curvature_score = 0.0
     #return(length_score,tangent_score,curvature_score)
     
-    
+class EdgeInterpolator(object):
+    """interpolate data along a path shape
+    ei = EdgeInterpolator(edge or wire)"""
+    def __init__(self, shape):
+        self.data = list()
+        self.pts = list()
+        self.parameters = list()
+        self.curve = Part.BSplineCurve()
+        if isinstance(shape, Part.Edge):
+            self.path = shape
+        elif isinstance(shape, Part.Wire):
+            path = shape.approximate(1e-8,1e-3,99,5) # &tol2d,&tol3d,&maxseg,&maxdeg
+            self.path = path.toShape()
+        else:
+            FreeCAD.Console.PrintError("EdgeInterpolator input must be edge or wire")
+            raise ValueError
+
+    def add_data(self, p, dat):
+        """add a datum on path, at given parameter
+        ei.add_data(parameter, datum)"""
+        if len(self.data) == 0:
+            self.data.append((p,dat))
+        else:
+            if type(dat) == type(self.data[0][1]):
+                self.data.append((p,dat))
+            else:
+                FreeCAD.Console.PrintError("Bad type of data")
+
+    def add_mult_data(self, dat):
+        """add multiple data values"""
+        if isinstance(dat,(list,tuple)):
+            for d in dat:
+                self.add_data(d[0],d[1])
+        else:
+            FreeCAD.Console.PrintError("Argument must be list or tuple")
+
+    def get_point(self, val):
+        v = FreeCAD.Vector(0,0,0)
+        if isinstance(val,(list, tuple)):
+            if len(val) >= 1:
+                v.x = val[0]
+            if len(val) >= 2:
+                v.y = val[1]
+            if len(val) >= 3:
+                v.z = val[2]
+        elif isinstance(val,FreeCAD.Base.Vector2d):
+            v.x = val.x
+            v.y = val.y
+        elif isinstance(val,FreeCAD.Vector):
+            v = val
+        else:
+            FreeCAD.Console.PrintError("Failed to convert %s data to FreeCAD.Vector"%type(val))
+        return(v)
+
+    def vec_to_dat(self, v):
+        val = self.data[0][1]
+        if isinstance(val,(list, tuple)):
+            if len(val) == 1:
+                return([v.x])
+            elif len(val) == 2:
+                return([v.x, v.y])
+            if len(val) == 3:
+                return([v.x, v.y, v.z])
+        elif isinstance(val,FreeCAD.Base.Vector2d):
+            return(FreeCAD.Base.Vector2d(v.x, v.y))
+        elif isinstance(val,FreeCAD.Vector):
+            return(v)
+        else:
+            FreeCAD.Console.PrintError("Failed to convert FreeCAD.Vector to %s"%type(val))
+
+    def build_params_and_points(self):
+        self.sort()
+        for t in self.data:
+            self.parameters.append(t[0])
+            self.pts.append(self.get_point(t[1]))
+           
+    def sort(self):
+        from operator import itemgetter
+        self.data = sorted(self.data,key=itemgetter(0))
+
+    def interpolate(self):
+        self.build_params_and_points()
+        self.curve.interpolate(Points=self.pts, Parameters=self.parameters)
+
+    def valueAt(self, p):
+        vec = self.curve.value(p)
+        return(self.vec_to_dat(vec))
+
+
+        
 
 
 def test(parm):
