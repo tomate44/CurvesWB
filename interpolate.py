@@ -59,6 +59,7 @@ class Interpolate:
         obj.addProperty("App::PropertyFloat",          "Tolerance",      "General",    "Interpolation tolerance").Tolerance = 1e-7
         obj.addProperty("App::PropertyBool",           "CustomTangents", "General",    "User specified tangents").CustomTangents = False
         obj.addProperty("App::PropertyBool",           "DetectAligned",  "General",    "interpolate 3 aligned points with a line").DetectAligned = True
+        obj.addProperty("App::PropertyBool",           "Polygonal",      "General",    "interpolate with a degree 1 polygonal curve").Polygonal = False
         obj.addProperty("App::PropertyFloatList",      "Parameters",     "Parameters", "Parameters of interpolated points")
         obj.addProperty("App::PropertyEnumeration",    "Parametrization","Parameters", "Parametrization type").Parametrization=["ChordLength","Centripetal","Uniform","Custom"]
         obj.addProperty("App::PropertyVectorList",     "Tangents",       "General",   "Tangents at interpolated points")
@@ -105,18 +106,25 @@ class Interpolate:
     def execute(self, obj):
         debug("* Interpolate : execute *")
         pts = self.getPoints( obj)
-        bs = Part.BSplineCurve()
-        bs.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Parameters=obj.Parameters)
-        if not (len(obj.Tangents) == len(pts) and len(obj.TangentFlags) == len(pts)) or obj.DetectAligned:
+        if obj.Polygonal:
             if obj.Periodic:
-                obj.Tangents = [bs.tangent(p)[0] for p in obj.Parameters[0:-1]]
-            else:
-                obj.Tangents = [bs.tangent(p)[0] for p in obj.Parameters]
-            obj.TangentFlags = [True]*len(pts)
-        if obj.CustomTangents or obj.DetectAligned:
-            if obj.DetectAligned:
-                self.detect_aligned_pts(obj, pts)
-            bs.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Parameters=obj.Parameters, Tangents=obj.Tangents, TangentFlags=obj.TangentFlags) #, Scale=False)
+                pts.append(pts[0])
+            poly = Part.makePolygon(pts)
+            bs = poly.approximate(1e-8,obj.Tolerance,999,1)
+            obj.Shape = bs.toShape()
+        else:
+            bs = Part.BSplineCurve()
+            bs.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Parameters=obj.Parameters)
+            if not (len(obj.Tangents) == len(pts) and len(obj.TangentFlags) == len(pts)) or obj.DetectAligned:
+                if obj.Periodic:
+                    obj.Tangents = [bs.tangent(p)[0] for p in obj.Parameters[0:-1]]
+                else:
+                    obj.Tangents = [bs.tangent(p)[0] for p in obj.Parameters]
+                obj.TangentFlags = [True]*len(pts)
+            if obj.CustomTangents or obj.DetectAligned:
+                if obj.DetectAligned:
+                    self.detect_aligned_pts(obj, pts)
+                bs.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Parameters=obj.Parameters, Tangents=obj.Tangents, TangentFlags=obj.TangentFlags) #, Scale=False)
         obj.Shape = bs.toShape()
 
     def setParameters(self, obj, val):
@@ -155,13 +163,21 @@ class Interpolate:
                     self.setParameters(fp, 0.5)
                 elif fp.Parametrization == "Uniform":
                     self.setParameters(fp, 0.0)
-        #if prop == "CustomTangents":
-            #if fp.CustomTangents:
-                #fp.setEditorMode("Tangents", 0)
-                #fp.setEditorMode("TangentFlags", 0)
-            #else:
-                #fp.setEditorMode("Tangents", 2)
-                #fp.setEditorMode("TangentFlags", 2)
+        if prop == "Polygonal":
+            if fp.Polygonal:
+                fp.setEditorMode("CustomTangents", 2)
+                fp.setEditorMode("DetectAligned", 2)
+                fp.setEditorMode("Parameters", 2)
+                fp.setEditorMode("Parametrization", 2)
+                fp.setEditorMode("Tangents", 2)
+                fp.setEditorMode("TangentFlags", 2)
+            else:
+                fp.setEditorMode("CustomTangents", 0)
+                fp.setEditorMode("DetectAligned", 0)
+                fp.setEditorMode("Parameters", 0)
+                fp.setEditorMode("Parametrization", 0)
+                fp.setEditorMode("Tangents", 0)
+                fp.setEditorMode("TangentFlags", 0)
         if prop in ["Periodic","PointList"]:
             self.touch_parametrization(fp)
         if prop == "Parameters":
