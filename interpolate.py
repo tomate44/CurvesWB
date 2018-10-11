@@ -60,10 +60,11 @@ class Interpolate:
         obj.addProperty("App::PropertyBool",           "CustomTangents", "General",    "User specified tangents").CustomTangents = False
         obj.addProperty("App::PropertyBool",           "DetectAligned",  "General",    "interpolate 3 aligned points with a line").DetectAligned = True
         obj.addProperty("App::PropertyBool",           "Polygonal",      "General",    "interpolate with a degree 1 polygonal curve").Polygonal = False
+        obj.addProperty("App::PropertyBool",           "WireOutput",     "Parameters", "outputs a wire or a single edge").WireOutput = False
         obj.addProperty("App::PropertyFloatList",      "Parameters",     "Parameters", "Parameters of interpolated points")
         obj.addProperty("App::PropertyEnumeration",    "Parametrization","Parameters", "Parametrization type").Parametrization=["ChordLength","Centripetal","Uniform","Custom"]
-        obj.addProperty("App::PropertyVectorList",     "Tangents",       "General",   "Tangents at interpolated points")
-        obj.addProperty("App::PropertyBoolList",       "TangentFlags",   "General",   "Activation flag of tangents")
+        obj.addProperty("App::PropertyVectorList",     "Tangents",       "General",    "Tangents at interpolated points")
+        obj.addProperty("App::PropertyBoolList",       "TangentFlags",   "General",    "Activation flag of tangents")
         obj.Proxy = self
         self.obj = obj
         obj.Parametrization = "ChordLength"
@@ -110,8 +111,11 @@ class Interpolate:
             if obj.Periodic:
                 pts.append(pts[0])
             poly = Part.makePolygon(pts)
-            bs = poly.approximate(1e-8,obj.Tolerance,999,1)
-            obj.Shape = bs.toShape()
+            if obj.WireOutput:
+                obj.Shape = poly
+                return()
+            else:
+                bs = poly.approximate(1e-8,obj.Tolerance,999,1)
         else:
             bs = Part.BSplineCurve()
             bs.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Parameters=obj.Parameters)
@@ -164,20 +168,13 @@ class Interpolate:
                 elif fp.Parametrization == "Uniform":
                     self.setParameters(fp, 0.0)
         if prop == "Polygonal":
+            group = ["CustomTangents","DetectAligned","Parameters","Parametrization","Tangents","TangentFlags"]
             if fp.Polygonal:
-                fp.setEditorMode("CustomTangents", 2)
-                fp.setEditorMode("DetectAligned", 2)
-                fp.setEditorMode("Parameters", 2)
-                fp.setEditorMode("Parametrization", 2)
-                fp.setEditorMode("Tangents", 2)
-                fp.setEditorMode("TangentFlags", 2)
+                _utils.setEditorMode(fp, group, 2)
+                fp.setEditorMode("WireOutput", 0)
             else:
-                fp.setEditorMode("CustomTangents", 0)
-                fp.setEditorMode("DetectAligned", 0)
-                fp.setEditorMode("Parameters", 0)
-                fp.setEditorMode("Parametrization", 0)
-                fp.setEditorMode("Tangents", 0)
-                fp.setEditorMode("TangentFlags", 0)
+                _utils.setEditorMode(fp, group, 0)
+                fp.setEditorMode("WireOutput", 2)
         if prop in ["Periodic","PointList"]:
             self.touch_parametrization(fp)
         if prop == "Parameters":
@@ -233,12 +230,15 @@ class interpolate:
         verts = list()
         for obj in selectionObject:
             if obj.HasSubObjects:
+                FreeCAD.Console.PrintMessage("object has subobjects %s\n"%obj.SubElementNames)
                 for n in obj.SubElementNames:
                     if 'Vertex' in n:
                         verts.append((obj.Object,[n]))
             else:
+                FreeCAD.Console.PrintMessage("object has no subobjects\n")
                 for i in range(len(obj.Object.Shape.Vertexes)):
-                    verts.append((obj.Object,"Vertex%d"%(i+1)))
+                    verts.append((obj.Object,("Vertex%d"%(i+1))))
+                    FreeCAD.Console.PrintMessage("adding vertex %s"%str(verts[-1]))
         if verts:
             return(verts)
         else:

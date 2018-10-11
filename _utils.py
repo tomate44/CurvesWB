@@ -31,6 +31,11 @@ def debug(string):
 def doNothing(string):
     return(None)
 
+def setEditorMode(fp, group, mode):
+    """set the editor mode of a group of properties"""
+    for prop in group:
+        fp.setEditorMode(prop, mode)
+
 def getSubShape(shape, shape_type, n):
     if shape_type == "Vertex" and len(shape.Vertexes) >= n:
         return(shape.Vertexes[n-1])
