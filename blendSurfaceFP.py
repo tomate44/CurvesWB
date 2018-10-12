@@ -47,7 +47,9 @@ class blendSurfFP:
         obj.addProperty("App::PropertyInteger",    "RailSamples",    "BlendSurface",   "Edge Samples")
         obj.addProperty("App::PropertyBool",       "Untwist",        "BlendSurface",   "Untwist surface")
         obj.addProperty("App::PropertyVectorList", "Points",         "BlendSurface",   "Points")
-        #obj.addProperty("Part::PropertyPartShape", "Shape",          "BlendSurface",   "Shape")
+        obj.addProperty("App::PropertyVectorList", "ScaleList1",     "BlendSurface",   "Variable scale 1: list of vectors(parameter, scale1, 0)")
+        obj.addProperty("App::PropertyVectorList", "ScaleList2",     "BlendSurface",   "Variable scale 2: list of vectors(parameter, scale2, 0)")
+
         obj.Continuity1 = "G2"
         obj.Continuity2 = "G2"
         obj.ProfileSamples = 20
@@ -56,6 +58,12 @@ class blendSurfFP:
         obj.Scale2 = (1.,-5.0,5.0,0.05)
         obj.Untwist = False
 
+    def check_scale_list(self, obj, prop):
+        valid = False
+        if hasattr(obj,prop):
+            if len(obj.getPropertyByName(prop)) > 0:
+                valid = True
+        return(valid)
 
     def execute(self, obj):
         if hasattr(obj,"Edge1") and hasattr(obj,"Edge2"):
@@ -69,7 +77,10 @@ class blendSurfFP:
                 bs.scale1 = obj.Scale1
                 bs.cont2 = self.getContinuity(obj.Continuity2)
                 bs.scale2 = obj.Scale2
-                
+                if self.check_scale_list(obj, "ScaleList1"):
+                    bs.var_scale1 = obj.ScaleList1
+                if self.check_scale_list(obj, "ScaleList2"):
+                    bs.var_scale2 = obj.ScaleList2
                 bs.buildCurves()
                 pts = bs.getPoints()
                 
