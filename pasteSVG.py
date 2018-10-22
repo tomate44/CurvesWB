@@ -12,7 +12,7 @@ path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 
 class pasteSVG:
     def Activated(self):
-        cb = QtGui.qApp.clipboard()
+        cb = QtGui.QApplication.clipboard()
         t=cb.text()
 
         if t[0:5] == '<?xml':
