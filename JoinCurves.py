@@ -185,6 +185,12 @@ class joinCommand:
     def Activated(self):
         edges = []
         sel = FreeCADGui.Selection.getSelectionEx()
+        try:
+            ordered = FreeCADGui.activeWorkbench().Selection
+            if ordered:
+                sel = ordered
+        except AttributeError:
+            pass
         if sel == []:
             FreeCAD.Console.PrintError("Select the edges to join first !\n")
         for selobj in sel:
