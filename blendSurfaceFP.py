@@ -5,6 +5,7 @@ from FreeCAD import Base
 import blendSurface
 import CoinNodes
 from pivy import coin
+from PySide.QtGui import * 
 
 DEBUG = 1
 
@@ -32,6 +33,17 @@ def shapeCloud(arr):
     c = Part.Compound(v)
     return(c)
 
+def getComboView(mw):
+    #from PySide.QtCore import * 
+    dw=mw.findChildren(QDockWidget)
+    for i in dw:
+        if str(i.objectName()) == "Combo View":
+            return i.findChild(QTabWidget)
+        elif str(i.objectName()) == "Python Console":
+            return i.findChild(QTabWidget)
+    raise Exception ("No tab widget found")
+
+
 class blendSurfFP:
     def __init__(self, obj):
         obj.Proxy = self
@@ -56,9 +68,12 @@ class blendSurfFP:
         obj.RailSamples = 20
         obj.Scale1 = (1.,-5.0,5.0,0.05)
         obj.Scale2 = (1.,-5.0,5.0,0.05)
+        obj.ScaleList1 = ((0,1,0),(1,1,0))
+        obj.ScaleList2 = ((0,1,0),(1,1,0))
         obj.Untwist = False
 
     def check_scale_list(self, obj, prop):
+        # TODO make the validation more strict
         valid = False
         if hasattr(obj,prop):
             if len(obj.getPropertyByName(prop)) > 0:
@@ -206,11 +221,40 @@ class blendSurfVP:
     #def setDisplayMode(self,mode):
          #return mode
   
-    def setEdit(self,vobj,mode):
-        return False
-    
-    def unsetEdit(self,vobj,mode):
-        return
+    def setEdit(self,vobj,mode=0):
+        if mode == 0:
+            debug("Start Edit")
+            from importlib import reload
+            import property_editor
+            reload(property_editor)
+            self.ed = property_editor.VPEditor()
+            self.group1 = self.ed.add_layout("Face 1")
+            proped_11 = property_editor.VectorListWidget(self.Object,"ScaleList1")
+            #proped_12 = property_editor.VectorListWidget() #self.Object,"Continuity1")
+            #proped_11.fillTable(((0.0,1.0),(0.4,1.5),(1.0,0.8)))
+            #proped_12.fillTable()
+            self.ed.add_propeditor(proped_11, self.group1)
+            #ed.add_propeditor(proped_12, self.group1)
+            self.group2 = self.ed.add_layout("Face 2")
+            proped_21 = property_editor.VectorListWidget(self.Object,"ScaleList2")
+            #proped_22 = VectorListWidget() #self.Object,"Continuity2")
+            self.ed.add_propeditor(proped_21, self.group2)
+            #ed.add_propeditor(proped_22, self.group2)
+            self.ed.add_close_button()
+
+            self.mw = FreeCADGui.getMainWindow()
+            self.ed.comboview = property_editor.getComboView(self.mw)
+            self.ed.tabIndex = self.ed.comboview.addTab(self.ed.widget,"Table")
+            self.ed.comboview.setCurrentIndex(self.ed.tabIndex)
+            self.ed.widget.show()
+            return(True)
+        return(False)
+
+    def unsetEdit(self,vobj,mode=0):
+        debug("End Edit")
+        FreeCADGui.ActiveDocument.resetEdit()
+        self.Object.recompute()
+        return(False)
 
     def __getstate__(self):
         return None
