@@ -32,6 +32,7 @@ class cosFP:
         obj.addProperty("App::PropertyDistance",   "FaceWidth",      "CurveOnSurface", "Width of the output face").FaceWidth='1mm'
         obj.addProperty("App::PropertyBool",       "Symmetric",      "CurveOnSurface", "Face symmetric across curve").Symmetric = False
         obj.addProperty("App::PropertyBool",       "Closed",         "CurveOnSurface", "Close the curve").Closed = False
+        obj.addProperty("App::PropertyBool",       "Reverse",        "CurveOnSurface", "Reverse the parametric orientation of the curve").Reverse = False
         obj.Output = "Curve only"
         obj.Proxy = self
 
@@ -50,7 +51,10 @@ class cosFP:
     def execute(self, obj):
         edge = _utils.getShape(obj, 'InputEdge', 'Edge') # self.getEdge(obj)
         face = _utils.getShape(obj, 'Face', 'Face') # self.getFace(obj)
+        
         cos = curveOnSurface.curveOnSurface(edge, face)
+        if obj.Reverse:
+            cos.reverse()
         if obj.Closed:
             cos.closed = True
         cos.reverseTangent = obj.ReverseTangent
@@ -105,7 +109,7 @@ class cosCommand:
                 for i in range(len(selobj.SubObjects)):
                     if isinstance(selobj.SubObjects[i], Part.Edge):
                         edge = (selobj.Object, selobj.SubElementNames[i])
-                        selobj.Object.ViewObject.Visibility = False
+                        #selobj.Object.ViewObject.Visibility = False
                     elif isinstance(selobj.SubObjects[i], Part.Face):
                         face = (selobj.Object, selobj.SubElementNames[i])
         #debug(edge)
@@ -119,9 +123,9 @@ class cosCommand:
             cosVP(cos.ViewObject)
             FreeCAD.ActiveDocument.recompute()
 
-            #cos.ViewObject.DrawStyle = "Dashed"
-            #cos.ViewObject.LineColor = (1.0,0.67,0.0)
-            #cos.ViewObject.LineWidth = 3.0
+            cos.ViewObject.DrawStyle = "Dashed"
+            cos.ViewObject.LineColor = (1.0,0.67,0.0)
+            cos.ViewObject.LineWidth = 3.0
         else:
             FreeCAD.Console.PrintError("Select an edge and its supporting face \n")
 

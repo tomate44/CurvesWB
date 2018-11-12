@@ -14,6 +14,10 @@ class blendSurface:
 
         self.cos1 = curveOnSurface(e1,f1)
         self.cos2 = curveOnSurface(e2,f2)
+        if o1.Reverse:
+            self.cos1.reverse()
+        if o2.Reverse:
+            self.cos2.reverse()
         
         self.cont1 = 2
         self.cont2 = 2

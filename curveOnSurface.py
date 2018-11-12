@@ -46,6 +46,7 @@ class curveOnSurface:
         self.reverseBinormal = False
         self.isValid = False
         self._closed = False
+        self._reversed = False
         self.validate()
 
     @property
@@ -56,6 +57,31 @@ class curveOnSurface:
     def closed(self, c):
         self._closed = c
         self.validate()
+
+    @property
+    def reversed(self):
+        return self._reversed
+
+    @reversed.setter
+    def reversed(self, b):
+        if not self._reversed is bool(b):
+            self.reverse()
+        
+
+    def reverse(self):
+        if self.isValid:
+            print("Curve on surface: reversing")
+            print("%f,%f"%(self.firstParameter,self.lastParameter))
+            v1 = self.curve2D.value(self.firstParameter)
+            v2 = self.curve2D.value(self.lastParameter)
+            self.curve2D.reverse()
+            self.firstParameter = self.curve2D.parameter(v2)
+            self.lastParameter = self.curve2D.parameter(v1)
+            self._reversed = not self._reversed
+            print("%f,%f"%(self.firstParameter,self.lastParameter))
+            self.edgeOnFace = self.curve2D.toShape(self.face, self.firstParameter, self.lastParameter)
+        else:
+            print("Cannot reverse, invalid curve on surface")
 
     def setEdge(self, edge):
         self.edge = edge
@@ -218,7 +244,7 @@ class curveOnSurface:
             scale = 1.0
         self.build_param_list(num)
         if untwist:
-            self.param_list = self.param_list[::-1]
+            self.param_list.reverse()
         curves = list()
         for p in self.param_list:
             p0 = self.curve2D.value(p)
