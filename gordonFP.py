@@ -15,8 +15,33 @@ import Part
 import _utils
 
 TOOL_ICON = _utils.iconsPath() + '/gordon.svg'
-debug = _utils.debug
-debug = _utils.doNothing
+#debug = _utils.debug
+#debug = _utils.doNothing
+
+def debug(o):
+    if isinstance(o,Part.BSplineCurve):
+        FreeCAD.Console.PrintWarning("\nBSplineCurve\n")
+        FreeCAD.Console.PrintWarning("Degree: %d\n"%(o.Degree))
+        FreeCAD.Console.PrintWarning("NbPoles: %d\n"%(o.NbPoles))
+        FreeCAD.Console.PrintWarning("Knots: %d (%0.2f - %0.2f)\n"%(o.NbKnots, o.FirstParameter, o.LastParameter))
+        FreeCAD.Console.PrintWarning("Mults: %s\n"%(o.getMultiplicities()))
+        FreeCAD.Console.PrintWarning("Periodic: %s\n"%(o.isPeriodic()))
+    elif isinstance(o,Part.BSplineSurface):
+        FreeCAD.Console.PrintWarning("\nBSplineSurface\n************\n")
+        try:
+            u = o.uIso(o.UKnotSequence[0])
+            debug(u)
+        except Part.OCCError:
+            FreeCAD.Console.PrintError("Failed to compute uIso curve\n")
+        try:
+            v = o.vIso(o.VKnotSequence[0])
+            debug(v)
+        except Part.OCCError:
+            FreeCAD.Console.PrintError("Failed to compute vIso curve\n")
+        FreeCAD.Console.PrintWarning("************\n")
+    else:
+        FreeCAD.Console.PrintMessage("%s\n"%o)
+
 
 class gordon:
     """Creates a surface that skins a network of curves"""
@@ -54,9 +79,20 @@ class gordon:
 
         # create the gordon surface
         gordon = gordon.InterpolateCurveNetwork(profile_curves, guide_curves, obj.Tol3D, obj.Tol2D)
-
+        #gordon.perform()
+        #s = gordon.surface_intersections()
+        #debug(s)
+        #debug(s.getPoles())
+        #obj.Shape = s.toShape()
+        #poly = list()
+        #for row in s.getPoles():
+            #poly.append(Part.makePolygon(row))
+        #s = gordon.surface_guides()
+        #for row in s.getPoles():
+            #poly.append(Part.makePolygon(row))
+        obj.Shape = gordon.curve_network()
         # display curves and resulting surface
-        obj.Shape = gordon.surface().toShape()
+        #obj.Shape = gordon.surface().toShape()
 
 class gordonVP:
     def __init__(self,vobj):

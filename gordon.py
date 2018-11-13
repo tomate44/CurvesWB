@@ -37,6 +37,7 @@ def debug(o):
         FreeCAD.Console.PrintWarning("Degree: %d\n"%(o.Degree))
         FreeCAD.Console.PrintWarning("NbPoles: %d\n"%(o.NbPoles))
         FreeCAD.Console.PrintWarning("Knots: %d (%0.2f - %0.2f)\n"%(o.NbKnots, o.FirstParameter, o.LastParameter))
+        FreeCAD.Console.PrintWarning("%s\n"%(o.getKnots()))
         FreeCAD.Console.PrintWarning("Mults: %s\n"%(o.getMultiplicities()))
         FreeCAD.Console.PrintWarning("Periodic: %s\n"%(o.isPeriodic()))
     elif isinstance(o,Part.BSplineSurface):
@@ -105,7 +106,7 @@ class GordonSurfaceBuilder(object):
     def perform(self):
         if self.has_performed:
             return()
-        self.create_gordon_surface(self.profiles, self.guides, self.intersectionParamsU, self.intersectionParamsV)
+        self.create_gordon_surface() #self.profiles, self.guides, self.intersectionParamsU, self.intersectionParamsV)
         self.has_performed = True
     def surface_gordon(self):
         self.perform()
@@ -119,61 +120,68 @@ class GordonSurfaceBuilder(object):
     def surface_intersections(self):
         self.perform()
         return(self.tensorProdSurf)
-    def create_gordon_surface(self, profiles, guides, intersection_params_spline_u, intersection_params_spline_v):
+    def curve_network(self):
+        self.perform()
+        profiles = Part.Compound([c.toShape() for c in self.profiles])
+        guides = Part.Compound([c.toShape() for c in self.guides])
+        return(Part.Compound([profiles,guides]))
+    
+
+    def create_gordon_surface(self): # self.profiles, self.guides, self.intersectionParamsU, self.intersectionParamsV):
         # check whether there are any u-directional and v-directional B-splines in the vectors
-        if len(profiles) < 2:
-            self.error("There must be at least two profiles for the gordon surface.")
-        if len(guides)  < 2:
-            self.error("There must be at least two guides for the gordon surface.")
+        if len(self.profiles) < 2:
+            self.error("There must be at least two self.profiles for the gordon surface.")
+        if len(self.guides)  < 2:
+            self.error("There must be at least two self.guides for the gordon surface.")
         # check B-spline parametrization is equal among all curves
-        umin = profiles[0].FirstParameter
-        umax = profiles[0].LastParameter
+        umin = self.profiles[0].FirstParameter
+        umax = self.profiles[0].LastParameter
         # TODO
-        #for (CurveArray::const_iterator it = m_profiles.begin(); it != m_profiles.end(); ++it) {
+        #for (CurveArray::const_iterator it = m_self.profiles.begin(); it != m_self.profiles.end(); ++it) {
             #assertRange(*it, umin, umax, 1e-5);
 
-        vmin = guides[0].FirstParameter
-        vmax = guides[0].LastParameter
+        vmin = self.guides[0].FirstParameter
+        vmax = self.guides[0].LastParameter
         # TODO
-        #for (CurveArray::const_iterator it = m_guides.begin(); it != m_guides.end(); ++it) {
+        #for (CurveArray::const_iterator it = m_self.guides.begin(); it != m_self.guides.end(); ++it) {
             #assertRange(*it, vmin, vmax, 1e-5);
 
         # TODO: Do we really need to check compatibility?
         # We don't need to do this, if the curves were reparametrized before
         # In this case, they might be even incompatible, as the curves have been approximated
-        self.check_curve_network_compatibility(profiles, guides, intersection_params_spline_u, intersection_params_spline_v, self.tolerance)
+        self.check_curve_network_compatibility() #self.profiles, self.guides, self.intersectionParamsU, self.intersectionParamsV, self.tolerance)
 
-        # setting everything up for creating Tensor Product Surface by interpolating intersection points of profiles and guides with B-Spline surface
+        # setting everything up for creating Tensor Product Surface by interpolating intersection points of self.profiles and self.guides with B-Spline surface
         # find the intersection points:
-        intersection_pnts = [[0]*len(intersection_params_spline_v) for i in range(len(intersection_params_spline_u))]
-        #TColgp_Array2OfPnt intersection_pnts(1, static_cast<Standard_Integer>(intersection_params_spline_u.size()),
-                                           # 1, static_cast<Standard_Integer>(intersection_params_spline_v.size()));
+        intersection_pnts = [[0]*len(self.intersectionParamsV) for i in range(len(self.intersectionParamsU))]
+        #TColgp_Array2OfPnt intersection_pnts(1, static_cast<Standard_Integer>(self.intersectionParamsU.size()),
+                                           # 1, static_cast<Standard_Integer>(self.intersectionParamsV.size()));
 
         # use splines in u-direction to get intersection points
-        for spline_idx in range(len(profiles)): #(size_t spline_idx = 0; spline_idx < profiles.size(); ++spline_idx) {
-            for intersection_idx in range(len(intersection_params_spline_u)): #(size_t intersection_idx = 0; intersection_idx < intersection_params_spline_u.size(); ++intersection_idx) {
+        for spline_idx in range(len(self.profiles)): #(size_t spline_idx = 0; spline_idx < self.profiles.size(); ++spline_idx) {
+            for intersection_idx in range(len(self.intersectionParamsU)): #(size_t intersection_idx = 0; intersection_idx < self.intersectionParamsU.size(); ++intersection_idx) {
                 spline_u = self.profiles[spline_idx]
-                parameter = intersection_params_spline_u[intersection_idx]
+                parameter = self.intersectionParamsU[intersection_idx]
                 intersection_pnts[intersection_idx][spline_idx] = spline_u.value(parameter)
 
         # check, whether to build a closed continuous surface
         bsa = BSplineAlgorithms(self.par_tol)
-        curve_u_tolerance = bsa.REL_TOL_CLOSED * bsa.scale(guides)
-        curve_v_tolerance = bsa.REL_TOL_CLOSED * bsa.scale(profiles)
+        curve_u_tolerance = bsa.REL_TOL_CLOSED * bsa.scale(self.guides)
+        curve_v_tolerance = bsa.REL_TOL_CLOSED * bsa.scale(self.profiles)
         tp_tolerance      = bsa.REL_TOL_CLOSED * bsa.scale_pt_array(intersection_pnts)
                                                                                     # TODO No IsEqual in FreeCAD
-        makeUClosed = False #bsa.isUDirClosed(intersection_pnts, tp_tolerance)# and guides[0].toShape().isPartner(guides[-1].toShape()) #.isEqual(guides[-1], curve_u_tolerance);
-        makeVClosed = False #bsa.isVDirClosed(intersection_pnts, tp_tolerance)# and profiles[0].toShape().IsPartner(profiles[-1].toShape())
+        makeUClosed = False #bsa.isUDirClosed(intersection_pnts, tp_tolerance)# and self.guides[0].toShape().isPartner(self.guides[-1].toShape()) #.isEqual(self.guides[-1], curve_u_tolerance);
+        makeVClosed = False #bsa.isVDirClosed(intersection_pnts, tp_tolerance)# and self.profiles[0].toShape().IsPartner(self.profiles[-1].toShape())
 
         # Skinning in v-direction with u directional B-Splines
-        debug("-   Skinning profiles")
-        surfProfiles = bsa.curvesToSurface(profiles, intersection_params_spline_v, makeVClosed)
+        debug("-   Skinning self.profiles")
+        surfProfiles = bsa.curvesToSurface(self.profiles, self.intersectionParamsV, makeVClosed)
         debug(surfProfiles)
         # therefore reparametrization before this method
 
         # Skinning in u-direction with v directional B-Splines
-        debug("-   Skinning guides")
-        surfGuides = bsa.curvesToSurface(guides, intersection_params_spline_u, makeUClosed)
+        debug("-   Skinning self.guides")
+        surfGuides = bsa.curvesToSurface(self.guides, self.intersectionParamsU, makeUClosed)
         debug(surfGuides)
 
         # flipping of the surface in v-direction; flipping is redundant here, therefore the next line is a comment!
@@ -182,7 +190,7 @@ class GordonSurfaceBuilder(object):
         # if there are too little points for degree in u-direction = 3 and degree in v-direction=3 creating an interpolation B-spline surface isn't possible in Open CASCADE
 
         # Open CASCADE doesn't have a B-spline surface interpolation method where one can give the u- and v-directional parameters as arguments
-        tensorProdSurf = bsa.pointsToSurface(intersection_pnts, intersection_params_spline_u, intersection_params_spline_v, makeUClosed, makeVClosed)
+        tensorProdSurf = bsa.pointsToSurface(intersection_pnts, self.intersectionParamsU, self.intersectionParamsV, makeUClosed, makeVClosed)
         debug(tensorProdSurf)
 
         # match degree of all three surfaces
@@ -226,35 +234,36 @@ class GordonSurfaceBuilder(object):
                 cp_surf_v = self.skinningSurfGuides.getPole(cp_u_idx, cp_v_idx)
                 cp_tensor = self.tensorProdSurf.getPole(cp_u_idx, cp_v_idx)
                 self.gordonSurf.setPole(cp_u_idx, cp_v_idx, cp_surf_u + cp_surf_v - cp_tensor)
-    def check_curve_network_compatibility(self, profiles, guides, intersection_params_spline_u, intersection_params_spline_v, tol):
+
+    def check_curve_network_compatibility(self): # self.profiles, self.guides, self.intersectionParamsU, self.intersectionParamsV, tol):
         # find out the 'average' scale of the B-splines in order to being able to handle a more approximate dataset and find its intersections
         bsa = BSplineAlgorithms(self.par_tol)
-        splines_scale = 0.5 * (bsa.scale(profiles) + bsa.scale(guides))
+        splines_scale = 0.5 * (bsa.scale(self.profiles) + bsa.scale(self.guides))
 
-        if abs(intersection_params_spline_u[0]) > (splines_scale * tol) or abs(intersection_params_spline_u[-1] - 1.) > (splines_scale * tol):
+        if abs(self.intersectionParamsU[0]) > (splines_scale * self.tolerance) or abs(self.intersectionParamsU[-1] - 1.) > (splines_scale * self.tolerance):
             self.error("WARNING: B-splines in u-direction must not stick out, spline network must be 'closed'!")
-        if abs(intersection_params_spline_v[0]) > (splines_scale * tol) or abs(intersection_params_spline_v[-1] - 1.) > (splines_scale * tol):
+        if abs(self.intersectionParamsV[0]) > (splines_scale * self.tolerance) or abs(self.intersectionParamsV[-1] - 1.) > (splines_scale * self.tolerance):
             self.error("WARNING: B-splines in v-direction mustn't stick out, spline network must be 'closed'!")
 
         # check compatibility of network
         #ucurves = list()
         #vcurves = list()
         self.error("\n\ncheck_curve_network_compatibility (L1270)")
-        for u_param_idx in range(len(intersection_params_spline_u)): #(size_t u_param_idx = 0; u_param_idx < intersection_params_spline_u.size(); ++u_param_idx) {
-            spline_u_param = intersection_params_spline_u[u_param_idx]
-            spline_v = guides[u_param_idx]
+        for u_param_idx in range(len(self.intersectionParamsU)): #(size_t u_param_idx = 0; u_param_idx < self.intersectionParamsU.size(); ++u_param_idx) {
+            spline_u_param = self.intersectionParamsU[u_param_idx]
+            spline_v = self.guides[u_param_idx]
             #vcurves.append(spline_v.toShape())
-            for v_param_idx in range(len(intersection_params_spline_v)): #(size_t v_param_idx = 0; v_param_idx < intersection_params_spline_v.size(); ++v_param_idx) {
-                spline_u = profiles[v_param_idx]
+            for v_param_idx in range(len(self.intersectionParamsV)): #(size_t v_param_idx = 0; v_param_idx < self.intersectionParamsV.size(); ++v_param_idx) {
+                spline_u = self.profiles[v_param_idx]
                 #ucurves.append(spline_u.toShape())
-                spline_v_param = intersection_params_spline_v[v_param_idx]
+                spline_v_param = self.intersectionParamsV[v_param_idx]
                 self.error("spline_u_param, spline_v_param = %0.5f,%0.5f"%(spline_u_param, spline_v_param))
                 p_prof = spline_u.value(spline_u_param)
                 p_guid = spline_v.value(spline_v_param)
                 self.error("p_prof, p_guid = %s,%s"%(p_prof, p_guid))
                 distance = p_prof.distanceToPoint(p_guid)
                 self.error("distance = %f"%(distance))
-                if (distance > splines_scale * tol):
+                if (distance > splines_scale * self.tolerance):
                     self.error("B-spline network is incompatible (e.g. wrong parametrization) or intersection parameters are in a wrong order!")
                 self.error("")
         #Part.show(Part.Compound(ucurves))
@@ -292,6 +301,7 @@ class InterpolateCurveNetwork(object):
         self.skinning_surf_guides = builder.surface_guides()
         debug("-> builder.surface_guides -> OK")
         self.tensor_prod_surf = builder.surface_intersections()
+        self.curve_network = builder.curve_network()
         self.has_performed = True
     def surface_profiles(self):
         self.perform()
@@ -311,6 +321,9 @@ class InterpolateCurveNetwork(object):
     def surface(self):
         self.perform()
         return(self.gordon_surf)
+    def curve_network(self):
+        self.perform()
+        return(self.curve_network)
     def compute_intersections(self, intersection_params_u, intersection_params_v):
         debug("\ncompute_intersections")
         for spline_u_idx in range(len(self.profiles)):
@@ -457,7 +470,10 @@ class InterpolateCurveNetwork(object):
                 newParametersProfiles[-1] = 1.
 
             profile = self.profiles[spline_u_idx]
-            profile = bsa.reparametrizeBSplineContinuouslyApprox(profile, oldParametersProfile, newParametersProfiles, max_cp_u)
+            self.error("reparametrizing u curve %d"%spline_u_idx)
+            debug(profile)
+            self.profiles[spline_u_idx] = bsa.reparametrizeBSplineContinuouslyApprox(profile, oldParametersProfile, newParametersProfiles, max_cp_u)
+            debug(self.profiles[spline_u_idx])
 
         # reparametrize v-directional B-splines
         for spline_v_idx in range(nGuides):
@@ -476,7 +492,10 @@ class InterpolateCurveNetwork(object):
                 newParametersGuides[-1] = 1.
 
             guide = self.guides[spline_v_idx]
-            guide = bsa.reparametrizeBSplineContinuouslyApprox(guide, oldParameterGuide, newParametersGuides, max_cp_v)
+            self.error("reparametrizing v curve %d"%spline_v_idx)
+            debug(guide)
+            self.guides[spline_v_idx] = bsa.reparametrizeBSplineContinuouslyApprox(guide, oldParameterGuide, newParametersGuides, max_cp_v)
+            debug(self.guides[spline_v_idx])
             
         self.intersectionParamsU = newParametersProfiles
         self.intersectionParamsV = newParametersGuides
