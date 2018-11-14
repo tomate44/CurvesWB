@@ -1,6 +1,7 @@
 # This file is a python port of /src/guide_curves/CTiglCurveNetworkSorter.cpp
 # from the Tigl library : https://github.com/DLR-SC/tigl under Apache-2 license
-
+import FreeCAD
+debug = FreeCAD.Console.PrintMessage
 
 def maxRowIndex(m, irow):
     """returns the column index of the maximum of i-th row"""
@@ -160,11 +161,12 @@ class CurveNetworkSorter(object):
         for iProf in range(1, nProf): #(Standard_Integer iProf = 1; iProf < nProf; ++iProf) {
             if self.parmsIntersProfiles[iProf][0] > self.parmsIntersProfiles[iProf][nGuid-1]:
                 self.reverseProfile(iProf)
+                debug("reversing profile #%d\n"%iProf)
         # reverse guide, if necessary
         for iGuid in range(1, nGuid): #(Standard_Integer iGuid = 1; iGuid < nGuid; ++iGuid) {
             if self.parmsIntersGuides[0][iGuid] > self.parmsIntersGuides[nProf-1][iGuid]:
                 self.reverseGuide(iGuid)
-
+                debug("reversing guide #%d\n"%iGuid)
         self.has_performed = True
     def reverseProfile(self, profileIdx):
         pIdx = int(profileIdx)
@@ -181,7 +183,7 @@ class CurveNetworkSorter(object):
         if not profile is None: #.IsNull()
             import nurbs_tools
             profile = nurbs_tools.bspline_copy(profile, reverse = True, scale = 1.0)
-            #profile.reverse()
+            self.profiles[profileIdx] = profile
         self.profIdx[profileIdx] = "-" + self.profIdx[profileIdx]
     def reverseGuide(self, guideIdx):
         gIdx = int(guideIdx)
@@ -198,5 +200,5 @@ class CurveNetworkSorter(object):
         if not guide is None: #.IsNull()
             import nurbs_tools
             guide = nurbs_tools.bspline_copy(guide, reverse = True, scale = 1.0)
-            #guide.reverse()
+            self.guides[guideIdx] = guide
         self.guidIdx[guideIdx] = "-" + self.guidIdx[guideIdx]

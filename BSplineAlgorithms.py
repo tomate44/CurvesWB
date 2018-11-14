@@ -478,6 +478,10 @@ class BSplineAlgorithms(object):
             #old_parameters_pnts[occIdx] = vec2d(old_parameters[parameter_idx], 0)
 
         reparametrizing_spline = Part.Geom2d.BSplineCurve2d()
+        self.error("reparametrizing_spline")
+        self.error("nb_pts = %d"%(len(old_parameters_pnts)))
+        self.error("nb_par = %d"%(len(new_parameters)))
+        self.error("pars = %s"%new_parameters)
         reparametrizing_spline.interpolate(Points=old_parameters_pnts, Parameters=new_parameters, PeriodicFlag=False, Tolerance=self.tol)
 
 

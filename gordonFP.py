@@ -90,9 +90,9 @@ class gordon:
         #s = gordon.surface_guides()
         #for row in s.getPoles():
             #poly.append(Part.makePolygon(row))
-        obj.Shape = gordon.curve_network()
+        #obj.Shape = gordon.curve_network()
         # display curves and resulting surface
-        #obj.Shape = gordon.surface().toShape()
+        obj.Shape = gordon.surface().toShape()
 
 class gordonVP:
     def __init__(self,vobj):

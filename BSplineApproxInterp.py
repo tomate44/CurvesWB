@@ -39,6 +39,30 @@ def SquareDistance(v1,v2):
 def SquareMagnitude(v1):
     return(pow(v1.x,2)+pow(v1.y,2)+pow(v1.z,2))
 
+def find(val, array, tol=1e-5):
+    for i in range(len(array)):
+        if abs(val-array[i]) < tol:
+            return(int(i))
+    return(-1)
+
+def insertKnot(knot, count, degree, knots, mults, tol = 1e-5):
+    if (knot < knots[0] or knot > knots[-1]):
+        raise RuntimeError("knot out of range")
+
+    # pos = std::find_if(knots.begin(), knots.end(), helper_function_find(knot, tol)) - knots.begin();
+    pos = find(knot, knots, tol)
+
+    if (pos == -1):
+        # knot not found, insert new one
+        pos = 0;
+        while (knots[pos] < knot):
+            pos += 1
+        knots.insert(pos, knot)
+        mults.insert(pos, min(count, degree))
+    else:
+        # knot found, increase multiplicity
+        mults[pos] = min(mults[pos] + count, degree)
+        
 def bsplineBasisMat(degree, knots, params, derivOrder):
     import numpy as np
     #from scipy import linalg
@@ -129,10 +153,17 @@ class BSplineApproxInterp(object):
         result, error = self.python_solve(parms, knots, mults) # TODO occKnots, occMults ???? See above
         old_error = error * 2
 
-        while ( (error>0) and ((old_error-error)/max(error, 1e-6) > 1e-3) and (iteration < maxIter) ):
+        debug("FitCurveOptimal iteration #%d"%iteration)
+        debug("error = %f"%error)
+        debug("(%0.4f - %0.4f)/max(%0.4f,1e-6) = %0.5f "%(old_error,error,error,((old_error-error)/max(error, 1e-6))))
+
+        while ( (error>0) and ((old_error-error)/max(error, 1e-6) > 1e-6) and (iteration < maxIter) ):
+            debug("FitCurveOptimal iteration #%d"%iteration)
             old_error = error
             self.optimizeParameters(result, parms)
             result, error = self.python_solve(parms, knots, mults)
+            debug("error = %f"%error)
+            debug("(%0.4f - %0.4f)/max(%0.4f,1e-6) = %0.5f "%(old_error,error,error,((old_error-error)/max(error, 1e-6))))
             iteration += 1
         
         return(result,error)
@@ -244,8 +275,9 @@ class BSplineApproxInterp(object):
     def python_solve(self, params, knots, mults):
         import numpy as np
         #debug("python_solve(params, knots, mults):\n%s\n%s\n%s"%(params, knots, mults))
-        #from scipy import linalg
-        #return()
+        
+        # 
+        
         # TODO knots and mults are OCC arrays (1-based)
         # TODO I replaced the following OCC objects with numpy arrays:
         #math_Matrix (Init, Set, Transposed, Multiplied, )
@@ -257,7 +289,7 @@ class BSplineApproxInterp(object):
         #nFlatKnots = BSplCLib::KnotSequenceLength(mults, self.degree, False)
         #TColStd_Array1OfReal flatKnots(1, nFlatKnots)
         #BSplCLib::KnotSequence(knots, mults, flatKnots)
-        flatKnots = []
+        flatKnots = [] 
         for i in range(len(knots)):
             flatKnots += [knots[i]]*mults[i]
             
@@ -306,17 +338,17 @@ class BSplineApproxInterp(object):
             by = np.array([0.]*n_apprxmated)
             bz = np.array([0.]*n_apprxmated)
         
-            appIndex = 0
-            for it_idx in range(len(self.indexOfApproximated)): #for (std::vector<size_t>::const_iterator it_idx = m_indexOfApproximated.begin() it_idx != m_indexOfApproximated.end() ++it_idx) {
-                ipnt = self.indexOfApproximated[it_idx] # + 1
-                p = self.pnts[ipnt]
+            #appIndex = 0
+            for idx in range(len(self.indexOfApproximated)): #for (std::vector<size_t>::const_iterator it_idx = m_indexOfApproximated.begin() it_idx != m_indexOfApproximated.end() ++it_idx) {
+                ioa = self.indexOfApproximated[idx] # + 1
+                p = self.pnts[ioa]
                 
-                bx[appIndex] = p.x
-                by[appIndex] = p.y
-                bz[appIndex] = p.z
-                appParams[appIndex] = params[self.indexOfApproximated[it_idx]]
-                #debug(appParams[appIndex])
-                appIndex += 1
+                bx[idx] = p.x
+                by[idx] = p.y
+                bz[idx] = p.z
+                appParams[idx] = params[ioa]
+                #debug(appParams[idx])
+                #appIndex += 1
 
             # Solve constrained linear least squares
             # min(Ax - b) s.t. Cx = d
@@ -354,20 +386,20 @@ class BSplineApproxInterp(object):
             dz = np.array([0.]*(n_intpolated + n_continuityConditions))
             if(n_intpolated > 0):
                 interpParams = [0]*n_intpolated
-                intpIndex = 0
+                #intpIndex = 0
                 #for (std::vector<size_t>::const_iterator it_idx = m_indexOfInterpolated.begin() it_idx != m_indexOfInterpolated.end() ++it_idx) {
                     #Standard_Integer ipnt = static_cast<Standard_Integer>(*it_idx + 1)
-                for it_idx in range(len(self.indexOfInterpolated)): #for (std::vector<size_t>::const_iterator it_idx = m_indexOfApproximated.begin() it_idx != m_indexOfApproximated.end() ++it_idx) {
-                    ipnt = it_idx # + 1
-                    p = self.pnts[ipnt]
-                    dx[intpIndex] = p.x
-                    dy[intpIndex] = p.y
-                    dz[intpIndex] = p.z
+                for idx in range(len(self.indexOfInterpolated)): #for (std::vector<size_t>::const_iterator it_idx = m_indexOfApproximated.begin() it_idx != m_indexOfApproximated.end() ++it_idx) {
+                    ioi = self.indexOfInterpolated[idx] # + 1
+                    p = self.pnts[ioi]
+                    dx[idx] = p.x
+                    dy[idx] = p.y
+                    dz[idx] = p.z
                     try:
-                        interpParams[intpIndex] = params[self.indexOfInterpolated[it_idx]]
+                        interpParams[idx] = params[ioi]
                     except:
                         debug(self.indexOfInterpolated[it_idx])
-                    intpIndex += 1
+                    #intpIndex += 1
 
                 C = bsplineBasisMat(self.degree, flatKnots, interpParams, 0)
                 Ct = C.T
@@ -447,15 +479,15 @@ class BSplineApproxInterp(object):
         max_error = 0.
         #for (std::vector<size_t>::const_iterator it_idx = m_indexOfApproximated.begin() it_idx != m_indexOfApproximated.end() ++it_idx) {
             #Standard_Integer ipnt = static_cast<Standard_Integer>(*it_idx + 1)
-        for it_idx in range(len(self.indexOfApproximated)):
-            ipnt = it_idx # + 1
-            p = self.pnts[ipnt]
-            par = params[self.indexOfApproximated[it_idx]]
+        for idx in range(len(self.indexOfApproximated)):
+            ioa = self.indexOfApproximated[idx]
+            p = self.pnts[ioa]
+            par = params[ioa]
 
             error = result.value(par).distanceToPoint(p)
             max_error = max(max_error, error)
         return(result, max_error)
-    def optimizeParameters(self, curve, m_t):
+    def optimizeParameters(self, curve, params):
         #/**
         #* @brief Recalculates the curve parameters t_k after the
         #* control points are fitted to achieve an even better fit.
@@ -463,10 +495,10 @@ class BSplineApproxInterp(object):
         # optimize each parameter by finding it's position on the curve
         # for (std::vector<size_t>::const_iterator it_idx = m_indexOfApproximated.begin(); it_idx != m_indexOfApproximated.end(); ++it_idx) {
         for i in self.indexOfApproximated: #range(len(self.indexOfApproximated)):
-            parameter, error = self.projectOnCurve(self.pnts[i], curve, m_t[i])
-
+            parameter, error = self.projectOnCurve(self.pnts[i], curve, params[i])
+            #debug("optimize Parameter %d from %0.4f to %0.4f"%(i,params[i],parameter))
             # store optimised parameter
-            m_t[i] = parameter
+            params[i] = parameter
     def projectOnCurve(self, pnt, curve, inital_Parm):
         maxIter = 10 # maximum No of iterations
         eps  = 1.0e-6 # accuracy of arc length parameter

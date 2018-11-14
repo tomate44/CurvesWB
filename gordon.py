@@ -63,25 +63,6 @@ def find(val, array, tol=1e-5):
             return(int(i))
     return(-1)
 
-def insertKnot(knot, count, degree, knots, mults, tol = 1e-5):
-    if (knot < knots[0] or knot > knots[-1]):
-        raise RuntimeError("knot out of range")
-
-    # pos = std::find_if(knots.begin(), knots.end(), helper_function_find(knot, tol)) - knots.begin();
-    pos = find(knot, knots, tol)
-
-    if (pos == -1):
-        # knot not found, insert new one
-        pos = 0;
-        while (knots[pos] < knot):
-            pos += 1
-        knots.insert(pos, knot)
-        mults.insert(pos, min(count, degree))
-    else:
-        # knot found, increase multiplicity
-        mults[pos] = min(mults[pos] + count, degree)
-        
-
 class GordonSurfaceBuilder(object):
     """Build a Gordon surface from a network of curves"""
     def __init__(self, profiles, guides, params_u, params_v, tol=1e-5, par_tol=1e-7):
@@ -303,6 +284,7 @@ class InterpolateCurveNetwork(object):
         self.tensor_prod_surf = builder.surface_intersections()
         self.curve_network = builder.curve_network()
         self.has_performed = True
+        debug("-> builder successfully finished")
     def surface_profiles(self):
         self.perform()
         return(self.skinning_surf_profiles)
@@ -385,6 +367,7 @@ class InterpolateCurveNetwork(object):
         #std::transform(sorterObj.Guides().begin(), sorterObj.Guides().end(), m_guides.begin(), caster);
         self.profiles = sorterObj.profiles
         self.guides = sorterObj.guides
+        return(intersection_params_u, intersection_params_v)
     def make_curves_compatible(self):
         # reparametrize into [0,1]
         bsa = BSplineAlgorithms()
@@ -404,7 +387,7 @@ class InterpolateCurveNetwork(object):
         debug("intersection_params_u\n%s"%intersection_params_u)
         debug("intersection_params_v\n%s"%intersection_params_v)
         # sort intersection_params_u and intersection_params_v and u-directional and v-directional B-spline curves
-        self.sort_curves(intersection_params_u, intersection_params_v)
+        intersection_params_u, intersection_params_v = self.sort_curves(intersection_params_u, intersection_params_v)
 
         # eliminate small inaccuracies of the intersection parameters:
         self.eliminate_inaccuracies_network_intersections(self.profiles, self.guides, intersection_params_u, intersection_params_v)
