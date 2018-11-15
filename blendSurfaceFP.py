@@ -224,8 +224,10 @@ class blendSurfVP:
     def setEdit(self,vobj,mode=0):
         if mode == 0:
             debug("Start Edit")
-            from importlib import reload
             import property_editor
+            import sys
+            if sys.version_info.major >= 3:
+                from importlib import reload
             reload(property_editor)
             self.ed = property_editor.VPEditor()
             self.group1 = self.ed.add_layout("Face 1")
