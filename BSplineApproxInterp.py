@@ -219,7 +219,7 @@ class BSplineApproxInterp(object):
 
         #for (std::vector<size_t>::const_iterator it = m_indexOfKinks.begin(); it != m_indexOfKinks.end(); ++it) {
             #size_t idx = *it;
-        for i in range(len(self.indexOfKinks)):
+        for i in self.indexOfKinks:
             insertKnot(parms[i], self.degree, self.degree, knots, mults, 1e-4)
             
         #debug("computeKnots(ncp, params, knots, mults):\n%s\n%s\n%s\n%s"%(ncp, parms, knots, mults))

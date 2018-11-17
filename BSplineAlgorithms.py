@@ -386,7 +386,7 @@ class BSplineAlgorithms(object):
                 return curSplineKnotIdx
         return -1
     def pointsToSurface(self, points, uParams, vParams, uContinuousIfClosed, vContinuousIfClosed):
-        debug("-   pointsToSurface")
+        #debug("-   pointsToSurface")
         tolerance = self.REL_TOL_CLOSED * self.scale_pt_array(points)
         makeVDirClosed = vContinuousIfClosed and self.isVDirClosed(points, tolerance)
         makeUDirClosed = uContinuousIfClosed and self.isUDirClosed(points, tolerance)
