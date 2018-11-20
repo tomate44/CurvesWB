@@ -128,7 +128,8 @@ class blendSurface:
             o = obj.InputEdge[0]
             ss = obj.InputEdge[1][0]
             n = eval(ss.lstrip('Edge'))
-            res = o.Shape.Edges[n-1]
+            if len(o.Shape.Edges) >= n:
+                res = o.Shape.Edges[n-1]
         return(res)
 
     def getFace(self, obj):
@@ -137,7 +138,8 @@ class blendSurface:
             o = obj.Face[0]
             ss = obj.Face[1][0]
             n = eval(ss.lstrip('Face'))
-            res = o.Shape.Faces[n-1]
+            if len(o.Shape.Faces) >= n:
+                res = o.Shape.Faces[n-1]
         return(res)
 
     def paramRange(self, cos):

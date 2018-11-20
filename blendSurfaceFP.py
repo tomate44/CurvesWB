@@ -5,7 +5,13 @@ from FreeCAD import Base
 import blendSurface
 import CoinNodes
 from pivy import coin
-from PySide.QtGui import * 
+from PySide.QtGui import *
+
+import sys
+if sys.version_info.major >= 3:
+    from importlib import reload
+import property_editor
+reload(property_editor)
 
 DEBUG = 1
 
@@ -87,7 +93,8 @@ class blendSurfFP:
                 bs = blendSurface.blendSurface(obj.Edge1, obj.Edge2)
                 bs.railSamples = obj.RailSamples
                 bs.profSamples = obj.ProfileSamples
-                bs.untwist = obj.Untwist
+                if "Untwist" in obj.PropertiesList:
+                    bs.untwist = obj.Untwist
                 bs.cont1 = self.getContinuity(obj.Continuity1)
                 bs.scale1 = obj.Scale1
                 bs.cont2 = self.getContinuity(obj.Continuity2)
@@ -224,11 +231,6 @@ class blendSurfVP:
     def setEdit(self,vobj,mode=0):
         if mode == 0:
             debug("Start Edit")
-            import property_editor
-            import sys
-            if sys.version_info.major >= 3:
-                from importlib import reload
-            reload(property_editor)
             self.ed = property_editor.VPEditor()
             self.group1 = self.ed.add_layout("Face 1")
             proped_11 = property_editor.VectorListWidget(self.Object,"ScaleList1")
