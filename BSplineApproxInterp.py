@@ -398,7 +398,7 @@ class BSplineApproxInterp(object):
                     try:
                         interpParams[idx] = params[ioi]
                     except:
-                        debug(self.indexOfInterpolated[it_idx])
+                        debug(ioi)
                     #intpIndex += 1
 
                 C = bsplineBasisMat(self.degree, flatKnots, interpParams, 0)
