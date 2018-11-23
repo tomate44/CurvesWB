@@ -115,7 +115,8 @@ def curveNode(cur):
     polySep.vertices = poles
 
     # *** Set markers ***    
-    markerSep = coinNodes.markerSetNode((1,0,0),coin.SoMarkerSet.DIAMOND_FILLED_7_7)
+    markerSep = coinNodes.markerSetNode((1,0,0),coin.SoMarkerSet.DIAMOND_FILLED_9_9)
+    markerSep.color = [(1,0,0)]+[(0.5,0.0,0.5)]*(len(poles)-1)
 
     if rational:
         # *** Set weight text ***
@@ -137,7 +138,8 @@ def curveNode(cur):
         for m in mults:
             multStr.append("\n%d"%m)
         
-        knotMarkerSep = coinNodes.markerSetNode((0,0,1),coin.SoMarkerSet.CIRCLE_FILLED_9_9)
+        knotMarkerSep = coinNodes.markerSetNode((0,0,1),coin.SoMarkerSet.CIRCLE_FILLED_5_5)
+        knotMarkerSep.color = [(0,0,1)]*len(knotPoints)
 
         # *** Set mult text ***        
         multSep = coinNodes.multiTextNode((0,0,1),"osiFont,FreeSans,sans",16,1)
@@ -191,13 +193,14 @@ def surfNode(surf):
 
     polyRowSep = coinNodes.rowNode((0.5,0,0),1)
     polyRowSep.vertices=(nbU,nbV)
-    #debug(str(polyRowSep.vertices))
+    polyRowSep.color = [(0.5,0.0,0.0)]*len(flatPoles)
     polyColSep = coinNodes.colNode((0,0,0.5),1)
     polyColSep.vertices=(nbU,nbV)
-    #debug(str(polyColSep.vertices))
+    polyColSep.color = [(0.0,0.0,0.5)]*len(flatPoles)
 
     # *** Set markers ***    
-    markerSep = coinNodes.markerSetNode((1,0,0),coin.SoMarkerSet.DIAMOND_FILLED_7_7)
+    markerSep = coinNodes.markerSetNode((1,0,0),coin.SoMarkerSet.DIAMOND_FILLED_9_9)
+    markerSep.color = [(1,0,0)]+[(0.5,0.0,0.5)]*(len(flatPoles)-1)
 
     u0,u1,v0,v1 = surf.bounds()
     halfU = u0 + 1.*(u1-u0)/2
@@ -239,6 +242,8 @@ def surfNode(surf):
         if nb_curves > 0:
             uknotsnode = coinNodes.coordinate3Node(uknotPoints)
             uCurves = coinNodes.rowNode((1.0,0.5,0.3),3)
+            uCurves.color = [(1.0,0.5,0.3)]*99
+            uCurves.color += [(0.7,0.0,0.3)]*(nb_curves-1)*99
             uCurves.vertices=(nb_curves,100)
             vizSep.addChild(uknotsnode)
             vizSep.addChild(uCurves)
@@ -261,6 +266,8 @@ def surfNode(surf):
         if nb_curves > 0:
             vknotsnode = coinNodes.coordinate3Node(vknotPoints)
             vCurves = coinNodes.rowNode((0.3,0.5,1.0),3)
+            vCurves.color = [(0.8,0.8,0.0)]*99
+            vCurves.color += [(0.3,0.0,0.7)]*(nb_curves-1)*99
             vCurves.vertices=(nb_curves,100)
             vizSep.addChild(vknotsnode)
             vizSep.addChild(vCurves)
