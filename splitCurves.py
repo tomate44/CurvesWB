@@ -19,10 +19,12 @@ class split:
     def __init__(self, obj, e):
         obj.addProperty("App::PropertyLinkSub",      "Edge",     "Split",  "Edge to split").Edge = e
         obj.addProperty("App::PropertyEnumeration",  "Method",   "Split",  "Splitting method").Method = ['Parameter','Distance','Percent']
+        obj.addProperty("App::PropertyEnumeration",  "Output",   "Split",  "Output type").Output = ['Wire','Start','End']
         obj.addProperty("App::PropertyFloat",        "Value",    "Split",  "Split at given parameter")
         obj.addProperty("App::PropertyFloat",        "Param",    "Split",  "Parameter")
         obj.setEditorMode("Param", 2)
         obj.Method = 'Percent'
+        obj.Output = 'Wire'
         obj.Value = 50.0
         obj.Proxy = self
 
@@ -91,10 +93,19 @@ class split:
         elif obj.Method == "Distance":
             p = self.DistanceToParam(e, obj.Value)
         if p > e.FirstParameter and p < e.LastParameter:
-            obj.Shape = e.split(p)
+            w = e.split(p)
+            if   obj.Output == "Start":
+                obj.Shape = w.Edges[0]
+            elif obj.Output == "End":
+                obj.Shape = w.Edges[-1]
+            else:
+                obj.Shape = w
         else:
             obj.Shape = e
         obj.Placement = e.Placement
+
+    def onDocumentRestored(self, fp):
+        fp.setEditorMode("Param", 2)
 
 class splitVP:
     def __init__(self,vobj):
