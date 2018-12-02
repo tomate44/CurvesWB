@@ -33,13 +33,15 @@ class bezierCurve:
         self.cursorCB   = self.view.addEventCallbackPivy( coin.SoLocation2Event.getClassTypeId(), self.cursor_cb)
 
         self.nodeInit()
+        for st in self.info:
+            FreeCAD.Console.PrintError(st+"\n")
 
     def nodeInit(self):
         self.sg = self.view.getSceneGraph()
         self.coord = CoinNodes.coordinate3Node([(0,0,0)])
         self.markers = CoinNodes.markerSetNode((1,0.35,0.8),70)
         self.polygon = coin.SoLineSet() #CoinNodes.sensorPolyNode((0.0,0.5,0.0),1)
-        self.polygon.transparency = 0.7
+        #self.polygon.transparency = 0.7
         #self.polygon.linkTo(self.coord)
         self.switch = coin.SoSwitch()
         self.empty = coin.SoSeparator()
@@ -53,12 +55,12 @@ class bezierCurve:
 
         self.info = ["LMB : add pole",
                      "Del : remove last pole",
-                     "I / D : degree",
+                     "I / D : Increase / Decrease degree",
                      "Left CTRL : snap",
                      "Enter : Accept",
                      "Esc : Abort"]
         self.Block1 = HUD.textArea()
-        self.Block1.setFont("Sans", 10.0, (0.,0.,0.))
+        self.Block1.setFont("Sans", 12.0, (0.,0.,0.))
         self.Block1.text = self.info + ["Degree : %s"%self.curve.Degree]
 
         self.myHud = HUD.HUD()
@@ -110,14 +112,19 @@ class bezierCurve:
         if len(self.stack) > self.degree + 1:
             self.mults.insert(-1,1)
         self.knots.append(self.knots[-1]+1.)
-        self.updateCurve()
         if len(self.stack) == 2:
             self.sepa.addChild(self.polygon) # polygon can be added several times !!!!
-        elif len(self.stack) >= 24:
-            self.finish()
+        elif len(self.stack) in [3,4]:
+            self.increaseDegree()
+        #elif len(self.stack) >= 24:
+            #self.finish()
+        if len(self.stack) > 2:
+            self.updateCurve()
 
     def removePole(self):
-        if (len(self.stack) > 2) and (len(self.stack) > self.degree + 1):
+        if (len(self.stack) > 2):
+            if (len(self.stack) <= self.degree + 1):
+                self.decreaseDegree()
             self.stack.pop(-1)
             self.coord.pop(-1)
             self.mults.pop(-2)
