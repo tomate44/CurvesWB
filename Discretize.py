@@ -248,11 +248,16 @@ class discretize:
     def Activated(self):
         s = FreeCADGui.Selection.getSelectionEx()
         edges = self.parseSel(s)
+        FreeCADGui.doCommand("import Discretize")
         for e in edges:
-            obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Discretized_Edge")
-            Discretization(obj,e)
-            ViewProviderDisc(obj.ViewObject)
-            obj.ViewObject.PointSize = 3.00000
+            FreeCADGui.doCommand('obj = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Discretized_Edge")')
+            FreeCADGui.doCommand('Discretize.Discretization(obj, (FreeCAD.ActiveDocument.getObject("%s"),"%s"))'%(e[0].Name,e[1][0]))
+            FreeCADGui.doCommand('Discretize.ViewProviderDisc(obj.ViewObject)')
+            FreeCADGui.doCommand('obj.ViewObject.PointSize = 3')
+            #obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Discretized_Edge")
+            #Discretization(obj,e)
+            #ViewProviderDisc(obj.ViewObject)
+            #obj.ViewObject.PointSize = 3.00000
         FreeCAD.ActiveDocument.recompute()
 
     def IsActive(self):
