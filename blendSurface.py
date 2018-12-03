@@ -79,6 +79,35 @@ class blendSurface:
         else:
             FreeCAD.Console.PrintError("BlendSurface : failed to compute scale\n%s\n"%str(sc))
 
+    def cross_curves2(self):
+        self.curves = list()
+        import nurbs_tools
+        c1 = self.cos1.get_cross_curves(self.railSamples, 1.0)
+        c2 = self.cos2.get_cross_curves(self.railSamples, 1.0)
+        sc1 = self.compute_scale(self.var_scale1, self.cos1.edge)
+        sc2 = self.compute_scale(self.var_scale2, self.cos2.edge)
+        if self.untwist:
+            c2 = self.cos2.get_cross_curves(self.railSamples, 1.0, True)
+            sc2.reverse()
+        blends = list()
+        for i in range(self.railSamples):
+            
+            b = nurbs_tools.blendCurve(c1[i],c2[i])
+            b.cont1 = self.cont1
+            b.cont2 = self.cont2
+            if sc1:
+                b.scale1 = sc1[i].y
+            else:
+                b.scale1 = self.scale1
+            if sc2:
+                b.scale2 = sc2[i].y
+            else:
+                b.scale2 = self.scale2
+            b.compute()
+            blends.append(b.shape())
+            self.curves.append(b)
+        return(blends)
+
     def cross_curves(self):
         self.curves = list()
         import nurbs_tools

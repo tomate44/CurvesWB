@@ -258,6 +258,24 @@ class curveOnSurface:
             curves.append(edge1)
         return(curves)
 
+    def get_cross_curve_toward_point(self, param, pt, scale=1.0, untwist=False):
+        pl = self.edge.Placement
+        if scale == 0:
+            scale = 1.0
+        edge_point = self.edgeOnFace.valueAt(param)
+        vec = edge_point.sub(pt)
+        vec.normalize()
+        vec.multiply(1e-3)
+        point = edge_point.add(vec)
+        u0,v0 = self.face.Surface.parameter(point)
+        u1,v1 = self.face.Surface.parameter(edge_point)
+        p0 = Base.Vector2d(u0,v0)
+        p1 = Base.Vector2d(u1,v1)
+        ls1 = Geom2d.Line2dSegment(p0, p1)
+        edge1 = ls1.toShape(self.face, ls1.FirstParameter, ls1.LastParameter)
+        edge1.Placement = pl
+        return(edge1)
+
     def normalFace(self, samp, dist, tol=1e-5, sym=False):
         face = None
         if sym:
