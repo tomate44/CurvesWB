@@ -230,7 +230,7 @@ class interpolate:
         verts = list()
         for obj in selectionObject:
             if obj.HasSubObjects:
-                FreeCAD.Console.PrintMessage("object has subobjects %s\n"%obj.SubElementNames)
+                FreeCAD.Console.PrintMessage("object has subobjects %s\n"%str(obj.SubElementNames))
                 for n in obj.SubElementNames:
                     if 'Vertex' in n:
                         verts.append((obj.Object,[n]))

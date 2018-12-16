@@ -78,21 +78,27 @@ class blendSurface:
             return([float(sc)]*self.railSamples)
         else:
             FreeCAD.Console.PrintError("BlendSurface : failed to compute scale\n%s\n"%str(sc))
+            return(None)
 
     def cross_curves2(self):
         self.curves = list()
         import nurbs_tools
-        c1 = self.cos1.get_cross_curves(self.railSamples, 1.0)
-        c2 = self.cos2.get_cross_curves(self.railSamples, 1.0)
+        params1 = self.cos1.build_param_list(self.railSamples)
+        params2 = self.cos2.build_param_list(self.railSamples)
+        if self.untwist:
+            self.cos2.param_list.reverse()
         sc1 = self.compute_scale(self.var_scale1, self.cos1.edge)
         sc2 = self.compute_scale(self.var_scale2, self.cos2.edge)
-        if self.untwist:
-            c2 = self.cos2.get_cross_curves(self.railSamples, 1.0, True)
-            sc2.reverse()
+        #if self.untwist:
+            #c2 = self.cos2.get_cross_curves(self.railSamples, 1.0, True)
+            #sc2.reverse()
         blends = list()
         for i in range(self.railSamples):
-            
-            b = nurbs_tools.blendCurve(c1[i],c2[i])
+            pt1 = self.cos1.edgeOnFace.valueAt(self.cos1.param_list[i])
+            pt2 = self.cos2.edgeOnFace.valueAt(self.cos2.param_list[i])
+            c1 = self.cos1.get_cross_curve_toward_point(self.cos1.param_list[i], pt2, 1e-1, False)
+            c2 = self.cos2.get_cross_curve_toward_point(self.cos2.param_list[i], pt1, 1e-1, False)
+            b = nurbs_tools.blendCurve(c1,c2)
             b.cont1 = self.cont1
             b.cont2 = self.cont2
             if sc1:
@@ -136,9 +142,11 @@ class blendSurface:
             self.curves.append(b)
         return(blends)
 
-    def get_gordon_shapes(self):
+    def get_gordon_shapes(self, curvetype=0):
         com1 = Part.Compound([self.cos1.edge, self.cos2.edge])
         com2 = Part.Compound(self.cross_curves())
+        if curvetype == 1:
+            com2 = Part.Compound(self.cross_curves2())
         return(Part.Compound([com1, com2]))
 
     def getPoints(self):
