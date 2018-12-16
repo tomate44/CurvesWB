@@ -101,7 +101,7 @@ class curveOnSurface:
                     newedge = self.face.project([self.edge]).Edges[0]
                     c2d = self.face.curveOnSurface(newedge)
                     if isinstance(c2d,tuple):
-                        print("Projection successful.")
+                        print("Projection success.")
                 except Part.OCCError:
                     newface = self.face.Surface.toShape()
                     newedge = newface.project([self.edge]).Edges[0]
@@ -121,7 +121,6 @@ class curveOnSurface:
                     self.edgeOnFace = Part.Edge(self.edge.Curve, self.firstParameter, self.lastParameter)
             else:
                 e = self.face.project([self.edge]).Edges[0]
-                
                 self.isValid = False
                 self.firstParameter = self.edge.FirstParameter
                 self.lastParameter  = self.edge.LastParameter
@@ -347,3 +346,19 @@ class curveOnSurface:
             surf.setUPeriodic()
             face = surf.toShape()
         return(face)
+
+    def get_adjacent_edges(self):
+        """returns the edges of Face that are connected to Edge"""
+        e1 = list()
+        e2 = list()
+        for w in self.face.Wires:
+            for e in w.Edges:
+                if not e.isPartner(self.edge):
+                    for v in e.Vertexes:
+                        if v.isPartner(self.edge.Vertexes[0]):
+                            e1.append(e)
+                        elif v.isPartner(self.edge.Vertexes[1]):
+                            e2.append(e)
+        return([e1,e2])
+
+    
