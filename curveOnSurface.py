@@ -32,6 +32,25 @@ import _utils
 
 debug = _utils.debug
 
+def get_offset_curve(bc,c1,c2,dist=0.1):
+    """computes the offsetcurve2d that is at distance dist from curve bc, that intersect c1 and c2.
+    Returns the offset curve ans the intersection points"""
+    off = Part.Geom2d.OffsetCurve2d(bc, dist)
+    # TODO : extend offset
+    inter1 = off.intersectCC(c1)
+    inter2 = off.intersectCC(c2)
+    if len(inter1) > 0 and len(inter2) > 0:
+        return(off,inter1[0],inter2[0])
+    else: # No intersection. Let's try the other side
+        off = Part.Geom2d.OffsetCurve2d(bc,-dist)
+        # TODO : extend offset
+        inter1 = off.intersectCC(c1)
+        inter2 = off.intersectCC(c2)
+        if len(inter1) > 0 and len(inter2) > 0:
+            return(off,inter1[0],inter2[0])
+        else:
+            return(None)
+
 class curveOnSurface:
     
     def __init__(self, edge = None, face = None):
@@ -257,24 +276,74 @@ class curveOnSurface:
             curves.append(edge1)
         return(curves)
 
-    def get_cross_curve_toward_point(self, param, pt, scale=1.0, untwist=False):
-        pl = self.edge.Placement
-        if scale == 0:
-            scale = 1.0
-        edge_point = self.edgeOnFace.valueAt(param)
-        vec = edge_point.sub(pt)
-        vec.normalize()
-        vec.multiply(scale)
-        point = edge_point.add(vec)
-        u0,v0 = self.face.Surface.parameter(point)
-        u1,v1 = self.face.Surface.parameter(edge_point)
-        p0 = Base.Vector2d(u0,v0)
-        p1 = Base.Vector2d(u1,v1)
-        debug("%s - %s"%(p0,p1))
-        ls1 = Geom2d.Line2dSegment(p0, p1)
-        edge1 = ls1.toShape(self.face, ls1.FirstParameter, ls1.LastParameter)
-        edge1.Placement = pl
-        return(edge1)
+    def get_offset_curve2d(self, dist=0.1):
+        cos = list()
+        idx = -1
+        nbe = len(self.face.OuterWire.Edges)
+        for n,e in enumerate(self.face.OuterWire.Edges):
+            c = self.face.curveOnSurface(e)
+            if len(c) == 3:
+                cos.append(c[0].toBSpline(c[1],c[2]))
+            else:
+                FreeCAD.Console.PrintError("failed to extract 2D geometry")
+            if e.isPartner(self.edge):
+                idx = n
+
+        # idx is the index of the curve to offset
+        # get the index of the 2 neighbour curves
+        id1 = idx-1 if idx > 0 else nbe-1
+        id2 = idx+1 if idx < nbe-1 else 0
+
+        # get offset curve
+        off = get_offset_curve(cos[idx], cos[id1], cos[id2], dist)
+        bs = None
+        if off:
+            p1 = off[0].parameter(off[1])
+            p2 = off[0].parameter(off[2])
+            if p1 < p2:
+                bs = off[0].toBSpline(p1,p2)
+            else:
+                bs = off[0].toBSpline(p2,p1)
+        return(bs)
+
+    def get_cross_curve(self, off, u=0):
+        """returns cross-curve from offsetCurve off to COS at param u"""
+        if u < self.firstParameter or u > self.lastParameter:
+            FreeCAD.Console.PrintError("Curve_on_surface.get_cross_curve : parameter out of range")
+            return(None)
+        fac = (u-self.firstParameter) / (self.lastParameter-self.firstParameter)
+        v = off.FirstParameter + fac*(off.LastParameter-off.FirstParameter)
+        p1 = off.value(v)
+        p2 = self.curve2D.value(u)
+        ls = Part.Geom2d.Line2dSegment(p1,p2)
+        sh = ls.toShape(self.face)
+        sh.Placement = self.face.Placement
+        FreeCAD.Console.PrintMessage(" %s - %s\n"%(self.edge.Curve, str( sh.distToShape(self.edge)[0])))
+        d,pts,info = sh.distToShape(self.edge)
+        if d > 1e-8:
+            bs = sh.Curve.toBSpline()
+            bs.setPole(bs.NbPoles,pts[0][1])
+            return(bs.toShape())
+        return(sh)
+
+    #def get_cross_curve_toward_point(self, param, pt, scale=1.0, untwist=False):
+        #pl = self.edge.Placement
+        #if scale == 0:
+            #scale = 1.0
+        #edge_point = self.edgeOnFace.valueAt(param)
+        #vec = edge_point.sub(pt)
+        #vec.normalize()
+        #vec.multiply(scale)
+        #point = edge_point.add(vec)
+        #u0,v0 = self.face.Surface.parameter(point)
+        #u1,v1 = self.face.Surface.parameter(edge_point)
+        #p0 = Base.Vector2d(u0,v0)
+        #p1 = Base.Vector2d(u1,v1)
+        #debug("%s - %s"%(p0,p1))
+        #ls1 = Geom2d.Line2dSegment(p0, p1)
+        #edge1 = ls1.toShape(self.face, ls1.FirstParameter, ls1.LastParameter)
+        #edge1.Placement = pl
+        #return(edge1)
 
     def normalFace(self, samp, dist, tol=1e-5, sym=False):
         face = None
@@ -350,16 +419,25 @@ class curveOnSurface:
 
     def get_adjacent_edges(self):
         """returns the edges of Face that are connected to Edge"""
-        e1 = list()
-        e2 = list()
+        e1 = None
+        e2 = None
         for w in self.face.Wires:
             for e in w.Edges:
                 if not e.isPartner(self.edge):
                     for v in e.Vertexes:
                         if v.isPartner(self.edge.Vertexes[0]):
-                            e1.append(e)
+                            e1 = e
                         elif v.isPartner(self.edge.Vertexes[1]):
-                            e2.append(e)
+                            e2 = e
         return([e1,e2])
-
+    def get_adjacent_edges_tangents(self):
+        """returns the tangents of edges of Face that are connected to Edge"""
+        e1,e2 = self.get_adjacent_edges()
+        pt1 = self.face.Surface.parameter(self.edge.Vertexes[0].Point)
+        cos1 = self.face.curveOnSurface(e1)
+        par1 = cos1[0].parameter(Base.Vector2d(pt1[0],pt1[1]))
+        tan1 = cos1[0].tangent(par1)
+        return(tan1)
+    
+        
     
