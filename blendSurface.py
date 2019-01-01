@@ -141,10 +141,43 @@ class blendSurface:
             blends.append(b.shape())
             self.curves.append(b)
         return(blends)
+    
+    def blend_curves(self):
+        blend_curves = list()
+        import nurbs_tools
+        offset_curve_1 = self.cos1.get_offset_curve2d(0.1)
+        offset_curve_2 = self.cos2.get_offset_curve2d(0.1)
+        sc1 = self.compute_scale(self.var_scale1, self.cos1.edge)
+        sc2 = self.compute_scale(self.var_scale2, self.cos2.edge)
+        self.cos1.build_param_list(self.railSamples)
+        self.cos2.build_param_list(self.railSamples)
+        if self.untwist:
+            self.cos2.param_list.reverse()
+            sc2.reverse()
+        for i in range(self.railSamples):
+            c1 = self.cos1.get_cross_curve( offset_curve_1, self.cos1.param_list[i])
+            c2 = self.cos2.get_cross_curve( offset_curve_2, self.cos2.param_list[i])
+            b = nurbs_tools.blendCurve(c1,c2)
+            b.cont1 = self.cont1
+            b.cont2 = self.cont2
+            b.param1 = b.edge1.LastParameter
+            b.param2 = b.edge2.LastParameter
+            if sc1:
+                b.scale1 = sc1[i].y
+            else:
+                b.scale1 = self.scale1
+            if sc2:
+                b.scale2 = sc2[i].y
+            else:
+                b.scale2 = self.scale2
+            b.compute()
+            blend_curves.append(b.shape())
+            self.curves.append(b)
+        return(blend_curves)
 
     def get_gordon_shapes(self, curvetype=0):
         com1 = Part.Compound([self.cos1.edge, self.cos2.edge])
-        com2 = Part.Compound(self.cross_curves())
+        com2 = Part.Compound(self.blend_curves())
         if curvetype == 1:
             com2 = Part.Compound(self.cross_curves2())
         return(Part.Compound([com1, com2]))

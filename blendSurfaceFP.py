@@ -108,6 +108,7 @@ class blendSurfFP:
                 
                 obj.Points = downgradeArray(pts)
                 obj.Shape = bs.get_gordon_shapes() #shapeCloud(pts)
+                return(bs)
 
     def getContinuity(self, cont):
         if cont == "C0":
