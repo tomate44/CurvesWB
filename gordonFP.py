@@ -104,6 +104,12 @@ class gordonVP:
     def attach(self, vobj):
         self.Object = vobj.Object
 
+    def claimChildren(self):
+        if hasattr(self.Object,"Sources"):
+            return(self.Object.Sources)
+        else:
+            return([])
+
     def __getstate__(self):
         return({"name": self.Object.Name})
 
