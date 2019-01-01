@@ -408,9 +408,10 @@ class GeomInfo:
         self.sg.touch()
 
     def removeHUD(self):
-        self.render.removeSuperimposition(self.sup)
-        self.removeGrid()
-        self.sg.touch()
+        if self.render:
+            self.render.removeSuperimposition(self.sup)
+            self.removeGrid()
+            self.sg.touch()
 
     #def updateCB(self, *args):
         ##return(True)
