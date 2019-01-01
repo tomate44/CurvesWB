@@ -66,6 +66,7 @@ class cosFP:
             obj.Shape = cos.binormalFace(obj.Samples, float(obj.FaceWidth), obj.Tolerance, obj.Symmetric)
         else:
             obj.Shape = cos.edgeOnFace
+        obj.Placement = face.Placement
         return(cos)
 
 class cosVP:
