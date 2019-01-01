@@ -33,9 +33,9 @@ class CurvesWorkbench(Workbench):
 
         # TODO changes module names to lower_with_underscore
 
-        import lineFP # cleaned
-        import bezierCurve
-        import editableSpline
+        #import lineFP # cleaned
+        #import bezierCurve
+        #import editableSpline
         import curveExtendFP # TODO use basisSpline
         import JoinCurves
         import splitCurves # cleaned
@@ -65,8 +65,15 @@ class CurvesWorkbench(Workbench):
         import sublink_edit
         import adjacent_faces
         import interpolate
+        #import sectionSketch
+        #if hasattr(Part.BezierSurface,"extendByLength"):
+            #import ExtendSurfaceFP
 
-        stablelist = ["line","bezierCurve","combined_projection","editableSpline","extend","join","split","Discretize","Approximate","Interpolate","ParametricBlendCurve","ParametricComb","ZebraTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface","pasteSVG","profile","pipeshell","gordon","to_console","SublinkEditor"]
+        stablelist = ["combined_projection","extend","join","split","Discretize","Approximate","Interpolate","ParametricBlendCurve","ParametricComb","ZebraTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface","pasteSVG","profile","pipeshell","gordon","to_console","SublinkEditor"]
+        
+        #if hasattr(Part.BezierSurface,"extendByLength"):
+            #stablelist.append("extend_surface")
+            
         self.appendToolbar("Curves",stablelist)
         self.appendMenu("Curves",stablelist)
         self.appendMenu("Curves",["bspline_to_console"])
