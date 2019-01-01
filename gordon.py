@@ -343,9 +343,12 @@ class InterpolateCurveNetwork(object):
                         intersection_params_u[spline_u_idx][spline_v_idx] = currentIntersections[0][0]
                     # TODO: both u-directional splines and v-directional splines are closed
                     # elif len(currentIntersections) == 4:
-                    debug("%dx%d = (%.4f, %.4f)"%(spline_u_idx, spline_v_idx, intersection_params_u[spline_u_idx][spline_v_idx], intersection_params_v[spline_u_idx][spline_v_idx]))
                 else:
                     self.error("U-directional B-spline and v-directional B-spline have more than two intersections with each other!")
+        for spline_u_idx in range(len(self.profiles)):
+            for spline_v_idx in range(len(self.guides)):
+                debug("%dx%d = (%.4f, %.4f)"%(spline_u_idx, spline_v_idx, intersection_params_u[spline_u_idx][spline_v_idx], intersection_params_v[spline_u_idx][spline_v_idx]))
+
     def sort_curves(self, intersection_params_u, intersection_params_v):
         import curve_network_sorter
         sorterObj = curve_network_sorter.CurveNetworkSorter(self.profiles, self.guides, intersection_params_u, intersection_params_v)
