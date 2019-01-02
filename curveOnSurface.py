@@ -99,12 +99,16 @@ class curveOnSurface:
             self._reversed = not self._reversed
             print("%f,%f"%(self.firstParameter,self.lastParameter))
             self.edgeOnFace = self.curve2D.toShape(self.face, self.firstParameter, self.lastParameter)
+            #self.edgeOnFace.Placement = self.face.Placement
         else:
             print("Cannot reverse, invalid curve on surface")
 
     def setEdge(self, edge):
         self.edge = edge
         self.validate()
+        
+    def getEdge(self):
+        return(self.edgeOnFace.transformGeometry(self.face.Placement.toMatrix()))
 
     def setFace(self, face):
         self.face = face
@@ -149,6 +153,7 @@ class curveOnSurface:
                 curve.setPeriodic()
                 self.edgeOnFace = curve.toShape()
                 print("edgeOnFace is periodic : %s"%curve.isPeriodic())
+        # self.edgeOnFace.Placement = self.face.Placement
         return(self.isValid)
 
     def valueAt(self, t):
@@ -316,14 +321,14 @@ class curveOnSurface:
         p1 = off.value(v)
         p2 = self.curve2D.value(u)
         ls = Part.Geom2d.Line2dSegment(p1,p2)
-        sh = ls.toShape(self.face)
-        sh.Placement = self.face.Placement
+        sh = ls.toShape(self.face.Surface)
+        #sh = sh.transformGeometry(self.face.Placement.toMatrix()).Edges[0]
         FreeCAD.Console.PrintMessage(" %s - %s\n"%(self.edge.Curve, str( sh.distToShape(self.edge)[0])))
-        d,pts,info = sh.distToShape(self.edge)
-        if d > 1e-8:
-            bs = sh.Curve.toBSpline()
-            bs.setPole(bs.NbPoles,pts[0][1])
-            return(bs.toShape())
+        #d,pts,info = sh.distToShape(self.edge)
+        #if d > 1e-8:
+            #bs = sh.Edges[0].Curve.toBSpline()
+            #bs.setPole(bs.NbPoles,pts[0][1])
+            #return(bs.toShape())
         return(sh)
 
     #def get_cross_curve_toward_point(self, param, pt, scale=1.0, untwist=False):
@@ -380,7 +385,8 @@ class curveOnSurface:
             surf = face.Surface.copy()
             surf.setUPeriodic()
             face = surf.toShape()
-        return(face)
+        #face.Placement = self.face.Placement
+        return(face.transformGeometry(self.face.Placement.toMatrix()))
 
     def binormalFace(self, samp, dist, tol=1e-5, sym=False):
         face = None
@@ -415,7 +421,8 @@ class curveOnSurface:
             surf = face.Surface.copy()
             surf.setUPeriodic()
             face = surf.toShape()
-        return(face)
+        #nf = face.transformGeometry(self.face.Placement.toMatrix())
+        return(face.transformGeometry(self.face.Placement.toMatrix()))
 
     def get_adjacent_edges(self):
         """returns the edges of Face that are connected to Edge"""
