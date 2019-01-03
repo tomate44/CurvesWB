@@ -104,9 +104,9 @@ class blendSurfFP:
                 if self.check_scale_list(obj, "ScaleList2"):
                     bs.var_scale2 = obj.ScaleList2
                 bs.buildCurves()
-                pts = bs.getPoints()
+                #pts = bs.getPoints()
                 
-                obj.Points = downgradeArray(pts)
+                #obj.Points = downgradeArray(pts)
                 obj.Shape = bs.get_gordon_shapes() #shapeCloud(pts)
                 return(bs)
 

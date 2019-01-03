@@ -253,7 +253,7 @@ class BSplineAlgorithms(object):
             e2 = spline2.toShape()
             d,pts,info = e1.distToShape(e2)
             if d > tol3d * splines_scale:
-                debug("distToShape over tolerance !")
+                debug("distToShape over tolerance ! %f > %f"%(d, tol3d * splines_scale))
             p1,p2 = pts[0]
             intersection_params_vector.append([spline1.parameter(p1), spline2.parameter(p2)])
         return(intersection_params_vector)
