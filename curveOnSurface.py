@@ -119,7 +119,7 @@ class curveOnSurface:
         if (not self.edge == None) and (not self.face == None):
             c2d = self.face.curveOnSurface(self.edge)
             if not isinstance(c2d,tuple):
-                print("curveOnSurface error.")
+                print("Error curveOnSurface = %s"%str(c2d))
                 try:
                     newedge = self.face.project([self.edge]).Edges[0]
                     c2d = self.face.curveOnSurface(newedge)
@@ -314,8 +314,12 @@ class curveOnSurface:
     def get_cross_curve(self, off, u=0):
         """returns cross-curve from offsetCurve off to COS at param u"""
         if u < self.firstParameter or u > self.lastParameter:
-            FreeCAD.Console.PrintError("Curve_on_surface.get_cross_curve : parameter out of range")
-            return(None)
+            FreeCAD.Console.PrintError("Curve_on_surface.get_cross_curve : parameter out of range\n")
+            FreeCAD.Console.PrintError("%f is not in [%f,%f]\n"%(u, self.firstParameter, self.lastParameter))
+        if u < self.firstParameter:
+            u = self.firstParameter
+        elif u > self.lastParameter:
+            u = self.lastParameter
         fac = (u-self.firstParameter) / (self.lastParameter-self.firstParameter)
         v = off.FirstParameter + fac*(off.LastParameter-off.FirstParameter)
         p1 = off.value(v)
