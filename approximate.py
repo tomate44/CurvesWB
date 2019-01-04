@@ -338,6 +338,12 @@ class approx:
 
     def Activated(self):
         s = FreeCADGui.Selection.getSelectionEx()
+        try:
+            ordered = FreeCADGui.activeWorkbench().Selection
+            if ordered:
+                s = ordered
+        except AttributeError:
+            pass
         source = self.parseSel(s)
         if not source:
             return False
