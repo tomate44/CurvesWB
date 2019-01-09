@@ -14,23 +14,36 @@ class ConnectionMarker(graphics.Marker):
         super(ConnectionMarker, self).__init__(points, True)
 
 class MarkerOnEdge(graphics.Marker):
-    def __init__(self, points):
-        super(ConnectionMarker, self).__init__(points, True)
+    def __init__(self, tuples):
+        points = list()
+        for t in tuples:
+            points.append(t[0].valueAt(t[1]))
+        super(MarkerOnEdge, self).__init__(points, True)
+        self.edge_params = tuples
+
     def __repr__(self):
         pts = list()
         for p in self.points:
             pts.append(p.getValue())
         return("MarkerOnEdge(%s)"%pts)
-    def stickOnEdge(self,e):
-        if isinstance(e,Part.Edge):
-            self.edge = e
-            self.parameters = [e.Curve.parameter(FreeCAD.Vector(p.getValue())) for p in self.points]
-            # TODO implement edge constraint
-            for m in self.markers:
-                m.on_drag.append(self.updatePolygon)
-        if len(self.parameters) == len(self.points):
-            return(True)
-        return(False)
+
+    def drag(self, mouse_coords, fact=1.):
+        if self.enabled:
+            pts = self.points
+            for i, p in enumerate(pts):
+                p[0] = mouse_coords[0] * fact + self._tmp_points[i][0]
+                p[1] = mouse_coords[1] * fact + self._tmp_points[i][1]
+                p[2] = mouse_coords[2] * fact + self._tmp_points[i][2]
+                v = Part.Vertex(p[0],p[1],p[2])
+                proj = v.distToShape(self.edge_params[i][0])[1][0][1]
+                # FreeCAD.Console.PrintMessage("%s -> %s\n"%(p.getValue(),proj))
+                p[0] = proj.x
+                p[1] = proj.y
+                p[2] = proj.z
+                self.edge_params[i][1] = self.edge_params[i][0].Curve.parameter(proj)
+            self.points = pts
+            for foo in self.on_drag:
+                foo()
 
 
 class ConnectionPolygon(graphics.Polygon):
@@ -97,6 +110,15 @@ def get_guide_params():
         inter.append(sol)
     return(inter)
 
+def controlCB(attr, event_callback):
+    event = event_callback.getEvent()
+    FreeCAD.Console.PrintMessage("Key pressed : %s\n"%chr(event.getKey()))
+    if event.getKey() == ord("s"):
+        pass
+    elif event.getKey() == ord("q"):
+        pass
+
+
 def main():
 #    app = QApplication(sys.argv)
 #    utils.addMarkerFromSvg("test.svg", "CUSTOM_MARKER",  40)
@@ -112,57 +134,40 @@ def main():
     root = graphics.InteractionSeparator(rm)
     root.pick_radius = 40
 
-    #print(get_guide_params())
+    events = coin.SoEventCallback()
+    _controlCB = events.addEventCallback(coin.SoKeyboardEvent.getClassTypeId(), controlCB)
+    root.addChild(events)
+    # events.removeEventCallback(coin.SoKeyboardEvent.getClassTypeId(), _controlCB)
 
-#    m1 = ConnectionMarker([[-1, -1, -1]])
-#    m2 = ConnectionMarker([[-1,  1, -1]])
-#    m3 = ConnectionMarker([[ 1,  1, -1]])
-#    m4 = ConnectionMarker([[ 1, -1, -1]])
-#
-#    m5 = ConnectionMarker([[-1, -1,  1]])
-#    m6 = ConnectionMarker([[-1,  1,  1]])
-#    m7 = ConnectionMarker([[ 1,  1,  1]])
-#    m8 = ConnectionMarker([[ 1, -1,  1]])
 
-    points = [ConnectionMarker([s[0].valueAt(s[1])]) for s in get_guide_params()]
+    points = list()
+    for s in get_guide_params():
+        moe = MarkerOnEdge([s])
+        points.append(moe)
     print(points)
+
+    my_range = list(range(1,len(points)))
+    my_range.reverse()
+    new = list()
+    for i in my_range:
+        p1 = points[i-1].points[0]
+        p2 = points[i].points[0]
+        mp = (p1+p2)/2.0
+        FreeCAD.Console.PrintMessage("inserting %s at index %d\n"%(str(mp.getValue()),i))
+        points.insert(i,ConnectionMarker([mp]))
+        
 
     lines = [ConnectionLine([points[i], points[i+1]]) for i in range(len(points)-1)]
     print(lines)
 
-#    l01 = ConnectionLine([m1, m2])
-#    l02 = ConnectionLine([m2, m3])
-#    l03 = ConnectionLine([m3, m4])
-#    l04 = ConnectionLine([m4, m1])
-#
-#    l05 = ConnectionLine([m5, m6])
-#    l06 = ConnectionLine([m6, m7])
-#    l07 = ConnectionLine([m7, m8])
-#    l08 = ConnectionLine([m8, m5])
-#
-#    l09 = ConnectionLine([m1, m5])
-#    l10 = ConnectionLine([m2, m6])
-#    l11 = ConnectionLine([m3, m7])
-#    l12 = ConnectionLine([m4, m8])
 
-#    lines = [l01, l02, l03, l04, l05, l06, l07, l08, l09, l10, l11, l12]
-#
-#    p1 = ConnectionPolygon([m1, m2, m3, m4])
-#    p2 = ConnectionPolygon([m8, m7, m6, m5])
-#    p3 = ConnectionPolygon([m5, m6, m2, m1])
-#    p4 = ConnectionPolygon([m6, m7, m3, m2])
-#    p5 = ConnectionPolygon([m7, m8, m4, m3])
-#    p6 = ConnectionPolygon([m8, m5, m1, m4])
-#
-#    polygons = [p1, p2, p3, p4, p5, p6]
+    
+
     root += points + lines # + polygons
     root.register()
 
     sg.addChild(root)
-#    viewer.setBackgroundColor(QColor(255, 255, 255))
-#    viewer.setWindowTitle("minimal")
-#    viewer.show()
-#    sys.exit(app.exec_())
+
 
 if __name__ == '__main__':
     main()
