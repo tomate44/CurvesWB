@@ -45,7 +45,6 @@ class MarkerOnEdge(graphics.Marker):
             for foo in self.on_drag:
                 foo()
 
-
 class ConnectionPolygon(graphics.Polygon):
     std_col = "green"
     def __init__(self, markers):
@@ -67,7 +66,6 @@ class ConnectionPolygon(graphics.Polygon):
         if any([m._delete for m in self.markers]):
             self.delete()
 
-
 class ConnectionLine(graphics.Line):
     def __init__(self, markers):
         super(ConnectionLine, self).__init__(
@@ -86,6 +84,16 @@ class ConnectionLine(graphics.Line):
     def check_dependency(self):
         if any([m._delete for m in self.markers]):
             self.delete()
+
+class InterpolationPolygon(object):
+    def __init__(self, points=[]):
+        if len(points) > 0:
+            if isinstance(points[0],FreeCAD.Vector):
+                self.points = points
+            elif isinstance(points[0],tuple):
+
+
+
 
 def get_guide_params():
     sel = Gui.Selection.getSelectionEx()
