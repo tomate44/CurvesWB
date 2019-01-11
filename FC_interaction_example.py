@@ -86,12 +86,103 @@ class ConnectionLine(graphics.Line):
             self.delete()
 
 class InterpolationPolygon(object):
-    def __init__(self, points=[]):
+    def __init__(self, points=[], fp = None):
+        self.points = points
+        self.curve = Part.BSplineCurve()
+        self.fp = fp
+        self.root_inserted = False
         if len(points) > 0:
             if isinstance(points[0],FreeCAD.Vector):
-                self.points = points
-            elif isinstance(points[0],tuple):
+                self.points = [ConnectionMarker([p]) for p in points]
+            elif isinstance(points[0],(tuple,list)):
+                self.points = [MarkerOnEdge([p]) for p in points]
+            else:
+                FreeCAD.Console.PrintError("InterpolationPolygon : bad input")
+        
+        # Setup coin objects
+        if not FreeCAD.ActiveDocument:
+            appdoc = FreeCAD.newDocument("New")
+        self.guidoc = FreeCADGui.ActiveDocument
+        self.view = self.guidoc.ActiveView
+        self.rm = self.view.getViewer().getSoRenderManager()
+        self.sg = self.view.getSceneGraph()
+        self.setup_InteractionSeparator()
 
+    def setup_InteractionSeparator(self):
+        if self.root_inserted:
+            self.sg.removeChild(self.root)
+        self.root = graphics.InteractionSeparator(self.rm)
+        self.root.setName("InteractionSeparator")
+        self.root.pick_radius = 40
+        self.root.on_drag.append(self.update_curve)
+        # Keyboard callback
+        #self.events = coin.SoEventCallback()
+        self._controlCB = self.root.events.addEventCallback(coin.SoKeyboardEvent.getClassTypeId(), self.controlCB)
+        # populate root node
+        #self.root.addChild(self.events)
+        self.root += self.points
+        self.build_lines()
+        self.root += self.lines
+        self.root.register()
+        self.sg.addChild(self.root)
+        self.root_inserted = True
+
+    def update_curve(self):
+        pts = list()
+        for p in self.points:
+            pts += p.points
+        FreeCAD.Console.PrintMessage("pts :\n%s\n"%str(pts))
+        if len(pts) > 1:
+            self.curve.interpolate(pts)
+            FreeCAD.Console.PrintMessage("update_curve\n")
+            if self.fp:
+                self.fp.Shape = self.curve.toShape()
+
+    def build_lines(self):
+        self.lines = list()
+        for i in range(len(self.points)-1):
+            line = ConnectionLine([self.points[i], self.points[i+1]]) 
+            line.set_color("blue")
+            self.lines.append(line)
+    
+    def controlCB(self, attr, event_callback):
+        event = event_callback.getEvent()
+        if event.getState() == event.UP:
+            FreeCAD.Console.PrintMessage("Key pressed : %s\n"%chr(event.getKey()))
+            if event.getKey() == ord("s"):
+                self.subdivide()
+            elif event.getKey() == ord("q"):
+                self.quit()
+    
+    def subdivide(self):
+        # get selected lines and subdivide them
+        pts = list()
+        for o in self.lines:
+            FreeCAD.Console.PrintMessage("object %s\n"%str(o))
+            if isinstance(o,ConnectionLine):
+                pts.append(o.markers[0])
+                if o in self.root.selected_objects:
+                    idx = self.lines.index(o)
+                    FreeCAD.Console.PrintMessage("Subdividing line #%d\n"%idx)
+    #                m1,m2 = o.markers
+    #                i1 = self.points.index(m1)
+    #                i2 = self.points.index(m2)
+                    p1 = o.markers[0].points[0]
+                    p2 = o.markers[1].points[0]
+                    mp = (p1+p2)/2.0
+                    pts.append(ConnectionMarker([mp]))
+        pts.append(self.points[-1])
+        self.points = pts
+        self.setup_InteractionSeparator()
+        self.update_curve()
+        return(True)
+    
+    def quit(self):
+        self.sg.removeChild(self.root)
+        self.root_inserted = False
+        self.root.events.removeEventCallback(coin.SoKeyboardEvent.getClassTypeId(), self._controlCB)
+        self.root.unregister()
+            
 
 
 
@@ -118,64 +209,11 @@ def get_guide_params():
         inter.append(sol)
     return(inter)
 
-def controlCB(attr, event_callback):
-    event = event_callback.getEvent()
-    FreeCAD.Console.PrintMessage("Key pressed : %s\n"%chr(event.getKey()))
-    if event.getKey() == ord("s"):
-        pass
-    elif event.getKey() == ord("q"):
-        pass
-
-
 def main():
-#    app = QApplication(sys.argv)
-#    utils.addMarkerFromSvg("test.svg", "CUSTOM_MARKER",  40)
-#    viewer = quarter.QuarterWidget()
-#    root = graphics.InteractionSeparator(viewer.sorendermanager)
-    if not FreeCAD.ActiveDocument:
-        appdoc = FreeCAD.newDocument("New")
-    doc = FreeCADGui.ActiveDocument
-    view = doc.ActiveView
-    viewer = view.getViewer()
-    rm = viewer.getSoRenderManager()
-    sg = view.getSceneGraph()
-    root = graphics.InteractionSeparator(rm)
-    root.pick_radius = 40
-
-    events = coin.SoEventCallback()
-    _controlCB = events.addEventCallback(coin.SoKeyboardEvent.getClassTypeId(), controlCB)
-    root.addChild(events)
-    # events.removeEventCallback(coin.SoKeyboardEvent.getClassTypeId(), _controlCB)
-
-
-    points = list()
-    for s in get_guide_params():
-        moe = MarkerOnEdge([s])
-        points.append(moe)
-    print(points)
-
-    my_range = list(range(1,len(points)))
-    my_range.reverse()
-    new = list()
-    for i in my_range:
-        p1 = points[i-1].points[0]
-        p2 = points[i].points[0]
-        mp = (p1+p2)/2.0
-        FreeCAD.Console.PrintMessage("inserting %s at index %d\n"%(str(mp.getValue()),i))
-        points.insert(i,ConnectionMarker([mp]))
-        
-
-    lines = [ConnectionLine([points[i], points[i+1]]) for i in range(len(points)-1)]
-    print(lines)
-
-
-    
-
-    root += points + lines # + polygons
-    root.register()
-
-    sg.addChild(root)
-
+    obj = FreeCAD.ActiveDocument.addObject("Part::Spline","profile")
+    tups = get_guide_params()
+    ip = InterpolationPolygon(tups, obj)
+    FreeCAD.ActiveDocument.recompute()
 
 if __name__ == '__main__':
     main()
