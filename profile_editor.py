@@ -122,16 +122,18 @@ class ConnectionLine(graphics.Line):
 
 class InterpolationPolygon(object):
     def __init__(self, points=[], fp = None):
-        self.points = points
+        self.points = list()
         self.curve = Part.BSplineCurve()
         self.fp = fp
         self.root_inserted = False
         #self.support = None # Not yet implemented
-        if len(points) > 0:
-            if isinstance(points[0],FreeCAD.Vector):
-                self.points = [ConnectionMarker([p]) for p in points]
-            elif isinstance(points[0],(tuple,list)):
-                self.points = [MarkerOnEdge([p]) for p in points]
+        for p in points:
+            if isinstance(p,FreeCAD.Vector):
+                self.points.append(ConnectionMarker([p]))
+            elif isinstance(p,(tuple,list)):
+                self.points.append(MarkerOnEdge([p]))
+            elif isinstance(p,(ConnectionMarker,MarkerOnEdge)):
+                self.points.append(p)
             else:
                 FreeCAD.Console.PrintError("InterpolationPolygon : bad input")
         
