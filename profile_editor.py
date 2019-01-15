@@ -13,19 +13,15 @@ class ConnectionMarker(graphics.Marker):
     def __init__(self, points):
         super(ConnectionMarker, self).__init__(points, True)
 
-class MarkerOnEdge(graphics.Marker):
-    def __init__(self, tuples):
-        points = list()
-        for t in tuples:
-            points.append(t[0].valueAt(t[1]))
-        super(MarkerOnEdge, self).__init__(points, True)
-        self.edge_params = tuples
+class MarkerOnShape(graphics.Marker):
+    def __init__(self, points, sh=None):
+        super(MarkerOnShape, self).__init__(points, True)
+        self.shape = None
+        if isinstance(sh,Part.Shape):
+            self.shape = sh
 
     def __repr__(self):
-        pts = list()
-        for p in self.points:
-            pts.append(p.getValue())
-        return("MarkerOnEdge(%s)"%pts)
+        return("MarkerOnShape(%s)"%self.shape)
 
     def drag(self, mouse_coords, fact=1.):
         if self.enabled:
@@ -34,51 +30,16 @@ class MarkerOnEdge(graphics.Marker):
                 p[0] = mouse_coords[0] * fact + self._tmp_points[i][0]
                 p[1] = mouse_coords[1] * fact + self._tmp_points[i][1]
                 p[2] = mouse_coords[2] * fact + self._tmp_points[i][2]
-                v = Part.Vertex(p[0],p[1],p[2])
-                proj = v.distToShape(self.edge_params[i][0])[1][0][1]
-                # FreeCAD.Console.PrintMessage("%s -> %s\n"%(p.getValue(),proj))
-                p[0] = proj.x
-                p[1] = proj.y
-                p[2] = proj.z
-                self.edge_params[i][1] = self.edge_params[i][0].Curve.parameter(proj)
+                if self.shape:
+                    v = Part.Vertex(p[0],p[1],p[2])
+                    proj = v.distToShape(self.shape)[1][0][1]
+                    # FreeCAD.Console.PrintMessage("%s -> %s\n"%(p.getValue(),proj))
+                    p[0] = proj.x
+                    p[1] = proj.y
+                    p[2] = proj.z
             self.points = pts
             for foo in self.on_drag:
                 foo()
-# not yet implemented
-#class MarkerOnShape(graphics.Marker):
-    #def __init__(self, points, shape=None):
-        #super(MarkerOnShape, self).__init__(points, True)
-        #if isinstance(shape,Part.Shape):
-            #self.support = shape
-        #else:
-            #ci = Part.Geom2d.Circle2d()
-            #ci.Radius = 1e50
-            #self.support = ci.toShape(shape)
-
-    #def __repr__(self):
-        ##pts = list()
-        ##for p in self.points:
-            ##pts.append(p.getValue())
-        #return("MarkerOnShape(%s)"%self.support)
-
-    #def drag(self, mouse_coords, fact=1.):
-        #if self.enabled:
-            #pts = self.points
-            #for i, p in enumerate(pts):
-                #p[0] = mouse_coords[0] * fact + self._tmp_points[i][0]
-                #p[1] = mouse_coords[1] * fact + self._tmp_points[i][1]
-                #p[2] = mouse_coords[2] * fact + self._tmp_points[i][2]
-                #v = Part.Vertex(p[0],p[1],p[2])
-                #proj = v.distToShape(self.support)[1][0][1]
-                ## FreeCAD.Console.PrintMessage("%s -> %s\n"%(p.getValue(),proj))
-                #p[0] = proj.x
-                #p[1] = proj.y
-                #p[2] = proj.z
-                ##self.edge_params[i][1] = self.edge_params[i][0].Curve.parameter(proj)
-            #self.points = pts
-            #for foo in self.on_drag:
-                #foo()
-
 
 class ConnectionPolygon(graphics.Polygon):
     std_col = "green"
@@ -120,7 +81,14 @@ class ConnectionLine(graphics.Line):
         if any([m._delete for m in self.markers]):
             self.delete()
 
-class InterpolationPolygon(object):
+class InterpoCurveEditor(object):
+    """Interpolation curve free-hand editor
+    my_editor = InterpoCurveEditor([points],obj)
+    obj is the FreeCAD object that will recieve
+    the curve shape at the end of editing.
+    points can be :
+    - Vector (free point)
+    - (Vector, shape) (point on shape)"""
     def __init__(self, points=[], fp = None):
         self.points = list()
         self.curve = Part.BSplineCurve()
@@ -129,17 +97,20 @@ class InterpolationPolygon(object):
         #self.support = None # Not yet implemented
         for p in points:
             if isinstance(p,FreeCAD.Vector):
-                self.points.append(ConnectionMarker([p]))
+                self.points.append(MarkerOnShape([p]))
             elif isinstance(p,(tuple,list)):
-                self.points.append(MarkerOnEdge([p]))
-            elif isinstance(p,(ConnectionMarker,MarkerOnEdge)):
+                self.points.append(MarkerOnShape([p[0]],p[1]))
+            elif isinstance(p,(MarkerOnShape, ConnectionMarker)):
                 self.points.append(p)
             else:
-                FreeCAD.Console.PrintError("InterpolationPolygon : bad input")
+                FreeCAD.Console.PrintError("InterpoCurveEditor : bad input")
         
         # Setup coin objects
-        if not FreeCAD.ActiveDocument:
-            appdoc = FreeCAD.newDocument("New")
+        if self.fp:
+            self.guidoc = self.fp.ViewObject.Document
+        else:
+            if not FreeCADGui.ActiveDocument:
+                appdoc = FreeCAD.newDocument("New")
         self.guidoc = FreeCADGui.ActiveDocument
         self.view = self.guidoc.ActiveView
         self.rm = self.view.getViewer().getSoRenderManager()
@@ -170,7 +141,7 @@ class InterpolationPolygon(object):
         pts = list()
         for p in self.points:
             pts += p.points
-        FreeCAD.Console.PrintMessage("pts :\n%s\n"%str(pts))
+        #FreeCAD.Console.PrintMessage("pts :\n%s\n"%str(pts))
         if len(pts) > 1:
             self.curve.interpolate(pts)
             FreeCAD.Console.PrintMessage("update_curve\n")
@@ -191,7 +162,10 @@ class InterpolationPolygon(object):
             if event.getKey() == ord("s"):
                 self.subdivide()
             elif event.getKey() == ord("q"):
-                self.quit()
+                if self.fp:
+                    self.fp.ViewObject.Proxy.doubleClicked(self.fp.ViewObject)
+                else:
+                    self.quit()
     
     def subdivide(self):
         # get selected lines and subdivide them
@@ -213,7 +187,7 @@ class InterpolationPolygon(object):
                     par1 = self.curve.parameter(FreeCAD.Vector(p1))
                     par2 = self.curve.parameter(FreeCAD.Vector(p2))
                     midpar = (par1+par2)/2.0
-                    pts.append(ConnectionMarker([self.curve.value(midpar)]))                    
+                    pts.append(MarkerOnShape([self.curve.value(midpar)]))                    
         pts.append(self.points[-1])
         self.points = pts
         self.setup_InteractionSeparator()
@@ -223,6 +197,7 @@ class InterpolationPolygon(object):
     def quit(self):
         #self.sg.removeChild(self.root)
         #self.root_inserted = False
+        
         self.root.events.removeEventCallback(coin.SoKeyboardEvent.getClassTypeId(), self._controlCB)
         self.root.unregister()
         self.sg.removeChild(self.root)
@@ -232,32 +207,16 @@ class InterpolationPolygon(object):
 
 
 def get_guide_params():
-    sel = Gui.Selection.getSelectionEx()
+    sel = FreeCADGui.Selection.getSelectionEx()
     pts = list()
-    for so in sel:
-        pts.extend(so.PickedPoints)
-    edges = list()
-    for so in sel:
-        for sen in so.SubElementNames:
-            n = eval(sen.lstrip("Edge"))
-            e = so.Object.Shape.Edges[n-1]
-            edges.append(e)
-    inter = list()
-    for pt in pts:
-        sol = None
-        min = 1e50
-        for e in edges:
-            d,points,info = e.distToShape(Part.Vertex(pt))
-            if d < min:
-                min = d
-                sol = [e,e.Curve.parameter(points[0][0])]
-        inter.append(sol)
-    return(inter)
+    for s in sel:
+        pts.extend(list(zip(s.PickedPoints,s.SubObjects)))
+    return(pts)
 
 def main():
     obj = FreeCAD.ActiveDocument.addObject("Part::Spline","profile")
     tups = get_guide_params()
-    ip = InterpolationPolygon(tups, obj)
+    ip = InterpoCurveEditor(tups, obj)
     FreeCAD.ActiveDocument.recompute()
 
 if __name__ == '__main__':
