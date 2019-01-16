@@ -9,6 +9,19 @@ from PySide2.QtWidgets import QApplication
 from PySide2.QtGui import QColor
 from pivy import quarter, coin, graphics, utils
 
+
+def subshape_from_sublink(o):
+    name = o[1][0]
+    if 'Vertex' in name:
+        n = eval(name.lstrip('Vertex'))
+        return(o[0].Shape.Vertexes[n-1])
+    elif 'Edge' in name:
+        n = eval(name.lstrip('Edge'))
+        return(o[0].Shape.Edges[n-1])
+    elif 'Face' in name:
+        n = eval(name.lstrip('Face'))
+        return(o[0].Shape.Faces[n-1])
+
 class ConnectionMarker(graphics.Marker):
     def __init__(self, points):
         super(ConnectionMarker, self).__init__(points, True)
@@ -17,8 +30,13 @@ class MarkerOnShape(graphics.Marker):
     def __init__(self, points, sh=None):
         super(MarkerOnShape, self).__init__(points, True)
         self.shape = None
+        self.sublink = None
         if isinstance(sh,Part.Shape):
             self.shape = sh
+        elif isinstance(sh,(tuple,list)):
+            if True: # I should put a try / except here
+                self.shape = subshape_from_sublink(sh)
+                self.sublink = sh
 
     def __repr__(self):
         return("MarkerOnShape(%s)"%self.shape)
@@ -158,7 +176,7 @@ class InterpoCurveEditor(object):
     def controlCB(self, attr, event_callback):
         event = event_callback.getEvent()
         if event.getState() == event.UP:
-            FreeCAD.Console.PrintMessage("Key pressed : %s\n"%chr(event.getKey()))
+            FreeCAD.Console.PrintMessage("Key pressed : %s\n"%event.getKey())
             if event.getKey() == ord("s"):
                 self.subdivide()
             elif event.getKey() == ord("q"):
@@ -166,6 +184,15 @@ class InterpoCurveEditor(object):
                     self.fp.ViewObject.Proxy.doubleClicked(self.fp.ViewObject)
                 else:
                     self.quit()
+            elif (event.getKey() == 65535) or (event.getKey() == 65288): # Suppr or Backspace
+                FreeCAD.Console.PrintMessage("Some objects have been deleted\n")
+                pts = list()
+                for o in self.root.dynamic_objects:
+                    if isinstance(o,MarkerOnShape):
+                        pts.append(o)
+                self.points = pts
+                self.setup_InteractionSeparator()
+                self.update_curve()
     
     def subdivide(self):
         # get selected lines and subdivide them

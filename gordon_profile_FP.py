@@ -113,29 +113,34 @@ class GordonProfileFP:
         shapes = self.get_shapes(fp)
         if   not len(fp.Data) == len(fp.DataType):
             FreeCAD.Console.PrintError("Gordon Profile : Data and DataType mismatch\n")
+            return(None)
         else:
             pts = list()
             shape_idx = 0
             for i in range(len(fp.Data)):
                 if   fp.DataType[i] == 0: # Free point
                     pts.append(fp.Data[i])
-                elif fp.DataType[i] == 1: # project on shape
-                    d,p,i = Part.Vertex(fp.Data[i]).distToShape(shapes[shape_idx])
-                    pts.append(p[0][1]) #shapes[shape_idx].valueAt(fp.Data[i].x))
-                    shape_idx += 1
-                elif fp.DataType[i] == 2: # datum is parameter on shape
-                    if isinstance(shapes[shape_idx],Part.Vertex):
-                        pts.append(shapes[shape_idx].Point)
-                    elif isinstance(shapes[shape_idx],Part.Edge):
-                        pts.append(shapes[shape_idx].valueAt(fp.Data[i].x))
-                    elif isinstance(shapes[shape_idx],Part.Face):
-                        pts.append(shapes[shape_idx].valueAt(fp.Data[i].x,fp.Data[i].y))
-                    shape_idx += 1
+                elif (fp.DataType[i] == 1):
+                    if (shape_idx < len(shapes)): # project on shape
+                        d,p,i = Part.Vertex(fp.Data[i]).distToShape(shapes[shape_idx])
+                        pts.append(p[0][1]) #shapes[shape_idx].valueAt(fp.Data[i].x))
+                        shape_idx += 1
+                    else:
+                        pts.append(fp.Data[i])
+                #elif fp.DataType[i] == 2: # datum is parameter on shape
+                    #if isinstance(shapes[shape_idx],Part.Vertex):
+                        #pts.append(shapes[shape_idx].Point)
+                    #elif isinstance(shapes[shape_idx],Part.Edge):
+                        #pts.append(shapes[shape_idx].valueAt(fp.Data[i].x))
+                    #elif isinstance(shapes[shape_idx],Part.Face):
+                        #pts.append(shapes[shape_idx].valueAt(fp.Data[i].x,fp.Data[i].y))
+                    #shape_idx += 1
             return(pts)
         return(None)
 
     def execute(self, obj):
         pts = self.get_points(obj)
+        
         if len(pts) < 2:
             FreeCAD.Console.PrintError("Gordon Profile : Not enough points\n")
         else:
@@ -144,6 +149,19 @@ class GordonProfileFP:
             obj.Shape = curve.toShape()
 
     def onChanged(self, fp, prop):
+        if prop == "Support":
+            FreeCAD.Console.PrintMessage("Gordon Profile : Support changed\n")
+            old_pts = fp.Data
+            new_pts = self.get_points(fp)
+            if new_pts:
+                diff = [new_pts[i]-old_pts[i] for i in range(len(new_pts))]
+                fp.Data = new_pts
+                self.execute(fp)
+            
+            #for i in range(len(fp.Data)):
+                
+        #elif prop == "Data":
+            
         return(True)
 
     def onDocumentRestored(self, fp):
@@ -163,7 +181,7 @@ class GordonProfileVP:
 
     def start_edit(self):
         pts = list()
-        shapes = self.Object.Proxy.get_shapes(self.Object)
+        #shapes = self.Object.Proxy.get_shapes(self.Object)
         shape_idx = 0
         for i in range(len(self.Object.Data)):
             p = self.Object.Data[i]
@@ -171,8 +189,7 @@ class GordonProfileVP:
             if t == 0:
                 pts.append(profile_editor.MarkerOnShape([p]))
             elif t == 1:
-                # TODO
-                pts.append(profile_editor.MarkerOnShape([p],shapes[shape_idx]))
+                pts.append(profile_editor.MarkerOnShape([p],self.Object.Support[shape_idx]))
                 shape_idx += 1
         self.ip = profile_editor.InterpoCurveEditor(pts, self.Object)
 
@@ -181,16 +198,23 @@ class GordonProfileVP:
             return(False)
         pts = list()
         typ = list()
+        original_links = self.Object.Support
+        new_links = list()
         for p in self.ip.points:
             if isinstance(p,profile_editor.MarkerOnShape):
                 pt = p.points[0]
                 pts.append(FreeCAD.Vector(pt[0],pt[1],pt[2]))
                 if p.shape:
-                    typ.append(1)
+                    if p.sublink in original_links:
+                        new_links.append(p.sublink)
+                        typ.append(1)
+                    else:
+                        typ.append(0)
                 else:
                     typ.append(0)
         self.Object.Data = pts
         self.Object.DataType = typ
+        self.Object.Support = new_links
         return(True)
 
     def doubleClicked(self,vobj):
@@ -245,7 +269,7 @@ class GordonProfileCommand:
             typ = [0,0]
         else:
             typ = [1]*len(pts)
-            self.makeFeature(sub,pts,typ)
+        self.makeFeature(sub,pts,typ)
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:
