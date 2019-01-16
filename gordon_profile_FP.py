@@ -81,7 +81,7 @@ class GordonProfileFP:
         obj.addProperty("App::PropertyBool",        "Periodic",        "Profile", "Periodic curve").Periodic = False
         obj.addProperty("App::PropertyVectorList",  "Data",            "Profile", "Data list").Data = d
         #obj.addProperty("App::PropertyVectorList",  "Points",          "Profile", "Interpolated points")
-        obj.addProperty("App::PropertyIntegerList", "DataType",            "Profile", "Types of interpolated points").DataType = t
+        obj.addProperty("App::PropertyIntegerList", "DataType",        "Profile", "Types of interpolated points").DataType = t
         #obj.addProperty("App::PropertyVector",      "InitialTangent",  "Profile", "Initial Tangent")
         #obj.addProperty("App::PropertyVector",      "FinalTangent",    "Profile", "Final Tangent")
         #obj.addProperty("App::PropertyFloatList",   "Parameters",      "Profile", "Parameters of intersection points")
@@ -144,7 +144,7 @@ class GordonProfileFP:
             obj.Shape = curve.toShape()
 
     def onChanged(self, fp, prop):
-        return(False)
+        return(True)
 
     def onDocumentRestored(self, fp):
         fp.setEditorMode("Data", 2)
@@ -177,7 +177,7 @@ class GordonProfileVP:
         self.ip = profile_editor.InterpoCurveEditor(pts, self.Object)
 
     def apply_edit(self):
-        if not isinstance(self.ip,InterpoCurveEditor):
+        if not isinstance(self.ip,profile_editor.InterpoCurveEditor):
             return(False)
         pts = list()
         typ = list()
@@ -200,8 +200,8 @@ class GordonProfileVP:
             self.active = True
             self.start_edit()
         else:
-            self.active = False
             if self.apply_edit():
+                self.active = False
                 self.ip.quit()
         return(True)
 
