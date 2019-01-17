@@ -35,7 +35,12 @@ class CurvesWorkbench(Workbench):
 
         #import lineFP # cleaned
         #import bezierCurve
-        #import editableSpline
+        stablelist = list()
+        try:
+            import gordon_profile_FP
+            stablelist = ["gordon_profile"]
+        except:
+            pass
         import curveExtendFP # TODO use basisSpline
         import JoinCurves
         import splitCurves # cleaned
@@ -69,7 +74,7 @@ class CurvesWorkbench(Workbench):
         #if hasattr(Part.BezierSurface,"extendByLength"):
             #import ExtendSurfaceFP
 
-        stablelist = ["combined_projection","extend","join","split","Discretize","Approximate","Interpolate","ParametricBlendCurve","ParametricComb","ZebraTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface","pasteSVG","profile","pipeshell","gordon","to_console","SublinkEditor"]
+        stablelist.extend(["combined_projection","extend","join","split","Discretize","Approximate","Interpolate","ParametricBlendCurve","ParametricComb","ZebraTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface","pasteSVG","profile","pipeshell","gordon","to_console","SublinkEditor"])
         
         #if hasattr(Part.BezierSurface,"extendByLength"):
             #stablelist.append("extend_surface")

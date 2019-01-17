@@ -16,7 +16,7 @@ import _utils
 import profile_editor
 reload(profile_editor)
 
-TOOL_ICON = _utils.iconsPath() + '/icon.svg'
+TOOL_ICON = _utils.iconsPath() + '/editableSpline.svg'
 #debug = _utils.debug
 #debug = _utils.doNothing
 
@@ -109,59 +109,73 @@ class GordonProfileFP:
                             sl.append(ob.Shape.Faces[n-1])
             return(sl)
 
-    def get_points(self, fp):
+    def get_points(self, fp, stretch=True):
+        touched = False
         shapes = self.get_shapes(fp)
         if   not len(fp.Data) == len(fp.DataType):
             FreeCAD.Console.PrintError("Gordon Profile : Data and DataType mismatch\n")
             return(None)
-        else:
-            pts = list()
-            shape_idx = 0
-            for i in range(len(fp.Data)):
-                if   fp.DataType[i] == 0: # Free point
+        pts = list()
+        shape_idx = 0
+        for i in range(len(fp.Data)):
+            if   fp.DataType[i] == 0: # Free point
+                pts.append(fp.Data[i])
+            elif (fp.DataType[i] == 1):
+                if (shape_idx < len(shapes)): # project on shape
+                    d,p,i = Part.Vertex(fp.Data[i]).distToShape(shapes[shape_idx])
+                    if d > fp.Tolerance:
+                        touched = True
+                    pts.append(p[0][1]) #shapes[shape_idx].valueAt(fp.Data[i].x))
+                    shape_idx += 1
+                else:
                     pts.append(fp.Data[i])
-                elif (fp.DataType[i] == 1):
-                    if (shape_idx < len(shapes)): # project on shape
-                        d,p,i = Part.Vertex(fp.Data[i]).distToShape(shapes[shape_idx])
-                        pts.append(p[0][1]) #shapes[shape_idx].valueAt(fp.Data[i].x))
-                        shape_idx += 1
-                    else:
-                        pts.append(fp.Data[i])
-                #elif fp.DataType[i] == 2: # datum is parameter on shape
-                    #if isinstance(shapes[shape_idx],Part.Vertex):
-                        #pts.append(shapes[shape_idx].Point)
-                    #elif isinstance(shapes[shape_idx],Part.Edge):
-                        #pts.append(shapes[shape_idx].valueAt(fp.Data[i].x))
-                    #elif isinstance(shapes[shape_idx],Part.Face):
-                        #pts.append(shapes[shape_idx].valueAt(fp.Data[i].x,fp.Data[i].y))
-                    #shape_idx += 1
+        if stretch and touched:
+            params = [0]
+            knots = [0]
+            moves = [pts[0]-fp.Data[0]]
+            lsum = 0
+            mults = [2]
+            for i in range(1,len(pts)):
+                lsum += fp.Data[i-1].distanceToPoint(fp.Data[i])
+                params.append(lsum)
+                if fp.DataType[i] == 1:
+                    knots.append(lsum)
+                    moves.append(pts[i]-fp.Data[i])
+                    mults.insert(1,1)
+            mults[-1] = 2
+            if len(moves) < 2:
+                return(pts)
+            #FreeCAD.Console.PrintMessage("%s\n%s\n%s\n"%(moves,mults,knots))
+            curve = Part.BSplineCurve()
+            curve.buildFromPolesMultsKnots(moves,mults,knots,False,1)
+            for i in range(1,len(pts)):
+                if fp.DataType[i] == 0:
+                    FreeCAD.Console.PrintMessage("Stretch %s #%d: %s to %s\n"%(fp.Label,i,pts[i],curve.value(params[i])))
+                    pts[i] += curve.value(params[i])
+        if touched:
             return(pts)
-        return(None)
+        else:
+            return(False)
 
     def execute(self, obj):
         pts = self.get_points(obj)
-        
-        if len(pts) < 2:
-            FreeCAD.Console.PrintError("Gordon Profile : Not enough points\n")
-        else:
-            curve = Part.BSplineCurve()
-            curve.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance)
-            obj.Shape = curve.toShape()
+        if pts:
+            if len(pts) < 2:
+                FreeCAD.Console.PrintError("Gordon Profile : Not enough points\n")
+                return(False)
+            else:
+                obj.Data = pts
+                curve = Part.BSplineCurve()
+                curve.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance)
+                obj.Shape = curve.toShape()
 
     def onChanged(self, fp, prop):
-        if prop == "Support":
-            FreeCAD.Console.PrintMessage("Gordon Profile : Support changed\n")
-            old_pts = fp.Data
-            new_pts = self.get_points(fp)
-            if new_pts:
-                diff = [new_pts[i]-old_pts[i] for i in range(len(new_pts))]
-                fp.Data = new_pts
-                self.execute(fp)
-            
-            #for i in range(len(fp.Data)):
-                
-        #elif prop == "Data":
-            
+        if prop in ("Support","Data","DataType"):
+            FreeCAD.Console.PrintMessage("%s : %s changed\n"%(fp.Label,prop))
+            if (len(fp.Data)==len(fp.DataType)) and (sum(fp.DataType)==len(fp.Support)):
+                new_pts = self.get_points(fp, True)
+                if new_pts:
+                    fp.Data = new_pts
         return(True)
 
     def onDocumentRestored(self, fp):
@@ -198,22 +212,19 @@ class GordonProfileVP:
             return(False)
         pts = list()
         typ = list()
-        original_links = self.Object.Support
+        #original_links = self.Object.Support
         new_links = list()
         for p in self.ip.points:
             if isinstance(p,profile_editor.MarkerOnShape):
                 pt = p.points[0]
                 pts.append(FreeCAD.Vector(pt[0],pt[1],pt[2]))
-                if p.shape:
-                    if p.sublink in original_links:
-                        new_links.append(p.sublink)
-                        typ.append(1)
-                    else:
-                        typ.append(0)
+                if p.sublink:
+                    new_links.append(p.sublink)
+                    typ.append(1)
                 else:
                     typ.append(0)
-        self.Object.Data = pts
         self.Object.DataType = typ
+        self.Object.Data = pts
         self.Object.Support = new_links
         return(True)
 

@@ -227,6 +227,7 @@ class InterpoCurveEditor(object):
         
         self.root.events.removeEventCallback(coin.SoKeyboardEvent.getClassTypeId(), self._controlCB)
         self.root.unregister()
+        #self.root.removeAllChildren()
         self.sg.removeChild(self.root)
         self.root_inserted = False
             
