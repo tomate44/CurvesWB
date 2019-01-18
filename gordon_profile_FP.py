@@ -194,6 +194,7 @@ class GordonProfileVP:
         self.Object = vobj.Object
         self.active = False
         self.select_state = vobj.Selectable
+        self.ip = None
 
     def setEdit(self,vobj,mode=0):
         if mode == 0:
@@ -242,10 +243,11 @@ class GordonProfileVP:
             self.active = False
         if not self.active:
             self.active = True
-            self.setEdit(vobj)
+            #self.setEdit(vobj)
+            vobj.Document.setEdit(vobj)
         else:
-            if self.unsetEdit(vobj):
-                self.active = False
+            vobj.Document.resetEdit()
+            self.active = False
         return(True)
 
     def __getstate__(self):
