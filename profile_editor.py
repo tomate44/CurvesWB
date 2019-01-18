@@ -155,6 +155,37 @@ class InterpoCurveEditor(object):
         self.sg.addChild(self.root)
         self.root_inserted = True
 
+    def compute_tangents(self):
+        tans = list()
+        flags = list()
+        for i in range(len(self.points)):
+            if isinstance(self.points[i].shape,Part.Face):
+                for vec in self.points[i].points:
+                    u,v = self.points[i].shape.Surface.parameter(FreeCAD.Vector(vec))
+                    norm = self.points[i].shape.normalAt(u,v)
+                    cp = self.curve.parameter(FreeCAD.Vector(vec))
+                    t = self.curve.tangent(cp)[0]
+                    pl = Part.Plane(FreeCAD.Vector(),norm)
+                    ci = Part.Geom2d.Circle2d()
+                    ci.Radius = t.Length * 2
+                    w = Part.Wire([ci.toShape(pl)])
+                    f = Part.Face(w)
+                    #proj = f.project([Part.Vertex(t)])
+                    proj = Part.Vertex(t).distToShape(f)[1][0][1]
+                    #pt = proj.Vertexes[0].Point
+                    #FreeCAD.Console.PrintMessage("Projection %s -> %s\n"%(t,proj))
+                    if proj.Length > 1e-7:
+                        tans.append(proj)
+                        flags.append(True)
+                    else:
+                        tans.append(FreeCAD.Vector(1,0,0))
+                        flags.append(False)
+            else:
+                for vec in self.points[i].points:
+                    tans.append(FreeCAD.Vector(1,0,0))
+                    flags.append(False)
+        return(tans,flags)
+
     def update_curve(self):
         pts = list()
         for p in self.points:
@@ -162,7 +193,9 @@ class InterpoCurveEditor(object):
         #FreeCAD.Console.PrintMessage("pts :\n%s\n"%str(pts))
         if len(pts) > 1:
             self.curve.interpolate(pts)
-            #FreeCAD.Console.PrintMessage("update_curve\n")
+            tans, flags = self.compute_tangents()
+            if (len(tans) == len(pts)) and (len(flags) == len(pts)):
+                self.curve.interpolate(Points=pts, Tangents=tans, TangentFlags=flags)
             if self.fp:
                 self.fp.Shape = self.curve.toShape()
 
