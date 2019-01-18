@@ -258,6 +258,9 @@ class blendSurfVP:
     def unsetEdit(self,vobj,mode=0):
         debug("End Edit")
         FreeCADGui.ActiveDocument.resetEdit()
+        if isinstance(self.ed,property_editor.VPEditor):
+            self.ed.quit()
+            self.ed = None
         self.Object.recompute()
         return(False)
 
