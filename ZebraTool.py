@@ -7,7 +7,6 @@ import Part
 from PySide import QtGui, QtCore
 from pivy import coin
 import Zebra_Gui
-reload(Zebra_Gui)
 
 path_curvesWB = os.path.dirname(dummy.__file__)
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')

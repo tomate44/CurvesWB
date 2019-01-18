@@ -462,10 +462,10 @@ class SurfaceEdit(QtGui.QWidget):
             faces = []
             for f in self.selectedObject.Shape.Faces:
                 if not f.isSame(self.selectedFace):
-                    print str(f)
+                    print(str(f))
                     faces.append(f)
             faces.append(s.toShape())
-            print str(faces)
+            print(str(faces))
             shell = Part.Shell(faces)
             Part.show(shell)
             #self.selectedObject.ViewObject.Visibility = False
