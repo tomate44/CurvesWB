@@ -186,6 +186,7 @@ class GordonProfileVP:
     def __init__(self,vobj):
         vobj.Proxy = self
         self.select_state = True
+        self.active = False
         
     def getIcon(self):
         return(TOOL_ICON)
@@ -212,6 +213,7 @@ class GordonProfileVP:
                     pts.append(profile_editor.MarkerOnShape([p],self.Object.Support[shape_idx]))
                     shape_idx += 1
             self.ip = profile_editor.InterpoCurveEditor(pts, self.Object)
+            self.active = True
             return(True)
         return(False)
 
@@ -236,6 +238,7 @@ class GordonProfileVP:
             vobj.Selectable = self.select_state
             self.ip.quit()
         self.ip = None
+        self.active = False
         return(True)
 
     def doubleClicked(self,vobj):
@@ -259,11 +262,21 @@ class GordonProfileVP:
 
 class GordonProfileCommand:
     """Creates a editable interpolation curve"""
+    docu = """Interpolation curve control keys :\n
+    a - Select all / Deselect
+    i - Insert point
+    g - Grab objects
+    s - Snap points on shape / Unsnap
+    x,y,z - Axis constraints during grab
+    q - Apply changes and quit editing
+    """
     def makeFeature(self, sub, pts, typ):
         fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Gordon Profile")
         proxy = GordonProfileFP(fp,sub,pts,typ)
         GordonProfileVP(fp.ViewObject)
-        proxy.execute(fp)
+        FreeCAD.Console.PrintWarning(GordonProfileCommand.docu)
+        FreeCAD.ActiveDocument.recompute()
+        fp.ViewObject.Document.setEdit(fp.ViewObject)
         
     def Activated(self):
         s = FreeCADGui.Selection.getSelectionEx()
@@ -286,8 +299,8 @@ class GordonProfileCommand:
                     pts.append(p)
                     
         if len(pts) == 0:
-            pts = [FreeCAD.Vector(0,0,0),FreeCAD.Vector(1,0,0)]
-            typ = [0,0]
+            pts = [FreeCAD.Vector(0,0,0),FreeCAD.Vector(0.5,0.5,0),FreeCAD.Vector(1,0,0)]
+            typ = [0,0,0]
         else:
             typ = [1]*len(pts)
         self.makeFeature(sub,pts,typ)

@@ -34,9 +34,15 @@ class MarkerOnShape(graphics.Marker):
         if isinstance(sh,Part.Shape):
             self.shape = sh
         elif isinstance(sh,(tuple,list)):
-            if True: # I should put a try / except here
-                self.shape = subshape_from_sublink(sh)
-                self.sublink = sh
+            self.set_sublink(sh)
+
+    def set_sublink(self,sl):
+        if isinstance(sl,(tuple,list)):
+            self.shape = subshape_from_sublink(sl)
+            self.sublink = sl
+        elif sl is None:
+            self.shape = None
+            self.sublink = None
 
     def __repr__(self):
         return("MarkerOnShape(%s)"%self.shape)
@@ -209,16 +215,26 @@ class InterpoCurveEditor(object):
     def controlCB(self, attr, event_callback):
         event = event_callback.getEvent()
         if event.getState() == event.UP:
-            FreeCAD.Console.PrintMessage("Key pressed : %s\n"%event.getKey())
-            if event.getKey() == ord("s"):
+            #FreeCAD.Console.PrintMessage("Key pressed : %s\n"%event.getKey())
+            if event.getKey() == ord("i"):
                 self.subdivide()
             elif event.getKey() == ord("q"):
                 if self.fp:
                     self.fp.ViewObject.Proxy.doubleClicked(self.fp.ViewObject)
                 else:
                     self.quit()
+            elif event.getKey() == ord("s"):
+                sel = FreeCADGui.Selection.getSelectionEx()
+                tup = None
+                if len(sel) == 1:
+                    tup = (sel[0].Object,sel[0].SubElementNames)
+                for i in range(len(self.root.selected_objects)):
+                    if isinstance(self.root.selected_objects[i],MarkerOnShape):
+                        self.root.selected_objects[i].set_sublink(tup)
+                        FreeCAD.Console.PrintMessage("Snapped to %s\n"%str(self.root.selected_objects[i].sublink))
+                        # TODO update point position
             elif (event.getKey() == 65535) or (event.getKey() == 65288): # Suppr or Backspace
-                FreeCAD.Console.PrintMessage("Some objects have been deleted\n")
+                #FreeCAD.Console.PrintMessage("Some objects have been deleted\n")
                 pts = list()
                 for o in self.root.dynamic_objects:
                     if isinstance(o,MarkerOnShape):
@@ -230,8 +246,9 @@ class InterpoCurveEditor(object):
     def subdivide(self):
         # get selected lines and subdivide them
         pts = list()
+        new_select = list()
         for o in self.lines:
-            FreeCAD.Console.PrintMessage("object %s\n"%str(o))
+            #FreeCAD.Console.PrintMessage("object %s\n"%str(o))
             if isinstance(o,ConnectionLine):
                 # TODO deselect line
                 pts.append(o.markers[0])
@@ -250,10 +267,12 @@ class InterpoCurveEditor(object):
                     midpar = (par1+par2)/2.0
                     mark = MarkerOnShape([self.curve.value(midpar)])
                     # TODO make marker selected
-                    pts.append(mark)                    
+                    pts.append(mark)
+                    new_select.append(mark)
         pts.append(self.points[-1])
         self.points = pts
         self.setup_InteractionSeparator()
+        self.root.selected_objects = new_select
         self.update_curve()
         return(True)
     
