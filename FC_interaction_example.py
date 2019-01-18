@@ -171,7 +171,7 @@ class InterpolationPolygon(object):
         FreeCAD.Console.PrintMessage("pts :\n%s\n"%str(pts))
         if len(pts) > 1:
             self.curve.interpolate(pts)
-            FreeCAD.Console.PrintMessage("update_curve\n")
+            #FreeCAD.Console.PrintMessage("update_curve\n")
             if self.fp:
                 self.fp.Shape = self.curve.toShape()
 

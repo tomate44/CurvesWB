@@ -185,6 +185,7 @@ class GordonProfileFP:
 class GordonProfileVP:
     def __init__(self,vobj):
         vobj.Proxy = self
+        self.select_state = True
         
     def getIcon(self):
         return(TOOL_ICON)
@@ -192,40 +193,48 @@ class GordonProfileVP:
     def attach(self, vobj):
         self.Object = vobj.Object
         self.active = False
+        self.select_state = vobj.Selectable
 
-    def start_edit(self):
-        pts = list()
-        #shapes = self.Object.Proxy.get_shapes(self.Object)
-        shape_idx = 0
-        for i in range(len(self.Object.Data)):
-            p = self.Object.Data[i]
-            t = self.Object.DataType[i]
-            if t == 0:
-                pts.append(profile_editor.MarkerOnShape([p]))
-            elif t == 1:
-                pts.append(profile_editor.MarkerOnShape([p],self.Object.Support[shape_idx]))
-                shape_idx += 1
-        self.ip = profile_editor.InterpoCurveEditor(pts, self.Object)
+    def setEdit(self,vobj,mode=0):
+        if mode == 0:
+            if vobj.Selectable:
+                self.select_state = True
+                vobj.Selectable = False
+            pts = list()
+            shape_idx = 0
+            for i in range(len(self.Object.Data)):
+                p = self.Object.Data[i]
+                t = self.Object.DataType[i]
+                if t == 0:
+                    pts.append(profile_editor.MarkerOnShape([p]))
+                elif t == 1:
+                    pts.append(profile_editor.MarkerOnShape([p],self.Object.Support[shape_idx]))
+                    shape_idx += 1
+            self.ip = profile_editor.InterpoCurveEditor(pts, self.Object)
+            return(True)
+        return(False)
 
-    def apply_edit(self):
-        if not isinstance(self.ip,profile_editor.InterpoCurveEditor):
-            return(False)
-        pts = list()
-        typ = list()
-        #original_links = self.Object.Support
-        new_links = list()
-        for p in self.ip.points:
-            if isinstance(p,profile_editor.MarkerOnShape):
-                pt = p.points[0]
-                pts.append(FreeCAD.Vector(pt[0],pt[1],pt[2]))
-                if p.sublink:
-                    new_links.append(p.sublink)
-                    typ.append(1)
-                else:
-                    typ.append(0)
-        self.Object.DataType = typ
-        self.Object.Data = pts
-        self.Object.Support = new_links
+    def unsetEdit(self,vobj,mode=0):
+        if isinstance(self.ip,profile_editor.InterpoCurveEditor):
+            pts = list()
+            typ = list()
+            #original_links = self.Object.Support
+            new_links = list()
+            for p in self.ip.points:
+                if isinstance(p,profile_editor.MarkerOnShape):
+                    pt = p.points[0]
+                    pts.append(FreeCAD.Vector(pt[0],pt[1],pt[2]))
+                    if p.sublink:
+                        new_links.append(p.sublink)
+                        typ.append(1)
+                    else:
+                        typ.append(0)
+            self.Object.DataType = typ
+            self.Object.Data = pts
+            self.Object.Support = new_links
+            vobj.Selectable = self.select_state
+            self.ip.quit()
+        self.ip = None
         return(True)
 
     def doubleClicked(self,vobj):
@@ -233,11 +242,10 @@ class GordonProfileVP:
             self.active = False
         if not self.active:
             self.active = True
-            self.start_edit()
+            self.setEdit(vobj)
         else:
-            if self.apply_edit():
+            if self.unsetEdit(vobj):
                 self.active = False
-                self.ip.quit()
         return(True)
 
     def __getstate__(self):
@@ -251,10 +259,10 @@ class GordonProfileCommand:
     """Creates a editable interpolation curve"""
     def makeFeature(self, sub, pts, typ):
         fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Gordon Profile")
-        GordonProfileFP(fp,sub,pts,typ)
+        proxy = GordonProfileFP(fp,sub,pts,typ)
         GordonProfileVP(fp.ViewObject)
-        FreeCAD.ActiveDocument.recompute()
-
+        proxy.execute(fp)
+        
     def Activated(self):
         s = FreeCADGui.Selection.getSelectionEx()
         try:

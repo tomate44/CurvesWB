@@ -200,6 +200,7 @@ class InterpoCurveEditor(object):
         for o in self.lines:
             FreeCAD.Console.PrintMessage("object %s\n"%str(o))
             if isinstance(o,ConnectionLine):
+                # TODO deselect line
                 pts.append(o.markers[0])
                 if o in self.root.selected_objects:
                     idx = self.lines.index(o)
@@ -214,7 +215,9 @@ class InterpoCurveEditor(object):
                     par1 = self.curve.parameter(FreeCAD.Vector(p1))
                     par2 = self.curve.parameter(FreeCAD.Vector(p2))
                     midpar = (par1+par2)/2.0
-                    pts.append(MarkerOnShape([self.curve.value(midpar)]))                    
+                    mark = MarkerOnShape([self.curve.value(midpar)])
+                    # TODO make marker selected
+                    pts.append(mark)                    
         pts.append(self.points[-1])
         self.points = pts
         self.setup_InteractionSeparator()
