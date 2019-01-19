@@ -74,8 +74,8 @@ class blendSurfFP:
         obj.RailSamples = 20
         obj.Scale1 = (1.,-5.0,5.0,0.05)
         obj.Scale2 = (1.,-5.0,5.0,0.05)
-        obj.ScaleList1 = ((0,1,0),(1,1,0))
-        obj.ScaleList2 = ((0,1,0),(1,1,0))
+        #obj.ScaleList1 = ((0,1,0),(1,1,0))
+        #obj.ScaleList2 = ((0,1,0),(1,1,0))
         obj.Untwist = False
 
     def check_scale_list(self, obj, prop):
