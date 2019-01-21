@@ -3,7 +3,7 @@
 __title__ = ""
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = ""
+__doc__ = """doc"""
 
 import sys
 if sys.version_info.major >= 3:
@@ -18,52 +18,54 @@ TOOL_ICON = _utils.iconsPath() + '/icon.svg'
 #debug = _utils.debug
 #debug = _utils.doNothing
 
-#App::PropertyBool
-#App::PropertyBoolList
-#App::PropertyFloat
-#App::PropertyFloatList
-#App::PropertyFloatConstraint
-#App::PropertyQuantity
-#App::PropertyQuantityConstraint
-#App::PropertyAngle
-#App::PropertyDistance
-#App::PropertyLength
-#App::PropertySpeed
-#App::PropertyAcceleration
-#App::PropertyForce
-#App::PropertyPressure
-#App::PropertyInteger
-#App::PropertyIntegerConstraint
-#App::PropertyPercent
-#App::PropertyEnumeration
-#App::PropertyIntegerList
-#App::PropertyIntegerSet
-#App::PropertyMap
-#App::PropertyString
-#App::PropertyUUID
-#App::PropertyFont
-#App::PropertyStringList
-#App::PropertyLink
-#App::PropertyLinkSub
-#App::PropertyLinkList
-#App::PropertyLinkSubList
-#App::PropertyMatrix
-#App::PropertyVector
-#App::PropertyVectorList
-#App::PropertyPlacement
-#App::PropertyPlacementLink
-#App::PropertyColor
-#App::PropertyColorList
-#App::PropertyMaterial
-#App::PropertyPath
-#App::PropertyFile
-#App::PropertyFileIncluded
-#App::PropertyPythonObject
-#Part::PropertyPartShape
-#Part::PropertyGeometryList
-#Part::PropertyShapeHistory
-#Part::PropertyFilletEdges
-#Sketcher::PropertyConstraintList
+props = """
+App::PropertyBool
+App::PropertyBoolList
+App::PropertyFloat
+App::PropertyFloatList
+App::PropertyFloatConstraint
+App::PropertyQuantity
+App::PropertyQuantityConstraint
+App::PropertyAngle
+App::PropertyDistance
+App::PropertyLength
+App::PropertySpeed
+App::PropertyAcceleration
+App::PropertyForce
+App::PropertyPressure
+App::PropertyInteger
+App::PropertyIntegerConstraint
+App::PropertyPercent
+App::PropertyEnumeration
+App::PropertyIntegerList
+App::PropertyIntegerSet
+App::PropertyMap
+App::PropertyString
+App::PropertyUUID
+App::PropertyFont
+App::PropertyStringList
+App::PropertyLink
+App::PropertyLinkSub
+App::PropertyLinkList
+App::PropertyLinkSubList
+App::PropertyMatrix
+App::PropertyVector
+App::PropertyVectorList
+App::PropertyPlacement
+App::PropertyPlacementLink
+App::PropertyColor
+App::PropertyColorList
+App::PropertyMaterial
+App::PropertyPath
+App::PropertyFile
+App::PropertyFileIncluded
+App::PropertyPythonObject
+Part::PropertyPartShape
+Part::PropertyGeometryList
+Part::PropertyShapeHistory
+Part::PropertyFilletEdges
+Sketcher::PropertyConstraintList
+"""
 
 class TemplateFP:
     """Creates a ..."""
@@ -75,9 +77,9 @@ class TemplateFP:
         obj.Proxy = self
 
     def execute(self, obj):
-        obj.Shape = gordon.surface().toShape()
+        obj.Shape = None
 
-    def onChanged(self, selfobj, prop):
+    def onChanged(self, obj, prop):
         return(False)
 
 class TemplateVP:
@@ -119,6 +121,6 @@ class ToolCommand:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'tool_name', 'ToolTip': 'Creates a ...'}
+        return {'Pixmap' : TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
 
 FreeCADGui.addCommand('tool_name', ToolCommand())
