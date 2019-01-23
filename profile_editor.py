@@ -9,6 +9,11 @@ from PySide2.QtWidgets import QApplication
 from PySide2.QtGui import QColor
 from pivy import quarter, coin, graphics, utils
 
+from pivy.graphics import colors
+colors.COLORS["green"] =    (0., 1., 0.)
+colors.COLORS["yellow"] =   (1., 1., 0.)
+colors.COLORS["cyan"] =     (0., 1., 1.)
+colors.COLORS["magenta"] =  (1., 0., 1.)
 
 def subshape_from_sublink(o):
     name = o[1][0]
@@ -29,23 +34,49 @@ class ConnectionMarker(graphics.Marker):
 class MarkerOnShape(graphics.Marker):
     def __init__(self, points, sh=None):
         super(MarkerOnShape, self).__init__(points, True)
-        self.shape = None
-        self.sublink = None
+        self._shape = None
+        self._sublink = None
         if isinstance(sh,Part.Shape):
-            self.shape = sh
+            self.snap_shape = sh
         elif isinstance(sh,(tuple,list)):
-            self.set_sublink(sh)
+            self.sublink = sh
 
-    def set_sublink(self,sl):
+    @property
+    def snap_shape(self):
+        return self._shape
+    @snap_shape.setter
+    def snap_shape(self, sh):
+        if isinstance(sh,Part.Shape):
+            self._shape = sh
+        else:
+            self._shape = None
+        self.alter_color()
+
+    @property
+    def sublink(self):
+        return self._sublink
+    @sublink.setter
+    def sublink(self, sl):
         if isinstance(sl,(tuple,list)):
-            self.shape = subshape_from_sublink(sl)
-            self.sublink = sl
+            self._shape = subshape_from_sublink(sl)
+            self._sublink = sl
         elif sl is None:
-            self.shape = None
-            self.sublink = None
+            self._shape = None
+            self._sublink = None
+        self.alter_color()
+
+    def alter_color(self):
+        if   isinstance(self._shape, Part.Vertex):
+            self.set_color("white")
+        elif isinstance(self._shape, Part.Edge):
+            self.set_color("cyan")
+        elif isinstance(self._shape, Part.Face):
+            self.set_color("magenta")
+        else:
+            self.set_color("black")
 
     def __repr__(self):
-        return("MarkerOnShape(%s)"%self.shape)
+        return("MarkerOnShape(%s)"%self._shape)
 
     def drag(self, mouse_coords, fact=1.):
         if self.enabled:
@@ -54,9 +85,9 @@ class MarkerOnShape(graphics.Marker):
                 p[0] = mouse_coords[0] * fact + self._tmp_points[i][0]
                 p[1] = mouse_coords[1] * fact + self._tmp_points[i][1]
                 p[2] = mouse_coords[2] * fact + self._tmp_points[i][2]
-                if self.shape:
+                if self._shape:
                     v = Part.Vertex(p[0],p[1],p[2])
-                    proj = v.distToShape(self.shape)[1][0][1]
+                    proj = v.distToShape(self._shape)[1][0][1]
                     # FreeCAD.Console.PrintMessage("%s -> %s\n"%(p.getValue(),proj))
                     p[0] = proj.x
                     p[1] = proj.y
@@ -165,10 +196,10 @@ class InterpoCurveEditor(object):
         tans = list()
         flags = list()
         for i in range(len(self.points)):
-            if isinstance(self.points[i].shape,Part.Face):
+            if isinstance(self.points[i].snap_shape,Part.Face):
                 for vec in self.points[i].points:
-                    u,v = self.points[i].shape.Surface.parameter(FreeCAD.Vector(vec))
-                    norm = self.points[i].shape.normalAt(u,v)
+                    u,v = self.points[i].snap_shape.Surface.parameter(FreeCAD.Vector(vec))
+                    norm = self.points[i].snap_shape.normalAt(u,v)
                     cp = self.curve.parameter(FreeCAD.Vector(vec))
                     t = self.curve.tangent(cp)[0]
                     pl = Part.Plane(FreeCAD.Vector(),norm)
@@ -200,8 +231,9 @@ class InterpoCurveEditor(object):
         if len(pts) > 1:
             self.curve.interpolate(pts)
             tans, flags = self.compute_tangents()
-            if (len(tans) == len(pts)) and (len(flags) == len(pts)):
-                self.curve.interpolate(Points=pts, Tangents=tans, TangentFlags=flags)
+            if any(flags):
+                if (len(tans) == len(pts)) and (len(flags) == len(pts)):
+                    self.curve.interpolate(Points=pts, Tangents=tans, TangentFlags=flags)
             if self.fp:
                 self.fp.Shape = self.curve.toShape()
 
@@ -230,9 +262,10 @@ class InterpoCurveEditor(object):
                     tup = (sel[0].Object,sel[0].SubElementNames)
                 for i in range(len(self.root.selected_objects)):
                     if isinstance(self.root.selected_objects[i],MarkerOnShape):
-                        self.root.selected_objects[i].set_sublink(tup)
+                        self.root.selected_objects[i].sublink = tup
                         FreeCAD.Console.PrintMessage("Snapped to %s\n"%str(self.root.selected_objects[i].sublink))
-                        # TODO update point position
+                        self.root.selected_objects[i].drag_start()
+                        self.root.selected_objects[i].drag((0,0,0))
             elif (event.getKey() == 65535) or (event.getKey() == 65288): # Suppr or Backspace
                 #FreeCAD.Console.PrintMessage("Some objects have been deleted\n")
                 pts = list()
@@ -250,23 +283,16 @@ class InterpoCurveEditor(object):
         for o in self.lines:
             #FreeCAD.Console.PrintMessage("object %s\n"%str(o))
             if isinstance(o,ConnectionLine):
-                # TODO deselect line
                 pts.append(o.markers[0])
                 if o in self.root.selected_objects:
                     idx = self.lines.index(o)
                     FreeCAD.Console.PrintMessage("Subdividing line #%d\n"%idx)
-    #                m1,m2 = o.markers
-    #                i1 = self.points.index(m1)
-    #                i2 = self.points.index(m2)
                     p1 = o.markers[0].points[0]
                     p2 = o.markers[1].points[0]
-                    #mp = (p1+p2)/2.0
-                    #pts.append(ConnectionMarker([mp]))
                     par1 = self.curve.parameter(FreeCAD.Vector(p1))
                     par2 = self.curve.parameter(FreeCAD.Vector(p2))
                     midpar = (par1+par2)/2.0
                     mark = MarkerOnShape([self.curve.value(midpar)])
-                    # TODO make marker selected
                     pts.append(mark)
                     new_select.append(mark)
         pts.append(self.points[-1])
@@ -277,9 +303,6 @@ class InterpoCurveEditor(object):
         return(True)
     
     def quit(self):
-        #self.sg.removeChild(self.root)
-        #self.root_inserted = False
-        
         self.root.events.removeEventCallback(coin.SoKeyboardEvent.getClassTypeId(), self._controlCB)
         self.root.unregister()
         #self.root.removeAllChildren()
