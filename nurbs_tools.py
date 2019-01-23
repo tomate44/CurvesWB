@@ -702,12 +702,16 @@ class EdgeInterpolator(object):
         self.data = sorted(self.data,key=itemgetter(0))
 
     def interpolate(self):
-        self.build_params_and_points()
-        self.curve.interpolate(Points=self.pts, Parameters=self.parameters)
+        if len(self.data) > 1:
+            self.build_params_and_points()
+            self.curve.interpolate(Points=self.pts, Parameters=self.parameters)
 
     def valueAt(self, p):
-        vec = self.curve.value(p)
-        return(self.vec_to_dat(vec))
+        if len(self.data) > 1:
+            vec = self.curve.value(p)
+            return(self.vec_to_dat(vec))
+        else:
+            return(self.data[0][1])
 
 
         
