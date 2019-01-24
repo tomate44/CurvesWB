@@ -36,6 +36,7 @@ class MarkerOnShape(graphics.Marker):
         super(MarkerOnShape, self).__init__(points, True)
         self._shape = None
         self._sublink = None
+        self.tangent = None
         if isinstance(sh,Part.Shape):
             self.snap_shape = sh
         elif isinstance(sh,(tuple,list)):
@@ -122,11 +123,19 @@ class ConnectionLine(graphics.Line):
         super(ConnectionLine, self).__init__(
             sum([m.points for m in markers], []), True)
         self.markers = markers
+        self.tangent = False
         for m in self.markers:
             m.on_drag.append(self.updateLine)
 
     def updateLine(self):
         self.points = sum([m.points for m in self.markers], [])
+        if self.tangent:
+            p1 = self.markers[0].points[0]
+            p2 = self.markers[-1].points[0]
+            t = p2-p1
+            tan = FreeCAD.Vector(t[0],t[1],t[2])
+            for m in self.markers:
+                m.tangent = tan
 
     @property
     def drag_objects(self):
@@ -149,6 +158,7 @@ class InterpoCurveEditor(object):
         self.curve = Part.BSplineCurve()
         self.fp = fp
         self.root_inserted = False
+        self.periodic = False
         #self.support = None # Not yet implemented
         for p in points:
             if isinstance(p,FreeCAD.Vector):
@@ -217,6 +227,10 @@ class InterpoCurveEditor(object):
                     else:
                         tans.append(FreeCAD.Vector(1,0,0))
                         flags.append(False)
+            elif self.points[i].tangent:
+                for vec in self.points[i].points:
+                    tans.append(self.points[i].tangent)
+                    flags.append(True)
             else:
                 for vec in self.points[i].points:
                     tans.append(FreeCAD.Vector(1,0,0))
@@ -229,11 +243,11 @@ class InterpoCurveEditor(object):
             pts += p.points
         #FreeCAD.Console.PrintMessage("pts :\n%s\n"%str(pts))
         if len(pts) > 1:
-            self.curve.interpolate(pts)
+            self.curve.interpolate(Points=pts, PeriodicFlag=self.periodic)
             tans, flags = self.compute_tangents()
             if any(flags):
                 if (len(tans) == len(pts)) and (len(flags) == len(pts)):
-                    self.curve.interpolate(Points=pts, Tangents=tans, TangentFlags=flags)
+                    self.curve.interpolate(Points=pts, PeriodicFlag=self.periodic, Tangents=tans, TangentFlags=flags)
             if self.fp:
                 self.fp.Shape = self.curve.toShape()
 
@@ -266,6 +280,8 @@ class InterpoCurveEditor(object):
                         FreeCAD.Console.PrintMessage("Snapped to %s\n"%str(self.root.selected_objects[i].sublink))
                         self.root.selected_objects[i].drag_start()
                         self.root.selected_objects[i].drag((0,0,0))
+            elif event.getKey() == ord("l"):
+                self.set_linear()
             elif (event.getKey() == 65535) or (event.getKey() == 65288): # Suppr or Backspace
                 #FreeCAD.Console.PrintMessage("Some objects have been deleted\n")
                 pts = list()
@@ -275,7 +291,21 @@ class InterpoCurveEditor(object):
                 self.points = pts
                 self.setup_InteractionSeparator()
                 self.update_curve()
-    
+   
+    def set_linear(self):
+        for o in self.root.selected_objects:
+            if isinstance(o,ConnectionLine):
+                if o.tangent:
+                    o.tangent = False
+                    o.set_color("blue")
+                else:
+                    o.tangent = True
+                    o.set_color("magenta")
+                    # TODO disable neighbour lines
+                o.updateLine()
+                o.drag_start()
+                o.drag((0,0,0))
+
     def subdivide(self):
         # get selected lines and subdivide them
         pts = list()

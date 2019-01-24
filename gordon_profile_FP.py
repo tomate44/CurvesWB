@@ -80,11 +80,8 @@ class GordonProfileFP:
         obj.addProperty("App::PropertyFloat",       "Tolerance",       "Profile", "Tolerance").Tolerance = 1e-5
         obj.addProperty("App::PropertyBool",        "Periodic",        "Profile", "Periodic curve").Periodic = False
         obj.addProperty("App::PropertyVectorList",  "Data",            "Profile", "Data list").Data = d
-        #obj.addProperty("App::PropertyVectorList",  "Points",          "Profile", "Interpolated points")
         obj.addProperty("App::PropertyIntegerList", "DataType",        "Profile", "Types of interpolated points").DataType = t
-        #obj.addProperty("App::PropertyVector",      "InitialTangent",  "Profile", "Initial Tangent")
-        #obj.addProperty("App::PropertyVector",      "FinalTangent",    "Profile", "Final Tangent")
-        #obj.addProperty("App::PropertyFloatList",   "Parameters",      "Profile", "Parameters of intersection points")
+        obj.addProperty("App::PropertyVectorList",  "Tangents",        "Profile", "Tangent vectors")
         obj.setEditorMode("Data", 2)
         obj.setEditorMode("DataType", 2)
         #obj.Parametrization = "ChordLength"
@@ -161,22 +158,26 @@ class GordonProfileFP:
         pts = self.get_points(obj)
         if pts:
             if len(pts) < 2:
-                FreeCAD.Console.PrintError("Gordon Profile : Not enough points\n")
+                FreeCAD.Console.PrintError("%s : Not enough points\n"%obj.Label)
                 return(False)
             else:
                 obj.Data = pts
-                curve = Part.BSplineCurve()
-                curve.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance)
-                obj.Shape = curve.toShape()
+        else:
+            pts = obj.Data
+            curve = Part.BSplineCurve()
+            curve.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance)
+            obj.Shape = curve.toShape()
+        #else:
+            #FreeCAD.Console.PrintError("%s : Failed to compute points\n"%obj.Label)
 
     def onChanged(self, fp, prop):
-        if prop in ("Support","Data","DataType"):
+        if prop in ("Support","Data","DataType","Periodic"):
             FreeCAD.Console.PrintMessage("%s : %s changed\n"%(fp.Label,prop))
             if (len(fp.Data)==len(fp.DataType)) and (sum(fp.DataType)==len(fp.Support)):
                 new_pts = self.get_points(fp, True)
                 if new_pts:
                     fp.Data = new_pts
-        return(True)
+            #self.execute(fp)
 
     def onDocumentRestored(self, fp):
         fp.setEditorMode("Data", 2)
@@ -213,6 +214,7 @@ class GordonProfileVP:
                     pts.append(profile_editor.MarkerOnShape([p],self.Object.Support[shape_idx]))
                     shape_idx += 1
             self.ip = profile_editor.InterpoCurveEditor(pts, self.Object)
+            self.ip.periodic = self.Object.Periodic
             self.active = True
             return(True)
         return(False)
@@ -267,9 +269,10 @@ class GordonProfileCommand:
     i - Insert point
     g - Grab objects
     s - Snap points on shape / Unsnap
+    l - Set/unset a linear interpolation
     x,y,z - Axis constraints during grab
-    q - Apply changes and quit editing
-    """
+    q - Apply changes and quit editing"""
+    
     def makeFeature(self, sub, pts, typ):
         fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Gordon Profile")
         proxy = GordonProfileFP(fp,sub,pts,typ)
