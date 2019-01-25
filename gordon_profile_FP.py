@@ -81,7 +81,7 @@ class GordonProfileFP:
         obj.addProperty("App::PropertyBool",        "Periodic",        "Profile", "Periodic curve").Periodic = False
         obj.addProperty("App::PropertyVectorList",  "Data",            "Profile", "Data list").Data = d
         obj.addProperty("App::PropertyIntegerList", "DataType",        "Profile", "Types of interpolated points").DataType = t
-        obj.addProperty("App::PropertyVectorList",  "Tangents",        "Profile", "Tangent vectors")
+        obj.addProperty("App::PropertyBoolList",    "LinearSegments",  "Profile", "Linear segment flags")
         obj.setEditorMode("Data", 2)
         obj.setEditorMode("DataType", 2)
         #obj.Parametrization = "ChordLength"
@@ -164,9 +164,21 @@ class GordonProfileFP:
                 obj.Data = pts
         else:
             pts = obj.Data
-            curve = Part.BSplineCurve()
-            curve.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance)
-            obj.Shape = curve.toShape()
+            
+        curve = Part.BSplineCurve()
+        tans = [FreeCAD.Vector()]*len(pts)
+        flags = [False]*len(pts)
+        if not (len(obj.LinearSegments) == len(pts)-1):
+            FreeCAD.Console.PrintError("%s : Points and LinearSegments mismatch\n"%obj.Label)
+        else:
+            for i,b in enumerate(obj.LinearSegments):
+                if b:
+                    tans[i] = pts[i+1]-pts[i]
+                    tans[i+1] = tans[i]
+                    flags[i] = True
+                    flags[i+1] = True
+        curve.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Tangents=tans, TangentFlags=flags)
+        obj.Shape = curve.toShape()
         #else:
             #FreeCAD.Console.PrintError("%s : Failed to compute points\n"%obj.Label)
 
@@ -215,6 +227,9 @@ class GordonProfileVP:
                     shape_idx += 1
             self.ip = profile_editor.InterpoCurveEditor(pts, self.Object)
             self.ip.periodic = self.Object.Periodic
+            for i in range(min(len(self.Object.LinearSegments),len(self.ip.lines))):
+                self.ip.lines[i].tangent = self.Object.LinearSegments[i]
+                self.ip.lines[i].updateLine()
             self.active = True
             return(True)
         return(False)
@@ -234,6 +249,7 @@ class GordonProfileVP:
                         typ.append(1)
                     else:
                         typ.append(0)
+            self.Object.LinearSegments = [l.tangent for l in self.ip.lines]
             self.Object.DataType = typ
             self.Object.Data = pts
             self.Object.Support = new_links
@@ -268,6 +284,7 @@ class GordonProfileCommand:
     a - Select all / Deselect
     i - Insert point
     g - Grab objects
+    p - align selected objects
     s - Snap points on shape / Unsnap
     l - Set/unset a linear interpolation
     x,y,z - Axis constraints during grab

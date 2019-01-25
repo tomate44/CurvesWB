@@ -50,6 +50,11 @@ class gordon:
         obj.addProperty("App::PropertyLinkList", "Sources", "Gordon", "Curve network")
         obj.addProperty("App::PropertyFloat", "Tol3D", "Gordon", "3D tolerance").Tol3D = 1e-2
         obj.addProperty("App::PropertyFloat", "Tol2D", "Gordon", "Parametric tolerance").Tol2D = 1e-5
+        obj.addProperty("App::PropertyEnumeration", "Output", "Base", "Output type").Output=["Surface","Wireframe"]
+        obj.addProperty("App::PropertyInteger", "SamplesU", "Wireframe", "Number of samples in U direction").SamplesU = 16
+        obj.addProperty("App::PropertyInteger", "SamplesV", "Wireframe", "Number of samples in V direction").SamplesV = 16
+        obj.Output = "Wireframe"
+        obj.setEditorMode("Tol2D", 2)
         obj.Proxy = self
 
     def execute(self, obj):
@@ -92,7 +97,20 @@ class gordon:
             #poly.append(Part.makePolygon(row))
         #obj.Shape = gordon.curve_network()
         # display curves and resulting surface
-        obj.Shape = gordon.surface().toShape()
+        if obj.Output == "Wireframe":
+            edges = list()
+            s = gordon.surface()
+            u0,u1,v0,v1 = s.bounds()
+            for i in range(obj.SamplesU+1):
+                pu = u0 + (u1-u0)*float(i)/obj.SamplesU
+                edges.append(s.uIso(pu).toShape())
+            for i in range(obj.SamplesV+1):
+                pv = v0 + (v1-v0)*float(i)/obj.SamplesV
+                edges.append(s.vIso(pv).toShape())
+            obj.Shape = Part.Compound(edges)
+        else:
+            obj.Shape = gordon.surface().toShape()
+        del(gordon)
 
 class gordonVP:
     def __init__(self,vobj):

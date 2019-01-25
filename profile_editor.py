@@ -58,10 +58,10 @@ class MarkerOnShape(graphics.Marker):
         return self._sublink
     @sublink.setter
     def sublink(self, sl):
-        if isinstance(sl,(tuple,list)):
+        if isinstance(sl,(tuple,list)) and not (sl == self._sublink):
             self._shape = subshape_from_sublink(sl)
             self._sublink = sl
-        elif sl is None:
+        else:
             self._shape = None
             self._sublink = None
         self.alter_color()
@@ -264,6 +264,8 @@ class InterpoCurveEditor(object):
             #FreeCAD.Console.PrintMessage("Key pressed : %s\n"%event.getKey())
             if event.getKey() == ord("i"):
                 self.subdivide()
+            elif event.getKey() == ord("p"):
+                self.set_planar()
             elif event.getKey() == ord("q"):
                 if self.fp:
                     self.fp.ViewObject.Proxy.doubleClicked(self.fp.ViewObject)
@@ -279,7 +281,9 @@ class InterpoCurveEditor(object):
                         self.root.selected_objects[i].sublink = tup
                         FreeCAD.Console.PrintMessage("Snapped to %s\n"%str(self.root.selected_objects[i].sublink))
                         self.root.selected_objects[i].drag_start()
-                        self.root.selected_objects[i].drag((0,0,0))
+                        self.root.selected_objects[i].drag((0,0,0.))
+                        self.root.selected_objects[i].drag_release()
+                        self.update_curve()
             elif event.getKey() == ord("l"):
                 self.set_linear()
             elif (event.getKey() == 65535) or (event.getKey() == 65288): # Suppr or Backspace
@@ -304,7 +308,77 @@ class InterpoCurveEditor(object):
                     # TODO disable neighbour lines
                 o.updateLine()
                 o.drag_start()
-                o.drag((0,0,0))
+                o.drag((0,0,0.00001))
+                o.drag_release()
+                self.update_curve()
+
+    def set_planar(self):
+        #view_dir = FreeCAD.Vector(0,0,1)
+        view_dir = FreeCADGui.ActiveDocument.ActiveView.getViewDirection()
+        markers = list()
+        for o in self.root.selected_objects:
+            if isinstance(o,MarkerOnShape):
+                markers.append(o)
+            elif isinstance(o,ConnectionLine):
+                markers.extend(o.markers)
+        if len(markers) > 2:
+            vec0 = markers[0].points[0]
+            vec1 = markers[-1].points[0]
+            p0 = FreeCAD.Vector(vec0[0],vec0[1],vec0[2])
+            p1 = FreeCAD.Vector(vec1[0],vec1[1],vec1[2])
+            pl = Part.Plane(p0,p1,p1+view_dir)
+            for o in markers:
+                if isinstance(o.snap_shape,Part.Vertex):
+                    FreeCAD.Console.PrintMessage("Snapped to Vertex\n")
+                elif isinstance(o.snap_shape,Part.Edge):
+                    FreeCAD.Console.PrintMessage("Snapped to Edge\n")
+                    c = o.snap_shape.Curve
+                    pts = pl.intersect(c)[0]
+                    new_pts = list()
+                    for ip in o.points:
+                        iv = FreeCAD.Vector(ip[0],ip[1],ip[2])
+                        dmin = 1e50
+                        new = None
+                        for op in pts:
+                            ov = FreeCAD.Vector(op.X,op.Y,op.Z)
+                            if iv.distanceToPoint(ov) < dmin:
+                                dmin = iv.distanceToPoint(ov)
+                                new = ov
+                        new_pts.append(new)
+                    o.points = new_pts
+                elif isinstance(o.snap_shape,Part.Face):
+                    FreeCAD.Console.PrintMessage("Snapped to Face\n")
+                    s = o.snap_shape.Surface
+                    cvs = pl.intersect(s)
+                    new_pts = list()
+                    for ip in o.points:
+                        iv = Part.Vertex(FreeCAD.Vector(ip[0],ip[1],ip[2]))
+                        dmin = 1e50
+                        new = None
+                        for c in cvs:
+                            e = c.toShape()
+                            d,pts,info = iv.distToShape(e)
+                            if d < dmin:
+                                dmin = d
+                                new = pts[0][1]
+                        new_pts.append(new)
+                    o.points = new_pts
+                else:
+                    FreeCAD.Console.PrintMessage("Not snapped\n")
+                    new_pts = list()
+                    for ip in o.points:
+                        iv = FreeCAD.Vector(ip[0],ip[1],ip[2])
+                        u,v = pl.parameter(iv)
+                        new_pts.append(pl.value(u,v))
+                    o.points = new_pts
+        for l in self.lines:
+            l.updateLine()
+        self.update_curve()
+        
+                            
+                    
+            
+            
 
     def subdivide(self):
         # get selected lines and subdivide them
