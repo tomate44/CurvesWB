@@ -59,8 +59,29 @@ class ToConsole:
                         face_num += 1
                         FreeCADGui.doCommand("f%d = obj%d.Shape.%s"%(face_num,obj_num,sub))
         sublinks += ")"
-        if len(sublinks) > 2:
+        if len(sublinks) > 1:
             FreeCADGui.doCommand("_sub_link_buffer = %s"%sublinks)
+        if obj_num > 1:
+            ol = ''
+            for oi in range(obj_num):
+                ol += "obj%d,"%(oi+1)
+            FreeCADGui.doCommand("objs = (%s)"%ol)
+        if vert_num > 1:
+            vl = ''
+            for vi in range(vert_num):
+                vl += "v%d,"%(vi+1)
+            FreeCADGui.doCommand("vl = (%s)"%vl)
+        if edge_num > 1:
+            el = ''
+            for ei in range(edge_num):
+                el += "e%d,"%(ei+1)
+            FreeCADGui.doCommand("el = (%s)"%el)
+        if face_num > 1:
+            fl = ''
+            for fi in range(face_num):
+                fl += "f%d,"%(fi+1)
+            FreeCADGui.doCommand("fl = (%s)"%fl)
+
     def IsActive(self):
         if FreeCAD.ActiveDocument:
             selection = FreeCADGui.Selection.getSelectionEx()
