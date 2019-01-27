@@ -80,6 +80,8 @@ class GordonProfileFP:
         obj.addProperty("App::PropertyFloat",       "Tolerance",       "Profile", "Tolerance").Tolerance = 1e-5
         obj.addProperty("App::PropertyBool",        "Periodic",        "Profile", "Periodic curve").Periodic = False
         obj.addProperty("App::PropertyVectorList",  "Data",            "Profile", "Data list").Data = d
+        obj.addProperty("App::PropertyVectorList",  "Tangents",        "Profile", "Tangents list")
+        obj.addProperty("App::PropertyBoolList",    "Flags",           "Profile", "Tangent flags")
         obj.addProperty("App::PropertyIntegerList", "DataType",        "Profile", "Types of interpolated points").DataType = t
         obj.addProperty("App::PropertyBoolList",    "LinearSegments",  "Profile", "Linear segment flags")
         obj.setEditorMode("Data", 2)
@@ -168,6 +170,10 @@ class GordonProfileFP:
         curve = Part.BSplineCurve()
         tans = [FreeCAD.Vector()]*len(pts)
         flags = [False]*len(pts)
+        for i in range(len(obj.Tangents)):
+            tans[i] = obj.Tangents[i]
+        for i in range(len(obj.Flags)):
+            flags[i] = obj.Flags[i]
         if not (len(obj.LinearSegments) == len(pts)-1):
             FreeCAD.Console.PrintError("%s : Points and LinearSegments mismatch\n"%obj.Label)
         else:
@@ -216,6 +222,10 @@ class GordonProfileVP:
                 self.select_state = True
                 vobj.Selectable = False
             pts = list()
+            sl = list()
+            for ob,names in self.Object.Support:
+                for name in names:
+                    sl.append((ob,(name,)))
             shape_idx = 0
             for i in range(len(self.Object.Data)):
                 p = self.Object.Data[i]
@@ -223,8 +233,12 @@ class GordonProfileVP:
                 if t == 0:
                     pts.append(profile_editor.MarkerOnShape([p]))
                 elif t == 1:
-                    pts.append(profile_editor.MarkerOnShape([p],self.Object.Support[shape_idx]))
+                    pts.append(profile_editor.MarkerOnShape([p],sl[shape_idx]))
                     shape_idx += 1
+            for i in range(len(pts)): #p,t,f in zip(pts, self.Object.Tangents, self.Object.Flags):
+                if i < min(len(self.Object.Flags),len(self.Object.Tangents)):
+                    if self.Object.Flags[i]:
+                        pts[i].tangent = self.Object.Tangents[i]
             self.ip = profile_editor.InterpoCurveEditor(pts, self.Object)
             self.ip.periodic = self.Object.Periodic
             for i in range(min(len(self.Object.LinearSegments),len(self.ip.lines))):
@@ -238,6 +252,8 @@ class GordonProfileVP:
         if isinstance(self.ip,profile_editor.InterpoCurveEditor):
             pts = list()
             typ = list()
+            tans = list()
+            flags = list()
             #original_links = self.Object.Support
             new_links = list()
             for p in self.ip.points:
@@ -249,7 +265,15 @@ class GordonProfileVP:
                         typ.append(1)
                     else:
                         typ.append(0)
-            self.Object.LinearSegments = [l.tangent for l in self.ip.lines]
+                    if p.tangent:
+                        tans.append(p.tangent)
+                        flags.append(True)
+                    else:
+                        tans.append(FreeCAD.Vector())
+                        flags.append(False)
+            self.Object.Tangents = tans
+            self.Object.Flags = flags
+            self.Object.LinearSegments = [l.linear for l in self.ip.lines]
             self.Object.DataType = typ
             self.Object.Data = pts
             self.Object.Support = new_links

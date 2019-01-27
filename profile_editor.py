@@ -4,16 +4,26 @@ import Part
 
 import _utils
 
-import sys
-from PySide2.QtWidgets import QApplication
-from PySide2.QtGui import QColor
-from pivy import quarter, coin, graphics, utils
+#import sys
+#from PySide2.QtWidgets import QApplication
+#from PySide2.QtGui import QColor
+#from pivy import quarter, coin, graphics, utils
 
-from pivy.graphics import colors
-colors.COLORS["green"] =    (0., 1., 0.)
-colors.COLORS["yellow"] =   (1., 1., 0.)
-colors.COLORS["cyan"] =     (0., 1., 1.)
-colors.COLORS["magenta"] =  (1., 0., 1.)
+from pivy import coin
+
+try:
+    from pivy import graphics
+    from pivy.graphics import colors
+    colors.COLORS["green"] =    (0., 1., 0.)
+    colors.COLORS["yellow"] =   (1., 1., 0.)
+    colors.COLORS["cyan"] =     (0., 1., 1.)
+    colors.COLORS["magenta"] =  (1., 0., 1.)
+    FreeCAD.Console.PrintMessage("Using standard Pivy.graphics library\n")
+except:
+    import graphics
+    from graphics import COLORS
+    FreeCAD.Console.PrintMessage("Using local Pivy.graphics library\n")
+
 
 def subshape_from_sublink(o):
     name = o[1][0]
@@ -36,11 +46,27 @@ class MarkerOnShape(graphics.Marker):
         super(MarkerOnShape, self).__init__(points, True)
         self._shape = None
         self._sublink = None
-        self.tangent = None
+        self._tangent = None
         if isinstance(sh,Part.Shape):
             self.snap_shape = sh
         elif isinstance(sh,(tuple,list)):
             self.sublink = sh
+
+    @property
+    def tangent(self):
+        return self._tangent
+    @tangent.setter
+    def tangent(self, t):
+        if isinstance(t,FreeCAD.Vector):
+            if t.Length > 1e-7:
+                self._tangent = t
+                self.marker.markerIndex = coin.SoMarkerSet.DIAMOND_FILLED_9_9
+            else:
+                self._tangent = None
+                self.marker.markerIndex = coin.SoMarkerSet.CIRCLE_FILLED_9_9
+        else:
+            self._tangent = None
+            self.marker.markerIndex = coin.SoMarkerSet.CIRCLE_FILLED_9_9
 
     @property
     def snap_shape(self):
@@ -123,19 +149,26 @@ class ConnectionLine(graphics.Line):
         super(ConnectionLine, self).__init__(
             sum([m.points for m in markers], []), True)
         self.markers = markers
-        self.tangent = False
+        self._linear = False
         for m in self.markers:
             m.on_drag.append(self.updateLine)
 
     def updateLine(self):
         self.points = sum([m.points for m in self.markers], [])
-        if self.tangent:
+        if self._linear:
             p1 = self.markers[0].points[0]
             p2 = self.markers[-1].points[0]
             t = p2-p1
             tan = FreeCAD.Vector(t[0],t[1],t[2])
             for m in self.markers:
                 m.tangent = tan
+
+    @property
+    def linear(self):
+        return self._linear
+    @linear.setter
+    def linear(self, b):
+        self._linear = bool(b)
 
     @property
     def drag_objects(self):
@@ -233,7 +266,7 @@ class InterpoCurveEditor(object):
                     flags.append(True)
             else:
                 for vec in self.points[i].points:
-                    tans.append(FreeCAD.Vector(1,0,0))
+                    tans.append(FreeCAD.Vector(0,0,0))
                     flags.append(False)
         return(tans,flags)
 
@@ -266,6 +299,8 @@ class InterpoCurveEditor(object):
                 self.subdivide()
             elif event.getKey() == ord("p"):
                 self.set_planar()
+            elif event.getKey() == ord("t"):
+                self.set_tangents()
             elif event.getKey() == ord("q"):
                 if self.fp:
                     self.fp.ViewObject.Proxy.doubleClicked(self.fp.ViewObject)
@@ -285,7 +320,7 @@ class InterpoCurveEditor(object):
                         self.root.selected_objects[i].drag_release()
                         self.update_curve()
             elif event.getKey() == ord("l"):
-                self.set_linear()
+                self.toggle_linear()
             elif (event.getKey() == 65535) or (event.getKey() == 65288): # Suppr or Backspace
                 #FreeCAD.Console.PrintMessage("Some objects have been deleted\n")
                 pts = list()
@@ -296,21 +331,41 @@ class InterpoCurveEditor(object):
                 self.setup_InteractionSeparator()
                 self.update_curve()
    
-    def set_linear(self):
+    def toggle_linear(self):
         for o in self.root.selected_objects:
             if isinstance(o,ConnectionLine):
-                if o.tangent:
-                    o.tangent = False
-                    o.set_color("blue")
-                else:
-                    o.tangent = True
-                    o.set_color("magenta")
-                    # TODO disable neighbour lines
+                o.linear = not o.linear
+                i = self.lines.index(o)
+                if i > 0:
+                    self.lines[i-1].linear = False
+                if i < len(self.lines)-1:
+                    self.lines[i+1].linear = False
                 o.updateLine()
                 o.drag_start()
                 o.drag((0,0,0.00001))
                 o.drag_release()
                 self.update_curve()
+
+    def set_tangents(self):
+        #view_dir = FreeCAD.Vector(0,0,1)
+        view_dir = FreeCADGui.ActiveDocument.ActiveView.getViewDirection()
+        markers = list()
+        for o in self.root.selected_objects:
+            if isinstance(o,MarkerOnShape):
+                markers.append(o)
+            elif isinstance(o,ConnectionLine):
+                markers.extend(o.markers)
+        if len(markers) > 0:
+            for m in markers:
+                if m.tangent:
+                    m.tangent = None
+                else:
+                    i = self.points.index(m)
+                    if i == 0:
+                        m.tangent = -view_dir
+                    else:
+                        m.tangent = view_dir
+        self.update_curve()
 
     def set_planar(self):
         #view_dir = FreeCAD.Vector(0,0,1)
