@@ -24,6 +24,22 @@ except:
     from graphics import COLORS
     FreeCAD.Console.PrintMessage("Using local Pivy.graphics library\n")
 
+def parameterization (pts, a, closed):
+    # Computes a knot Sequence for a set of points
+    # fac (0-1) : parameterization factor
+    # fac=0 -> Uniform / fac=0.5 -> Centripetal / fac=1.0 -> Chord-Length
+    if closed: # we need to add the first point as the end point
+        pts.append(pts[0])
+    params = [0]
+    for i in range(1,len(pts)):
+        p = pts[i]-pts[i-1]
+        if isinstance(p,FreeCAD.Vector):
+            l = p.Length
+        else:
+            l = p.length()
+        pl = pow(l,a)
+        params.append(params[-1] + pl)
+    return params
 
 def subshape_from_sublink(o):
     name = o[1][0]
@@ -60,6 +76,7 @@ class MarkerOnShape(graphics.Marker):
         if isinstance(t,FreeCAD.Vector):
             if t.Length > 1e-7:
                 self._tangent = t
+                self._tangent.normalize()
                 self.marker.markerIndex = coin.SoMarkerSet.DIAMOND_FILLED_9_9
             else:
                 self._tangent = None
@@ -192,6 +209,7 @@ class InterpoCurveEditor(object):
         self.fp = fp
         self.root_inserted = False
         self.periodic = False
+        self.param_factor = 1.0
         #self.support = None # Not yet implemented
         for p in points:
             if isinstance(p,FreeCAD.Vector):
@@ -221,6 +239,8 @@ class InterpoCurveEditor(object):
             self.sg.removeChild(self.root)
         self.root = graphics.InteractionSeparator(self.rm)
         self.root.setName("InteractionSeparator")
+        #self.root.ovr_col = "yellow"
+        #self.root.sel_col = "green"
         self.root.pick_radius = 40
         self.root.on_drag.append(self.update_curve)
         # Keyboard callback
@@ -231,6 +251,10 @@ class InterpoCurveEditor(object):
         self.root += self.points
         self.build_lines()
         self.root += self.lines
+        # set FreeCAD color scheme
+        for o in self.points + self.lines:
+            o.ovr_col = "yellow"
+            o.sel_col = "green"
         self.root.register()
         self.sg.addChild(self.root)
         self.root_inserted = True
@@ -276,11 +300,15 @@ class InterpoCurveEditor(object):
             pts += p.points
         #FreeCAD.Console.PrintMessage("pts :\n%s\n"%str(pts))
         if len(pts) > 1:
-            self.curve.interpolate(Points=pts, PeriodicFlag=self.periodic)
+            fac = self.param_factor
+            if self.fp:
+                fac = self.fp.Parametrization
+            params = parameterization (pts, fac, self.periodic)
+            self.curve.interpolate(Points=pts, Parameters=params, PeriodicFlag=self.periodic)
             tans, flags = self.compute_tangents()
             if any(flags):
                 if (len(tans) == len(pts)) and (len(flags) == len(pts)):
-                    self.curve.interpolate(Points=pts, PeriodicFlag=self.periodic, Tangents=tans, TangentFlags=flags)
+                    self.curve.interpolate(Points=pts, Parameters=params, PeriodicFlag=self.periodic, Tangents=tans, TangentFlags=flags)
             if self.fp:
                 self.fp.Shape = self.curve.toShape()
 

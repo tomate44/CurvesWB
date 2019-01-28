@@ -76,7 +76,7 @@ class GordonProfileFP:
     def __init__(self, obj, s, d, t):
         """Add the properties"""
         obj.addProperty("App::PropertyLinkSubList", "Support",         "Profile", "Constraint shapes").Support = s
-        #obj.addProperty("App::PropertyEnumeration", "Parametrization", "Profile", "Parametrization type").Parametrization=["ChordLength","Centripetal","Uniform"]
+        obj.addProperty("App::PropertyFloatConstraint","Parametrization", "Profile", "Parametrization factor")
         obj.addProperty("App::PropertyFloat",       "Tolerance",       "Profile", "Tolerance").Tolerance = 1e-5
         obj.addProperty("App::PropertyBool",        "Periodic",        "Profile", "Periodic curve").Periodic = False
         obj.addProperty("App::PropertyVectorList",  "Data",            "Profile", "Data list").Data = d
@@ -84,10 +84,11 @@ class GordonProfileFP:
         obj.addProperty("App::PropertyBoolList",    "Flags",           "Profile", "Tangent flags")
         obj.addProperty("App::PropertyIntegerList", "DataType",        "Profile", "Types of interpolated points").DataType = t
         obj.addProperty("App::PropertyBoolList",    "LinearSegments",  "Profile", "Linear segment flags")
-        obj.setEditorMode("Data", 2)
-        obj.setEditorMode("DataType", 2)
-        #obj.Parametrization = "ChordLength"
+        obj.Parametrization = ( 1.0, 0.0, 1.0, 0.05 )
         obj.Proxy = self
+
+    def onDocumentRestored(self, fp):
+        fp.Parametrization = ( 1.0, 0.0, 1.0, 0.05 )
 
     def get_shapes(self, fp):
         if hasattr(fp,'Support'):
@@ -166,27 +167,26 @@ class GordonProfileFP:
                 obj.Data = pts
         else:
             pts = obj.Data
-            
-        curve = Part.BSplineCurve()
+
         tans = [FreeCAD.Vector()]*len(pts)
         flags = [False]*len(pts)
         for i in range(len(obj.Tangents)):
             tans[i] = obj.Tangents[i]
         for i in range(len(obj.Flags)):
             flags[i] = obj.Flags[i]
-        if not (len(obj.LinearSegments) == len(pts)-1):
-            FreeCAD.Console.PrintError("%s : Points and LinearSegments mismatch\n"%obj.Label)
-        else:
+        #if not (len(obj.LinearSegments) == len(pts)-1):
+            #FreeCAD.Console.PrintError("%s : Points and LinearSegments mismatch\n"%obj.Label)
+        if len(obj.LinearSegments) > 0:
             for i,b in enumerate(obj.LinearSegments):
                 if b:
                     tans[i] = pts[i+1]-pts[i]
                     tans[i+1] = tans[i]
                     flags[i] = True
                     flags[i+1] = True
-        curve.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Tangents=tans, TangentFlags=flags)
+        params = profile_editor.parameterization(pts,obj.Parametrization,obj.Periodic)
+        curve = Part.BSplineCurve()
+        curve.interpolate(Points=pts, Parameters=params, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Tangents=tans, TangentFlags=flags)
         obj.Shape = curve.toShape()
-        #else:
-            #FreeCAD.Console.PrintError("%s : Failed to compute points\n"%obj.Label)
 
     def onChanged(self, fp, prop):
         if prop in ("Support","Data","DataType","Periodic"):
@@ -195,7 +195,8 @@ class GordonProfileFP:
                 new_pts = self.get_points(fp, True)
                 if new_pts:
                     fp.Data = new_pts
-            #self.execute(fp)
+        if prop == "Parametrization":
+            self.execute(fp)
 
     def onDocumentRestored(self, fp):
         fp.setEditorMode("Data", 2)
@@ -241,6 +242,7 @@ class GordonProfileVP:
                         pts[i].tangent = self.Object.Tangents[i]
             self.ip = profile_editor.InterpoCurveEditor(pts, self.Object)
             self.ip.periodic = self.Object.Periodic
+            self.ip.param_factor = self.Object.Parametrization
             for i in range(min(len(self.Object.LinearSegments),len(self.ip.lines))):
                 self.ip.lines[i].tangent = self.Object.LinearSegments[i]
                 self.ip.lines[i].updateLine()
@@ -304,21 +306,22 @@ class GordonProfileVP:
 
 class GordonProfileCommand:
     """Creates a editable interpolation curve"""
-    docu = """Interpolation curve control keys :\n
+    docu = """*** Interpolation curve control keys :\n
     a - Select all / Deselect
     i - Insert point
     g - Grab objects
-    p - align selected objects
+    t - Set / unset tangent (view direction)
+    p - Align selected objects
     s - Snap points on shape / Unsnap
     l - Set/unset a linear interpolation
     x,y,z - Axis constraints during grab
-    q - Apply changes and quit editing"""
+    q - Apply changes and quit editing\n"""
     
     def makeFeature(self, sub, pts, typ):
         fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Gordon Profile")
         proxy = GordonProfileFP(fp,sub,pts,typ)
         GordonProfileVP(fp.ViewObject)
-        FreeCAD.Console.PrintWarning(GordonProfileCommand.docu)
+        FreeCAD.Console.PrintMessage(GordonProfileCommand.docu)
         FreeCAD.ActiveDocument.recompute()
         fp.ViewObject.Document.setEdit(fp.ViewObject)
         
@@ -343,8 +346,12 @@ class GordonProfileCommand:
                     pts.append(p)
                     
         if len(pts) == 0:
-            pts = [FreeCAD.Vector(0,0,0),FreeCAD.Vector(0.5,0.5,0),FreeCAD.Vector(1,0,0)]
+            pts = [FreeCAD.Vector(0,0,0),FreeCAD.Vector(0.5,0,0),FreeCAD.Vector(1,0,0)]
             typ = [0,0,0]
+        elif len(pts) == 1:
+            pts.append(pts[0]+FreeCAD.Vector(0.5,0,0))
+            pts.append(pts[0]+FreeCAD.Vector(1,0,0))
+            typ = [1,0,0]
         else:
             typ = [1]*len(pts)
         self.makeFeature(sub,pts,typ)
