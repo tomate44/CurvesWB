@@ -279,7 +279,7 @@ class gridNode(coin.SoSeparator):
 
         a = []
         l = len(pts)-4
-        for i in range(l/2):
+        for i in range(int(l/2)):
             a.append(2*i + 4)
             a.append(2*i + 5)
             a.append(-1)
@@ -292,7 +292,7 @@ class gridNode(coin.SoSeparator):
 
         a2 = []
         l = len(pts2)
-        for i in range(l/2):
+        for i in range(int(l/2)):
             a2.append(2*i)
             a2.append(2*i + 1)
             a2.append(-1)
