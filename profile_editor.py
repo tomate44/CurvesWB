@@ -11,15 +11,16 @@ import _utils
 
 from pivy import coin
 
-try:
-    from pivy import graphics
-    from pivy.graphics import colors
-    colors.COLORS["green"] =    (0., 1., 0.)
-    colors.COLORS["yellow"] =   (1., 1., 0.)
-    colors.COLORS["cyan"] =     (0., 1., 1.)
-    colors.COLORS["magenta"] =  (1., 0., 1.)
-    FreeCAD.Console.PrintMessage("Using standard Pivy.graphics library\n")
-except:
+#try:
+    #from pivy import graphics
+    #from pivy.graphics import colors
+    #colors.COLORS["green"] =    (0., 1., 0.)
+    #colors.COLORS["yellow"] =   (1., 1., 0.)
+    #colors.COLORS["cyan"] =     (0., 1., 1.)
+    #colors.COLORS["magenta"] =  (1., 0., 1.)
+    #FreeCAD.Console.PrintMessage("Using standard Pivy.graphics library\n")
+#except:
+if True:
     import graphics
     from graphics import COLORS
     FreeCAD.Console.PrintMessage("Using local Pivy.graphics library\n")
@@ -258,6 +259,7 @@ class InterpoCurveEditor(object):
         self.root.register()
         self.sg.addChild(self.root)
         self.root_inserted = True
+        self.root.selected_objects = list()
 
     def compute_tangents(self):
         tans = list()
