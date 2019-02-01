@@ -168,7 +168,14 @@ class Arrow(Line):
         self.arrow_rot.rotation.setValue(_rot)
 
 class InteractionSeparator(coin.SoSeparator):
-    pick_radius = 10
+    pick_radius = 20
+    ctrl_keys = {"grab": "g",
+                 "abort_grab": u"\uff1b",
+                 "select_all": "a",
+                 "delete": u"\uffff",
+                 "axis_x": "x",
+                 "axis_y": "y",
+                 "axis_z": "z"}
 
     def __init__(self, render_manager):
         super(InteractionSeparator, self).__init__()
@@ -291,7 +298,7 @@ class InteractionSeparator(coin.SoSeparator):
 
     def select_all_cb(self, event_callback):
         event = event_callback.getEvent()
-        if (event.getKey() == ord('a')):
+        if (event.getKey() == ord(InteractionSeparator.ctrl_keys["select_all"])):
             if event.getState() == event.DOWN:
                 if self.selected_objects:
                     for o in self.selected_objects:
@@ -319,7 +326,7 @@ class InteractionSeparator(coin.SoSeparator):
 
     def selectAllCB(self, attr, event_callback):
         event = event_callback.getEvent()
-        if (event.getKey() == ord("a")):
+        if (event.getKey() == ord(InteractionSeparator.ctrl_keys["select_all"])):
             if event.getState() == event.DOWN:
                 if self.selected_objects:
                     for o in self.selected_objects:
@@ -344,11 +351,11 @@ class InteractionSeparator(coin.SoSeparator):
     def constrained_vector(self, vector):
         if self._direction is None:
             return vector
-        if self._direction == "x":
+        if self._direction == InteractionSeparator.ctrl_keys["axis_x"]:
             return [vector[0], 0, 0]
-        elif self._direction == "y":
+        elif self._direction == InteractionSeparator.ctrl_keys["axis_y"]:
             return [0, vector[1], 0]
-        elif self._direction == "z":
+        elif self._direction == InteractionSeparator.ctrl_keys["axis_z"]:
             return [0, 0, vector[2]]
 
     def grabCB(self, attr, event_callback):
@@ -356,7 +363,7 @@ class InteractionSeparator(coin.SoSeparator):
         event = event_callback.getEvent()
         # get all drag objects, every selected object can add some drag objects
         # but the eventhandler is not allowed to call the drag twice on an object
-        if event.getKey() == ord("g"):
+        if event.getKey() == ord(InteractionSeparator.ctrl_keys["grab"]):
             self.drag_objects = set()
             for i in self.selected_objects:
                 for j in i.drag_objects:
@@ -395,7 +402,7 @@ class InteractionSeparator(coin.SoSeparator):
             self.drag_objects = []
         elif (type(event) == coin.SoKeyboardEvent and
                 event.getState() == coin.SoMouseButtonEvent.DOWN):
-            if event.getKey() == 65307:     # esc
+            if event.getKey() == InteractionSeparator.ctrl_keys["abort_grab"]:     # esc
                 for obj in self.drag_objects:
                     obj.drag([0, 0, 0], 1)  # set back to zero
                 self.dragCB(attr, event_callback, force=True)
@@ -405,7 +412,9 @@ class InteractionSeparator(coin.SoSeparator):
             except ValueError:
                 # there is no character for this value
                 key = "_"
-            if key in "xyz" and key != self._direction:
+            if key in [InteractionSeparator.ctrl_keys["axis_x"],
+                       InteractionSeparator.ctrl_keys["axis_y"],
+                       InteractionSeparator.ctrl_keys["axis_z"]] and key != self._direction:
                 self._direction = key
             else:
                 self._direction = None
@@ -429,7 +438,7 @@ class InteractionSeparator(coin.SoSeparator):
         event = event_callback.getEvent()
         # get all drag objects, every selected object can add some drag objects
         # but the eventhandler is not allowed to call the drag twice on an object
-        if event.getKey() == ord(u"\uffff") and (event.getState() == 1):
+        if event.getKey() == ord(InteractionSeparator.ctrl_keys["delete"]) and (event.getState() == 1):
             self.removeSelected()
 
     def removeSelected(self):
