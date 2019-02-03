@@ -254,7 +254,7 @@ class InteractionSeparator(coin.SoSeparator):
         """sends a ray trough the scene and return the nearest entity"""
         ray_pick = coin.SoRayPickAction(self.render_manager.getViewportRegion())
         ray_pick.setPoint(coin.SbVec2s(*mouse_pos))
-        ray_pick.setRadius(10)
+        ray_pick.setRadius(InteractionSeparator.pick_radius)
         ray_pick.setPickAll(True)
         ray_pick.apply(self.render_manager.getSceneGraph())
         picked_point = ray_pick.getPickedPointList()
@@ -265,11 +265,15 @@ class InteractionSeparator(coin.SoSeparator):
             path = point.getPath()
             length = path.getLength()
             point = path.getNode(length - 2)
-            point = list(filter(
-                lambda ctrl: ctrl.getNodeId() == point.getNodeId(),
-                self.dynamic_objects))
-            if point != []:
-                return point[0]
+            for o in self.dynamic_objects:
+                if point == o:
+                    return(o)
+            # Code below was not working with python 2.7 (pb with getNodeId ?)
+            #point = list(filter(
+                #lambda ctrl: ctrl.getNodeId() == point.getNodeId(),
+                #self.dynamic_objects))
+            #if point != []:
+                #return point[0]
         return None
         
 
