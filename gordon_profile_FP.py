@@ -150,7 +150,7 @@ class GordonProfileFP:
             curve.buildFromPolesMultsKnots(moves,mults,knots,False,1)
             for i in range(1,len(pts)):
                 if fp.DataType[i] == 0:
-                    FreeCAD.Console.PrintMessage("Stretch %s #%d: %s to %s\n"%(fp.Label,i,pts[i],curve.value(params[i])))
+                    #FreeCAD.Console.PrintMessage("Stretch %s #%d: %s to %s\n"%(fp.Label,i,pts[i],curve.value(params[i])))
                     pts[i] += curve.value(params[i])
         if touched:
             return(pts)
@@ -190,7 +190,7 @@ class GordonProfileFP:
 
     def onChanged(self, fp, prop):
         if prop in ("Support","Data","DataType","Periodic"):
-            FreeCAD.Console.PrintMessage("%s : %s changed\n"%(fp.Label,prop))
+            #FreeCAD.Console.PrintMessage("%s : %s changed\n"%(fp.Label,prop))
             if (len(fp.Data)==len(fp.DataType)) and (sum(fp.DataType)==len(fp.Support)):
                 new_pts = self.get_points(fp, True)
                 if new_pts:
