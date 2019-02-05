@@ -53,9 +53,14 @@ class gordon:
         obj.addProperty("App::PropertyEnumeration", "Output", "Base", "Output type").Output=["Surface","Wireframe"]
         obj.addProperty("App::PropertyInteger", "SamplesU", "Wireframe", "Number of samples in U direction").SamplesU = 16
         obj.addProperty("App::PropertyInteger", "SamplesV", "Wireframe", "Number of samples in V direction").SamplesV = 16
-        obj.Output = "Wireframe"
+        obj.Output = "Surface"
         obj.setEditorMode("Tol2D", 2)
         obj.Proxy = self
+
+    def onDocumentRestored(self, fp):
+        if not hasattr(fp,"Output"):
+            fp.addProperty("App::PropertyEnumeration", "Output", "Base", "Output type").Output=["Surface","Wireframe"]
+            fp.Output = "Surface"
 
     def execute(self, obj):
         if len(obj.Sources) == 0:
