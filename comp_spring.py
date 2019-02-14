@@ -70,7 +70,7 @@ Sketcher::PropertyConstraintList
 
 class CompSpring(object):
     def __init__(self, length=10, turns=5, wireDiam=0.25, diameter=4.0, samples=16):
-        self.epsilon = 1e-3
+        self.epsilon = 1e-2
         self.length = length
         self.turns = turns
         self.wire_diam = wireDiam
@@ -128,8 +128,11 @@ class CompSpring(object):
             edges.append(c.toShape())
         return(edges)
 
-    def wire(self):
-        return(Part.Wire(self.edges()))
+    def wire(self, single=True):
+        if single:
+            return(Part.Wire(self.single_edge()))
+        else:
+            return(Part.Wire(self.edges()))
 
     def single_curve(self):
         pl = self.point_lists()
@@ -145,21 +148,18 @@ class CompSpring(object):
         return(self.single_curve().toShape())
 
     def shape(self, single=False):
-        if single:
-            path = Part.Wire([self.single_edge()])
-        else:
-            path = self.wire()
+        path = self.wire(single)
         c = Part.Circle(path.Edges[0].valueAt(path.Edges[0].FirstParameter), path.Edges[0].tangentAt(path.Edges[0].FirstParameter), self.wire_diam/2.0)
         pro = Part.Wire([c.toShape()])
         ps = Part.BRepOffsetAPI.MakePipeShell(path)
         ps.setFrenetMode(True)
-        ps.setForceApproxC1(True)
-        ps.setTolerance(1e-2, 1e-2, 0.5)
-        ps.setMaxDegree(7)
+        #ps.setForceApproxC1(True)
+        ps.setTolerance(1e-1, 1e-1, 0.5)
+        ps.setMaxDegree(3)
+        ps.setMaxSegments(999)
         ps.add(pro)
         if ps.isReady():
             ps.build()
-            ps.setMaxDegree(7)
             ps.makeSolid()
             return(ps.shape())
         return(None)
@@ -174,11 +174,16 @@ class CompSpringFP:
         obj.addProperty("App::PropertyFloat", "WireDiameter", "CompSpring", "Diameter of the spring wire").WireDiameter = 0.5
         obj.addProperty("App::PropertyFloat", "Diameter", "CompSpring", "Diameter of the spring").Diameter = 4.0
         obj.addProperty("App::PropertyInteger", "Samples", "Setting", "Number of point samples by turn").Samples = 16
+        obj.addProperty("App::PropertyBool", "Smooth", "Setting", "make spring with a single tube surface").Smooth = False
+        obj.addProperty("App::PropertyBool", "WireOutput", "Setting", "Output a wire shape").WireOutput=True
         obj.Proxy = self
 
     def execute(self, obj):
         cs = CompSpring(obj.Length, obj.Turns, obj.WireDiameter, obj.Diameter, obj.Samples)
-        obj.Shape = cs.shape(False)
+        if obj.WireOutput:
+            obj.Shape = cs.wire(obj.Smooth)
+        else:
+            obj.Shape = cs.shape(obj.Smooth)
 
     def onChanged(self, obj, prop):
         return(False)
