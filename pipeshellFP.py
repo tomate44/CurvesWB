@@ -5,6 +5,10 @@ import Part
 import dummy
 import _utils
 
+import sys
+if sys.version_info.major >= 3:
+    long = int
+
 path_curvesWB = os.path.dirname(dummy.__file__)
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 
