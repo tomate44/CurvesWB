@@ -77,10 +77,15 @@ class CompSpring(object):
         self.diameter = diameter
         self.samples = samples
 
-    def offset_points(self,pts,start,step):
+    def offset_points(self,pts,start,step,power=1):
         npts = list()
         for i in range(len(pts)):
-            npts.append(pts[i] + Vector(0,0,start + float(i)*step/(len(pts)-1)))
+            v = float(i)/(len(pts)-1)
+            if power < 0:
+                fac = pow(v,1./abs(power))
+            else:
+                fac = pow(v,power)
+            npts.append(pts[i] + Vector(0,0,start + fac*step))
         return(npts)
 
     def point_lists(self):
@@ -97,14 +102,14 @@ class CompSpring(object):
         circle = Part.Circle(Vector(),Vector(0,0,1),helix_radius)
         pts = circle.discretize(self.samples)
         points = list()
-        pts1 = self.offset_points(pts,0,self.wire_diam+self.epsilon)
+        pts1 = self.offset_points(pts,0,self.wire_diam+self.epsilon,2)
         points.append(pts1)
         start = self.wire_diam+self.epsilon
         for i in range(self.turns-2):
             pts1 = self.offset_points(pts,start,self.wire_diam+step)
             points.append(pts1)
             start += self.wire_diam+step
-        pts1 = self.offset_points(pts,start,self.wire_diam+self.epsilon)
+        pts1 = self.offset_points(pts,start,self.wire_diam+self.epsilon,-2)
         points.append(pts1)
         return(points)
 
@@ -149,9 +154,12 @@ class CompSpring(object):
         ps = Part.BRepOffsetAPI.MakePipeShell(path)
         ps.setFrenetMode(True)
         ps.setForceApproxC1(True)
+        ps.setTolerance(1e-2, 1e-2, 0.5)
+        ps.setMaxDegree(7)
         ps.add(pro)
         if ps.isReady():
             ps.build()
+            ps.setMaxDegree(7)
             ps.makeSolid()
             return(ps.shape())
         return(None)
@@ -169,7 +177,8 @@ class CompSpringFP:
         obj.Proxy = self
 
     def execute(self, obj):
-        obj.Shape = None
+        cs = CompSpring(obj.Length, obj.Turns, obj.WireDiameter, obj.Diameter, obj.Samples)
+        obj.Shape = cs.shape(False)
 
     def onChanged(self, obj, prop):
         return(False)
