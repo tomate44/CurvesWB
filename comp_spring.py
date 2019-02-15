@@ -77,6 +77,9 @@ class CompSpring(object):
         self.diameter = diameter
         self.samples = samples
 
+    def min_length(self):
+        return((self.turns+1)*(self.wire_diam + self.epsilon))
+
     def offset_points(self,pts,start,step,power=1):
         npts = list()
         for i in range(len(pts)):
@@ -89,12 +92,11 @@ class CompSpring(object):
         return(npts)
 
     def point_lists(self):
-        min_length = (self.turns+1)*self.wire_diam + self.epsilon*2
         helix_radius = (self.diameter - self.wire_diam) / 2.0
-        if self.length < min_length:
+        if self.length < self.min_length():
             print("Spring too short")
             return()
-        free_space = self.length - min_length
+        free_space = self.length - self.min_length()
         if self.turns <= 2:
             print("Spring must have more than 2 turns")
             return()
@@ -102,9 +104,10 @@ class CompSpring(object):
         circle = Part.Circle(Vector(),Vector(0,0,1),helix_radius)
         pts = circle.discretize(self.samples)
         points = list()
-        pts1 = self.offset_points(pts,0,self.wire_diam+self.epsilon,2)
+        start = self.wire_diam / 2.0
+        pts1 = self.offset_points(pts,start,self.wire_diam+self.epsilon,2)
         points.append(pts1)
-        start = self.wire_diam+self.epsilon
+        start += self.wire_diam+self.epsilon
         for i in range(self.turns-2):
             pts1 = self.offset_points(pts,start,self.wire_diam+step)
             points.append(pts1)
@@ -178,15 +181,26 @@ class CompSpringFP:
         obj.addProperty("App::PropertyBool", "WireOutput", "Setting", "Output a wire shape").WireOutput=True
         obj.Proxy = self
 
+    def spring(self, obj):
+        try:
+            return(CompSpring(obj.Length, obj.Turns, obj.WireDiameter, obj.Diameter, obj.Samples))
+        except AttributeError:
+            return(None)
+
     def execute(self, obj):
-        cs = CompSpring(obj.Length, obj.Turns, obj.WireDiameter, obj.Diameter, obj.Samples)
+        cs = self.spring(obj)
+        if not cs: return()
         if obj.WireOutput:
             obj.Shape = cs.wire(obj.Smooth)
         else:
             obj.Shape = cs.shape(obj.Smooth)
 
     def onChanged(self, obj, prop):
-        return(False)
+        if prop in ("Length","Turns","WireDiameter"):
+            cs = self.spring(obj)
+            if cs:
+                if obj.Length < cs.min_length():
+                    obj.Length = cs.min_length()
 
 class CompSpringVP:
     def __init__(self,vobj):
