@@ -233,7 +233,7 @@ class GordonSurfaceBuilder(object):
         # check compatibility of network
         #ucurves = list()
         #vcurves = list()
-        self.error("\n\ncheck_curve_network_compatibility (L1270)")
+        debug("\n\ncheck_curve_network_compatibility (L1270)")
         for u_param_idx in range(len(self.intersectionParamsU)): #(size_t u_param_idx = 0; u_param_idx < self.intersectionParamsU.size(); ++u_param_idx) {
             spline_u_param = self.intersectionParamsU[u_param_idx]
             spline_v = self.guides[u_param_idx]
@@ -242,15 +242,14 @@ class GordonSurfaceBuilder(object):
                 spline_u = self.profiles[v_param_idx]
                 #ucurves.append(spline_u.toShape())
                 spline_v_param = self.intersectionParamsV[v_param_idx]
-                self.error("spline_u_param, spline_v_param = %0.5f,%0.5f"%(spline_u_param, spline_v_param))
+                debug("spline_u_param, spline_v_param = %0.5f,%0.5f"%(spline_u_param, spline_v_param))
                 p_prof = spline_u.value(spline_u_param)
                 p_guid = spline_v.value(spline_v_param)
-                self.error("p_prof, p_guid = %s,%s"%(p_prof, p_guid))
+                debug("p_prof, p_guid = %s,%s"%(p_prof, p_guid))
                 distance = p_prof.distanceToPoint(p_guid)
-                self.error("distance = %f"%(distance))
+                debug("distance = %f"%(distance))
                 if (distance > splines_scale * self.tolerance):
                     self.error("B-spline network is incompatible (e.g. wrong parametrization) or intersection parameters are in a wrong order!")
-                self.error("")
         #Part.show(Part.Compound(ucurves))
         #Part.show(Part.Compound(vcurves))
 
@@ -463,7 +462,7 @@ class InterpolateCurveNetwork(object):
                 newParametersProfiles[-1] = 1.
 
             profile = self.profiles[spline_u_idx]
-            self.error("reparametrizing u curve %d"%spline_u_idx)
+            debug("reparametrizing u curve %d"%spline_u_idx)
             debug(profile)
             self.profiles[spline_u_idx] = bsa.reparametrizeBSplineContinuouslyApprox(profile, oldParametersProfile, newParametersProfiles, max_cp_u)
             debug(self.profiles[spline_u_idx])
@@ -486,7 +485,7 @@ class InterpolateCurveNetwork(object):
                 newParametersGuides[-1] = 1.
 
             guide = self.guides[spline_v_idx]
-            self.error("reparametrizing v curve %d"%spline_v_idx)
+            debug("reparametrizing v curve %d"%spline_v_idx)
             debug(guide)
             self.guides[spline_v_idx] = bsa.reparametrizeBSplineContinuouslyApprox(guide, oldParameterGuide, newParametersGuides, max_cp_v)
             debug(self.guides[spline_v_idx])
