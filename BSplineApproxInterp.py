@@ -8,7 +8,11 @@ import FreeCAD
 import Part
 from math import pi
 
+DEBUG = False
+
 def debug(o):
+    if not DEBUG:
+        return()
     if isinstance(o,Part.BSplineCurve):
         FreeCAD.Console.PrintWarning("\nBSplineCurve\n")
         FreeCAD.Console.PrintWarning("Degree: %d\n"%(o.Degree))

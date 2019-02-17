@@ -9,7 +9,11 @@ import Part
 from math import pi
 from BSplineApproxInterp import BSplineApproxInterp
 
+DEBUG = False
+
 def debug(o):
+    if not DEBUG:
+        return()
     if isinstance(o,Part.BSplineCurve):
         FreeCAD.Console.PrintWarning("\nBSplineCurve\n")
         FreeCAD.Console.PrintWarning("Degree: %d\n"%(o.Degree))

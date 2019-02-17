@@ -31,7 +31,11 @@ import Part
 from math import pi
 from BSplineAlgorithms import BSplineAlgorithms
 
+DEBUG = False
+
 def debug(o):
+    if not DEBUG:
+        return()
     if isinstance(o,Part.BSplineCurve):
         FreeCAD.Console.PrintWarning("\nBSplineCurve\n")
         FreeCAD.Console.PrintWarning("Degree: %d\n"%(o.Degree))
@@ -182,10 +186,10 @@ class GordonSurfaceBuilder(object):
         surfGuides.increaseDegree(degreeU, degreeV)
         surfProfiles.increaseDegree(degreeU, degreeV)
         tensorProdSurf.increaseDegree(degreeU, degreeV)
-        print("** Matching to degree %dx%d**"%(degreeU, degreeV))
-        print("surfProfiles : %d x %d"%(surfProfiles.NbUPoles, surfProfiles.NbVPoles))
-        print("surfGuides : %d x %d"%(surfGuides.NbUPoles, surfGuides.NbVPoles))
-        print("tensorProdSurf : %d x %d"%(tensorProdSurf.NbUPoles, tensorProdSurf.NbVPoles))
+        debug("** Matching to degree %dx%d**"%(degreeU, degreeV))
+        debug("surfProfiles : %d x %d"%(surfProfiles.NbUPoles, surfProfiles.NbVPoles))
+        debug("surfGuides : %d x %d"%(surfGuides.NbUPoles, surfGuides.NbVPoles))
+        debug("tensorProdSurf : %d x %d"%(tensorProdSurf.NbUPoles, tensorProdSurf.NbVPoles))
 
         surfaces_vector_unmod = [surfGuides, surfProfiles, tensorProdSurf]
 
@@ -198,10 +202,10 @@ class GordonSurfaceBuilder(object):
         self.skinningSurfProfiles = surfaces_vector[1]
         self.tensorProdSurf = surfaces_vector[2]
 
-        print("After createCommonKnotsVectorSurface L1234")
-        print("skinningSurfGuides : %d x %d"%(self.skinningSurfGuides.NbUPoles, self.skinningSurfGuides.NbVPoles))
-        print("skinningSurfProfiles : %d x %d"%(self.skinningSurfProfiles.NbUPoles, self.skinningSurfProfiles.NbVPoles))
-        print("tensorProdSurf : %d x %d"%(self.tensorProdSurf.NbUPoles, self.tensorProdSurf.NbVPoles))
+        debug("After createCommonKnotsVectorSurface L1234")
+        debug("skinningSurfGuides : %d x %d"%(self.skinningSurfGuides.NbUPoles, self.skinningSurfGuides.NbVPoles))
+        debug("skinningSurfProfiles : %d x %d"%(self.skinningSurfProfiles.NbUPoles, self.skinningSurfProfiles.NbVPoles))
+        debug("tensorProdSurf : %d x %d"%(self.tensorProdSurf.NbUPoles, self.tensorProdSurf.NbVPoles))
 
         assert(self.skinningSurfGuides.NbUPoles == self.skinningSurfProfiles.NbUPoles and self.skinningSurfProfiles.NbUPoles == self.tensorProdSurf.NbUPoles)
         assert(self.skinningSurfGuides.NbVPoles == self.skinningSurfProfiles.NbVPoles and self.skinningSurfProfiles.NbVPoles == self.tensorProdSurf.NbVPoles)
