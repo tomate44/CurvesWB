@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   width="68.26667"
+   height="68.26667"
+   id="svg2963"
+   version="1.1">
+  <defs
+     id="defs2965">
+    <linearGradient
+       id="linearGradient832">
+      <stop
+         style="stop-color:#d40000;stop-opacity:1;"
+         offset="0"
+         id="stop828" />
+      <stop
+         style="stop-color:#d40000;stop-opacity:0;"
+         offset="1"
+         id="stop830" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient3354">
+      <stop
+         style="stop-color:#2157c7;stop-opacity:1;"
+         offset="0"
+         id="stop3356" />
+      <stop
+         style="stop-color:#6daaff;stop-opacity:1;"
+         offset="1"
+         id="stop3358" />
+    </linearGradient>
+    <linearGradient
+       xlink:href="#linearGradient832"
+       id="linearGradient834"
+       x1="50.471035"
+       y1="6.9468999"
+       x2="14.34337"
+       y2="59.272804"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <metadata
+     id="metadata2968">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <path
+     id="path12"
+     d="m 45.590503,60.324647 c 0.276749,-4.284505 -19.684708,-4.832671 -19.955464,-0.819063 -0.296455,4.394559 20.69346,3.622487 19.955464,-3.052892 -0.792622,-7.169502 -21.078136,-6.479953 -20.104385,-5.286711 1.89255,2.319147 21.128136,0.336506 20.178845,-5.807936 -1.093465,-7.077618 -20.408158,-7.15868 -20.029924,-5.584549 0.551337,2.294571 21.571686,0.205236 19.955464,-5.659009 -2.055651,-7.458657 -20.285795,-7.334018 -19.955464,-5.659017 0.389456,1.974801 21.306904,0.326749 19.955464,-5.58455 -1.800348,-7.874863 -20.402081,-6.931876 -19.881002,-5.659012 0.6233,1.522565 20.652137,0.227201 19.955462,-5.435629 C 44.646889,3.501005 24.060977,6.6214423 25.560577,8.9467717 c 3.908402,6.0605013 20.519936,1.7783273 19.955465,-0.07446"
+     style="fill:none;stroke:#4d4d4d;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+</svg>

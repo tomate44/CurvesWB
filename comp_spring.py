@@ -13,9 +13,13 @@ import FreeCAD
 import FreeCADGui
 import Part
 import _utils
-from FreeCAD import Vector
+from Part import Geom2d
+from math import pi
+Vector = FreeCAD.Base.Vector
+Vector2d = FreeCAD.Base.Vector2d
 
-TOOL_ICON = _utils.iconsPath() + '/icon.svg'
+
+TOOL_ICON = _utils.iconsPath() + '/spring.svg'
 #debug = _utils.debug
 #debug = _utils.doNothing
 
@@ -69,96 +73,55 @@ Sketcher::PropertyConstraintList
 """
 
 class CompSpring(object):
-    def __init__(self, length=10, turns=5, wireDiam=0.25, diameter=4.0, samples=16):
-        self.epsilon = 1e-2
+    def __init__(self, length=10, turns=8, wireDiam=0.5, diameter=4.0):
+        #self.epsilon = 1e-2
         self.length = length
         self.turns = turns
         self.wire_diam = wireDiam
         self.diameter = diameter
-        self.samples = samples
 
-    def min_length(self):
-        return((self.turns+1)*(self.wire_diam + self.epsilon))
-
-    def offset_points(self,pts,start,step,power=1):
-        npts = list()
-        for i in range(len(pts)):
-            v = float(i)/(len(pts)-1)
-            if power < 0:
-                fac = pow(v,1./abs(power))
-            else:
-                fac = pow(v,power)
-            npts.append(pts[i] + Vector(0,0,start + fac*step))
-        return(npts)
-
-    def point_lists(self):
-        helix_radius = (self.diameter - self.wire_diam) / 2.0
-        if self.length < self.min_length():
-            print("Spring too short")
-            return()
-        free_space = self.length - self.min_length()
-        if self.turns <= 2:
-            print("Spring must have more than 2 turns")
-            return()
-        step = free_space / (self.turns - 2)
-        circle = Part.Circle(Vector(),Vector(0,0,1),helix_radius)
-        pts = circle.discretize(self.samples)
-        points = list()
-        start = self.wire_diam / 2.0
-        pts1 = self.offset_points(pts,start,self.wire_diam+self.epsilon,2)
-        points.append(pts1)
-        start += self.wire_diam+self.epsilon
-        for i in range(self.turns-2):
-            pts1 = self.offset_points(pts,start,self.wire_diam+step)
-            points.append(pts1)
-            start += self.wire_diam+step
-        pts1 = self.offset_points(pts,start,self.wire_diam+self.epsilon,-2)
-        points.append(pts1)
-        return(points)
-
-    def curves(self):
-        curves = list()
-        pl = self.point_lists()
-        for pts in pl:
-            bs = Part.BSplineCurve()
-            bs.interpolate(pts)
-            curves.append(bs)
-        return(curves)
-
-    def edges(self):
-        edges = list()
-        for c in self.curves():
-            edges.append(c.toShape())
-        return(edges)
-
-    def wire(self, single=True):
-        if single:
-            return(Part.Wire(self.single_edge()))
-        else:
-            return(Part.Wire(self.edges()))
-
-    def single_curve(self):
-        pl = self.point_lists()
-        pts = pl[0][:-1]
-        for arr in pl[1:-1]:
-            pts += arr[1:-1]
-        pts += pl[-1][1:]
-        bs = Part.BSplineCurve()
-        bs.interpolate(pts)
+    def compute_path_cp(self):
+        free_turns = self.turns-2
+        skew = Part.LineSegment(Vector(2*pi,self.wire_diam,0),Vector((self.turns-1)*2*pi,self.length-self.wire_diam,0))
+        tan = skew.tangent(skew.FirstParameter)[0]
+        tan.normalize()
+        tan.multiply(self.wire_diam/2.)
+        p1 = Vector(-tan.y,tan.x,0)
+        ls = Part.Line(skew.StartPoint+p1,skew.EndPoint-p1)
+        h1 = Part.Line(Vector(0,self.wire_diam/2.,0),Vector(1,self.wire_diam/2.,0))
+        h2 = Part.Line(Vector(0,self.length-self.wire_diam/2.,0),Vector(1,self.length-self.wire_diam/2.,0))
+        pts = [Vector2d(0,self.wire_diam/2.)]
+        i1 = h1.intersect(ls)[0]
+        i2 = h2.intersect(ls)[0]
+        pts.append(Vector2d(i1.X,i1.Y))
+        pts.append(Vector2d(i2.X,i2.Y))
+        pts.append(Vector2d(self.turns*2*pi,self.length-self.wire_diam/2.))
+        return(pts)
+    
+    def path2d(self,w=100):
+        poles = self.compute_path_cp()
+        bs = Geom2d.BSplineCurve2d()
+        bs.buildFromPoles(poles)
+        bs.setWeight(2,w)
+        bs.setWeight(3,w)
         return(bs)
 
-    def single_edge(self):
-        return(self.single_curve().toShape())
+    def path3d(self,w=100):
+        cyl = Part.makeCylinder((self.diameter-self.wire_diam)/2., self.length-self.wire_diam, Vector(), Vector(0,0,1)).Face1
+        return(self.path2d(w).toShape(cyl.Surface))
+
+    def min_length(self):
+        return((self.turns+1)*self.wire_diam)
 
     def shape(self, single=False):
-        path = self.wire(single)
+        path = Part.Wire(self.path3d())
         c = Part.Circle(path.Edges[0].valueAt(path.Edges[0].FirstParameter), path.Edges[0].tangentAt(path.Edges[0].FirstParameter), self.wire_diam/2.0)
         pro = Part.Wire([c.toShape()])
         ps = Part.BRepOffsetAPI.MakePipeShell(path)
         ps.setFrenetMode(True)
         #ps.setForceApproxC1(True)
-        ps.setTolerance(1e-1, 1e-1, 0.5)
-        ps.setMaxDegree(3)
+        ps.setTolerance(1e-2, 1e-2, 0.1)
+        ps.setMaxDegree(5)
         ps.setMaxSegments(999)
         ps.add(pro)
         if ps.isReady():
@@ -166,6 +129,78 @@ class CompSpring(object):
             ps.makeSolid()
             return(ps.shape())
         return(None)
+    
+    #def offset_points(self,pts,start,step,power=1):
+        #npts = list()
+        #for i in range(len(pts)):
+            #v = float(i)/(len(pts)-1)
+            #if power < 0:
+                #fac = pow(v,1./abs(power))
+            #else:
+                #fac = pow(v,power)
+            #npts.append(pts[i] + Vector(0,0,start + fac*step))
+        #return(npts)
+
+    #def point_lists(self):
+        #helix_radius = (self.diameter - self.wire_diam) / 2.0
+        #if self.length < self.min_length():
+            #print("Spring too short")
+            #return()
+        #free_space = self.length - self.min_length()
+        #if self.turns <= 2:
+            #print("Spring must have more than 2 turns")
+            #return()
+        #step = free_space / (self.turns - 2)
+        #circle = Part.Circle(Vector(),Vector(0,0,1),helix_radius)
+        #pts = circle.discretize(self.samples)
+        #points = list()
+        #start = self.wire_diam / 2.0
+        #pts1 = self.offset_points(pts,start,self.wire_diam+self.epsilon,2)
+        #points.append(pts1)
+        #start += self.wire_diam+self.epsilon
+        #for i in range(self.turns-2):
+            #pts1 = self.offset_points(pts,start,self.wire_diam+step)
+            #points.append(pts1)
+            #start += self.wire_diam+step
+        #pts1 = self.offset_points(pts,start,self.wire_diam+self.epsilon,-2)
+        #points.append(pts1)
+        #return(points)
+
+    #def curves(self):
+        #curves = list()
+        #pl = self.point_lists()
+        #for pts in pl:
+            #bs = Part.BSplineCurve()
+            #bs.interpolate(pts)
+            #curves.append(bs)
+        #return(curves)
+
+    #def edges(self):
+        #edges = list()
+        #for c in self.curves():
+            #edges.append(c.toShape())
+        #return(edges)
+
+    #def wire(self, single=True):
+        #if single:
+            #return(Part.Wire(self.path3d())) #self.single_edge()))
+        #else:
+            #return(Part.Wire(self.edges()))
+
+    #def single_curve(self):
+        #pl = self.point_lists()
+        #pts = pl[0][:-1]
+        #for arr in pl[1:-1]:
+            #pts += arr[1:-1]
+        #pts += pl[-1][1:]
+        #bs = Part.BSplineCurve()
+        #bs.interpolate(pts)
+        #return(bs)
+
+    #def single_edge(self):
+        #return(self.single_curve().toShape())
+
+
         
 
 class CompSpringFP:
@@ -176,14 +211,14 @@ class CompSpringFP:
         obj.addProperty("App::PropertyInteger", "Turns", "CompSpring", "Number of turns").Turns = 5
         obj.addProperty("App::PropertyFloat", "WireDiameter", "CompSpring", "Diameter of the spring wire").WireDiameter = 0.5
         obj.addProperty("App::PropertyFloat", "Diameter", "CompSpring", "Diameter of the spring").Diameter = 4.0
-        obj.addProperty("App::PropertyInteger", "Samples", "Setting", "Number of point samples by turn").Samples = 16
-        obj.addProperty("App::PropertyBool", "Smooth", "Setting", "make spring with a single tube surface").Smooth = False
+        #obj.addProperty("App::PropertyInteger", "Samples", "Setting", "Number of point samples by turn").Samples = 16
+        #obj.addProperty("App::PropertyBool", "Smooth", "Setting", "make spring with a single tube surface").Smooth = False
         obj.addProperty("App::PropertyBool", "WireOutput", "Setting", "Output a wire shape").WireOutput=True
         obj.Proxy = self
 
     def spring(self, obj):
         try:
-            return(CompSpring(obj.Length, obj.Turns, obj.WireDiameter, obj.Diameter, obj.Samples))
+            return(CompSpring(obj.Length, obj.Turns, obj.WireDiameter, obj.Diameter))
         except AttributeError:
             return(None)
 
@@ -191,9 +226,10 @@ class CompSpringFP:
         cs = self.spring(obj)
         if not cs: return()
         if obj.WireOutput:
-            obj.Shape = cs.wire(obj.Smooth)
+            obj.Shape = cs.path3d()
         else:
-            obj.Shape = cs.shape(obj.Smooth)
+            obj.Shape = cs.shape()
+        return(cs)
 
     def onChanged(self, obj, prop):
         if prop in ("Length","Turns","WireDiameter"):
