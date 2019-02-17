@@ -6,6 +6,7 @@ __license__ = "LGPL 2.1"
 __doc__ = "Approximate extension for other FeaturePython objects."
 
 import FreeCAD
+from FreeCAD import Base
 import FreeCADGui
 import Part
 import _utils
@@ -68,19 +69,30 @@ class ApproximateExtension:
             obj.ApproxTolerance = 0.001
 
     def approximate(self, obj, input_shape):
+        pts = False
+        input_edges = None
         if not obj.Active:
             return(input_shape)
         if isinstance(input_shape,(list, tuple)):
-            input_edges = input_shape
+            #debug(isinstance(input_shape[0],Base.Vector))
+            if isinstance(input_shape[0],Base.Vector):
+                pts = input_shape
+            elif isinstance(input_shape[0],Part.Edge):
+                input_edges = input_shape
         else:
             input_edges = input_shape.Edges
         edges = list()
-        for e in input_edges:
-            pts = e.discretize(obj.Samples)
+        if input_edges:
+            for e in input_edges:
+                pts = e.discretize(obj.Samples)
+                bs = Part.BSplineCurve()
+                bs.approximate(Points = pts, DegMin = obj.DegreeMin, DegMax = obj.DegreeMax, Tolerance = obj.ApproxTolerance, Continuity = obj.Continuity, ParamType = obj.Parametrization)
+                edges.append(bs.toShape())
+            return(Part.Compound(edges))
+        elif pts:
             bs = Part.BSplineCurve()
             bs.approximate(Points = pts, DegMin = obj.DegreeMin, DegMax = obj.DegreeMax, Tolerance = obj.ApproxTolerance, Continuity = obj.Continuity, ParamType = obj.Parametrization)
-            edges.append(bs.toShape())
-        return(Part.Compound(edges))
+            return(bs.toShape())
 
     def onChanged(self, fp, prop):
         if prop == "Active":
