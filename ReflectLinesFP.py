@@ -116,7 +116,7 @@ class ReflectLinesCommand:
         if sel == []:
             FreeCAD.Console.PrintError("Select something first !\n")
         else:
-            self.makeFeature(sel)
+            self.makeFeature(sel[0])
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:
