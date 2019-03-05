@@ -14,7 +14,7 @@ import FreeCADGui
 import Part
 import _utils
 
-TOOL_ICON = _utils.iconsPath() + '/icon.svg'
+TOOL_ICON = _utils.iconsPath() + '/reflectLines.svg'
 
 class ReflectLinesFP:
     """Creates the reflect lines on a shape, according to a view direction"""
@@ -32,8 +32,9 @@ class ReflectLinesFP:
     def execute(self, obj):
         obj.Shape = obj.Source.Shape.reflectLines(obj.ViewDir, obj.ViewPos, obj.UpDir)
 
-    #def onChanged(self, obj, prop):
-        #return(False)
+    def onChanged(self, obj, prop):
+        if prop in ("Source","ViewPos","ViewDir","UpDir"):
+            self.execute(obj)
 
 class ReflectLinesVP:
     def __init__(self,vobj):
@@ -59,13 +60,30 @@ class ReflectLinesCommand:
         ReflectLinesFP(fp,s)
         ReflectLinesVP(fp.ViewObject)
         FreeCAD.ActiveDocument.recompute()
+        return fp
 
     def Activated(self):
         sel = FreeCADGui.Selection.getSelection()
         if sel == []:
-            FreeCAD.Console.PrintError("Select something first !\n")
+            FreeCAD.Console.PrintError("Select an object first !\n")
         else:
-            self.makeFeature(sel[0])
+            rot = FreeCADGui.ActiveDocument.ActiveView.getCameraOrientation()
+            vdir = FreeCAD.Vector(0,0,-1)
+            vdir = rot.multVec(vdir)
+            udir = FreeCAD.Vector(0,1,0)
+            udir = rot.multVec(udir)
+            pos = FreeCADGui.ActiveDocument.ActiveView.getCameraNode().position.getValue().getValue()
+            pos = FreeCAD.Vector(*pos)
+            for s in sel:
+                if hasattr(s,"Proxy") and isinstance(s.Proxy,ReflectLinesFP):
+                    s.ViewPos = pos
+                    s.ViewDir = vdir
+                    s.UpDir = udir
+                else:
+                    fp = self.makeFeature(s)
+                    fp.ViewPos = pos
+                    fp.ViewDir = vdir
+                    fp.UpDir = udir
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:
