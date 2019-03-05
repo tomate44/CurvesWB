@@ -20,17 +20,31 @@ class ReflectLinesFP:
     """Creates the reflect lines on a shape, according to a view direction"""
     def __init__(self, obj, src):
         """Add the properties"""
-        obj.addProperty("App::PropertyLink",   "Source",  "ReflectLines", "Source object").Source = src
+        obj.addProperty("App::PropertyLink",   "Source",  "ReflectLines", "Source object")
+        obj.addProperty("App::PropertyLinkSubList","IndivFaces","ReflectLines", "Individual faces")
         obj.addProperty("App::PropertyVector", "ViewPos", "ReflectLines", "View position")
         obj.addProperty("App::PropertyVector", "ViewDir", "ReflectLines", "View direction")
         obj.addProperty("App::PropertyVector", "UpDir",   "ReflectLines", "Up direction")
         obj.ViewPos = FreeCAD.Vector(0,0,0)
         obj.ViewDir = FreeCAD.Vector(0,0,1)
         obj.UpDir   = FreeCAD.Vector(0,1,0)
+        if isinstance(src,(list,tuple)):
+            obj.IndivFaces = src
+        else:
+            obj.Source = src
         obj.Proxy = self
 
     def execute(self, obj):
-        obj.Shape = obj.Source.Shape.reflectLines(obj.ViewDir, obj.ViewPos, obj.UpDir)
+        sh = None
+        if len(obj.IndivFaces) > 0:
+            faces = _utils.getShape(obj, "IndivFaces", "Face")
+            sh = Part.Compound(faces)
+        elif hasattr(obj.Source,"Shape"):
+            sh = obj.Source.Shape
+        try:
+            obj.Shape = sh.reflectLines(obj.ViewDir, obj.ViewPos, obj.UpDir)
+        except AttributeError:
+            pass
 
     def onChanged(self, obj, prop):
         if prop in ("Source","ViewPos","ViewDir","UpDir"):
@@ -63,7 +77,7 @@ class ReflectLinesCommand:
         return fp
 
     def Activated(self):
-        sel = FreeCADGui.Selection.getSelection()
+        sel = FreeCADGui.Selection.getSelectionEx()
         if sel == []:
             FreeCAD.Console.PrintError("Select an object first !\n")
         else:
@@ -74,16 +88,25 @@ class ReflectLinesCommand:
             udir = rot.multVec(udir)
             pos = FreeCADGui.ActiveDocument.ActiveView.getCameraNode().position.getValue().getValue()
             pos = FreeCAD.Vector(*pos)
-            for s in sel:
-                if hasattr(s,"Proxy") and isinstance(s.Proxy,ReflectLinesFP):
-                    s.ViewPos = pos
-                    s.ViewDir = vdir
-                    s.UpDir = udir
+            facelist = []
+            for so in sel:
+                o = so.Object
+                if so.HasSubObjects:
+                    facelist.append((o,so.SubElementNames))
+                elif hasattr(o,"Proxy") and isinstance(o.Proxy,ReflectLinesFP):
+                    o.ViewPos = pos
+                    o.ViewDir = vdir
+                    o.UpDir = udir
                 else:
-                    fp = self.makeFeature(s)
+                    fp = self.makeFeature(o)
                     fp.ViewPos = pos
                     fp.ViewDir = vdir
                     fp.UpDir = udir
+            if facelist:
+                fp = self.makeFeature(facelist)
+                fp.ViewPos = pos
+                fp.ViewDir = vdir
+                fp.UpDir = udir
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:
