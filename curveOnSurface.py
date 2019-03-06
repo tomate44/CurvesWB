@@ -32,24 +32,50 @@ import _utils
 
 debug = _utils.debug
 
+def startPoint(c):
+    return c.value(c.FirstParameter)
+
+def endPoint(c):
+    return c.value(c.LastParameter)
+
+def linearDeviation(edge, radius=1.0):
+    sp = edge.valueAt(edge.FirstParameter)
+    ep = edge.valueAt(edge.LastParameter)
+    axis = ep-sp
+    cyl = Part.makeCylinder(radius,axis.Length,sp,axis)
+    d,pts,info = edge.distToShape(cyl.Face1)
+    params = list()
+    for i in info:
+        if i[0] in ("Edge",b"Edge"):
+            params.append(i[2])
+        elif i[0] in ("Vertex",b"Vertex"):
+            params.append(edge.parameterAt(edge.Vertexes[i[1]]))
+    return (radius-d), params
+    
+def isLinear(edge, tol=1e-7):
+    d, params = linearDeviation(edge)
+    if d < tol:
+        return True
+    return False
+
 def get_offset_curve(bc,c1,c2,dist=0.1):
     """computes the offsetcurve2d that is at distance dist from curve bc, that intersect c1 and c2.
     Returns the offset curve ans the intersection points"""
-    off = Part.Geom2d.OffsetCurve2d(bc, dist)
+    off1 = Part.Geom2d.OffsetCurve2d(bc, dist)
     # TODO : extend offset
-    inter1 = off.intersectCC(c1)
-    inter2 = off.intersectCC(c2)
-    if len(inter1) > 0 and len(inter2) > 0:
-        return(off,inter1[0],inter2[0])
-    else: # No intersection. Let's try the other side
-        off = Part.Geom2d.OffsetCurve2d(bc,-dist)
-        # TODO : extend offset
-        inter1 = off.intersectCC(c1)
-        inter2 = off.intersectCC(c2)
-        if len(inter1) > 0 and len(inter2) > 0:
-            return(off,inter1[0],inter2[0])
-        else:
-            return(None)
+    inter11 = off1.intersectCC(c1)
+    inter12 = off1.intersectCC(c2)
+    if len(inter11) > 0 and len(inter12) > 0:
+        return(off1,inter11[0],inter12[0])
+    # No intersection. Let's try the other side
+    off2 = Part.Geom2d.OffsetCurve2d(bc,-dist)
+    # TODO : extend offset
+    inter21 = off2.intersectCC(c1)
+    inter22 = off2.intersectCC(c2)
+    if len(inter21) > 0 and len(inter22) > 0:
+        return(off2,inter21[0],inter22[0])
+    # No Luck
+    
 
 class curveOnSurface:
     
