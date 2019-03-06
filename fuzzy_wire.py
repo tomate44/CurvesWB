@@ -51,6 +51,7 @@ def join_multi_edges(edgelist,closed=False):
     good_edges = list()
     last = edgelist[0]
     remaining = edgelist[1:]
+    res = []
     while len(remaining) > 0:
         rejected = list()
         closest_dist = 1e50
@@ -74,7 +75,8 @@ def join_multi_edges(edgelist,closed=False):
         last = res[-1]
         good_edges.extend(res[:-1])
         remaining = rejected
-    good_edges.append(res[-1])
+    if res:
+        good_edges.append(res[-1])
     se = Part.sortEdges(good_edges)
     wires = list()
     for group in se:
