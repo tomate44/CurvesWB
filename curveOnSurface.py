@@ -38,6 +38,18 @@ def startPoint(c):
 def endPoint(c):
     return c.value(c.LastParameter)
 
+def distToCurve(c1,c2):
+    pa1 = c1.parameter(startPoint(c2))
+    pa2 = c1.parameter(endPoint(c2))
+    pt1 = c1.value(pa1)
+    pt2 = c1.value(pa2)
+    d1 = pt1 - startPoint(c2)
+    d2 = pt2 - endPoint(c2)
+    if d1 > d2:
+        return d2, pa2, c2.LastParameter
+    else:
+        return d1, pa1, c2.FirstParameter
+
 def linearDeviation(edge, radius=1.0):
     sp = edge.valueAt(edge.FirstParameter)
     ep = edge.valueAt(edge.LastParameter)
@@ -75,7 +87,8 @@ def get_offset_curve(bc,c1,c2,dist=0.1):
     if len(inter21) > 0 and len(inter22) > 0:
         return(off2,inter21[0],inter22[0])
     # No Luck
-    
+    d1 = c1.parameter(startPoint(bc))
+    par2 = c2
 
 class curveOnSurface:
     
