@@ -205,9 +205,9 @@ def surfNode(surf):
     u0,u1,v0,v1 = surf.bounds()
     halfU = u0 + 1.*(u1-u0)/2
     halfV = v0 + 1.*(v1-v0)/2
-    UPos = surf.value(halfU,0)
+    UPos = surf.value(halfU,v0)
     Uletter = coinNodes.text2dNode((0,0,0),"osiFont,FreeSans,sans",20,(UPos.x,UPos.y,UPos.z),'U')
-    VPos = surf.value(0,halfV)
+    VPos = surf.value(u0,halfV)
     Vletter = coinNodes.text2dNode((0,0,0),"osiFont,FreeSans,sans",20,(VPos.x,VPos.y,VPos.z),'V')
 
     vizSep = coin.SoSeparator()
