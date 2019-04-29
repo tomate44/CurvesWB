@@ -72,7 +72,7 @@ def isLinear(edge, tol=1e-7):
 
 def get_offset_curve(bc,c1,c2,dist=0.1):
     """computes the offsetcurve2d that is at distance dist from curve bc, that intersect c1 and c2.
-    Returns the offset curve ans the intersection points"""
+    Returns the offset curve and the intersection points"""
     off1 = Part.Geom2d.OffsetCurve2d(bc, dist)
     # TODO : extend offset
     inter11 = off1.intersectCC(c1)
