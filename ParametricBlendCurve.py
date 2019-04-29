@@ -152,7 +152,10 @@ class BlendCurveVP:
         elif prop == "Output":
             if fp.Output in ("Wire","Joined"):
                 if self.children == []:
-                    self.children = [fp.Edge1[0], fp.Edge2[0]]
+                    if fp.Edge1[0] == fp.Edge2[0]:
+                        self.children = [fp.Edge1[0]]
+                    else:
+                        self.children = [fp.Edge1[0], fp.Edge2[0]]
                     self.setVisi(self.children, False)
                     #self.claimed = True
             else:
