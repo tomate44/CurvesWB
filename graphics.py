@@ -413,7 +413,7 @@ class InteractionSeparator(coin.SoSeparator):
             if self.drag_objects:
                 # first delete the selection_cb, and higlight_cb
                 self.unregister()
-                # now add a callback that calls the dragfunction of the selected entites
+                # now add a callback that calls the dragfunction of the selected entities
                 self.start_pos = self.cursor_pos(event)
                 self._dragCB = self.events.addEventCallback(
                     coin.SoEvent.getClassTypeId(), self.dragCB)
