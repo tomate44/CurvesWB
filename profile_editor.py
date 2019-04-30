@@ -199,7 +199,7 @@ class ConnectionLine(graphics.Line):
 class InterpoCurveEditor(object):
     """Interpolation curve free-hand editor
     my_editor = InterpoCurveEditor([points],obj)
-    obj is the FreeCAD object that will recieve
+    obj is the FreeCAD object that will receive
     the curve shape at the end of editing.
     points can be :
     - Vector (free point)
