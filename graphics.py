@@ -239,7 +239,7 @@ class InteractionSeparator(coin.SoSeparator):
         self._selectCB = self.events.addEventCallback(
             coin.SoMouseButtonEvent.getClassTypeId(), self.selectCB)
         self._grabCB = self.events.addEventCallback(
-            coin.SoKeyboardEvent.getClassTypeId(), self.grabCB)
+            coin.SoMouseButtonEvent.getClassTypeId(), self.grabCB)
         self._deleteCB = self.events.addEventCallback(
             coin.SoKeyboardEvent.getClassTypeId(), self.deleteCB)
         self._selectAllCB = self.events.addEventCallback(
@@ -251,7 +251,7 @@ class InteractionSeparator(coin.SoSeparator):
         self.events.removeEventCallback(
             coin.SoMouseButtonEvent.getClassTypeId(), self._selectCB)
         self.events.removeEventCallback(
-            coin.SoKeyboardEvent.getClassTypeId(), self._grabCB)
+            coin.SoMouseButtonEvent.getClassTypeId(), self._grabCB)
         self.events.removeEventCallback(
             coin.SoKeyboardEvent.getClassTypeId(), self._deleteCB)
         self.events.removeEventCallback(
@@ -331,7 +331,7 @@ class InteractionSeparator(coin.SoSeparator):
 
     def selectCB(self, attr, event_callback):
         event = event_callback.getEvent()
-        if (event.getState() == coin.SoMouseButtonEvent.DOWN and
+        if (event.getState() == coin.SoMouseButtonEvent.UP and
                 event.getButton() == event.BUTTON1):
             pos = event.getPosition()
             obj = self.sendRay(pos)
@@ -400,33 +400,40 @@ class InteractionSeparator(coin.SoSeparator):
             return [0, 0, vector[2]]
 
     def grabCB(self, attr, event_callback):
-        # press g to move an entity
+        # press grab key to move an entity
         event = event_callback.getEvent()
         # get all drag objects, every selected object can add some drag objects
         # but the eventhandler is not allowed to call the drag twice on an object
-        if event.getKey() == ord(InteractionSeparator.ctrl_keys["grab"]):
-            self.drag_objects = set()
-            for i in self.selected_objects:
-                for j in i.drag_objects:
-                    self.drag_objects.add(j)
-            # check if something is selected
-            if self.drag_objects:
-                # first delete the selection_cb, and higlight_cb
-                self.unregister()
-                # now add a callback that calls the dragfunction of the selected entites
-                self.start_pos = self.cursor_pos(event)
-                self._dragCB = self.events.addEventCallback(
-                    coin.SoEvent.getClassTypeId(), self.dragCB)
-                for obj in self.drag_objects:
-                    obj.drag_start()
-                for foo in self.on_drag_start:
-                    foo()
+        #if event.getKey() == ord(InteractionSeparator.ctrl_keys["grab"]):
+        if (event.getState() == coin.SoMouseButtonEvent.DOWN and
+                event.getButton() == event.BUTTON1):
+            pos = event.getPosition()
+            obj = self.sendRay(pos)
+            if obj:
+                if not obj in self.selected_objects:
+                    self.selectObject(obj, event.wasCtrlDown())
+                self.drag_objects = set()
+                for i in self.selected_objects:
+                    for j in i.drag_objects:
+                        self.drag_objects.add(j)
+                # check if something is selected
+                if self.drag_objects:
+                    # first delete the selection_cb, and higlight_cb
+                    self.unregister()
+                    # now add a callback that calls the dragfunction of the selected entites
+                    self.start_pos = self.cursor_pos(event)
+                    self._dragCB = self.events.addEventCallback(
+                        coin.SoEvent.getClassTypeId(), self.dragCB)
+                    for obj in self.drag_objects:
+                        obj.drag_start()
+                    for foo in self.on_drag_start:
+                        foo()
 
 
     def dragCB(self, attr, event_callback, force=False):
         event = event_callback.getEvent()
         if ((type(event) == coin.SoMouseButtonEvent and
-                event.getState() == coin.SoMouseButtonEvent.DOWN
+                event.getState() == coin.SoMouseButtonEvent.UP
                 and event.getButton() == coin.SoMouseButtonEvent.BUTTON1) or 
                 force):
             self.register()
