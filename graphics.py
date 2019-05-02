@@ -404,6 +404,7 @@ class InteractionSeparator(coin.SoSeparator):
         event = event_callback.getEvent()
         # get all drag objects, every selected object can add some drag objects
         # but the eventhandler is not allowed to call the drag twice on an object
+<<<<<<< HEAD
         #if event.getKey() == ord(InteractionSeparator.ctrl_keys["grab"]):
         if (event.getState() == coin.SoMouseButtonEvent.DOWN and
                 event.getButton() == event.BUTTON1):
@@ -428,6 +429,25 @@ class InteractionSeparator(coin.SoSeparator):
                         obj.drag_start()
                     for foo in self.on_drag_start:
                         foo()
+=======
+        if event.getKey() == ord(InteractionSeparator.ctrl_keys["grab"]):
+            self.drag_objects = set()
+            for i in self.selected_objects:
+                for j in i.drag_objects:
+                    self.drag_objects.add(j)
+            # check if something is selected
+            if self.drag_objects:
+                # first delete the selection_cb, and higlight_cb
+                self.unregister()
+                # now add a callback that calls the dragfunction of the selected entities
+                self.start_pos = self.cursor_pos(event)
+                self._dragCB = self.events.addEventCallback(
+                    coin.SoEvent.getClassTypeId(), self.dragCB)
+                for obj in self.drag_objects:
+                    obj.drag_start()
+                for foo in self.on_drag_start:
+                    foo()
+>>>>>>> 4a606d7838829eb0c7f0b90cbcaf26f62f6524f8
 
 
     def dragCB(self, attr, event_callback, force=False):
