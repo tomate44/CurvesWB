@@ -104,6 +104,29 @@ def ruled_surface(e1,e2):
         return(Part.makeRuledSurface(e1,e2))
 
 
+class SilentFPO:
+    '''Fake FeaturePython object that has no interaction with other FreeCAD objects.
+    It is used as a temporary FPO during editing'''
+    def __init__(self):
+        self.Proxy = None
+        self.Shape = None
+        self.props = []
+    def addProperty(ptype, pname, pgroup="", pdoc=""):
+        setattr(self, pname, None)
+        self.props.append(pname)
+        return self
+    def get_data(self, realfpo):
+        for prop in self.props:
+            setattr(self, pname, getattr(realfpo, prop))
+    def set_data(self, realfpo):
+        for prop in self.props:
+            setattr(realfpo, pname, getattr(self, prop))
+    def status(self):
+        for prop in self.props:
+            print("%s = %s"%(prop, str(getattr(self, prop))))
+
+
+
 class EasyProxy(object):
     def __init__(self, fp):
         self.document_restored = True
