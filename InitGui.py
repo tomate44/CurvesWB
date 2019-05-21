@@ -37,10 +37,14 @@ class CurvesWorkbench(Workbench):
         #import bezierCurve
         stablelist = list()
         try:
+            import graphics
+            marker = graphics.Marker([FreeCAD.Vector()])
             import gordon_profile_FP
             stablelist = ["gordon_profile"]
+            FreeCAD.Console.PrintMessage("Pivy.graphics interaction library enabled\n")
         except:
-            pass
+            FreeCAD.Console.PrintWarning("Pivy.graphics interaction library is not available on this computer\n")
+
         import curveExtendFP # TODO use basisSpline
         import JoinCurves
         import splitCurves # cleaned
