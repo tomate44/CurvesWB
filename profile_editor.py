@@ -64,10 +64,33 @@ class MarkerOnShape(graphics.Marker):
         self._shape = None
         self._sublink = None
         self._tangent = None
+        self._translate = coin.SoTranslation()
+        self._text = coin.SoText2()
+        self._text_switch = coin.SoSwitch()
+        self._text_switch.addChild(self._translate)
+        self._text_switch.addChild(self._text)
+        self.on_drag_start.append(self.add_text)
+        self.on_drag_release.append(self.remove_text)
+        self.addChild(self._text_switch)
+        
         if isinstance(sh,Part.Shape):
             self.snap_shape = sh
         elif isinstance(sh,(tuple,list)):
             self.sublink = sh
+
+    def add_text(self):
+        self._text_switch.whichChild = coin.SO_SWITCH_ALL
+        self.on_drag.append(self.update_text)
+        
+    def remove_text(self):
+        self._text_switch.whichChild = coin.SO_SWITCH_NONE
+        self.on_drag.remove(self.update_text)
+        
+    def update_text(self):
+        p = self.points[0]
+        coords = ['{: 9.3f}'.format(p[0]),'{: 9.3f}'.format(p[1]),'{: 9.3f}'.format(p[2])]
+        self._translate.translation = p
+        self._text.string.setValues(0,3,coords)
 
     @property
     def tangent(self):

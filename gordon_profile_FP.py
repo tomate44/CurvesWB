@@ -220,6 +220,7 @@ class GordonProfileVP:
 
     def setEdit(self,vobj,mode=0):
         if mode == 0:
+            reload(profile_editor)
             if vobj.Selectable:
                 self.select_state = True
                 vobj.Selectable = False

@@ -331,7 +331,7 @@ class InteractionSeparator(coin.SoSeparator):
 
     def selectCB(self, attr, event_callback):
         event = event_callback.getEvent()
-        if (event.getState() == coin.SoMouseButtonEvent.UP and
+        if (event.getState() == coin.SoMouseButtonEvent.DOWN and
                 event.getButton() == event.BUTTON1):
             pos = event.getPosition()
             obj = self.sendRay(pos)
@@ -410,8 +410,8 @@ class InteractionSeparator(coin.SoSeparator):
             pos = event.getPosition()
             obj = self.sendRay(pos)
             if obj:
-                if not obj in self.selected_objects:
-                    self.selectObject(obj, event.wasCtrlDown())
+                #if not obj in self.selected_objects:
+                    #self.selectObject(obj, event.wasCtrlDown())
                 self.drag_objects = set()
                 for i in self.selected_objects:
                     for j in i.drag_objects:
