@@ -158,18 +158,24 @@ class curveOnSurface:
         if (not self.edge == None) and (not self.face == None):
             c2d = self.face.curveOnSurface(self.edge)
             if not isinstance(c2d,tuple):
-                print("Error curveOnSurface = %s"%str(c2d))
+                # print("curveOnSurface failed")
                 try:
-                    newedge = self.face.project([self.edge]).Edges[0]
-                    c2d = self.face.curveOnSurface(newedge)
-                    if isinstance(c2d,tuple):
-                        print("Projection success.")
-                except Part.OCCError:
                     newface = self.face.Surface.toShape()
-                    newedge = newface.project([self.edge]).Edges[0]
-                    c2d = self.face.curveOnSurface(newedge)
-                    if isinstance(c2d,tuple):
-                        print("Projection failed. Fallback on surface.")
+                    newedges = newface.project([self.edge]).Edges
+                    e0 = newedges[0]
+                    c2d = newface.curveOnSurface(e0)
+                    # if projection created several edges,
+                    # we need to join them into a single BSpline curve.
+                    if len(newedges) > 1:
+                        c = c2d[0].toBSpline(c2d[1],c2d[2])
+                        for e in newedges[1:]:
+                            c2d,fp,lp = newface.curveOnSurface(e)
+                            bs = c2d.toBSpline(fp,lp)
+                            c.join(bs)
+                        c2d = [c,c.FirstParameter,c.LastParameter]
+                    print("CurveOnSurface projection fallback : OK.")
+                except Part.OCCError:
+                    print("CurveOnSurface projection fallback : Failed.")
             if isinstance(c2d,tuple):
                 self.curve2D = c2d[0]
                 self.firstParameter = c2d[1]
