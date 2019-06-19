@@ -71,7 +71,12 @@ class gordon:
         else:
             edges = list()
             for o in obj.Sources:
-                edges += o.Shape.Edges
+                if len(o.Shape.Wires) >= 1:
+                    for w in o.Shape.Wires:
+                        bs = w.approximate(1e-10,1e-7,25,999)
+                        edges.append(bs.toShape())
+                else:
+                    edges += o.Shape.Edges
             profiles = list()
             e0 = edges[0]
             guides = [e0]
@@ -86,7 +91,15 @@ class gordon:
         reload(gordon)
         guide_curves = [e.Curve.toBSpline() for e in guides]
         profile_curves = [e.Curve.toBSpline() for e in profiles]
-
+        debug("%d guides / %d profiles"%(len(guide_curves),len(profile_curves)))
+        guides_closed = all([c.isClosed() for c in guide_curves])
+        profile_closed = all([c.isClosed() for c in profile_curves])
+        if guides_closed:
+            debug("All guides are closed")
+            profile_curves.append(profile_curves[0])
+        if profile_closed:
+            debug("All profiles are closed")
+            guide_curves.append(guide_curves[0])
         # create the gordon surface
         gordon = gordon.InterpolateCurveNetwork(profile_curves, guide_curves, obj.Tol3D, obj.Tol2D)
         #gordon.perform()

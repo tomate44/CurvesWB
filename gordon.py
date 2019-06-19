@@ -31,7 +31,7 @@ import Part
 from math import pi
 from BSplineAlgorithms import BSplineAlgorithms
 
-DEBUG = False
+DEBUG = True
 
 def debug(o):
     if not DEBUG:
@@ -155,8 +155,8 @@ class GordonSurfaceBuilder(object):
         curve_v_tolerance = bsa.REL_TOL_CLOSED * bsa.scale(self.profiles)
         tp_tolerance      = bsa.REL_TOL_CLOSED * bsa.scale_pt_array(intersection_pnts)
                                                                                     # TODO No IsEqual in FreeCAD
-        makeUClosed = False #bsa.isUDirClosed(intersection_pnts, tp_tolerance)# and self.guides[0].toShape().isPartner(self.guides[-1].toShape()) #.isEqual(self.guides[-1], curve_u_tolerance);
-        makeVClosed = False #bsa.isVDirClosed(intersection_pnts, tp_tolerance)# and self.profiles[0].toShape().IsPartner(self.profiles[-1].toShape())
+        makeUClosed = bsa.isUDirClosed(intersection_pnts, tp_tolerance)# and self.guides[0].toShape().isPartner(self.guides[-1].toShape()) #.isEqual(self.guides[-1], curve_u_tolerance);
+        makeVClosed = bsa.isVDirClosed(intersection_pnts, tp_tolerance)# and self.profiles[0].toShape().IsPartner(self.profiles[-1].toShape())
 
         # Skinning in v-direction with u directional B-Splines
         debug("-   Skinning self.profiles")
@@ -261,9 +261,8 @@ class InterpolateCurveNetwork(object):
         self.has_performed = False
         if (len(profiles) < 2) or (len(guides) < 2):
             self.error("Not enough guides or profiles")
-        else:
-            self.profiles = profiles
-            self.guides = guides
+        self.profiles = profiles
+        self.guides = guides
         if tol > 0.0:
             self.tolerance = tol
         if tol2 > 0.0:
@@ -465,7 +464,7 @@ class InterpolateCurveNetwork(object):
             debug("reparametrizing u curve %d"%spline_u_idx)
             debug(profile)
             self.profiles[spline_u_idx] = bsa.reparametrizeBSplineContinuouslyApprox(profile, oldParametersProfile, newParametersProfiles, max_cp_u)
-            debug(self.profiles[spline_u_idx])
+            #debug(self.profiles[spline_u_idx])
             progressbar.next()
 
         # reparametrize v-directional B-splines
@@ -488,7 +487,7 @@ class InterpolateCurveNetwork(object):
             debug("reparametrizing v curve %d"%spline_v_idx)
             debug(guide)
             self.guides[spline_v_idx] = bsa.reparametrizeBSplineContinuouslyApprox(guide, oldParameterGuide, newParametersGuides, max_cp_v)
-            debug(self.guides[spline_v_idx])
+            #debug(self.guides[spline_v_idx])
             progressbar.next()
             
         progressbar.stop()
