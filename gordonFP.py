@@ -73,8 +73,11 @@ class gordon:
             for o in obj.Sources:
                 if len(o.Shape.Wires) >= 1:
                     for w in o.Shape.Wires:
-                        bs = w.approximate(1e-10,1e-7,25,999)
-                        edges.append(bs.toShape())
+                        if len(w.Edges) > 1:
+                            bs = w.approximate(1e-10,1e-7,25,999)
+                            edges.append(bs.toShape())
+                        else:
+                            edges.append(w.Edges[0])
                 else:
                     edges += o.Shape.Edges
             profiles = list()
