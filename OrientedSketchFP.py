@@ -15,7 +15,7 @@ import Part
 import Sketcher
 import _utils
 
-TOOL_ICON = _utils.iconsPath() + '/icon.svg'
+TOOL_ICON = _utils.iconsPath() + '/oriented_sketch.svg'
 #debug = _utils.debug
 #debug = _utils.doNothing
 
@@ -103,20 +103,13 @@ class orientedSketchFP:
         if prop == "Parameter":
             e = _utils.getShape(obj, "Edge", "Edge")
             f = _utils.getShape(obj, "Face", "Face")
-            fp = e.FirstParameter
-            lp = e.LastParameter
-            p = fp + (lp-fp)*obj.Parameter
+            p = e.FirstParameter + (e.LastParameter - e.FirstParameter) * obj.Parameter
             loc = e.valueAt(p)
             u, v = f.Surface.parameter(loc)
             norm = f.normalAt(u, v)
-            print("{0!s} - {1!s}".format(p, loc))
-
-            #z = FreeCAD.Vector(0,0,1)
-            #y = FreeCAD.Vector(0,1,0)
+            #print("{0!s} - {1!s}".format(p, loc))
             x = norm.cross(e.tangentAt(p))
-
             rot = FreeCAD.Rotation(x, norm, e.tangentAt(p))
-
             obj.Placement.Base = loc
             obj.Placement.Rotation = rot
 
