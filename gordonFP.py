@@ -99,10 +99,10 @@ class gordon:
         profile_closed = all([c.isClosed() for c in profile_curves])
         if guides_closed:
             debug("All guides are closed")
-            profile_curves.append(profile_curves[0])
+            #profile_curves.append(profile_curves[0])
         if profile_closed:
             debug("All profiles are closed")
-            guide_curves.append(guide_curves[0])
+            #guide_curves.append(guide_curves[0])
         # create the gordon surface
         gordon = gordon.InterpolateCurveNetwork(profile_curves, guide_curves, obj.Tol3D, obj.Tol2D)
         #gordon.perform()
