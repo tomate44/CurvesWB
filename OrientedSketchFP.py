@@ -93,10 +93,7 @@ class orientedSketchFP:
             c = Part.Compound([])
             se = Part.sortEdges(edges)
             for l in se:
-                if len(l) > 1:
-                    c.add(Part.Wire(l))
-                elif len(l) == 1:
-                    c.add(l[0])
+                c.add(Part.Wire(l))
             obj.Shape = c
 
     def onChanged(self, obj, prop):
