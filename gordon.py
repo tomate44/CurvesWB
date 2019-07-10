@@ -159,13 +159,15 @@ class GordonSurfaceBuilder(object):
         makeVClosed = bsa.isVDirClosed(intersection_pnts, tp_tolerance)# and self.profiles[0].toShape().IsPartner(self.profiles[-1].toShape())
 
         # Skinning in v-direction with u directional B-Splines
-        debug("-   Skinning self.profiles")
+        debug("-   Skinning profiles")
+        debug("VClosed = %s"%makeVClosed)
         surfProfiles = bsa.curvesToSurface(self.profiles, self.intersectionParamsV, makeVClosed)
         debug(surfProfiles)
         # therefore reparametrization before this method
 
         # Skinning in u-direction with v directional B-Splines
-        debug("-   Skinning self.guides")
+        debug("-   Skinning guides")
+        debug("UClosed = %s"%makeUClosed)
         surfGuides = bsa.curvesToSurface(self.guides, self.intersectionParamsU, makeUClosed)
         debug(surfGuides)
 
@@ -312,7 +314,7 @@ class InterpolateCurveNetwork(object):
         debug("\ncompute_intersections")
         for spline_u_idx in range(len(self.profiles)):
             for spline_v_idx in range(len(self.guides)):
-                
+                debug("Intersection of profile #%d with guide #%d"%(spline_u_idx, spline_v_idx))
                 currentIntersections = BSplineAlgorithms(self.par_tolerance).intersections(self.profiles[spline_u_idx], self.guides[spline_v_idx], self.par_tolerance)
                 if len(currentIntersections) < 1:
                     self.error("U-directional B-spline and v-directional B-spline don't intersect each other!")
@@ -320,6 +322,7 @@ class InterpolateCurveNetwork(object):
                 elif len(currentIntersections) == 1:
                     intersection_params_u[spline_u_idx][spline_v_idx] = currentIntersections[0][0]
                     intersection_params_v[spline_u_idx][spline_v_idx] = currentIntersections[0][1]
+                    debug(currentIntersections)
                     # for closed curves
                 elif len(currentIntersections) == 2:
                     debug("*** 2 intersections")
@@ -333,7 +336,7 @@ class InterpolateCurveNetwork(object):
                             intersection_params_u[spline_u_idx][spline_v_idx] = max(currentIntersections[0][0], currentIntersections[1][0])
                         # intersection_params_vector[0].second == intersection_params_vector[1].second
                         intersection_params_v[spline_u_idx][spline_v_idx] = currentIntersections[0][1]
-   
+                        
                     # only the v-directional B-spline curves are closed
                     if (self.guides[0].isClosed()):
                         debug("V-closed")
@@ -343,6 +346,7 @@ class InterpolateCurveNetwork(object):
                             intersection_params_v[spline_u_idx][spline_v_idx] = max(currentIntersections[0][1], currentIntersections[1][1])
                         # intersection_params_vector[0].first == intersection_params_vector[1].first
                         intersection_params_u[spline_u_idx][spline_v_idx] = currentIntersections[0][0]
+                    debug("-> [%f,%f]"%(intersection_params_u[spline_u_idx][spline_v_idx], intersection_params_v[spline_u_idx][spline_v_idx]))
                     # TODO: both u-directional splines and v-directional splines are closed
                     # elif len(currentIntersections) == 4:
                 else:
@@ -461,7 +465,7 @@ class InterpolateCurveNetwork(object):
                 newParametersProfiles[-1] = 1.
 
             profile = self.profiles[spline_u_idx]
-            debug("reparametrizing u curve %d"%spline_u_idx)
+            debug("\nreparametrizing u curve %d"%spline_u_idx)
             debug(profile)
             self.profiles[spline_u_idx] = bsa.reparametrizeBSplineContinuouslyApprox(profile, oldParametersProfile, newParametersProfiles, max_cp_u)
             #debug(self.profiles[spline_u_idx])
@@ -484,7 +488,7 @@ class InterpolateCurveNetwork(object):
                 newParametersGuides[-1] = 1.
 
             guide = self.guides[spline_v_idx]
-            debug("reparametrizing v curve %d"%spline_v_idx)
+            debug("\nreparametrizing v curve %d"%spline_v_idx)
             debug(guide)
             self.guides[spline_v_idx] = bsa.reparametrizeBSplineContinuouslyApprox(guide, oldParameterGuide, newParametersGuides, max_cp_v)
             #debug(self.guides[spline_v_idx])
