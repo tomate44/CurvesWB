@@ -311,11 +311,19 @@ class BSplineAlgorithms(object):
                 #print("%dx%d - %d"%(cpUIdx, cpVIdx, compatSplines[cpVIdx].NbPoles))
                 interpPointsVDir[cpVIdx] = compatSplines[cpVIdx].getPole(cpUIdx+1)
             interpSpline = Part.BSplineCurve()
-            #print("interpSpline")
-            #print(interpPointsVDir[:2])
-            #print(vParameters)
-            #print(makeClosed)
-            interpSpline.interpolate(Points=interpPointsVDir, Parameters=vParameters, PeriodicFlag=makeClosed, Tolerance=tolerance)
+            try:
+                interpSpline.interpolate(Points=interpPointsVDir, Parameters=vParameters, PeriodicFlag=makeClosed, Tolerance=tolerance)
+            except Part.OCCError:
+                print("interpSpline")
+                print("%d points"%len(interpPointsVDir))
+                for p in interpPointsVDir:
+                    print("%0.4f %0.4f %0.4f"%(p.x, p.y, p.z))
+                print("%d parameters"%len(vParameters))
+                for p in vParameters:
+                    print("%0.4f"%p)
+                #print(vParameters)
+                print("Closed : %s"%makeClosed)
+            
             
             #debug(interpSpline)
             if makeClosed:
