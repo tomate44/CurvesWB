@@ -131,7 +131,7 @@ class orientedSketchVP:
 class oriented_sketch_cmd:
     """Creates a Oriented sketch"""
     def makeFeature(self, e, f):
-        fp = FreeCAD.ActiveDocument.addObject("Sketcher::SketchObjectPython", "")
+        fp = FreeCAD.ActiveDocument.addObject("Sketcher::SketchObjectPython", "Oriented sketch")
         orientedSketchFP(fp, e, f)
         orientedSketchVP(fp.ViewObject)
         FreeCAD.ActiveDocument.recompute()
