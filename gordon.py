@@ -37,15 +37,18 @@ def debug(o):
     if not DEBUG:
         return()
     if isinstance(o,Part.BSplineCurve):
-        FreeCAD.Console.PrintWarning("\nBSplineCurve\n")
-        FreeCAD.Console.PrintWarning("Degree: %d\n"%(o.Degree))
-        FreeCAD.Console.PrintWarning("NbPoles: %d\n"%(o.NbPoles))
-        FreeCAD.Console.PrintWarning("Knots: %d (%0.2f - %0.2f)\n"%(o.NbKnots, o.FirstParameter, o.LastParameter))
-        FreeCAD.Console.PrintWarning("%s\n"%(o.getKnots()))
-        FreeCAD.Console.PrintWarning("Mults: %s\n"%(o.getMultiplicities()))
-        FreeCAD.Console.PrintWarning("Periodic: %s\n"%(o.isPeriodic()))
+        #FreeCAD.Console.PrintWarning("\nBSplineCurve\n")
+        FreeCAD.Console.PrintWarning("\nDegree: {} / NbPoles: {}\n".format(o.Degree, o.NbPoles))
+        #FreeCAD.Console.PrintWarning("NbPoles: {}\n".format(o.NbPoles))
+        FreeCAD.Console.PrintWarning("Closed: {} / Periodic: {}\n".format(o.isClosed(), o.isPeriodic()))
+        #FreeCAD.Console.PrintWarning("Knots: %d (%0.2f - %0.2f)\n"%(o.NbKnots, o.FirstParameter, o.LastParameter))
+        kstr = ["{:4.2f}".format(k) for k in o.getKnots()]
+        mstr = ["{:4d}".format(m) for m in o.getMultiplicities()]
+        FreeCAD.Console.PrintWarning("Knots: {}\n".format(kstr))
+        FreeCAD.Console.PrintWarning("Mults: {}\n".format(mstr))
+        
     elif isinstance(o,Part.BSplineSurface):
-        FreeCAD.Console.PrintWarning("\nBSplineSurface\n************\n")
+        FreeCAD.Console.PrintWarning("\n************    BSplineSurface\n")
         try:
             u = o.uIso(o.UKnotSequence[0])
             debug(u)
@@ -235,7 +238,7 @@ class GordonSurfaceBuilder(object):
         # check compatibility of network
         #ucurves = list()
         #vcurves = list()
-        debug("\n\ncheck_curve_network_compatibility (L1270)")
+        debug("check_curve_network_compatibility")
         for u_param_idx in range(len(self.intersectionParamsU)): #(size_t u_param_idx = 0; u_param_idx < self.intersectionParamsU.size(); ++u_param_idx) {
             spline_u_param = self.intersectionParamsU[u_param_idx]
             spline_v = self.guides[u_param_idx]
@@ -244,14 +247,15 @@ class GordonSurfaceBuilder(object):
                 spline_u = self.profiles[v_param_idx]
                 #ucurves.append(spline_u.toShape())
                 spline_v_param = self.intersectionParamsV[v_param_idx]
-                debug("spline_u_param, spline_v_param = %0.5f,%0.5f"%(spline_u_param, spline_v_param))
+                #debug("spline_u_param, spline_v_param = %0.5f,%0.5f"%(spline_u_param, spline_v_param))
                 p_prof = spline_u.value(spline_u_param)
                 p_guid = spline_v.value(spline_v_param)
-                debug("p_prof, p_guid = %s,%s"%(p_prof, p_guid))
+                #debug("p_prof, p_guid = %s,%s"%(p_prof, p_guid))
                 distance = p_prof.distanceToPoint(p_guid)
-                debug("distance = %f"%(distance))
+                #debug("distance = %f"%(distance))
                 if (distance > splines_scale * self.tolerance):
-                    self.error("B-spline network is incompatible (e.g. wrong parametrization) or intersection parameters are in a wrong order!")
+                    self.error("\nB-spline network is incompatible (e.g. wrong parametrization) or intersection parameters are in a wrong order!")
+                    self.error("\nprofile {} - guide {}".format(u_param_idx, v_param_idx))
         #Part.show(Part.Compound(ucurves))
         #Part.show(Part.Compound(vcurves))
 
