@@ -70,25 +70,109 @@ def isLinear(edge, tol=1e-7):
         return True
     return False
 
+def add2d(p1,p2):
+    return Base.Vector2d(p1.x+p2.x, p1.y+p2.y)
+
+def mul2d(vec, fac):
+    return Base.Vector2d(vec.x*fac, vec.y*fac)
+
+""" Doc of Part.Geom2d.BSplineCurve2d.buildFromPolesMultsKnots()
+				
+				Builds a B-Spline by a lists of Poles, Mults, Knots.
+				arguments: poles (sequence of Base.Vector), [mults , knots, periodic, degree, weights (sequence of float), CheckRational]
+
+				Examples:
+				from FreeCAD import Base
+				import Part
+				V=Base.Vector
+				poles=[V(-10,-10),V(10,-10),V(10,10),V(-10,10)]
+
+				# non-periodic spline
+				n=Part.BSplineCurve()
+				n.buildFromPolesMultsKnots(poles,(3,1,3),(0,0.5,1),False,2)
+				Part.show(n.toShape())
+
+				# periodic spline
+				p=Part.BSplineCurve()
+				p.buildFromPolesMultsKnots(poles,(1,1,1,1,1),(0,0.25,0.5,0.75,1),True,2)
+				Part.show(p.toShape())
+
+				# periodic and rational spline
+				r=Part.BSplineCurve()
+				r.buildFromPolesMultsKnots(poles,(1,1,1,1,1),(0,0.25,0.5,0.75,1),True,2,(1,0.8,0.7,0.2))
+				Part.show(r.toShape())
+"""
+
+def curve2d_extend(curve, start=0.5, end=0.5):
+    """Extends a Geom2d curve at each extremity, by a linear tangent
+    "start" and "end" parameters are factors of curve length.
+    Returns a BSplineCurve."""
+    bs = curve.toBSpline(curve.FirstParameter, curve.LastParameter)
+    t1 = mul2d(bs.tangent(bs.FirstParameter), -1.0)
+    t2 = bs.tangent(bs.LastParameter)
+    poles = bs.getPoles()
+    mults = bs.getMultiplicities()
+    knots = bs.getKnots()
+    
+    pre = list()
+    post = list()
+    for i in range(bs.Degree):
+        l = bs.length() * (bs.Degree - i) / bs.Degree
+        pre.append(add2d(bs.value(bs.FirstParameter), mul2d(t1,start*l)))
+        post.append(add2d(bs.value(bs.LastParameter), mul2d(t2,end*l)))
+    newpoles = pre + poles + post
+
+    mults.insert(1, bs.Degree)
+    mults.insert(len(mults)-2, bs.Degree)
+    prange = bs.LastParameter - bs.FirstParameter
+    knots.insert(0, bs.FirstParameter - prange * start)
+    knots.append(bs.LastParameter + prange * end)
+    try:
+        bs.buildFromPolesMultsKnots(newpoles, mults, knots, bs.isPeriodic(), bs.Degree)
+    except Part.OCCError:
+        print(bs.Degree)
+        print(len(newpoles))
+        print(sum(mults))
+        print(len(knots))
+    return bs
+    
+    ext1 = Part.Geom2d.BSplineCurve2d()
+    pts = [bs.value(bs.FirstParameter),
+           add2d(bs.value(bs.FirstParameter), mul2d(t1,start*bs.length()))]
+    ext1
+
+def intersection2d(curve, c1, c2):
+    inter11 = curve.intersectCC(c1)
+    inter12 = curve.intersectCC(c2)
+    if len(inter11) > 0 and len(inter12) > 0:
+        return (curve, inter11[0], inter12[0])
+    else:
+        return False
+
 def get_offset_curve(bc,c1,c2,dist=0.1):
     """computes the offsetcurve2d that is at distance dist from curve bc, that intersect c1 and c2.
     Returns the offset curve and the intersection points"""
     off1 = Part.Geom2d.OffsetCurve2d(bc, dist)
-    # TODO : extend offset
-    inter11 = off1.intersectCC(c1)
-    inter12 = off1.intersectCC(c2)
-    if len(inter11) > 0 and len(inter12) > 0:
-        return(off1,inter11[0],inter12[0])
-    # No intersection. Let's try the other side
+    intersec = intersection2d(off1, c1, c2)
+    if intersec:
+        return intersec
+    
     off2 = Part.Geom2d.OffsetCurve2d(bc,-dist)
-    # TODO : extend offset
-    inter21 = off2.intersectCC(c1)
-    inter22 = off2.intersectCC(c2)
-    if len(inter21) > 0 and len(inter22) > 0:
-        return(off2,inter21[0],inter22[0])
-    # No Luck
-    d1 = c1.parameter(startPoint(bc))
-    par2 = c2
+    intersec = intersection2d(off1, c1, c2)
+    if intersec:
+        return intersec
+    
+    ext1 = curve2d_extend(off1, 0.2, 0.2)
+    intersec = intersection2d(ext1, c1, c2)
+    if intersec:
+        return intersec
+    
+    ext2 = curve2d_extend(off2, 0.2, 0.2)
+    intersec = intersection2d(ext2, c1, c2)
+    if intersec:
+        return intersec
+    
+
 
 class curveOnSurface:
     
