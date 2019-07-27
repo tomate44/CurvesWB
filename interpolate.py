@@ -54,7 +54,8 @@ class Interpolate:
     def __init__(self, obj , source):
         ''' Add the properties '''
         debug("\nInterpolate class Init\n")
-        obj.addProperty("App::PropertyLinkSubList",    "PointList",      "General",    "Point list to interpolate").PointList = source
+        obj.addProperty("App::PropertyLink",           "Source",         "General",    "Source object that provides points to interpolate").Source
+        obj.addProperty("App::PropertyLinkSubList",    "PointList",      "General",    "Point list to interpolate").PointList
         obj.addProperty("App::PropertyBool",           "Periodic",       "General",    "Set the curve closed").Periodic = False
         obj.addProperty("App::PropertyFloat",          "Tolerance",      "General",    "Interpolation tolerance").Tolerance = 1e-7
         obj.addProperty("App::PropertyBool",           "CustomTangents", "General",    "User specified tangents").CustomTangents = False
@@ -66,6 +67,10 @@ class Interpolate:
         obj.addProperty("App::PropertyVectorList",     "Tangents",       "General",    "Tangents at interpolated points")
         obj.addProperty("App::PropertyBoolList",       "TangentFlags",   "General",    "Activation flag of tangents")
         obj.Proxy = self
+        if isinstance(source, (list, tuple)):
+            obj.PointList = source
+        else:
+            obj.Source = source
         self.obj = obj
         obj.Parametrization = "ChordLength"
         obj.setEditorMode("CustomTangents", 2)
@@ -78,8 +83,11 @@ class Interpolate:
             obj.ApproxTolerance = 0.001
 
     def getPoints( self, obj):
-        vl = _utils.getShape(obj, "PointList", "Vertex")
-        return([v.Point for v in vl]) 
+        if obj.Source:
+            return [v.Point for v in obj.Source.Shape.Vertexes]
+        else:
+            vl = _utils.getShape(obj, "PointList", "Vertex")
+            return [v.Point for v in vl]
 
     def detect_aligned_pts(self, fp, pts):
         tol = .99
@@ -106,14 +114,15 @@ class Interpolate:
 
     def execute(self, obj):
         debug("* Interpolate : execute *")
-        pts = self.getPoints( obj)
+        pts = self.getPoints(obj)
+        self.setParameters(obj)
         if obj.Polygonal:
             if obj.Periodic:
                 pts.append(pts[0])
             poly = Part.makePolygon(pts)
             if obj.WireOutput:
                 obj.Shape = poly
-                return()
+                return
             else:
                 bs = poly.approximate(1e-8,obj.Tolerance,999,1)
         else:
@@ -131,17 +140,25 @@ class Interpolate:
                 bs.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Parameters=obj.Parameters, Tangents=obj.Tangents, TangentFlags=obj.TangentFlags) #, Scale=False)
         obj.Shape = bs.toShape()
 
-    def setParameters(self, obj, val):
+    def setParameters(self, obj):
         # Computes a knot Sequence for a set of points
         # fac (0-1) : parameterization factor
         # fac=0 -> Uniform / fac=0.5 -> Centripetal / fac=1.0 -> Chord-Length
-        pts = self.getPoints( obj)
+        pts = self.getPoints(obj)
+        val = 1.0 # Chord-length
+        if obj.Parametrization == "Custom":
+            return
+        
+        elif obj.Parametrization == "Centripetal":
+            val = 0.5
+        elif obj.Parametrization == "Uniform":
+            val = 0.0
         if obj.Periodic: # we need to add the first point as the end point
             pts.append(pts[0])
         params = [0]
         for i in range(1,len(pts)):
             p = pts[i].sub(pts[i-1])
-            pl = pow(p.Length,val)
+            pl = pow(p.Length, val)
             params.append(params[-1] + pl)
         m = float(max(params))
         obj.Parameters = [p/m for p in params]
@@ -151,22 +168,17 @@ class Interpolate:
         fp.Parametrization = p
             
     def onChanged(self, fp, prop):
-        #print fp
-        if not fp.PointList:
+        if not self.getPoints(fp):
             return
 
-        if prop == "Parametrization":
-            debug("Approximate : Parametrization changed\n")
+        if prop in ("Parametrization", "Source", "PointList"):
+            #debug("Approximate : Parametrization changed\n")
             if fp.Parametrization == "Custom":
                 fp.setEditorMode("Parameters", 0)
             else:
                 fp.setEditorMode("Parameters", 2)
-                if fp.Parametrization == "ChordLength":
-                    self.setParameters(fp, 1.0)
-                elif fp.Parametrization == "Centripetal":
-                    self.setParameters(fp, 0.5)
-                elif fp.Parametrization == "Uniform":
-                    self.setParameters(fp, 0.0)
+                self.setParameters(fp)
+
         if prop == "Polygonal":
             group = ["CustomTangents","DetectAligned","Parameters","Parametrization","Tangents","TangentFlags"]
             if fp.Polygonal:
@@ -177,8 +189,8 @@ class Interpolate:
                 fp.setEditorMode("WireOutput", 2)
         if prop in ["Periodic","PointList"]:
             self.touch_parametrization(fp)
-        if prop == "Parameters":
-            self.execute(fp)
+        #if prop == "Parameters":
+            #self.execute(fp)
 
     def onDocumentRestored(self, fp):
         fp.setEditorMode("CustomTangents", 2)
@@ -235,15 +247,13 @@ class interpolate:
                     if 'Vertex' in n:
                         verts.append((obj.Object,[n]))
             else:
-                FreeCAD.Console.PrintMessage("object has no subobjects\n")
-                for i in range(len(obj.Object.Shape.Vertexes)):
-                    verts.append((obj.Object,("Vertex%d"%(i+1))))
-                    FreeCAD.Console.PrintMessage("adding vertex %s"%str(verts[-1]))
+                #FreeCAD.Console.PrintMessage("object has no subobjects\n")
+                verts = obj.Object
         if verts:
-            return(verts)
+            return verts
         else:
             FreeCAD.Console.PrintMessage("\nPlease select an object that has at least 2 vertexes")
-            return(None)
+            return None
 
     def Activated(self):
         s = FreeCADGui.Selection.getSelectionEx()
@@ -255,7 +265,7 @@ class interpolate:
             pass
         source = self.parseSel(s)
         if not source:
-            return(False)
+            return False
         obj = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Interpolation_Curve") #add object to document
         Interpolate(obj,source)
         ViewProviderInterpolate(obj.ViewObject)
