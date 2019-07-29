@@ -73,6 +73,45 @@ def getShape(obj, prop, shape_type):
         FreeCAD.Console.PrintError("CurvesWB._utils.getShape: %r has no property %r\n"%(obj, prop))
         return(None)
 
+def same_direction(e1, e2, num=10):
+    """bool = same_direction(e1, e2, num=10)
+    Check if the 2 entities have same direction,
+    by comparing them on 'num' samples.
+    Entities can be : edges, wires or curves
+    """
+    v1 = []
+    v2 = []
+    pts1 = e1.discretize(num)
+    pts2 = e2.discretize(num)
+    for i in range(num):
+        v1.append(pts1[i].distanceToPoint(pts2[i]))
+        v2.append(pts1[i].distanceToPoint(pts2[num-1-i]))
+    if sum(v1) < sum(v2):
+        return True
+    else:
+        return False
+
+def info_subshapes(shape):
+    """Print the list of subshapes of a shape in FreeCAD console.
+    info_subshapes(my_shape)
+    """
+    sh = ["Solids",
+          "Compounds",
+          "CompSolids",
+          "Shells",
+          "Faces",
+          "Wires",
+          "Edges",
+          "Vertexes"]
+    info("-> Content of {}".format(shape.ShapeType))
+    for s in sh:
+        subs = shape.__getattribute__(s)
+        if subs:
+            if (len(subs) == 1) and (subs[0].isEqual(shape)):
+                pass # hide self
+            else:
+                info("{}: {}".format(s, len(subs)))
+
 def ruled_surface(e1,e2):
     """ creates a ruled surface between 2 edges, with automatic orientation."""
     # Automatic orientation
