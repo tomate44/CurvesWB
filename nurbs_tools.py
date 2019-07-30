@@ -12,6 +12,96 @@ import Part
 #debug = _utils.debug
 #debug = _utils.doNothing
 
+message = FreeCAD.Console.PrintMessage
+
+def get_bspline_data(curve): # returns a dictionary of the BSpline data
+    """returns a dictionary of the BSpline data
+    """
+    dic = dict()
+    dic["Type"] = curve.__repr__()
+    dic["Continuity"] = curve.Continuity
+    dic["Degree"] = curve.Degree
+    dic["KnotSequence"] = curve.KnotSequence
+    dic["Poles"] = curve.getPoles()
+    dic["Weights"] = curve.getWeights()
+    dic["isClosed"] = curve.isClosed()
+    dic["isPeriodic"] = curve.isPeriodic()
+    dic["isRational"] = curve.isRational()
+    return dic
+    
+
+def is_same(c1, c2, tol=1e-7, full=False): # Check if BSpline curves c1 and c2 are equal
+    """Check if BSpline curves c1 and c2 are equal
+    return a bool
+    """
+    valid = True
+    if full:
+        message("\nCurves comparison\n")
+    dat1 = get_bspline_data(c1)
+    dat2 = get_bspline_data(c2)
+    for key in ['Type', 'Continuity', 'Degree', 'isClosed', 'isPeriodic', 'isRational']:
+        if not dat1[key] == dat2[key]:
+            if full:
+                message("{} mismatch : {} != {}\n".format(key, str(dat1[key]), str(dat2[key])))
+                valid = False
+            else:
+                return False
+    for key in ["KnotSequence", "Poles", "Weights"]:
+        if not len(dat1[key]) == len(dat2[key]):
+            if full:
+                message("{} list length mismatch : {} != {}\n".format(key, str(len(dat1[key])), str(len(dat2[key]))))
+                valid = False
+            else:
+                return False
+    i = 0
+    for k1, k2 in zip(dat1["KnotSequence"], dat2["KnotSequence"]):
+        if abs(k1-k2) > tol:
+            if full:
+                message("Knot #{} mismatch : {} != {}\n".format(i, k1, k2))
+                valid = False
+            else:
+                return False
+        i += 1
+    i = 0
+    for p1, p2 in zip(dat1["Poles"], dat2["Poles"]):
+        if p1.distanceToPoint(p2) > tol:
+            if full:
+                message("Pole #{} mismatch : {} != {}\n".format(i, p1, p2))
+                valid = False
+            else:
+                return False
+        i += 1
+    i = 0
+    for w1, w2 in zip(dat1["Weights"], dat2["Weights"]):
+        if abs(w1-w2) > tol:
+            if full:
+                message("Weight #{} mismatch : {} != {}\n".format(i, w1, w2))
+                valid = False
+            else:
+                return False
+        i += 1
+    if full:
+        if valid:
+            message("Curves are matching.")
+        else:
+            return False
+    return True
+    
+def remove_duplicates(curves, tol=1e-7): # remove duplicate curves from a list
+    "remove duplicate curves from a list"
+    ret = []
+    for i, c1 in enumerate(curves[:-1]):
+        found = False
+        for j, c2 in enumerate(curves[i+1:]):
+            print("checking curves #{} and #{}".format(i,j+i+1))
+            if is_same(c1, c2, tol):
+                if not found:
+                    ret.append(c2)
+                    found = True
+                else:
+                    print("removing duplicate")
+    return ret
+
 def error(s):
     FreeCAD.Console.PrintError(s)
 
