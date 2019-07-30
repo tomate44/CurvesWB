@@ -24,7 +24,7 @@ def get_ascending(mylist):
     old1, old2 = mylist[0]
     for i in range(len(mylist)-1):
         p1, p2 = mylist[i+1]
-        if p2 > old2:
+        if (p1 > old1) and (p2 > old2):
             newlist.append([old1,old2])
         old1 = p1
         old2 = p2
@@ -56,8 +56,8 @@ def get_ortho_params(e1,e2,n):
         if not len(pts) == 1:
             print("found {} points for param {}".format(len(pts), p))
         elif info[0][5]:
-            params.append((p,e2.Curve.parameter(pts[0][1])))
-    return(params)
+            params.append([p,e2.Curve.parameter(pts[0][1])])
+    return params
 
 def stretch_params(par, edge, start=0.3, end=0.3):
     #_utils.info(len(par))
@@ -108,15 +108,39 @@ def get_max_cp(curve, nb_interp):
     max_cp_u = max(min_u, min(max_cp_u + 10, max_u))
     return max_cp_u
 
-def reparametrize(ie1, ie2, num=20, smooth_start=0.2, smooth_end=0.2):
+def reparametrize(ie1, ie2, num=20, smooth_start=0.2, smooth_end=0.2, method=3):
+    """reparametrize(ie1, ie2, num=20, smooth_start=0.2, smooth_end=0.2, method=0)
+    Reparametrize Edge ie2 according to Edge ie1.
+    - num is the number of samples
+    - smooth_start and smooth_end [0., 0.5] is how much the stretching of the end parameters
+    is stretched into the middle of the curve.
+    - method option :
+    1 - Edge 1 projected on Edge 2
+    2 - Edge 2 projected on Edge 1
+    3 - Best of methods 1 and 2 by number of results
+    """
     c1 = normalized_bspline(ie1, False)
     c2 = normalized_bspline(ie2, not _utils.same_direction(ie1, ie2, 10))
     e1 = c1.toShape()
     e2 = c2.toShape()
 
-    params = get_ortho_params(e1, e2, num)
-    sorted_params = get_ascending(params)
-    #_utils.info(params)
+    if method == 1:
+        params = get_ortho_params(e1, e2, num)
+        sorted_params = get_ascending(params)
+    elif method == 2:
+        params = [[p[1],p[0]] for p in get_ortho_params(e2, e1, num)]
+        sorted_params = get_ascending(params)
+    else:
+        pa1 = get_ortho_params(e1, e2, num)
+        so_pa1 = get_ascending(pa1)
+        pa2 = [[p[1],p[0]] for p in get_ortho_params(e2, e1, num)]
+        so_pa2 = get_ascending(pa2)
+        if len(so_pa2) > len(so_pa1):
+            params = pa2
+            sorted_params = so_pa2
+        else:
+            params = pa1
+            sorted_params = so_pa1
 
     p1 = [s[0] for s in sorted_params]
     p2 = [s[1] for s in sorted_params]
