@@ -13,6 +13,7 @@ import FreeCAD
 import FreeCADGui
 import Part
 import _utils
+import nurbs_tools
 
 TOOL_ICON = _utils.iconsPath() + '/reflectLines.svg'
 
@@ -25,9 +26,15 @@ class ReflectLinesFP:
         obj.addProperty("App::PropertyVector", "ViewPos", "ReflectLines", "View position")
         obj.addProperty("App::PropertyVector", "ViewDir", "ReflectLines", "View direction")
         obj.addProperty("App::PropertyVector", "UpDir",   "ReflectLines", "Up direction")
+        obj.addProperty("App::PropertyBool",   "ShapeCleaning","ReflectLines", "Remove duplicate edges").ShapeCleaning = False
+        obj.addProperty("App::PropertyInteger", "Samples","CleaningOptions", "Number of edge samples").Samples = 10
+        obj.addProperty("App::PropertyQuantity", "Tolerance","CleaningOptions", "Tolerance for duplicate detection").Tolerance = 1e-3
+        #obj.Samples = [10,3,999,1]
         obj.ViewPos = FreeCAD.Vector(0,0,0)
         obj.ViewDir = FreeCAD.Vector(0,0,1)
         obj.UpDir   = FreeCAD.Vector(0,1,0)
+        obj.setEditorMode("Samples",2)
+        obj.setEditorMode("Tolerance",2)
         if isinstance(src,(list,tuple)):
             obj.IndivFaces = src
         else:
@@ -36,19 +43,32 @@ class ReflectLinesFP:
 
     def execute(self, obj):
         sh = None
+        rl = False
         if len(obj.IndivFaces) > 0:
             faces = _utils.getShape(obj, "IndivFaces", "Face")
             sh = Part.Compound(faces)
         elif hasattr(obj.Source,"Shape"):
             sh = obj.Source.Shape
         try:
-            obj.Shape = sh.reflectLines(obj.ViewDir, obj.ViewPos, obj.UpDir)
+            rl = sh.reflectLines(obj.ViewDir, obj.ViewPos, obj.UpDir)
         except AttributeError:
             pass
+        if rl and obj.ShapeCleaning:
+            edges = rl.Edges
+            rl = Part.Compound(nurbs_tools.remove_subsegments(edges, num=obj.Samples, tol=obj.Tolerance))
+        if rl:
+            obj.Shape = rl
 
     def onChanged(self, obj, prop):
         if prop in ("Source","ViewPos","ViewDir","UpDir"):
             self.execute(obj)
+        if prop == "ShapeCleaning":
+            if obj.ShapeCleaning:
+                obj.setEditorMode("Samples",0)
+                obj.setEditorMode("Tolerance",0)
+            else:
+                obj.setEditorMode("Samples",2)
+                obj.setEditorMode("Tolerance",2)
 
 class ReflectLinesVP:
     def __init__(self,vobj):
