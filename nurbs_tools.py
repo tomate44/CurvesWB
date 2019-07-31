@@ -90,16 +90,62 @@ def is_same(c1, c2, tol=1e-7, full=False): # Check if BSpline curves c1 and c2 a
 def remove_duplicates(curves, tol=1e-7): # remove duplicate curves from a list
     "remove duplicate curves from a list"
     ret = []
-    for i, c1 in enumerate(curves[:-1]):
+    dups = 0
+    for i, c1 in enumerate(curves):
         found = False
-        for j, c2 in enumerate(curves[i+1:]):
-            print("checking curves #{} and #{}".format(i,j+i+1))
+        for j, c2 in enumerate(ret):
+            #print("checking curves #{} and #{}".format(i,j+i+1))
             if is_same(c1, c2, tol):
-                if not found:
-                    ret.append(c2)
-                    found = True
-                else:
-                    print("removing duplicate")
+                found = True
+                dups += 1
+                break
+        if not found:
+            ret.append(c1)
+    message("Removed {} duplicate curves\n".format(dups))
+    return ret
+
+def is_subsegment(edge_1, edge_2, num=20, tol=1e-7): # check if edge_1 is a trim of edge_2.
+    """check if edge_1 is a trim of edge_2.
+    Usage :
+    is_subsegment(edge_1, edge_2, num=20, tol=1e-7) ---> bool
+    'num' points are sampled on edge_1
+    return False if a point is farther than tol.
+    """
+    try:
+        e1 = edge_1.toShape()
+        e2 = edge_2.toShape()
+    except AttributeError:
+        e1 = edge_1
+        e2 = edge_2
+    dist = 0
+    for p in e1.discretize(num):
+        d, pts, info = Part.Vertex(p).distToShape(e2)
+        if d > tol:
+            return False
+    return True
+
+def remove_subsegments(edges, num=20, tol=1e-7): # remove subsegment edges from a list
+    "remove subsegment edges from a list"
+    ret = []
+    dups = 0
+    for i, e1 in enumerate(edges):
+        found = False
+        for j, e2 in enumerate(edges):
+            if not i == j:
+                if is_subsegment(e1, e2, num, tol):
+                    if is_subsegment(e2, e1, num, tol): # e1 == e2
+                        for k, e3 in enumerate(ret):
+                            if is_subsegment(e1, e3, num, tol):
+                                found = True
+                                dups += 1
+                                break
+                    else:
+                        found = True
+                        dups += 1
+                        break
+        if not found:
+            ret.append(e1)
+    message("Removed {} subsegment edges\n".format(dups))
     return ret
 
 def error(s):
