@@ -267,8 +267,8 @@ class InterpolateCurveNetwork(object):
         self.has_performed = False
         if (len(profiles) < 2) or (len(guides) < 2):
             self.error("Not enough guides or profiles")
-        self.profiles = profiles
-        self.guides = guides
+        self.profiles = [p.copy() for p in profiles]
+        self.guides = [g.copy() for g in guides]
         if tol > 0.0:
             self.tolerance = tol
         if tol2 > 0.0:
