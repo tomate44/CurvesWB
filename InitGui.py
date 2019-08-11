@@ -47,7 +47,7 @@ class CurvesWorkbench(Workbench):
 
         import curveExtendFP # TODO use basisSpline
         import JoinCurves
-        import splitCurves # cleaned
+        import splitCurves_2 # cleaned
         import Discretize # cleaned
         import approximate
         import ParametricBlendCurve # cleaned
