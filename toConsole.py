@@ -45,27 +45,27 @@ class ToConsole:
             if not selobj.ObjectName == obj:
                 obj = selobj.ObjectName
                 obj_num += 1
-                FreeCADGui.doCommand("obj%d = doc%d.getObject('%s')"%(obj_num,doc_num,obj))
+                FreeCADGui.doCommand("o%d = doc%d.getObject('%s')"%(obj_num,doc_num,obj))
             if selobj.HasSubObjects:
                 for sub in selobj.SubElementNames:
-                    sublinks += "(obj%d,('%s')),"%(obj_num,sub)
+                    sublinks += "(o%d,('%s')),"%(obj_num,sub)
                     if 'Vertex' in sub:
                         vert_num += 1
-                        FreeCADGui.doCommand("v%d = obj%d.Shape.%s"%(vert_num,obj_num,sub))
+                        FreeCADGui.doCommand("v%d = o%d.Shape.%s"%(vert_num,obj_num,sub))
                     if 'Edge' in sub:
                         edge_num += 1
-                        FreeCADGui.doCommand("e%d = obj%d.Shape.%s"%(edge_num,obj_num,sub))
+                        FreeCADGui.doCommand("e%d = o%d.Shape.%s"%(edge_num,obj_num,sub))
                     if 'Face' in sub:
                         face_num += 1
-                        FreeCADGui.doCommand("f%d = obj%d.Shape.%s"%(face_num,obj_num,sub))
+                        FreeCADGui.doCommand("f%d = o%d.Shape.%s"%(face_num,obj_num,sub))
         sublinks += ")"
         if len(sublinks) > 1:
             FreeCADGui.doCommand("_sub_link_buffer = %s"%sublinks)
         if obj_num > 1:
             ol = ''
             for oi in range(obj_num):
-                ol += "obj%d,"%(oi+1)
-            FreeCADGui.doCommand("objs = (%s)"%ol)
+                ol += "o%d,"%(oi+1)
+            FreeCADGui.doCommand("ol = (%s)"%ol)
         if vert_num > 1:
             vl = ''
             for vi in range(vert_num):
