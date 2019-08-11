@@ -112,35 +112,39 @@ def info_subshapes(shape):
             else:
                 info("{}: {}".format(s, len(subs)))
 
+def ancestors(shape, sub):
+    '''list_of_shapes = ancestors(shape, sub)
+    Returns the closest ancestors of "sub" in "shape"'''
+    def cleanup(shape):
+        s = str(shape)
+        ss = s.split()[0]
+        return ss.split('<')[1]
+    shd = (Part.Vertex,
+           Part.Edge,
+           Part.Wire,
+           Part.Face,
+           Part.Shell,
+           Part.Solid,
+           Part.CompSolid,
+           Part.Compound)
+    for i in range(len(shd)-1):
+        if isinstance(sub, shd[i]):
+            for j in range(i+1,len(shd)):
+                manc = shape.ancestorsOfType(sub, shd[j])
+                if manc:
+                    print("{} belongs to {} {}.".format(cleanup(sub), len(manc), cleanup(manc[0])))
+                    return manc
+
+
 def ruled_surface(e1,e2):
     """ creates a ruled surface between 2 edges, with automatic orientation."""
-    # Automatic orientation
-    # /src/Mod/Part/App/PartFeatures.cpp#171
     import Part
-    p1 = e1.valueAt(e1.FirstParameter)
-    p2 = e1.valueAt(e1.LastParameter)
-    p3 = e2.valueAt(e2.FirstParameter)
-    p4 = e2.valueAt(e2.LastParameter)
-    if e1.Orientation == 'Reversed':
-        p = p1
-        p1 = p2
-        p2 = p
-    if e2.Orientation == 'Reversed':
-        p = p3
-        p3 = p4
-        p4 = p
-    v1 = p2 - p1
-    v2 = p3 - p1
-    n1 = v1.cross(v2)
-    v3 = p3 - p4
-    v4 = p2 - p4
-    n2 = v3.cross(v4)
-    if (n1.dot(n2) < 0):
+    if not same_direction(e1,e2):
         e = e2.copy()
         e.reverse()
-        return(Part.makeRuledSurface(e1,e))
+        return Part.makeRuledSurface(e1,e)
     else:
-        return(Part.makeRuledSurface(e1,e2))
+        return Part.makeRuledSurface(e1,e2)
 
 
 class SilentFPO:
