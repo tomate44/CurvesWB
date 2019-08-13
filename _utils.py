@@ -135,6 +135,13 @@ def ancestors(shape, sub):
                     print("{} belongs to {} {}.".format(cleanup(sub), len(manc), cleanup(manc[0])))
                     return manc
 
+def rootNode(shape, mode=2, deviation=0.3, angle=0.4):
+    buf = shape.writeInventor(mode, deviation, angle)
+    from pivy import coin
+    inp = coin.SoInput()
+    inp.setBuffer(buf)
+    node = coin.SoDB.readAll(inp)
+    return node
 
 def ruled_surface(e1,e2):
     """ creates a ruled surface between 2 edges, with automatic orientation."""
