@@ -343,7 +343,7 @@ class GeomInfo:
             #self.activeDoc = FreeCADGui.ActiveDocument
             #self.view = self.activeDoc.ActiveView
             self.stack = []
-            FreeCADGui.Selection.addObserver(self)    # installe la fonction en mode resident
+            FreeCADGui.Selection.addObserver(self)    # install the function in resident mode
             #FreeCADGui.Selection.addObserver(self.getTopo)
             self.active = True
             #self.sg = self.view.getSceneGraph()
