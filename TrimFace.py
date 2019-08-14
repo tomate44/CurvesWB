@@ -26,7 +26,7 @@ class trimFace:
         ''' Add the properties '''
         debug("\ntrimFace init")
         obj.addProperty("App::PropertyLinkSub",    "Face",          "TrimFace",   "Input face")
-        obj.addProperty("App::PropertyVector",     "PickedPoint",   "TrimFace",   "Picked point")
+        obj.addProperty("App::PropertyVector",     "PickedPoint",   "TrimFace",   "Picked point in parametric space of the face (u,v,0)")
         obj.addProperty("App::PropertyLinkSubList","Tool",          "TrimFace",   "Trimming curve")
         obj.addProperty("App::PropertyLink",       "DirVector",     "TrimFace",   "Trimming Vector")
         obj.addProperty("App::PropertyVector",     "Direction",     "TrimFace",   "Trimming direction")
@@ -106,16 +106,24 @@ class trimFace:
         except:
             bf = Part.BOPTools.SplitAPI.slice(face, cuttool, "Split", 1e-6)
         debug("shape has %d faces"%len(bf.Faces))
-        vert = Part.Vertex(obj.PickedPoint)
-        min = 1e6
-        index = 0
-        for i in range(len(bf.Faces)):
-            dts = vert.distToShape(bf.Faces[i])[0]
-            if dts < min:
-                min = dts
-                index = i
-        if bf.Faces:
-            obj.Shape = bf.Faces[index]
+        
+        u = obj.PickedPoint.x
+        v = obj.PickedPoint.y
+        for f in bf.Faces:
+            if f.isPartOfDomain(u,v):
+                obj.Shape = f
+                return
+        
+        #vert = Part.Vertex(obj.PickedPoint)
+        #min = 1e6
+        #index = 0
+        #for i in range(len(bf.Faces)):
+            #dts = vert.distToShape(bf.Faces[i])[0]
+            #if dts < min:
+                #min = dts
+                #index = i
+        #if bf.Faces:
+            #obj.Shape = bf.Faces[index]
 
     def onChanged(self, fp, prop):
         pass
@@ -219,7 +227,8 @@ class trim:
                     if issubclass(type(subobj),Part.Face):
                         f = (obj.Object ,[obj.SubElementNames[i]])
                         p = obj.PickedPoints[i]
-                        res.append((f,p))
+                        u,v = subobj.Surface.parameter(p)
+                        res.append((f,FreeCAD.Vector(u,v,0)))
                     i += 1
         return(res)
 
