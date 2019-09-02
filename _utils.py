@@ -153,6 +153,39 @@ def ruled_surface(e1,e2):
     else:
         return Part.makeRuledSurface(e1,e2)
 
+def anim(obj, path, on_path=False, reverse=False, duration=1.0, samples=100):
+    """
+    Animate obj along path
+
+    anim(obj, path, on_path=False, duration=1.0, samples=100)
+
+    path must be an edge or a wire
+
+    if on_path is True, the animation path is absolute
+    else, the animation path is relative to current obj placement
+
+    reverse : reverse path direction
+
+    duration : animation duration in seconds
+
+    samples : number of animation samples
+    """
+    from time import sleep
+    pts = path.discretize(samples)
+    if reverse:
+        pts.reverse()
+    rpts = [p-pts[0] for p in pts]
+    if not on_path:
+        origin = obj.Placement.Base
+    else:
+        origin = pts[0]
+    for p in rpts:
+        obj.Placement.Base = origin + p
+        Gui.ActiveDocument.update()
+        sleep(float(duration) / samples)
+
+
+
 
 class SilentFPO:
     '''Fake FeaturePython object that has no interaction with other FreeCAD objects.
