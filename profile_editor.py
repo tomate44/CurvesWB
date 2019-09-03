@@ -31,18 +31,6 @@ def parameterization (pts, a, closed):
         params.append(params[-1] + pl)
     return params
 
-def subshape_from_sublink(o):
-    name = o[1][0]
-    if 'Vertex' in name:
-        n = eval(name.lstrip('Vertex'))
-        return(o[0].Shape.Vertexes[n-1])
-    elif 'Edge' in name:
-        n = eval(name.lstrip('Edge'))
-        return(o[0].Shape.Edges[n-1])
-    elif 'Face' in name:
-        n = eval(name.lstrip('Face'))
-        return(o[0].Shape.Faces[n-1])
-
 class ConnectionMarker(graphics.Marker):
     def __init__(self, points):
         super(ConnectionMarker, self).__init__(points, True)
@@ -66,6 +54,18 @@ class MarkerOnShape(graphics.Marker):
             self.snap_shape = sh
         elif isinstance(sh,(tuple,list)):
             self.sublink = sh
+
+    def subshape_from_sublink(self, o):
+        name = o[1][0]
+        if 'Vertex' in name:
+            n = eval(name.lstrip('Vertex'))
+            return(o[0].Shape.Vertexes[n-1])
+        elif 'Edge' in name:
+            n = eval(name.lstrip('Edge'))
+            return(o[0].Shape.Edges[n-1])
+        elif 'Face' in name:
+            n = eval(name.lstrip('Face'))
+            return(o[0].Shape.Faces[n-1])
 
     def add_text(self):
         self._text_switch.whichChild = coin.SO_SWITCH_ALL
@@ -115,7 +115,7 @@ class MarkerOnShape(graphics.Marker):
     @sublink.setter
     def sublink(self, sl):
         if isinstance(sl,(tuple,list)) and not (sl == self._sublink):
-            self._shape = subshape_from_sublink(sl)
+            self._shape = self.subshape_from_sublink(sl)
             self._sublink = sl
         else:
             self._shape = None
