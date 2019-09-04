@@ -69,6 +69,23 @@ class ShapeSnap(Point):
                 p[1] = proj.y
                 p[2] = proj.z
             self.points = pts
+    @property
+    def tangent_shape(self):
+        p = self.vector(self.points[0])
+        if hasattr(self.snap_shape, "Curve"):
+            par = self.snap_shape.Curve.parameter(p)
+            tan = self.snap_shape.tangentAt(par)
+            e = Part.makeLine(p, p+tan[0])
+            e.FirstParameter = -200
+            e.LastParameter = 200
+            return e
+        elif hasattr(self.snap_shape, "Surface"):
+            u,v = self.snap_shape.Surface.parameter(p)
+            tan = self.snap_shape.tangentAt(u,v)
+            ci = Part.Circle(p, p+tan[0], p+tan[1])
+            ci.Radius *= 200
+            face = Part.makeFilledFace([ci.toShape()])
+            return face
 
 class SubLinkSnap(ShapeSnap):
     """Point manipulator that snaps to a shape provided by a PropertySubLink"""
@@ -100,6 +117,19 @@ class SubLinkSnap(ShapeSnap):
         else:
             self._sublink = None
             self.snap_shape = None
+
+class TangentSnap(ShapeSnap):
+    """Point manipulator that snaps to the tangent of a ShapeSnap manipulator"""
+    def __init__(self, manip):
+        self.parent = manip
+        self.par = 1.0
+        p = self.parent.tangent_shape.valueAt(self.par)
+        super(TangentSnap, self).__init__(p, True)
+        self.parent.on_drag_release.append(self.update_tangent)
+    def update_tangent(self):
+        self.snap_shape = self.parent.tangent_shape
+        tan = self.parent.snap_shape.tangent
+
 
 class WithCustomTangent(object):
     """Point Extension class that adds a custom tangent"""
