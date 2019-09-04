@@ -13,11 +13,12 @@ import FreeCAD
 #import FreeCADGui
 #import Part
 #import _utils
-#from pivy import coin
+from pivy import coin
 import graphics
 
 
 class Point(graphics.Marker):
+    """Base point manipulator"""
     def __init__(self, points):
         if isinstance(points, (list, tuple)):
             pts = [self.vector(p) for p in points]
@@ -30,17 +31,20 @@ class Point(graphics.Marker):
             return p
         elif isinstance(p, Part.Vertex):
             return p.Point
-        elif isinstance(p, Part.Point):
-            return FreeCAD.Vector(p[0],p[1],p[2])
+        #elif isinstance(p, Part.Point):
+            #return FreeCAD.Vector(p[0],p[1],p[2])
         else:
-            return None
+            return FreeCAD.Vector(p[0],p[1],p[2])
+        return None
             
     @property 
     def vectors(self):
         return [FreeCAD.Vector(p[0],p[1],p[2]) for p in self.points]
         
-class ShapeSnap(object):
-    def __init__(self, sh=None):
+class ShapeSnap(Point):
+    """Point manipulator that snaps to a shape"""
+    def __init__(self, points, sh=None):
+        super(ShapeSnap, self).__init__(points, True)
         self.snap_shape = sh
     @property
     def snap_shape(self):
@@ -66,6 +70,87 @@ class ShapeSnap(object):
                 p[2] = proj.z
             self.points = pts
 
+class SubLinkSnap(ShapeSnap):
+    """Point manipulator that snaps to a shape provided by a PropertySubLink"""
+    def __init__(self, points, sl=None):
+        super(SubLinkSnap, self).__init__(points, True)
+        sublink = sl
+    def subshape_from_sublink(self, o):
+        name = o[1][0]
+        if 'Vertex' in name:
+            n = eval(name.lstrip('Vertex'))
+            return(o[0].Shape.Vertexes[n-1])
+        elif 'Edge' in name:
+            n = eval(name.lstrip('Edge'))
+            return(o[0].Shape.Edges[n-1])
+        elif 'Face' in name:
+            n = eval(name.lstrip('Face'))
+            return(o[0].Shape.Faces[n-1])
+    @property
+    def sublink(self):
+        return self._sublink
+    @sublink.setter
+    def sublink(self, sl):
+        sub = None
+        if isinstance(sl,(tuple,list)) and not (sl == self._sublink):
+            sub = self.subshape_from_sublink(sl)
+        if sub:
+            self._sublink = sl
+            self.snap_shape = sub
+        else:
+            self._sublink = None
+            self.snap_shape = None
+
+class WithCustomTangent(object):
+    """Point Extension class that adds a custom tangent"""
+    def __init__(self):
+        self._tangent = None
+    @property
+    def tangent(self):
+        return self._tangent
+    @tangent.setter
+    def tangent(self, t):
+        if isinstance(t, FreeCAD.Vector) and t.Length > 1e-7:
+            self._tangent = t
+            #self._tangent.normalize()
+            self.marker.markerIndex = coin.SoMarkerSet.DIAMOND_FILLED_9_9
+        else:
+            self._tangent = None
+            self.marker.markerIndex = coin.SoMarkerSet.CIRCLE_FILLED_9_9
+    def set_tangent_toward_point(self, p):
+        if self.vector(p):
+            self.tangent = self.vector(p) - self.vector(self.points[0])
+
+class WithCustomText(object):
+    """Point Extension class that adds a custom text"""
+    def __init__(self):
+        self._text_translate = coin.SoTranslation()
+        self._text = coin.SoText2()
+        self._text_switch = coin.SoSwitch()
+        self._text_switch.addChild(self._text_translate)
+        self._text_switch.addChild(self._text)
+        #self.on_drag_start.append(self.add_text)
+        #self.on_drag_release.append(self.remove_text)
+        self.addChild(self._text_switch)
+    def show_text(self):
+        self._text_switch.whichChild = coin.SO_SWITCH_ALL
+        #self.on_drag.append(self.update_text)
+    def hide_text(self):
+        self._text_switch.whichChild = coin.SO_SWITCH_NONE
+        #self.on_drag.remove(self.update_text)
+    @property
+    def text(self):
+        return self._text.string.getValues()
+    @text.setter
+    def text(self, txt):
+        strlist = []
+        if isinstance(txt, str):
+            strlist = [txt]
+        elif isinstance(txt, (list, tuple)):
+            strlist = txt
+        self._text.string.setValues(0, len(strlist), strlist)
+
+
 
 class MarkerOnShape(graphics.Marker):
     def __init__(self, points, sh=None):
@@ -73,10 +158,10 @@ class MarkerOnShape(graphics.Marker):
         self._shape = None
         self._sublink = None
         self._tangent = None
-        self._translate = coin.SoTranslation()
+        self._text_translate = coin.SoTranslation()
         self._text = coin.SoText2()
         self._text_switch = coin.SoSwitch()
-        self._text_switch.addChild(self._translate)
+        self._text_switch.addChild(self._text_translate)
         self._text_switch.addChild(self._text)
         self.on_drag_start.append(self.add_text)
         self.on_drag_release.append(self.remove_text)
@@ -110,7 +195,7 @@ class MarkerOnShape(graphics.Marker):
     def update_text(self):
         p = self.points[0]
         coords = ['{: 9.3f}'.format(p[0]),'{: 9.3f}'.format(p[1]),'{: 9.3f}'.format(p[2])]
-        self._translate.translation = p
+        self._text_translate.translation = p
         self._text.string.setValues(0,3,coords)
 
     @property
