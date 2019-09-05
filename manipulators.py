@@ -11,7 +11,7 @@ if sys.version_info.major >= 3:
 
 import FreeCAD
 #import FreeCADGui
-#import Part
+import Part
 #import _utils
 from pivy import coin
 import graphics
@@ -44,7 +44,7 @@ class Point(graphics.Marker):
 class ShapeSnap(Point):
     """Point manipulator that snaps to a shape"""
     def __init__(self, points, sh=None):
-        super(ShapeSnap, self).__init__(points, True)
+        super(ShapeSnap, self).__init__(points)
         self.snap_shape = sh
     @property
     def snap_shape(self):
@@ -75,10 +75,9 @@ class ShapeSnap(Point):
         if hasattr(self.snap_shape, "Curve"):
             par = self.snap_shape.Curve.parameter(p)
             tan = self.snap_shape.tangentAt(par)
-            e = Part.makeLine(p, p+tan[0])
-            e.FirstParameter = -200
-            e.LastParameter = 200
-            return e
+            e = Part.makeLine(p, p+tan)
+            #e = e.Curve.toShape(-200,200)
+            return e.Curve.toShape(-200,200)
         elif hasattr(self.snap_shape, "Surface"):
             u,v = self.snap_shape.Surface.parameter(p)
             tan = self.snap_shape.tangentAt(u,v)
@@ -121,14 +120,15 @@ class SubLinkSnap(ShapeSnap):
 class TangentSnap(ShapeSnap):
     """Point manipulator that snaps to the tangent of a ShapeSnap manipulator"""
     def __init__(self, manip):
+        super(TangentSnap, self).__init__(FreeCAD.Vector())
         self.parent = manip
         self.par = 1.0
         p = self.parent.tangent_shape.valueAt(self.par)
-        super(TangentSnap, self).__init__(p, True)
+        self.points = [p]
         self.parent.on_drag_release.append(self.update_tangent)
     def update_tangent(self):
         self.snap_shape = self.parent.tangent_shape
-        tan = self.parent.snap_shape.tangent
+        #tan = self.parent.snap_shape.tangent
 
 
 class WithCustomTangent(object):
@@ -321,31 +321,16 @@ class ConnectionPolygon(graphics.Polygon):
         if any([m._delete for m in self.markers]):
             self.delete()
 
-class ConnectionLine(graphics.Line):
+class Line(graphics.Line):
     def __init__(self, markers):
-        super(ConnectionLine, self).__init__(
+        super(Line, self).__init__(
             sum([m.points for m in markers], []), True)
         self.markers = markers
-        self._linear = False
         for m in self.markers:
             m.on_drag.append(self.updateLine)
 
     def updateLine(self):
         self.points = sum([m.points for m in self.markers], [])
-        if self._linear:
-            p1 = self.markers[0].points[0]
-            p2 = self.markers[-1].points[0]
-            t = p2-p1
-            tan = FreeCAD.Vector(t[0],t[1],t[2])
-            for m in self.markers:
-                m.tangent = tan
-
-    @property
-    def linear(self):
-        return self._linear
-    @linear.setter
-    def linear(self, b):
-        self._linear = bool(b)
 
     @property
     def drag_objects(self):
