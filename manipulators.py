@@ -63,7 +63,7 @@ class ShapeSnap(Point):
             pts = self.points
             for p in pts:
                 v = Part.Vertex(p[0],p[1],p[2])
-                proj = v.distToShape(self._shape)[1][0][1]
+                proj = v.distToShape(self.snap_shape)[1][0][1]
                 # FreeCAD.Console.PrintMessage("%s -> %s\n"%(p.getValue(),proj))
                 p[0] = proj.x
                 p[1] = proj.y
@@ -76,7 +76,6 @@ class ShapeSnap(Point):
             par = self.snap_shape.Curve.parameter(p)
             tan = self.snap_shape.tangentAt(par)
             e = Part.makeLine(p, p+tan)
-            #e = e.Curve.toShape(-200,200)
             return e.Curve.toShape(-200,200)
         elif hasattr(self.snap_shape, "Surface"):
             u,v = self.snap_shape.Surface.parameter(p)
@@ -128,7 +127,9 @@ class TangentSnap(ShapeSnap):
         self.parent.on_drag_release.append(self.update_tangent)
     def update_tangent(self):
         self.snap_shape = self.parent.tangent_shape
-        #tan = self.parent.snap_shape.tangent
+    def update_parameter(self):
+        p = self.vector(self.points[0])
+        self.par = self.snap_shape.Curve.parameter(p)
 
 
 class WithCustomTangent(object):
