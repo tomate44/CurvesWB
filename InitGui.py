@@ -98,6 +98,7 @@ class CurvesWorkbench(Workbench):
         if FreeCAD.GuiUp:
             self.isObserving = True
             self.Selection = []
+            self.View_Directions = []
             FreeCADGui.Selection.addObserver(self)
         return
 
@@ -110,17 +111,24 @@ class CurvesWorkbench(Workbench):
 
     def addSelection(self,doc,obj,sub,pnt):
         """Custom selection observer that keeps selection order."""
+        #direction = None
+        rot = FreeCADGui.getDocument(doc).ActiveView.getCameraOrientation()
+        direction = rot.multVec(FreeCAD.Vector(0,0,-1))
+        self.View_Directions.append(direction)
         self.Selection.append(Gui.Selection.getSelectionObject(doc,obj,sub,pnt))
 
     def removeSelection(self,doc,obj,sub):
         nl = []
-        for o in self.Selection:
-            if not o == Gui.Selection.getSelectionObject(doc,obj,sub):
-                nl.append(o)
+        cl = []
+        for i in range(len(self.Selection)):
+            if not self.Selection[i] == Gui.Selection.getSelectionObject(doc,obj,sub):
+                nl.append(self.Selection[i])
+                cl.append(self.View_Directions[i])
         self.Selection= nl
 
     def clearSelection(self,doc):
         self.Selection = []
+        self.View_Directions = []
 
     def ContextMenu(self, recipient):
         """This is executed whenever the user right-clicks on screen.
