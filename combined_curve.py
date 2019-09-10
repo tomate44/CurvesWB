@@ -36,7 +36,11 @@ class CombinedProjectionCurve:
             for f2 in proj2.Faces:
                 curves += f1.Surface.intersectSS(f2.Surface)
         intersect = [c.toShape() for c in curves]
-        return(Part.Compound(intersect))
+        se = Part.sortEdges(intersect)
+        wires = []
+        for el in se:
+            wires.append(Part.Wire(el))
+        return(Part.Compound(wires))
 
 
 
@@ -96,18 +100,26 @@ class CombinedProjectionCmd:
         FreeCAD.ActiveDocument.recompute()
 
     def Activated(self):
-        sel = FreeCADGui.Selection.getSelection()
+        try:
+            sel = FreeCADGui.activeWorkbench().Selection
+            vd =  FreeCADGui.activeWorkbench().View_Directions
+        except AttributeError:
+            sel = FreeCADGui.Selection.getSelectionEx()
+            vd = [FreeCAD.Vector(1,0,0), FreeCAD.Vector(0,1,0)]
         if not len(sel) == 2:
             FreeCAD.Console.PrintError("Select 2 objects !\n")
         for selobj in sel:
-            selobj.ViewObject.Visibility = False
-        pl = Part.Plane()
-        pl.transform(sel[0].Placement.toMatrix())
-        d1 = pl.Axis
-        pl = Part.Plane()
-        pl.transform(sel[1].Placement.toMatrix())
-        d2 = pl.Axis
-        self.makeCPCFeature(sel[0],sel[1],d1,d2)
+            selobj.Object.ViewObject.Visibility = False
+        if len(vd) == 2:
+            d1, d2 = vd
+        else:
+            pl = Part.Plane()
+            pl.transform(sel[0].Placement.toMatrix())
+            d1 = pl.Axis
+            pl = Part.Plane()
+            pl.transform(sel[1].Placement.toMatrix())
+            d2 = pl.Axis
+        self.makeCPCFeature(sel[0].Object,sel[1].Object,d1,d2)
         
     def IsActive(self):
         if FreeCAD.ActiveDocument:
