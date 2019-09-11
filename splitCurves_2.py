@@ -15,7 +15,7 @@ import Part
 import _utils
 from pivy import coin
 import graphics
-import profile_editor
+import manipulators
 
 TOOL_ICON = _utils.iconsPath() + '/splitcurve.svg'
 debug = _utils.debug
@@ -234,10 +234,10 @@ class pointEditor(object):
         self.root_inserted = False
         for p in points:
             if isinstance(p,FreeCAD.Vector):
-                self.points.append(MarkerOnEdge([p]))
+                self.points.append(manipulators.ShapeSnap(p))
             elif isinstance(p,(tuple,list)):
-                self.points.append(MarkerOnEdge([p[0]],p[1]))
-            elif isinstance(p, MarkerOnEdge):
+                self.points.append(manipulators.ShapeSnap(p[0],p[1]))
+            elif isinstance(p, manipulators.ShapeSnap):
                 self.points.append(p)
             else:
                 FreeCAD.Console.PrintError("pointEditor : bad input")
@@ -269,8 +269,8 @@ class pointEditor(object):
         # populate root node
         #self.root.addChild(self.events)
         self.root += self.points
-        #self.build_lines()
-        #self.root += self.lines
+        self.build_lines()
+        self.root += self.lines
         # set FreeCAD color scheme
         for o in self.points: # + self.lines:
             o.ovr_col = "yellow"
@@ -282,10 +282,12 @@ class pointEditor(object):
 
     def build_lines(self):
         self.lines = list()
-        for i in range(len(self.points)-1):
-            line = profile_editor.ConnectionLine([self.points[i], self.points[i+1]]) 
-            line.set_color("blue")
-            self.lines.append(line)
+        for m in self.points:
+            if isinstance(m, manipulators.TangentSnap):
+                line = manipulators.Line([m.parent, m])
+                line.dynamic = False
+                line.set_color("blue")
+                self.lines.append(line)
 
     def controlCB(self, attr, event_callback):
         event = event_callback.getEvent()
@@ -304,7 +306,7 @@ class pointEditor(object):
                 #FreeCAD.Console.PrintMessage("Some objects have been deleted\n")
                 pts = list()
                 for o in self.root.dynamic_objects:
-                    if isinstance(o,MarkerOnEdge):
+                    if isinstance(o,manipulators.ShapeSnap):
                         pts.append(o)
                 self.points = pts
                 self.setup_InteractionSeparator()
@@ -314,7 +316,7 @@ class pointEditor(object):
         # pts = []
         for o in self.root.selected_objects:
             #p1 = o.points[0]
-            mark = MarkerOnEdge(o.points, o.snap_shape)
+            mark = manipulators.ShapeSnap(o.points, o.snap_shape)
             self.points.append(mark)
             #new_select.append(mark)
         #self.points.append(pts)
@@ -372,7 +374,10 @@ class splitVP:
             pts = list()
             for p in params:
                 print("{} -> {}".format(p, e.valueAt(p)))
-                pts.append(MarkerOnEdge([e.valueAt(p)], e))
+                m = manipulators.ShapeSnap(e.valueAt(p), e)
+                pts.append(m)
+                t = manipulators.TangentSnap(m)
+                pts.append(t)
             self.ip = pointEditor(pts, self.Object)
             self.ip.curve = e.Curve
             #vobj.Visibility = False
@@ -385,7 +390,7 @@ class splitVP:
         if isinstance(self.ip, pointEditor):
             params = list()
             for p in self.ip.points:
-                if isinstance(p, MarkerOnEdge):
+                if isinstance(p, manipulators.ShapeSnap):
                     pt = p.points[0]
                     par = e.Curve.parameter(FreeCAD.Vector(pt[0],pt[1],pt[2]))
                     temp = e.Curve.copy()

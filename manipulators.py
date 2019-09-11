@@ -124,7 +124,7 @@ class TangentSnap(ShapeSnap):
         self.par = 1.0
         p = self.parent.tangent_shape.valueAt(self.par)
         self.points = [p]
-        self.parent.on_drag_release.append(self.update_tangent)
+        self.parent.on_drag.append(self.update_tangent)
     def update_tangent(self):
         self.snap_shape = self.parent.tangent_shape
     def update_parameter(self):
@@ -327,10 +327,10 @@ class Line(graphics.Line):
         super(Line, self).__init__(
             sum([m.points for m in markers], []), True)
         self.markers = markers
-        for m in self.markers:
+        for m in self.markers: # If some markers are moved ...
             m.on_drag.append(self.updateLine)
 
-    def updateLine(self):
+    def updateLine(self): # ... consecutively copy their points (SoCoordinate3)
         self.points = sum([m.points for m in self.markers], [])
 
     @property
