@@ -40,7 +40,7 @@ class CombinedProjectionCurve:
         wires = []
         for el in se:
             wires.append(Part.Wire(el))
-        return(Part.Compound(wires))
+        return Part.Compound(wires)
 
 
 
@@ -80,11 +80,11 @@ class CombinedProjectionCurveVP:
         self.Object = vobj.Object
 
     def __getstate__(self):
-        return({"name": self.Object.Name})
+        return {"name": self.Object.Name}
 
     def __setstate__(self,state):
         self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
-        return(None)
+        return None
 
     def claimChildren(self):
         return [self.Object.Shape1,self.Object.Shape2]
@@ -125,8 +125,8 @@ class CombinedProjectionCmd:
         if FreeCAD.ActiveDocument:
             sel = FreeCADGui.Selection.getSelection()
             if len(sel) == 2:
-                return(True)
-        return(False)
+                return True
+        return False
 
     def GetResources(self):
         return {'Pixmap' : TOOL_ICON, 'MenuText': 'Combined projection curve', 'ToolTip': 'Builds a 3D curve as the intersection of 2 projected curves'}
