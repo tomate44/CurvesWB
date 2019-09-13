@@ -108,17 +108,15 @@ class CombinedProjectionCmd:
             vd = [FreeCAD.Vector(1,0,0), FreeCAD.Vector(0,1,0)]
         if not len(sel) == 2:
             FreeCAD.Console.PrintError("Select 2 objects !\n")
+            return
         for selobj in sel:
             selobj.Object.ViewObject.Visibility = False
         if len(vd) == 2:
             d1, d2 = vd
-        else:
-            pl = Part.Plane()
-            pl.transform(sel[0].Placement.toMatrix())
-            d1 = pl.Axis
-            pl = Part.Plane()
-            pl.transform(sel[1].Placement.toMatrix())
-            d2 = pl.Axis
+        if hasattr(sel[0],"Constraints"):
+            d1 = sel[0].Placement.Rotation.multVec(FreeCAD.Vector(0,0,-1))
+        if hasattr(sel[1],"Constraints"):
+            d2 = sel[1].Placement.Rotation.multVec(FreeCAD.Vector(0,0,-1))
         self.makeCPCFeature(sel[0].Object,sel[1].Object,d1,d2)
         
     def IsActive(self):
