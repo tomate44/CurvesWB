@@ -25,7 +25,6 @@ class Point(graphics.Marker):
         else:
             pts = [self.vector(points)]
         super(Point, self).__init__(pts, True)
-            
     def vector(self, p):
         if isinstance(p, FreeCAD.Vector):
             return p
@@ -36,10 +35,12 @@ class Point(graphics.Marker):
         else:
             return FreeCAD.Vector(p[0],p[1],p[2])
         return None
-            
     @property 
     def vectors(self):
         return [FreeCAD.Vector(p[0],p[1],p[2]) for p in self.points]
+    @property 
+    def point(self):
+        return self.vector(self.points[0])
         
 class ShapeSnap(Point):
     """Point manipulator that snaps to a shape"""
@@ -53,7 +54,8 @@ class ShapeSnap(Point):
     def snap_shape(self, sh):
         if isinstance(sh,Part.Shape):
             self._shape = sh
-            self.on_drag.append(self.snap_drag)
+            if not self.snap_drag in self.on_drag:
+                self.on_drag.append(self.snap_drag)
         else:
             self._shape = None
             if self.snap_drag in self.on_drag:
@@ -69,21 +71,23 @@ class ShapeSnap(Point):
                 p[1] = proj.y
                 p[2] = proj.z
             self.points = pts
-    @property
-    def tangent_shape(self):
+
+class EdgeSnapAndTangent(ShapeSnap):
+    """Point manipulator that snaps to an edge, and generates
+    a tangent edge that another manipulator can snap to"""
+    def __init__(self, points, sh=None):
+        super(EdgeSnapAndTangent, self).__init__(points, sh)
+        #self.tangent = None
+        self.tangent_update()
+        #self.tangent_update_cb = []
+        self.on_drag.append(self.tangent_update)
+    def tangent_update(self):
         p = self.vector(self.points[0])
-        if hasattr(self.snap_shape, "Curve"):
-            par = self.snap_shape.Curve.parameter(p)
-            tan = self.snap_shape.tangentAt(par)
-            e = Part.makeLine(p, p+tan)
-            return e.Curve.toShape(-200,200)
-        elif hasattr(self.snap_shape, "Surface"):
-            u,v = self.snap_shape.Surface.parameter(p)
-            tan = self.snap_shape.tangentAt(u,v)
-            ci = Part.Circle(p, p+tan[0], p+tan[1])
-            ci.Radius *= 200
-            face = Part.makeFilledFace([ci.toShape()])
-            return face
+        par = self.snap_shape.Curve.parameter(p)
+        tan = self.snap_shape.tangentAt(par)
+        e = Part.makeLine(p, p+tan)
+        self.tangent =  e.Curve.toShape(-200,200)
+
 
 class SubLinkSnap(ShapeSnap):
     """Point manipulator that snaps to a shape provided by a PropertySubLink"""
@@ -122,15 +126,18 @@ class TangentSnap(ShapeSnap):
         super(TangentSnap, self).__init__(FreeCAD.Vector())
         self.parent = manip
         self.par = 1.0
-        p = self.parent.tangent_shape.valueAt(self.par)
-        self.points = [p]
+        self.update_tangent()
+        #p = self.snap_shape.valueAt(self.par)
+        #self.points = [p]
         self.parent.on_drag.append(self.update_tangent)
+        self.on_drag.append(self.update_parameter)
     def update_tangent(self):
-        self.snap_shape = self.parent.tangent_shape
+        self.snap_shape = self.parent.tangent
+        p = self.parent.tangent.valueAt(self.par)
+        self.points = [p]
     def update_parameter(self):
         p = self.vector(self.points[0])
         self.par = self.snap_shape.Curve.parameter(p)
-
 
 class WithCustomTangent(object):
     """Point Extension class that adds a custom tangent"""
@@ -329,6 +336,7 @@ class Line(graphics.Line):
         self.markers = markers
         for m in self.markers: # If some markers are moved ...
             m.on_drag.append(self.updateLine)
+        #self.markers[0].on_drag.append(self.updateLine)
 
     def updateLine(self): # ... consecutively copy their points (SoCoordinate3)
         self.points = sum([m.points for m in self.markers], [])
