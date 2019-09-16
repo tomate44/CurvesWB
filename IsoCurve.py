@@ -1,29 +1,32 @@
+# -*- coding: utf-8 -*-
+
 __title__="Macro IsoCurves"
 __author__ = "Chris_G"
-__license__="LGPL 2.1"
 __doc__ = '''
 Macro IsoCurves.
-Creates parametric isoCurves from a face
+Creates a parametric isoCurve from a face
 
 Instructions:
 Select a face in the 3D View.
 Then, in Py console:
 
-import IsoCurve
-IsoCurve.run()
+import IsoCurves
+IsoCurves.run()
 
 '''
 
-import os, dummy
 import FreeCAD as App
 if App.GuiUp:
     import FreeCADGui as Gui
-
 import Part
 import isocurves
+import _utils
 
-path_curvesWB = os.path.dirname(dummy.__file__)
-path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
+TOOL_ICON = _utils.iconsPath() + '/isocurve.svg'
+#debug = _utils.debug
+debug = _utils.doNothing
+
+
 
 
 def makeIsoCurveFeature():
@@ -68,13 +71,7 @@ class IsoCurve:
         self.u0, self.u1, self.v0, self.v1 = face.ParameterRange
 
     def getFace(self, obj):
-        try:
-            n = eval(obj.Face[1][0].lstrip('Face'))
-            face = obj.Face[0].Shape.Faces[n-1]
-            #self.u0, self.u1, self.v0, self.v1 = self.face.ParameterRange
-            return face
-        except:
-            return None
+        return _utils.getShape(obj, "Face", "Face")
 
     def tangentAt(self, selfobj, p):
         if selfobj.Orientation == 'U':
@@ -127,6 +124,8 @@ class IsoCurve:
     def onChanged(self, selfobj, prop):
         if prop == 'Face':
             face = self.getFace(selfobj)
+            if not face:
+                return
             self.getBounds(selfobj)
             if selfobj.Orientation == "U":
                 self.p0 = self.u0
@@ -145,25 +144,25 @@ class IsoCurve:
                 selfobj.setEditorMode("Orientation", 2)
                 selfobj.setEditorMode("NumberU", 0)
                 selfobj.setEditorMode("NumberV", 0)
-            selfobj.Proxy.execute(selfobj)
+            self.execute(selfobj)
         if prop == 'Parameter':
             if  selfobj.Parameter  < self.p0:
                 selfobj.Parameter  = self.p0
             elif selfobj.Parameter  > self.p1:
                 selfobj.Parameter  = self.p1
-            selfobj.Proxy.execute(selfobj)
+            self.execute(selfobj)
         if prop == 'NumberU':
             if  selfobj.NumberU  < 0:
                 selfobj.NumberU  = 0
             elif selfobj.NumberU  > 1000:
                 selfobj.NumberU  = 1000
-            selfobj.Proxy.execute(selfobj)
+            self.execute(selfobj)
         if prop == 'NumberV':
             if  selfobj.NumberV  < 0:
                 selfobj.NumberV  = 0
             elif selfobj.NumberV  > 1000:
                 selfobj.NumberV  = 1000
-            selfobj.Proxy.execute(selfobj)
+            self.execute(selfobj)
         if prop == 'Orientation':
             self.getBounds(selfobj)
             if selfobj.Orientation == "U":
@@ -172,14 +171,14 @@ class IsoCurve:
             else:
                 self.p0 = self.v0
                 self.p1 = self.v1
-            selfobj.Proxy.execute(selfobj)
+            self.execute(selfobj)
 
 class ViewProviderIsoCurve:
     def __init__(self,vobj):
         vobj.Proxy = self
        
     def getIcon(self):
-        return (path_curvesWB_icons+'/isocurve.svg')
+        return TOOL_ICON
 
     def attach(self, vobj):
         self.ViewObject = vobj
@@ -211,7 +210,7 @@ class ViewProviderIsoCurve:
 class CommandMacroIsoCurve:
     "Command to create IsoCurve feature"
     def GetResources(self):
-        return {'Pixmap'  : path_curvesWB_icons+'/isocurve.svg',
+        return {'Pixmap'  : TOOL_ICON,
                 'MenuText': "IsoCurve",
                 'Accel': "",
                 'ToolTip': "IsoCurve: Create an IsoCurve from a face"}

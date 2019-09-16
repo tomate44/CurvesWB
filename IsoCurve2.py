@@ -1,25 +1,4 @@
-#***************************************************************************
-#*                                                                         *
-#*   Copyright (c) 2017 - Christophe Grellier (Chris_G)                    *
-#*                                                                         *  
-#*                                                                         *
-#*   This program is free software; you can redistribute it and/or modify  *
-#*   it under the terms of the GNU Lesser General Public License (LGPL)    *
-#*   as published by the Free Software Foundation; either version 2 of     *
-#*   the License, or (at your option) any later version.                   *
-#*   for detail see the LICENCE text file.                                 *
-#*                                                                         *
-#*   This program is distributed in the hope that it will be useful,       *
-#*   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
-#*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
-#*   GNU Library General Public License for more details.                  *
-#*                                                                         *
-#*   You should have received a copy of the GNU Library General Public     *
-#*   License along with this program; if not, write to the Free Software   *
-#*   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  *
-#*   USA                                                                   *
-#*                                                                         *
-#***************************************************************************
+# -*- coding: utf-8 -*-
 
 __title__="Macro IsoCurves"
 __author__ = "Chris_G"
@@ -35,16 +14,19 @@ import IsoCurves
 IsoCurves.run()
 
 '''
-import os, dummy
+
 import FreeCAD as App
 if App.GuiUp:
     import FreeCADGui as Gui
-
 import Part
 import isocurves
+import _utils
 
-path_curvesWB = os.path.dirname(dummy.__file__)
-path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
+TOOL_ICON = _utils.iconsPath() + '/isocurve.svg'
+#debug = _utils.debug
+debug = _utils.doNothing
+
+
 
 
 def makeIsoCurveFeature():
@@ -85,13 +67,7 @@ class IsoCurve:
         self.u0, self.u1, self.v0, self.v1 = face.ParameterRange
 
     def getFace(self, obj):
-        try:
-            n = eval(obj.Face[1][0].lstrip('Face'))
-            face = obj.Face[0].Shape.Faces[n-1]
-            #self.u0, self.u1, self.v0, self.v1 = self.face.ParameterRange
-            return face
-        except:
-            return None
+        return _utils.getShape(obj, "Face", "Face")
 
     def tangentAt(self, selfobj, p):
         if selfobj.Orientation == 'U':
@@ -195,7 +171,7 @@ class ViewProviderIsoCurve:
         vobj.Proxy = self
        
     def getIcon(self):
-        return (path_curvesWB_icons+'/isocurve.svg')
+        return TOOL_ICON
 
     def attach(self, vobj):
         self.ViewObject = vobj
@@ -227,7 +203,7 @@ class ViewProviderIsoCurve:
 class CommandMacroIsoCurve:
     "Command to create IsoCurve feature"
     def GetResources(self):
-        return {'Pixmap'  : path_curvesWB_icons+'/isocurve.svg',
+        return {'Pixmap'  : TOOL_ICON,
                 'MenuText': "IsoCurve",
                 'Accel': "",
                 'ToolTip': "IsoCurve: Create an IsoCurve from a face"}

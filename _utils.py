@@ -10,11 +10,11 @@ import FreeCAD
 def setIconsPath(path):
     global icons_path
     icons_path = path
-    return(True)
+    return True
 
 def iconsPath():
     global icons_path
-    return(icons_path)
+    return icons_path
 
 def info(string):
     FreeCAD.Console.PrintMessage("%s\n"%string)
@@ -29,7 +29,7 @@ def debug(string):
     FreeCAD.Console.PrintMessage("%s\n"%string)
 
 def doNothing(string):
-    return(None)
+    return None
 
 def setEditorMode(fp, group, mode):
     """set the editor mode of a group of properties"""
@@ -38,40 +38,40 @@ def setEditorMode(fp, group, mode):
 
 def getSubShape(shape, shape_type, n):
     if shape_type == "Vertex" and len(shape.Vertexes) >= n:
-        return(shape.Vertexes[n-1])
+        return shape.Vertexes[n-1]
     elif shape_type == "Edge" and len(shape.Edges) >= n:
-        return(shape.Edges[n-1])
+        return shape.Edges[n-1]
     elif shape_type == "Face" and len(shape.Faces) >= n:
-        return(shape.Faces[n-1])
+        return shape.Faces[n-1]
     else:
-        return(None)
+        return None
 
 def getShape(obj, prop, shape_type):
-    if hasattr(obj, prop):
+    if hasattr(obj, prop) and obj.getPropertyByName(prop):
         if obj.getTypeIdOfProperty(prop) == "App::PropertyLinkSub":
             n = eval(obj.getPropertyByName(prop)[1][0].lstrip(shape_type))
             sh = getSubShape(obj.getPropertyByName(prop)[0].Shape, shape_type, n)
-            #if sh and hasattr(obj.getPropertyByName(prop)[0], "getGlobalPlacement"):
-                #pl = obj.getPropertyByName(prop)[0].getGlobalPlacement()
-                #sh.transformShape(pl.toMatrix())
-            return(sh)
+            if sh and hasattr(obj.getPropertyByName(prop)[0], "getGlobalPlacement"):
+                pl = obj.getPropertyByName(prop)[0].getGlobalPlacement()
+                sh.transformShape(pl.toMatrix())
+            return sh
         elif obj.getTypeIdOfProperty(prop) == "App::PropertyLinkSubList":
             res = []
             for tup in obj.getPropertyByName(prop):
                 for ss in tup[1]:
                     n = eval(ss.lstrip(shape_type))
                     sh = getSubShape(tup[0].Shape, shape_type, n)
-                    #if sh and hasattr(obj.getPropertyByName(prop)[0], "getGlobalPlacement"):
-                        #pl = obj.getPropertyByName(prop)[0].getGlobalPlacement()
-                        #sh.transformShape(pl.toMatrix())
+                    if sh and hasattr(obj.getPropertyByName(prop)[0], "getGlobalPlacement"):
+                        pl = obj.getPropertyByName(prop)[0].getGlobalPlacement()
+                        sh.transformShape(pl.toMatrix())
                     res.append(sh)
-            return(res)
+            return res
         else:
             FreeCAD.Console.PrintError("CurvesWB._utils.getShape: wrong property type.\n")
-            return(None)
+            return None
     else:
         FreeCAD.Console.PrintError("CurvesWB._utils.getShape: %r has no property %r\n"%(obj, prop))
-        return(None)
+        return None
 
 def same_direction(e1, e2, num=10):
     """bool = same_direction(e1, e2, num=10)
@@ -220,23 +220,23 @@ class EasyProxy(object):
     def execute(self, fp):
         if not self.document_restored:
             debug("Skipping %s.execute() ..."%fp.Label)
-            return(False)
+            return False
         else:
             self.ep_execute(fp)
 
     def onChanged(self, fp, prop):
         if not self.document_restored:
             debug("Skipping %s.onChanged(%s) ..."%(fp.Label,prop))
-            return(False)
+            return False
         else:
             self.ep_prop_changed(fp, prop)
 
     def onBeforeChange(self, fp, prop):
         if prop == "Proxy":
-            return(False)
+            return False
         if not self.document_restored:
             debug("Skipping %s.onBeforeChange(%s) ..."%(fp.Label,prop))
-            return(False)
+            return False
         else:
             self.ep_before_prop_change(fp, prop)
 
@@ -250,7 +250,7 @@ class EasyProxy(object):
         state = self.ep_on_save()
         # add additional instance variables
         # state["variable"] = self.variable
-        return(state)
+        return state
 
     def __setstate__(self,state):
         debug("EasyProxy.__setstate__")
@@ -258,29 +258,29 @@ class EasyProxy(object):
         self.ep_on_restore(state)
         # restore additional instance variables
         # self.variable = state["variable"]
-        return(None)
+        return None
 
     def ep_add_properties(self, fp):
         #fp.addProperty("App::PropertyInteger", "myprop", "Test", "a property").myprop = 1
-        return(None)
+        return None
 
     def ep_init(self, fp):
-        return(None)
+        return None
 
     def ep_execute(self, fp):
-        return(None)
+        return None
 
     def ep_prop_changed(self, fp, prop):
-        return(None)
+        return None
 
     def ep_before_prop_change(self, fp, prop):
-        return(None)
+        return None
 
     def ep_on_save(self):
-        return(dict())
+        return dict()
 
     def ep_on_restore(self, state):
-        return(None)
+        return None
 
 
 
@@ -308,9 +308,9 @@ class MyProxy(EasyProxy):
 
     def ep_on_save(self):
         debug("---MyProxy.ep_on_save")
-        return(None)
+        return None
 
     def ep_on_restore(self,state):
         debug("---MyProxy.ep_on_restore")
-        return(None)
+        return None
 
