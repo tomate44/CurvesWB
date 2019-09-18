@@ -16,22 +16,20 @@ import Part
 from pivy import coin
 import graphics
 
-
-class Point(graphics.Marker):
-    """Base point manipulator"""
-    def __init__(self, points):
+class Object3D(graphics.Object3D):
+    """freeCAD manipulator base class"""
+    def __init__(self, points, dynamic=True):
         if isinstance(points, (list, tuple)):
             pts = [self.vector(p) for p in points]
         else:
             pts = [self.vector(points)]
-        super(Point, self).__init__(pts, True)
+        super(Object3D, self).__init__(pts, dynamic)
+        self.ctrl_keys = dict()
     def vector(self, p):
         if isinstance(p, FreeCAD.Vector):
             return p
         elif isinstance(p, Part.Vertex):
             return p.Point
-        #elif isinstance(p, Part.Point):
-            #return FreeCAD.Vector(p[0],p[1],p[2])
         else:
             return FreeCAD.Vector(p[0],p[1],p[2])
         return None
@@ -41,6 +39,15 @@ class Point(graphics.Marker):
     @property 
     def point(self):
         return self.vector(self.points[0])
+
+
+class Point(Object3D):
+    """Basic point manipulator"""
+    def __init__(self, points, dynamic=True):
+        super(Point, self).__init__(points, dynamic)
+        self.marker = coin.SoMarkerSet()
+        self.marker.markerIndex = coin.SoMarkerSet.CIRCLE_FILLED_5_5
+        self.addChild(self.marker)
         
 class ShapeSnap(Point):
     """Point manipulator that snaps to a shape"""
@@ -159,23 +166,25 @@ class WithCustomTangent(object):
         if self.vector(p):
             self.tangent = self.vector(p) - self.vector(self.points[0])
 
-class WithCustomText(object):
-    """Point Extension class that adds a custom text"""
-    def __init__(self):
+class CustomText(Object3D):
+    """Text manipulator"""
+    def __init__(self, parent, dynamic=False):
+        super(CustomText, self).__init__(parent.points, dynamic)
         self._text_translate = coin.SoTranslation()
         self._text = coin.SoText2()
         self._text_switch = coin.SoSwitch()
         self._text_switch.addChild(self._text_translate)
         self._text_switch.addChild(self._text)
-        #self.on_drag_start.append(self.add_text)
-        #self.on_drag_release.append(self.remove_text)
         self.addChild(self._text_switch)
-    def show_text(self):
+        self.parent = parent
+        self.parent.on_drag.append(self.translate)
+        self.translate()
+    def show(self):
         self._text_switch.whichChild = coin.SO_SWITCH_ALL
-        #self.on_drag.append(self.update_text)
-    def hide_text(self):
+    def hide(self):
         self._text_switch.whichChild = coin.SO_SWITCH_NONE
-        #self.on_drag.remove(self.update_text)
+    def translate(self):
+        self._text_translate.translation = self.parent.point
     @property
     def text(self):
         return self._text.string.getValues()
@@ -188,7 +197,21 @@ class WithCustomText(object):
             strlist = txt
         self._text.string.setValues(0, len(strlist), strlist)
 
-
+class CycleText(CustomText):
+    """Text manipulator that cycles through a list of strings"""
+    def __init__(self, parent, dynamic=False):
+        super(CycleText, self).__init__(parent, dynamic)
+        self.text_list = ["",]
+        self.ctrl_keys = {"c" : [self.cycle]}
+    def cycle(self):
+        if self.text[0] in self.text_list:
+            n = self.text_list.index(self.text[0])
+            if n < len(self.text_list)-1:
+                self.text = self.text_list[n+1]
+            else:
+                self.text = self.text_list[0]
+        else:
+            self.text = self.text_list[0]
 
 class MarkerOnShape(graphics.Marker):
     def __init__(self, points, sh=None):
