@@ -170,10 +170,15 @@ class CustomText(Object3D):
     """Text manipulator"""
     def __init__(self, parent, dynamic=False):
         super(CustomText, self).__init__(parent.points, dynamic)
+        #self._text_offset = FreeCAD.Vector(0,0,0)
         self._text_translate = coin.SoTranslation()
+        self._text_font = coin.SoFont()
+        self._text_font.name = "Arial:Bold"
+        self._text_font.size = 13.0
         self._text = coin.SoText2()
         self._text_switch = coin.SoSwitch()
         self._text_switch.addChild(self._text_translate)
+        self._text_switch.addChild(self._text_font)
         self._text_switch.addChild(self._text)
         self.addChild(self._text_switch)
         self.parent = parent
