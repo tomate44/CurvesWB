@@ -89,8 +89,14 @@ class EdgeSnapAndTangent(ShapeSnap):
         #self.tangent_update_cb = []
         self.on_drag.append(self.tangent_update)
     def tangent_update(self):
-        p = self.vector(self.points[0])
-        par = self.snap_shape.Curve.parameter(p)
+        v = Part.Vertex(self.point)
+        p = v.distToShape(self.snap_shape)[1][0][1]
+        try:
+            par = self.snap_shape.Curve.parameter(p)
+        except:
+            print("Failed to get curve parameter")
+            par = self.snap_shape.FirstParameter
+        #print(par)
         tan = self.snap_shape.tangentAt(par)
         e = Part.makeLine(p, p+tan)
         self.tangent =  e.Curve.toShape(-200,200)

@@ -13,6 +13,8 @@ import _utils
 from pivy import coin
 import nurbs_tools
 import CoinNodes
+import graphics
+import manipulators
 
 TOOL_ICON = _utils.iconsPath() + '/blend1.svg'
 debug = _utils.debug
@@ -39,7 +41,7 @@ class BlendCurveFP:
         obj.Parameter2 = ( 1.0, 0.0, 1.0, 0.05 )
         obj.Proxy = self
 
-    def execute(self, fp):
+    def compute(self, fp):
         e1 = _utils.getShape(fp, "Edge1", "Edge")
         e2 = _utils.getShape(fp, "Edge2", "Edge")
         if e1 and e2:
@@ -52,17 +54,22 @@ class BlendCurveFP:
             bc.scale2 = fp.Scale2
             bc.maxDegree = fp.DegreeMax
             bc.compute()
-            if bc.Curve is None:
-                fp.CurvePts = []
-                fp.Shape = Part.Shape()
+            return bc
+        return None
+
+    def execute(self, fp):
+        bc = self.compute(fp)
+        if bc.Curve is None:
+            fp.CurvePts = []
+            fp.Shape = Part.Shape()
+        else:
+            fp.CurvePts = bc.Curve.getPoles()
+            if fp.Output == "Wire":
+                fp.Shape = bc.getWire()
+            elif fp.Output == "Joined":
+                fp.Shape = bc.getJoinedCurve().toShape()
             else:
-                fp.CurvePts = bc.Curve.getPoles()
-                if fp.Output == "Wire":
-                    fp.Shape = bc.getWire()
-                elif fp.Output == "Joined":
-                    fp.Shape = bc.getJoinedCurve().toShape()
-                else:
-                    fp.Shape = bc.Curve.toShape()
+                fp.Shape = bc.Curve.toShape()
 
     def onChanged(self, fp, prop):
         if prop == "Scale1":
@@ -101,7 +108,248 @@ class BlendCurveFP:
             return(4)
 
 
+class pointEditor(object):
+    """Interpolation curve free-hand editor
+    my_editor = pointEditor([points],obj)
+    obj is the FreeCAD object that will receive
+    the curve shape at the end of editing.
+    points can be :
+    - Vector (free point)
+    - (Vector, shape) (point on shape)"""
+    def __init__(self, points=[], fp = None):
+        self.points = list()
+        self.fp = fp
+        self.curve = None
+        self.root_inserted = False
+        self.ctrl_keys = {"i" : [self.insert],
+                          "v" : [self.text_change],
+                          "q" : [self.quit],
+                          "\uffff" : [self.remove_point]}
+        for p in points:
+            if isinstance(p,FreeCAD.Vector):
+                self.points.append(manipulators.ShapeSnap(p))
+            elif isinstance(p,(tuple,list)):
+                self.points.append(manipulators.ShapeSnap(p[0],p[1]))
+            elif isinstance(p, manipulators.ShapeSnap):
+                self.points.append(p)
+            elif isinstance(p, manipulators.CustomText):
+                self.points.append(p)
+            else:
+                FreeCAD.Console.PrintError("pointEditor : bad input")
+        for p in points:
+            if hasattr(p, "ctrl_keys"):
+                for key in p.ctrl_keys:
+                    if key in self.ctrl_keys:
+                        #print(key)
+                        self.ctrl_keys[key].extend(p.ctrl_keys[key])
+                    else:
+                        self.ctrl_keys[key] = p.ctrl_keys[key]
+                
+        # Setup coin objects
+        if self.fp:
+            self.guidoc = self.fp.ViewObject.Document
+        else:
+            if not FreeCADGui.ActiveDocument:
+                appdoc = FreeCAD.newDocument("New")
+        self.guidoc = FreeCADGui.ActiveDocument
+        self.view = self.guidoc.ActiveView
+        self.rm = self.view.getViewer().getSoRenderManager()
+        self.sg = self.view.getSceneGraph()
+        self.setup_InteractionSeparator()
+
+    def setup_InteractionSeparator(self):
+        if self.root_inserted:
+            self.sg.removeChild(self.root)
+        self.root = graphics.InteractionSeparator(self.rm)
+        self.root.setName("InteractionSeparator")
+        #self.root.ovr_col = "yellow"
+        #self.root.sel_col = "green"
+        self.root.pick_radius = 40
+        #self.root.on_drag.append(self.update_curve)
+        # Keyboard callback
+        #self.events = coin.SoEventCallback()
+        self._controlCB = self.root.events.addEventCallback(coin.SoKeyboardEvent.getClassTypeId(), self.controlCB)
+        # populate root node
+        #self.root.addChild(self.events)
+        self.root += self.points
+        self.build_lines()
+        self.root += self.lines
+        # set FreeCAD color scheme
+        for o in self.points: # + self.lines:
+            o.ovr_col = "yellow"
+            o.sel_col = "green"
+        self.root.register()
+        self.sg.addChild(self.root)
+        self.root_inserted = True
+        self.root.selected_objects = list()
+
+    def build_lines(self):
+        self.lines = list()
+        for m in self.points:
+            if isinstance(m, manipulators.TangentSnap):
+                line = manipulators.Line([m.parent, m])
+                line.dynamic = False
+                line.set_color("blue")
+                self.lines.append(line)
+
+    def controlCB(self, attr, event_callback):
+        event = event_callback.getEvent()
+        if event.getState() == event.UP:
+            #FreeCAD.Console.PrintMessage("Key pressed : %s\n"%event.getKey())
+            if chr(event.getKey()) in self.ctrl_keys:
+                for foo in self.ctrl_keys[chr(event.getKey())]:
+                    if foo.__self__ is self:
+                        foo()
+                    elif foo.__self__.parent in self.root.selected_objects:
+                        foo()
+
+    def remove_point(self):
+        pts = list()
+        for o in self.root.dynamic_objects:
+            if isinstance(o,manipulators.Object3D):
+                pts.append(o)
+        self.points = pts
+        self.setup_InteractionSeparator()
+
+    def insert(self):
+        # get selected lines and subdivide them
+        # pts = []
+        for o in self.root.selected_objects:
+            #p1 = o.points[0]
+            mark = manipulators.ShapeSnap(o.points, o.snap_shape)
+            self.points.append(mark)
+            #new_select.append(mark)
+        #self.points.append(pts)
+        self.setup_InteractionSeparator()
+        #self.root.selected_objects = new_select
+        return True
+    
+    def text_change(self):
+        for o in self.root.selected_objects:
+            if o._text_type == 2:
+                o._text_type = 0
+            else:
+                o._text_type += 1
+    
+    def quit(self):
+        if False: #self.fp:
+            self.fp.ViewObject.Proxy.doubleClicked(self.fp.ViewObject)
+        else:
+            self.root.events.removeEventCallback(coin.SoKeyboardEvent.getClassTypeId(), self._controlCB)
+            self.root.unregister()
+            #self.root.removeAllChildren()
+            self.sg.removeChild(self.root)
+            self.root_inserted = False
+            
+   
+
+
 class BlendCurveVP:
+    def __init__(self,vobj):
+        vobj.Proxy = self
+        self.select_state = True
+        self.active = False
+        self.ps = 0.0
+        
+    def getIcon(self):
+        return(TOOL_ICON)
+
+    def attach(self, vobj):
+        self.Object = vobj.Object
+        self.active = False
+        self.select_state = vobj.Selectable
+        self.ip = None
+
+    def update_shape(self):
+        
+
+    def setEdit(self,vobj,mode=0):
+        debug("BlendCurve Edit mode = %d"%mode)
+        if mode == 0:
+            if vobj.Selectable:
+                self.select_state = True
+                vobj.Selectable = False
+                self.ps = vobj.PointSize
+                vobj.PointSize = 0.0
+            pts = list()
+            e1 = _utils.getShape(self.Object, "Edge1", "Edge")
+            e2 = _utils.getShape(self.Object, "Edge2", "Edge")
+            pa1 = e1.FirstParameter + (e1.LastParameter-e1.FirstParameter)*self.Object.Parameter1
+            m1 = manipulators.EdgeSnapAndTangent(e1.valueAt(pa1), e1)
+            pts.append(m1)
+            t1 = manipulators.TangentSnap(m1)
+            t1.par = self.Object.Scale1
+            pts.append(t1)
+            c1 = manipulators.CycleText(m1)
+            c1.text_list = ["C0","G1","G2","G3","G4"]
+            c1.show()
+            pts.append(c1)
+            
+            pa2 = e2.FirstParameter + (e2.LastParameter-e2.FirstParameter)*self.Object.Parameter2
+            m2 = manipulators.EdgeSnapAndTangent(e2.valueAt(pa2), e2)
+            pts.append(m2)
+            t2 = manipulators.TangentSnap(m2)
+            t2.par = self.Object.Scale2
+            pts.append(t2)
+            c2 = manipulators.CycleText(m2)
+            c2.text_list = ["C0","G1","G2","G3","G4"]
+            c2.show()
+            pts.append(c2)
+            self.ip = pointEditor(pts, self.Object)
+            debug("pointEditor created\n")
+            
+            self.active = True
+            return True
+        return False
+
+    def unsetEdit(self,vobj,mode=0):
+        e1 = _utils.getShape(self.Object, "Edge1", "Edge")
+        e2 = _utils.getShape(self.Object, "Edge2", "Edge")
+        if isinstance(self.ip, pointEditor):
+            #params = list()
+            #for p in self.ip.points:
+                #if isinstance(p, manipulators.ShapeSnap) and not isinstance(p, manipulators.TangentSnap):
+                    #pt = p.point
+                    #par = e.Curve.parameter(pt)
+                    #temp = e.Curve.copy()
+                    #temp.segment(temp.FirstParameter, par)
+                    #params.append("{:.3f}mm".format(temp.length()))
+            #self.Object.Values = params
+            vobj.Selectable = self.select_state
+            vobj.PointSize = self.ps
+            self.ip.quit()
+        self.ip = None
+        self.active = False
+        #vobj.Visibility = True
+        return True
+
+    def doubleClicked(self,vobj):
+        if not hasattr(self,'active'):
+            self.active = False
+        if not self.active:
+            self.active = True
+            #self.setEdit(vobj)
+            vobj.Document.setEdit(vobj)
+        else:
+            vobj.Document.resetEdit()
+            self.active = False
+        return True
+
+    def __getstate__(self):
+        return {"name": self.Object.Name}
+
+    def __setstate__(self,state):
+        self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
+        return None
+
+    def getChildren(self):
+        return [self.Object.Edge1[0], self.Object.Edge2[0]]
+
+    #def claimChildren(self):
+        #return self.getChildren()
+
+
+class oldBlendCurveVP:
     def __init__(self, obj ):
         debug("VP init")
         obj.Proxy = self
