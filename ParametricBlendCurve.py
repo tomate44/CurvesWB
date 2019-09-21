@@ -261,7 +261,7 @@ class BlendCurveVP:
         self.ip = None
 
     def update_shape(self):
-        
+        pass
 
     def setEdit(self,vobj,mode=0):
         debug("BlendCurve Edit mode = %d"%mode)
@@ -275,26 +275,26 @@ class BlendCurveVP:
             e1 = _utils.getShape(self.Object, "Edge1", "Edge")
             e2 = _utils.getShape(self.Object, "Edge2", "Edge")
             pa1 = e1.FirstParameter + (e1.LastParameter-e1.FirstParameter)*self.Object.Parameter1
-            m1 = manipulators.EdgeSnapAndTangent(e1.valueAt(pa1), e1)
-            pts.append(m1)
-            t1 = manipulators.TangentSnap(m1)
-            t1.par = self.Object.Scale1
-            pts.append(t1)
-            c1 = manipulators.CycleText(m1)
-            c1.text_list = ["C0","G1","G2","G3","G4"]
-            c1.show()
-            pts.append(c1)
+            self.m1 = manipulators.EdgeSnapAndTangent(e1.valueAt(pa1), e1)
+            pts.append(self.m1)
+            self.t1 = manipulators.TangentSnap(self.m1)
+            self.t1.par = self.Object.Scale1
+            pts.append(self.t1)
+            self.c1 = manipulators.CycleText(self.m1)
+            self.c1.text_list = ["C0","G1","G2","G3","G4"]
+            self.c1.show()
+            pts.append(self.c1)
             
             pa2 = e2.FirstParameter + (e2.LastParameter-e2.FirstParameter)*self.Object.Parameter2
-            m2 = manipulators.EdgeSnapAndTangent(e2.valueAt(pa2), e2)
-            pts.append(m2)
-            t2 = manipulators.TangentSnap(m2)
-            t2.par = self.Object.Scale2
-            pts.append(t2)
-            c2 = manipulators.CycleText(m2)
-            c2.text_list = ["C0","G1","G2","G3","G4"]
-            c2.show()
-            pts.append(c2)
+            self.m2 = manipulators.EdgeSnapAndTangent(e2.valueAt(pa2), e2)
+            pts.append(self.m2)
+            self.t2 = manipulators.TangentSnap(self.m2)
+            self.t2.par = self.Object.Scale2
+            pts.append(self.t2)
+            self.c2 = manipulators.CycleText(self.m2)
+            self.c2.text_list = ["C0","G1","G2","G3","G4"]
+            self.c2.show()
+            pts.append(self.c2)
             self.ip = pointEditor(pts, self.Object)
             debug("pointEditor created\n")
             
@@ -306,15 +306,20 @@ class BlendCurveVP:
         e1 = _utils.getShape(self.Object, "Edge1", "Edge")
         e2 = _utils.getShape(self.Object, "Edge2", "Edge")
         if isinstance(self.ip, pointEditor):
-            #params = list()
-            #for p in self.ip.points:
-                #if isinstance(p, manipulators.ShapeSnap) and not isinstance(p, manipulators.TangentSnap):
-                    #pt = p.point
-                    #par = e.Curve.parameter(pt)
-                    #temp = e.Curve.copy()
-                    #temp.segment(temp.FirstParameter, par)
-                    #params.append("{:.3f}mm".format(temp.length()))
-            #self.Object.Values = params
+            v = Part.Vertex(self.m1.point)
+            proj = v.distToShape(self.m1.snap_shape)[1][0][1]
+            pa1 = e1.Curve.parameter(proj)
+            self.Object.Parameter1 = (pa1 - m1.snap_shape.FirstParameter) / (m1.snap_shape.LastParameter - m1.snap_shape.FirstParameter)
+            self.Object.Scale1 = self.t1.par
+            self.Object.Continuity1 = self.c1.text[0]
+
+            v = Part.Vertex(self.m2.point)
+            proj = v.distToShape(self.m2.snap_shape)[1][0][1]
+            pa2 = e2.Curve.parameter(proj)
+            self.Object.Parameter2 = (pa2 - m2.snap_shape.FirstParameter) / (m2.snap_shape.LastParameter - m2.snap_shape.FirstParameter)
+            self.Object.Scale2 = self.t2.par
+            self.Object.Continuity2 = self.c2.text[0]
+            
             vobj.Selectable = self.select_state
             vobj.PointSize = self.ps
             self.ip.quit()
