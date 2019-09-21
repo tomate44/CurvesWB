@@ -49,16 +49,22 @@ class CombinedProjectionCurveFP:
     def __init__(self, obj, s1, s2, d1, d2):
         obj.addProperty("App::PropertyLink", "Shape1", "Combined Projection", "First shape").Shape1 = s1
         obj.addProperty("App::PropertyLink", "Shape2", "Combined Projection", "Second shape").Shape2 = s2
-        obj.addProperty("App::PropertyVector", "Direction1", "Combined Projection", "Projection direction of the first shape").Direction1 = d1
+        obj.addProperty("App::PropertyVector", "Direction1", "Combined Projection", "Projection direction of the first shape.\nIf vector is null, shape's placement is used.").Direction1 = d1
         #obj.addProperty("App::PropertyPlacement", "Direction1", "Combined Projection", "Projection direction of the first shape").Direction1 = pl1
-        obj.addProperty("App::PropertyVector", "Direction2", "Combined Projection", "Projection direction of the second shape").Direction2 = d2
+        obj.addProperty("App::PropertyVector", "Direction2", "Combined Projection", "Projection direction of the second shape.\nIf vector is null, shape's placement is used.").Direction2 = d2
         obj.Proxy = self
 
     def execute(self, obj):
         s1 = obj.Shape1.Shape
         s2 = obj.Shape2.Shape
-        d1 = obj.Direction1 #.Rotation.Axis
-        d2 = obj.Direction2
+        if obj.Direction1.Length < 1e-7:
+            d1 = obj.Shape1.Placement.Rotation.multVec(FreeCAD.Vector(0,0,-1))
+        else:
+            d1 = obj.Direction1
+        if obj.Direction2.Length < 1e-7:
+            d2 = obj.Shape2.Placement.Rotation.multVec(FreeCAD.Vector(0,0,-1))
+        else:
+            d2 = obj.Direction2
         cc = CombinedProjectionCurve(s1,s2,d1,d2)
         if hasattr(obj,"ExtensionProxy"):
             obj.Shape = obj.ExtensionProxy.approximate(obj,cc.shape())
@@ -100,23 +106,21 @@ class CombinedProjectionCmd:
         FreeCAD.ActiveDocument.recompute()
 
     def Activated(self):
+        vd = [FreeCAD.Vector(0,0,0), FreeCAD.Vector(0,0,0)]
         try:
             sel = FreeCADGui.activeWorkbench().Selection
             vd =  FreeCADGui.activeWorkbench().View_Directions
         except AttributeError:
             sel = FreeCADGui.Selection.getSelectionEx()
-            vd = [FreeCAD.Vector(1,0,0), FreeCAD.Vector(0,1,0)]
         if not len(sel) == 2:
             FreeCAD.Console.PrintError("Select 2 objects !\n")
             return
         for selobj in sel:
             selobj.Object.ViewObject.Visibility = False
-        if len(vd) == 2:
+        if len(vd) == 2 and vd[0].dot(vd[1]) < 0.999:
             d1, d2 = vd
-        if hasattr(sel[0],"Constraints"):
-            d1 = sel[0].Placement.Rotation.multVec(FreeCAD.Vector(0,0,-1))
-        if hasattr(sel[1],"Constraints"):
-            d2 = sel[1].Placement.Rotation.multVec(FreeCAD.Vector(0,0,-1))
+        else:
+            d1,d2 = [FreeCAD.Vector(0,0,0), FreeCAD.Vector(0,0,0)]
         self.makeCPCFeature(sel[0].Object,sel[1].Object,d1,d2)
         
     def IsActive(self):
