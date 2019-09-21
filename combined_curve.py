@@ -36,7 +36,11 @@ class CombinedProjectionCurve:
             for f2 in proj2.Faces:
                 curves += f1.Surface.intersectSS(f2.Surface)
         intersect = [c.toShape() for c in curves]
-        se = Part.sortEdges(intersect)
+        edges = []
+        for sh in intersect:
+            if isinstance(sh, Part.Edge) and sh.Length > 1e-7:
+                edges.append(sh)
+        se = Part.sortEdges(edges)
         wires = []
         for el in se:
             wires.append(Part.Wire(el))
