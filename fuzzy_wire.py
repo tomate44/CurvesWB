@@ -7,45 +7,44 @@ vec2 = FreeCAD.Base.Vector2d
 def wire(e1,e2):
     w = Part.Wire([e1,e2])
     if w.isValid():
-        return(w)
+        return w
     else:
         print("Failed to build wire")
-    return(None)
+    return None
 
 def longest_edge(e1,e2):
     if e1.Length > e2.Length:
-        return(e1)
+        return e1
     else:
-        return(e2)
+        return e2
 
 def longest_segment(e,p):
     w = e.split(p)
-    return(longest_edge(w.Edges[0],w.Edges[1]))
+    return longest_edge(w.Edges[0],w.Edges[1])
 
 def join_2_edges(e1,e2):
     d,pts,info = e1.distToShape(e2)
     if d < 1e-7: # edges are touching
         for i in info:
             if   (i[0] == b"Vertex") and (i[3] == b"Vertex"): # Contact type : end to end
-                return((e1,e2))
+                return (e1,e2)
             elif (i[0] == b"Edge") and (i[3] == b"Vertex"): # Contact type : edge to end
-                return((longest_segment(e1,i[2]),e2))
+                return (longest_segment(e1,i[2]),e2)
             elif (i[0] == b"Vertex") and (i[3] == b"Edge"): # Contact type : end to edge
-                return((e1,longest_segment(e2,i[5])))
+                return (e1,longest_segment(e2,i[5]))
             elif (i[0] == b"Edge") and (i[3] == b"Edge"): # Contact type : edge to edge
-                return((longest_segment(e1,i[2]),longest_segment(e2,i[5])))
+                return (longest_segment(e1,i[2]),longest_segment(e2,i[5]))
     else: # No contact : must add a join curve
         for pt,i in zip(pts,info):
             l = Part.makeLine(pt[0],pt[1])
             if   (i[0] == b"Vertex") and (i[3] == b"Vertex"): # Contact type : end to end
-                return((e1,l,e2))
+                return (e1,l,e2)
             elif (i[0] == b"Edge") and (i[3] == b"Vertex"): # Contact type : edge to end
-                return((longest_segment(e1,i[2]),l,e2))
+                return (longest_segment(e1,i[2]),l,e2)
             elif (i[0] == b"Vertex") and (i[3] == b"Edge"): # Contact type : end to edge
-                return((e1,l,longest_segment(e2,i[5])))
+                return (e1,l,longest_segment(e2,i[5]))
             elif (i[0] == b"Edge") and (i[3] == b"Edge"): # Contact type : edge to edge
-                #print("Cross-section not yet implemented")
-                return((longest_segment(e1,i[2]),l,longest_segment(e2,i[5])))
+                return (longest_segment(e1,i[2]),l,longest_segment(e2,i[5]))
 
 def join_multi_edges(edgelist,closed=False):
     good_edges = list()
@@ -88,14 +87,16 @@ def join_multi_edges(edgelist,closed=False):
                 ov = w.OrderedVertexes
                 d,p,i = ov[0].distToShape(ov[-1])
                 w.add(Part.makeLine(p[0][0],p[0][1]))
-    return(Part.Compound(wires))
+    return Part.Compound(wires)
 
 
 
-def run():
+def run(closed=False):
     s = Gui.Selection.getSelection()
     ori_edges = s[0].Shape.Edges
-    wire = join_multi_edges(ori_edges,True)
-    Part.show(wire)
+    return join_multi_edges(ori_edges, closed)
+
+def show(closed = False):
+    Part.show(run(closed))
 
 
