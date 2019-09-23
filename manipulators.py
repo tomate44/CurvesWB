@@ -89,8 +89,14 @@ class EdgeSnapAndTangent(ShapeSnap):
         #self.tangent_update_cb = []
         self.on_drag.append(self.tangent_update)
     def tangent_update(self):
-        p = self.vector(self.points[0])
-        par = self.snap_shape.Curve.parameter(p)
+        v = Part.Vertex(self.point)
+        p = v.distToShape(self.snap_shape)[1][0][1]
+        try:
+            par = self.snap_shape.Curve.parameter(p)
+        except:
+            print("Failed to get curve parameter")
+            par = self.snap_shape.FirstParameter
+        #print(par)
         tan = self.snap_shape.tangentAt(par)
         e = Part.makeLine(p, p+tan)
         self.tangent =  e.Curve.toShape(-200,200)
@@ -132,7 +138,7 @@ class TangentSnap(ShapeSnap):
     def __init__(self, manip):
         super(TangentSnap, self).__init__(FreeCAD.Vector())
         self.parent = manip
-        self.par = 1.0
+        self._par = 1.0
         self.update_tangent()
         #p = self.snap_shape.valueAt(self.par)
         #self.points = [p]
@@ -140,11 +146,19 @@ class TangentSnap(ShapeSnap):
         self.on_drag.append(self.update_parameter)
     def update_tangent(self):
         self.snap_shape = self.parent.tangent
-        p = self.parent.tangent.valueAt(self.par)
+        p = self.snap_shape.valueAt(self._par)
         self.points = [p]
     def update_parameter(self):
         p = self.vector(self.points[0])
-        self.par = self.snap_shape.Curve.parameter(p)
+        self._par = self.snap_shape.Curve.parameter(p)
+    @property
+    def parameter(self):
+        return self._par
+    @parameter.setter
+    def parameter(self, t):
+        self._par = t
+        self.points = [self.snap_shape.valueAt(t)]
+        
 
 class WithCustomTangent(object):
     """Point Extension class that adds a custom tangent"""
