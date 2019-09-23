@@ -238,12 +238,10 @@ class pointEditor(object):
                           "\uffff" : [self.remove_point]}
         for p in points:
             if isinstance(p,FreeCAD.Vector):
-                self.points.append(manipulators.ShapeSnap(p))
+                self.points.append(MarkerOnEdge(p))
             elif isinstance(p,(tuple,list)):
-                self.points.append(manipulators.ShapeSnap(p[0],p[1]))
-            elif isinstance(p, manipulators.ShapeSnap):
-                self.points.append(p)
-            elif isinstance(p, manipulators.CustomText):
+                self.points.append(MarkerOnEdge(p[0],p[1]))
+            elif isinstance(p, MarkerOnEdge):
                 self.points.append(p)
             else:
                 FreeCAD.Console.PrintError("pointEditor : bad input")
@@ -283,8 +281,8 @@ class pointEditor(object):
         # populate root node
         #self.root.addChild(self.events)
         self.root += self.points
-        self.build_lines()
-        self.root += self.lines
+        #self.build_lines()
+        #self.root += self.lines
         # set FreeCAD color scheme
         for o in self.points: # + self.lines:
             o.ovr_col = "yellow"
@@ -297,8 +295,8 @@ class pointEditor(object):
     def build_lines(self):
         self.lines = list()
         for m in self.points:
-            if isinstance(m, manipulators.TangentSnap):
-                line = manipulators.Line([m.parent, m])
+            if isinstance(m, MarkerOnEdge):
+                line = Line([m.parent, m])
                 line.dynamic = False
                 line.set_color("blue")
                 self.lines.append(line)
@@ -317,7 +315,7 @@ class pointEditor(object):
     def remove_point(self):
         pts = list()
         for o in self.root.dynamic_objects:
-            if isinstance(o,manipulators.Object3D):
+            if isinstance(o,MarkerOnEdge):
                 pts.append(o)
         self.points = pts
         self.setup_InteractionSeparator()
@@ -327,7 +325,7 @@ class pointEditor(object):
         # pts = []
         for o in self.root.selected_objects:
             #p1 = o.points[0]
-            mark = manipulators.ShapeSnap(o.points, o.snap_shape)
+            mark = MarkerOnEdge(o.points, o.snap_shape)
             self.points.append(mark)
             #new_select.append(mark)
         #self.points.append(pts)
@@ -386,24 +384,18 @@ class splitVP:
             if params == []:
                 return False
             pts = list()
+            print("Creating markers")
             for p in params:
-                #print("{} -> {}".format(p, e.valueAt(p)))
-                m = manipulators.EdgeSnapAndTangent(e.valueAt(p), e)
+                print("{} -> {}".format(p, e.valueAt(p)))
+                m = MarkerOnEdge([e.valueAt(p)], e)
+                #m = manipulators.EdgeSnapAndTangent(e.valueAt(p), e)
                 pts.append(m)
-                #print(m)
-                t = manipulators.TangentSnap(m)
-                pts.append(t)
-                #print(t)
-                c = manipulators.CycleText(m)
-                c.text_list = ["C0", "G1", "G2", "G3"]
-                c.show()
-                pts.append(c)
-                #print(c)
-            #print(pts)
+            print(pts)
             self.ip = pointEditor(pts, self.Object)
             #self.ip.curve = e.Curve
             #vobj.Visibility = False
             self.active = True
+            print("Edit setup OK")
             return True
         return False
 
@@ -411,12 +403,11 @@ class splitVP:
         e = _utils.getShape(self.Object, "Source", "Edge")
         if isinstance(self.ip, pointEditor):
             params = list()
-            for p in self.ip.points:
-                if isinstance(p, manipulators.ShapeSnap) and not isinstance(p, manipulators.TangentSnap):
-                    pt = p.point
-                    par = e.Curve.parameter(pt)
-                    temp = e.Curve.copy()
-                    temp.segment(temp.FirstParameter, par)
+            for p in self.ip.points: 
+                if isinstance(p, MarkerOnEdge):
+                    pt = p.points[0]
+                    par = e.Curve.parameter(FreeCAD.Vector(pt))
+                    temp = e.Curve.trim(e.FirstParameter, par)
                     params.append("{:.3f}mm".format(temp.length()))
             self.Object.Values = params
             vobj.Selectable = self.select_state
