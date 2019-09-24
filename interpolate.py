@@ -54,8 +54,8 @@ class Interpolate:
     def __init__(self, obj , source):
         ''' Add the properties '''
         debug("\nInterpolate class Init\n")
-        obj.addProperty("App::PropertyLink",           "Source",         "General",    "Source object that provides points to interpolate").Source
-        obj.addProperty("App::PropertyLinkSubList",    "PointList",      "General",    "Point list to interpolate").PointList
+        obj.addProperty("App::PropertyLink",           "Source",         "General",    "Source object that provides points to interpolate")
+        obj.addProperty("App::PropertyLinkSubList",    "PointList",      "General",    "Point list to interpolate")
         obj.addProperty("App::PropertyBool",           "Periodic",       "General",    "Set the curve closed").Periodic = False
         obj.addProperty("App::PropertyFloat",          "Tolerance",      "General",    "Interpolation tolerance").Tolerance = 1e-7
         obj.addProperty("App::PropertyBool",           "CustomTangents", "General",    "User specified tangents").CustomTangents = False
@@ -85,9 +85,11 @@ class Interpolate:
     def getPoints( self, obj):
         if obj.Source:
             return [v.Point for v in obj.Source.Shape.Vertexes]
-        else:
+        elif obj.PointList:
             vl = _utils.getShape(obj, "PointList", "Vertex")
             return [v.Point for v in vl]
+        else:
+            return []
 
     def detect_aligned_pts(self, fp, pts):
         tol = .99
@@ -256,13 +258,10 @@ class interpolate:
             return None
 
     def Activated(self):
-        s = FreeCADGui.Selection.getSelectionEx()
         try:
-            ordered = FreeCADGui.activeWorkbench().Selection
-            if ordered:
-                s = ordered
+            s = FreeCADGui.activeWorkbench().Selection
         except AttributeError:
-            pass
+            s = FreeCADGui.Selection.getSelectionEx()
         source = self.parseSel(s)
         if not source:
             return False
