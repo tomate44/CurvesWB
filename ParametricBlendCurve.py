@@ -59,7 +59,7 @@ class BlendCurveFP:
 
     def execute(self, fp):
         bc = self.compute(fp)
-        if bc.Curve is None:
+        if (bc is None) or (bc.Curve is None):
             fp.CurvePts = []
             fp.Shape = Part.Shape()
         else:

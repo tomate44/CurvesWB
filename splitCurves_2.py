@@ -105,9 +105,13 @@ class MarkerOnEdge(graphics.Marker):
         self._tangent = None
         self._text_type = 0
         self._text_translate = coin.SoTranslation()
+        self._text_font = coin.SoFont()
+        self._text_font.name = "Arial:Bold"
+        self._text_font.size = 13.0
         self._text = coin.SoText2()
         self._text_switch = coin.SoSwitch()
         self._text_switch.addChild(self._text_translate)
+        self._text_switch.addChild(self._text_font)
         self._text_switch.addChild(self._text)
         self.on_drag_start.append(self.add_text)
         self.on_drag_release.append(self.remove_text)
@@ -131,18 +135,17 @@ class MarkerOnEdge(graphics.Marker):
         par = self._shape.Curve.parameter(FreeCAD.Vector(p[0],p[1],p[2]))
         if self._text_type == 0 :
             coords = ['{: 9.3f}'.format(par)]
-        elif self._text_type == 1 :
-            c = self._shape.Curve.trim(self._shape.FirstParameter, par)
-            abscissa = c.length()
-            coords = ['{: 9.3f} mm'.format(abscissa)]
-        elif self._text_type == 2 :
+        else:
             if par <= self._shape.FirstParameter:
                 abscissa = 0
             else:
                 c = self._shape.Curve.trim(self._shape.FirstParameter, par)
                 abscissa = c.length()
-            perc = 100 * abscissa / self._shape.Length
-            coords = ['{: 9.3f} %'.format(perc)]
+            if self._text_type == 1 :
+                coords = ['{: 9.3f} mm'.format(abscissa)]
+            elif self._text_type == 2 :
+                perc = 100 * abscissa / self._shape.Length
+                coords = ['{: 9.3f} %'.format(perc)]
         self._text_translate.translation = p
         self._text.string.setValues(0,len(coords),coords)
 

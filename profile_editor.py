@@ -42,9 +42,13 @@ class MarkerOnShape(graphics.Marker):
         self._sublink = None
         self._tangent = None
         self._translate = coin.SoTranslation()
+        self._text_font = coin.SoFont()
+        self._text_font.name = "Arial:Bold"
+        self._text_font.size = 13.0
         self._text = coin.SoText2()
         self._text_switch = coin.SoSwitch()
         self._text_switch.addChild(self._translate)
+        self._text_switch.addChild(self._text_font)
         self._text_switch.addChild(self._text)
         self.on_drag_start.append(self.add_text)
         self.on_drag_release.append(self.remove_text)
