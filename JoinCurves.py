@@ -9,6 +9,7 @@ import FreeCAD
 import FreeCADGui
 import Part
 import _utils
+import approximate_extension
 
 TOOL_ICON = _utils.iconsPath() + '/joincurve.svg'
 debug = _utils.debug
@@ -79,6 +80,10 @@ class join:
         obj.addProperty("App::PropertyBool",         "ForceClosed",  "Join",   "Force closed curve").ForceClosed = False
         obj.Proxy = self
 
+    def onChanged(self, fp, prop):
+        if hasattr(fp, "ExtensionProxy"):
+            fp.ExtensionProxy.onChanged(fp, prop)
+
     def getEdges(self, obj):
         res = []
         if hasattr(obj, "Base"):
@@ -136,7 +141,11 @@ class join:
         if obj.ForceClosed:
             forceClosed(outcurves)
         outEdges = [Part.Edge(c) for c in outcurves]
-        obj.Shape = Part.Wire(outEdges)
+        
+        if hasattr(obj, "ExtensionProxy"):
+            obj.Shape = obj.ExtensionProxy.approximate(obj, outEdges)
+        else:
+            obj.Shape = Part.Wire(outEdges)
 
 class joinVP:
     def __init__(self,vobj):
@@ -173,6 +182,8 @@ class joinCommand:
     def makeJoinFeature(self,source):
         joinCurve = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","JoinCurve")
         join(joinCurve)
+        approximate_extension.ApproximateExtension(joinCurve)
+        joinCurve.Active = False
         joinVP(joinCurve.ViewObject)
         if isinstance(source,list):
             joinCurve.Edges = source

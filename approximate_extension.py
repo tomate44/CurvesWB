@@ -50,7 +50,7 @@ class ApproximateExtension:
         ''' Add the properties '''
         debug("\nApproximate extension Init\n")
         obj.addProperty("App::PropertyInteger",        "Samples",        "ShapeApproximation", "Number of samples").Samples = 100
-        obj.addProperty("App::PropertyBool",           "Active",         "ShapeApproximation", "Use approximation").Active = False
+        obj.addProperty("App::PropertyBool",           "Active",         "ShapeApproximation", "Use approximation")
         obj.addProperty("App::PropertyInteger",        "DegreeMin",      "ShapeApproximation", "Minimum degree of the curve").DegreeMin = 3
         obj.addProperty("App::PropertyInteger",        "DegreeMax",      "ShapeApproximation", "Maximum degree of the curve").DegreeMax = 5
         obj.addProperty("App::PropertyFloat",          "ApproxTolerance","ShapeApproximation", "Approximation tolerance")
@@ -58,8 +58,9 @@ class ApproximateExtension:
         obj.addProperty("App::PropertyEnumeration",    "Parametrization","ShapeApproximation", "Parametrization type").Parametrization=["ChordLength","Centripetal","Uniform"]
         obj.addProperty("App::PropertyPythonObject",   "ExtensionProxy", "ShapeApproximation", "Proxy object of the approximation extension").ExtensionProxy = self
         obj.Parametrization = "ChordLength"
-        obj.Continuity = 'C2'
+        obj.Continuity = 'C3'
         self.setTolerance(obj)
+        obj.Active = False
 
     def setTolerance(self, obj):
         try:
@@ -71,8 +72,6 @@ class ApproximateExtension:
     def approximate(self, obj, input_shape):
         pts = False
         input_edges = None
-        if not obj.Active:
-            return(input_shape)
         if isinstance(input_shape,(list, tuple)):
             #debug(isinstance(input_shape[0],Base.Vector))
             if isinstance(input_shape[0],Base.Vector):
@@ -81,6 +80,8 @@ class ApproximateExtension:
                 input_edges = input_shape
         else:
             input_edges = input_shape.Edges
+        if not obj.Active:
+            return Part.Compound(input_shape)
         edges = list()
         if input_edges:
             for e in input_edges:
@@ -88,11 +89,21 @@ class ApproximateExtension:
                 bs = Part.BSplineCurve()
                 bs.approximate(Points = pts, DegMin = obj.DegreeMin, DegMax = obj.DegreeMax, Tolerance = obj.ApproxTolerance, Continuity = obj.Continuity, ParamType = obj.Parametrization)
                 edges.append(bs.toShape())
-            return(Part.Compound(edges))
+            se = Part.sortEdges(edges)
+            wires = []
+            for el in se:
+                if len(el) > 1:
+                    wires.append(Part.Wire(el))
+                else:
+                    wires.append(el[0])
+            if len(wires) > 1:
+                return Part.Compound(wires)
+            else:
+                return wires[0]
         elif pts:
             bs = Part.BSplineCurve()
             bs.approximate(Points = pts, DegMin = obj.DegreeMin, DegMax = obj.DegreeMax, Tolerance = obj.ApproxTolerance, Continuity = obj.Continuity, ParamType = obj.Parametrization)
-            return(bs.toShape())
+            return bs.toShape()
 
     def onChanged(self, fp, prop):
         if prop == "Active":

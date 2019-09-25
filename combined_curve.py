@@ -71,7 +71,7 @@ class CombinedProjectionCurveFP:
             d2 = obj.Direction2
         cc = CombinedProjectionCurve(s1,s2,d1,d2)
         if hasattr(obj,"ExtensionProxy"):
-            obj.Shape = obj.ExtensionProxy.approximate(obj,cc.shape())
+            obj.Shape = obj.ExtensionProxy.approximate(obj,cc.shape().Edges)
         else:
             obj.Shape = cc.shape()
 
