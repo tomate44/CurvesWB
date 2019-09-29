@@ -264,6 +264,7 @@ class InterpolateCurveNetwork(object):
     def __init__(self, profiles, guides, tol=1e-5, tol2=1e-10):
         self.tolerance = 1e-5
         self.par_tolerance = 1e-10
+        self.max_ctrl_pts = 80
         self.has_performed = False
         if (len(profiles) < 2) or (len(guides) < 2):
             self.error("Not enough guides or profiles")
@@ -433,9 +434,9 @@ class InterpolateCurveNetwork(object):
         for c in self.guides:
             max_cp_v = max(max_cp_v, c.NbPoles)
 
-        # we want to use at least 10 and max 80 control points to be able to reparametrize the geometry properly
+        # we want to use at least 10 and max "self.max_ctrl_pts" control points to be able to reparametrize the geometry properly
         mincp = 10
-        maxcp = 80
+        maxcp = self.max_ctrl_pts
 
         # since we interpolate the intersections, we cannot use fewer control points than curves
         # We need to add two since we want c2 continuity, which adds two equations

@@ -50,6 +50,7 @@ class gordon:
         obj.addProperty("App::PropertyLinkList", "Sources", "Gordon", "Curve network")
         obj.addProperty("App::PropertyFloat", "Tol3D", "Gordon", "3D tolerance").Tol3D = 1e-2
         obj.addProperty("App::PropertyFloat", "Tol2D", "Gordon", "Parametric tolerance").Tol2D = 1e-5
+        obj.addProperty("App::PropertyInteger", "MaxCtrlPts", "Gordon", "Max Number of control points").MaxCtrlPts = 80
         obj.addProperty("App::PropertyEnumeration", "Output", "Base", "Output type").Output=["Surface","Wireframe"]
         obj.addProperty("App::PropertyInteger", "SamplesU", "Wireframe", "Number of samples in U direction").SamplesU = 16
         obj.addProperty("App::PropertyInteger", "SamplesV", "Wireframe", "Number of samples in V direction").SamplesV = 16
@@ -105,6 +106,7 @@ class gordon:
             #guide_curves.append(guide_curves[0])
         # create the gordon surface
         gordon = gordon.InterpolateCurveNetwork(profile_curves, guide_curves, obj.Tol3D, obj.Tol2D)
+        gordon.max_ctrl_pts = obj.MaxCtrlPts
         #gordon.perform()
         #s = gordon.surface_intersections()
         #debug(s)
