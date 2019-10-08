@@ -20,10 +20,10 @@ class extract:
             objName = o.ObjectName
             for so,name in zip(o.SubObjects,o.SubElementNames):
                 fullname = objName+"_"+name
-                newobj = FreeCAD.ActiveDocument.addObject("Part::Feature",fullname)
+                newobj = o.Document.addObject("Part::Feature",fullname)
                 if hasattr(o.Object, "getGlobalPlacement"):
                     gpl = o.Object.getGlobalPlacement()
-                    so.transformShape(gpl.toMatrix())
+                    so.Placement = gpl
                 newobj.Shape = so
             o.Object.ViewObject.Visibility = False
         FreeCAD.ActiveDocument.recompute()
