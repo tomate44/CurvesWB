@@ -28,7 +28,7 @@ def downgradeArray(arr):
     pt1 = []
     for row in arr:
         pt1 += row
-    return(pt1)
+    return pt1
 
         
 def shapeCloud(arr):
@@ -37,7 +37,7 @@ def shapeCloud(arr):
         for pt in row:
             v.append(Part.Vertex(pt))
     c = Part.Compound(v)
-    return(c)
+    return c
 
 def getComboView(mw):
     #from PySide.QtCore import * 
@@ -84,7 +84,7 @@ class blendSurfFP:
         if hasattr(obj,prop):
             if len(obj.getPropertyByName(prop)) > 0:
                 valid = True
-        return(valid)
+        return valid
 
     def execute(self, obj):
         if hasattr(obj,"Edge1") and hasattr(obj,"Edge2"):
@@ -108,19 +108,19 @@ class blendSurfFP:
                 
                 #obj.Points = downgradeArray(pts)
                 obj.Shape = bs.get_gordon_shapes() #shapeCloud(pts)
-                return(bs)
+                return bs
 
     def getContinuity(self, cont):
         if cont == "C0":
-            return(0)
+            return 0
         elif cont == "G1":
-            return(1)
+            return 1
         elif cont == "G2":
-            return(2)
+            return 2
         elif cont == "G3":
-            return(3)
+            return 3
         else:
-            return(4)
+            return 4
 
     def onChanged(self, fp, prop):
         FreeCAD.Console.PrintMessage('%s changed\n'%prop)
@@ -252,8 +252,8 @@ class blendSurfVP:
             self.ed.tabIndex = self.ed.comboview.addTab(self.ed.widget,"Table")
             self.ed.comboview.setCurrentIndex(self.ed.tabIndex)
             self.ed.widget.show()
-            return(True)
-        return(False)
+            return True
+        return False
 
     def unsetEdit(self,vobj,mode=0):
         debug("End Edit")
@@ -262,7 +262,7 @@ class blendSurfVP:
             self.ed.quit()
             self.ed = None
         self.Object.recompute()
-        return(False)
+        return False
 
     def __getstate__(self):
         return None
@@ -272,14 +272,14 @@ class blendSurfVP:
 
     def claimChildren(self):
         a = [self.Object.Edge1, self.Object.Edge2]
-        return(a)
+        return a
         
     def onDelete(self, feature, subelements): # subelements is a tuple of strings
         try:
             self.Object.Edge1.ViewObject.show()
             self.Object.Edge2.ViewObject.show()
         except Exception as err:
-            FreeCAD.Console.PrintError("Error in onDelete: " + err.message)
+            FreeCAD.Console.PrintError("Error in onDelete: {0} \n".format(err))
         return True
 
 class blendSurfCommand:
@@ -289,7 +289,7 @@ class blendSurfCommand:
         for obj in selectionObject:
             if hasattr(obj,"ReverseBinormal"): #obj is a curveOnSurface
                 cos.append(obj)
-        return(cos)
+        return cos
 
     def Activated(self):
         s = FreeCADGui.Selection.getSelection()

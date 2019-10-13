@@ -56,7 +56,7 @@ class sweep2rails:
                 #s2r.show()
                 obj.Points = s2r.downgradeArray()
                 obj.Shape = s2r.shapeCloud()
-                return(s2r)
+                return s2r
 
 
     def onChanged(self, fp, prop):
@@ -85,7 +85,7 @@ class sweep2rails:
         a = []
         for obj in prop:
             a.append(obj.Shape.Edges[0])
-        return(a)
+        return a
 
 
 
@@ -179,7 +179,7 @@ class sweep2railsVP:
     def claimChildren(self):
         a = self.Object.Profiles
         a.append(self.Object.Birail)
-        return(a)
+        return a
         
     def onDelete(self, feature, subelements): # subelements is a tuple of strings
         try:
@@ -187,7 +187,7 @@ class sweep2railsVP:
             for p in self.Object.Profiles:
                 p.ViewObject.show()
         except Exception as err:
-            FreeCAD.Console.PrintError("Error in onDelete: " + err.message)
+            FreeCAD.Console.PrintError("Error in onDelete: {0} \n".format(err))
         return True
 
 class s2rCommand:
@@ -199,7 +199,7 @@ class s2rCommand:
                 birail = obj
             else:
                 profs.append(obj)
-        return((birail,profs))
+        return (birail,profs)
 
     def Activated(self):
         s = FreeCADGui.Selection.getSelection()

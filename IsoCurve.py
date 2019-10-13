@@ -255,6 +255,6 @@ def run():
         from PySide import QtGui
         mb = QtGui.QMessageBox()
         mb.setIcon(mb.Icon.Warning)
-        mb.setText(err.message)
+        mb.setText("{0}".format(err))
         mb.setWindowTitle("Macro IsoCurve")
         mb.exec_()
