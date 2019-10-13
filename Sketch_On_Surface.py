@@ -149,7 +149,7 @@ def to2D(geom):
         curve2D = Part.Geom2d.Line2dSegment(Pts2D[0],Pts2D[1])
 
     #print(curve2D)
-    return(curve2D)
+    return curve2D
 
 class sketchOnSurface:
     "This feature object maps a sketch on a surface"
@@ -310,7 +310,7 @@ class sosVP:
         vobj.Proxy = self
        
     def getIcon(self):
-        return(TOOL_ICON)
+        return TOOL_ICON
 
     def attach(self, vobj):
         self.ViewObject = vobj
@@ -333,12 +333,12 @@ class sosVP:
         return None
 
     def claimChildren(self):
-        return(self.children)
+        return self.children
         
     def onDelete(self, feature, subelements): # subelements is a tuple of strings
         if self.children:
             self.children.ViewObject.Visibility = True
-        return(True)
+        return True
 
 def addFaceWireToSketch(fa, w, sk):
     curves = list()

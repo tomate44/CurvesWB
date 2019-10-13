@@ -53,9 +53,9 @@ class birail:
         n = eval(e.lstrip('Edge'))
         try:
             edge = o.Shape.Edges[n-1]
-            return(edge)
+            return edge
         except:
-            return(None)
+            return None
 
     def ruledSurface(self):
         if isinstance(self.edge1,Part.Edge) and isinstance(self.edge2,Part.Edge):
@@ -67,16 +67,16 @@ class birail:
 
     def tangentsAt(self, p):
         if self.normTan:
-            return((self.rail1.tangentAt(p), self.rail2.tangentAt(p)))
+            return (self.rail1.tangentAt(p), self.rail2.tangentAt(p))
         else:
-            return((self.rail1.derivative1At(p), self.rail2.derivative1At(p)))
+            return (self.rail1.derivative1At(p), self.rail2.derivative1At(p))
     def normalsAt(self, p):
         n1 = self.ruled.normalAt(p,0).negative()
         n2 = self.ruled.normalAt(p,1).negative()
         if self.normNor:
             n1.normalize()
             n2.normalize()
-        return((n1, n2))
+        return (n1, n2)
     def binormalsAt(self, p):
         # TODO check for 0-length vector
         v1 = self.rail1.valueAt(p)
@@ -84,17 +84,17 @@ class birail:
         v = v2.sub(v1)
         if self.normBin:
             v.normalize()
-        return((v, v.negative()))
+        return (v, v.negative())
     def frame1At(self, p):
         t = self.tangentsAt(p)[0]
         b = self.binormalsAt(p)[0]
         n = self.normalsAt(p)[0]
-        return((b, t, n))
+        return (b, t, n)
     def frame2At(self, p):
         t = self.tangentsAt(p)[1]
         b = self.binormalsAt(p)[1]
         n = self.normalsAt(p)[1]
-        return((b, t, n))
+        return (b, t, n)
     def matrix1At(self, p):
         t = self.rail1.valueAt(p)
         u,v,w = self.frame1At(p)
@@ -102,7 +102,7 @@ class birail:
                       u.y,v.y,w.y,t.y,
                       u.z,v.z,w.z,t.z,
                       0.0,0.0,0.0,1.0)
-        return(m)
+        return m
     def matrix2At(self, p):
         t = self.rail2.valueAt(p)
         u,v,w = self.frame2At(p)
@@ -110,7 +110,7 @@ class birail:
                       u.y,v.y,w.y,t.y,
                       u.z,v.z,w.z,t.z,
                       0.0,0.0,0.0,1.0)
-        return(m)
+        return m
 
 
 class birailVP:
@@ -137,15 +137,15 @@ class birailVP:
         return None
 
     def claimChildren(self):
-        #return([self.Object.Edge1[0], self.Object.Edge2[0]])
-        return()
+        #return [self.Object.Edge1[0], self.Object.Edge2[0]]
+        return
 
     def onDelete(self, feature, subelements): # subelements is a tuple of strings
         try:
             self.Object.Edge1[0].ViewObject.show()
             self.Object.Edge2[0].ViewObject.show()
         except Exception as err:
-            App.Console.PrintError("Error in onDelete: " + err.message)
+            FreeCAD.Console.PrintError("Error in onDelete: {0} \n".format(err))
         return True
 
 

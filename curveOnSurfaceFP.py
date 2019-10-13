@@ -93,7 +93,7 @@ class cosVP:
         try:
             self.Object.InputEdge[0].ViewObject.Visibility=True
         except Exception as err:
-            App.Console.PrintError("Error in onDelete: " + err.message)
+            FreeCAD.Console.PrintError("Error in onDelete: {0} \n".format(err))
         return(True)
 
 

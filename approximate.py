@@ -304,11 +304,11 @@ class ViewProviderApp:
         return
 
     def __getstate__(self):
-        return({"name": self.Object.Name})
+        return {"name": self.Object.Name}
 
     def __setstate__(self,state):
         self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
-        return(None)
+        return None
 
     def claimChildren(self):
         return [self.Object.PointObject]
@@ -317,8 +317,8 @@ class ViewProviderApp:
         try:
             self.Object.PointObject.ViewObject.Visibility=True
         except Exception as err:
-            App.Console.PrintError("Error in onDelete: " + err.message)
-        return(True)
+            FreeCAD.Console.PrintError("Error in onDelete: {0} \n".format(err))
+        return True
 
 
 
@@ -327,11 +327,11 @@ class approx:
         res = []
         for obj in selectionObject:
             if hasattr(obj.Object,'Group'):
-                return(obj.Object)
+                return obj.Object
             if len(obj.Object.Shape.Vertexes) > 1:
                 res.append(obj.Object)
         if res:
-            return(res)
+            return res
         else:
             FreeCAD.Console.PrintMessage("\nPlease select an object that has at least 2 vertexes")
         return None

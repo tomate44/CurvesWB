@@ -204,7 +204,7 @@ class ViewProviderIsoCurve:
             #self.Object.Base.ViewObject.show()
             #self.Object.Tool.ViewObject.show()
         #except Exception as err:
-            #App.Console.PrintError("Error in onDelete: " + err.message)
+            #FreeCAD.Console.PrintError("Error in onDelete: {0} \n".format(err))
         return True
 
 class CommandMacroIsoCurve:
@@ -223,7 +223,7 @@ class CommandMacroIsoCurve:
             f = Gui.Selection.Filter("SELECT Part::Feature SUBELEMENT Face COUNT 1..1000")
             return f.match()
         else:
-            return(False)
+            return False
 
 if App.GuiUp:
     Gui.addCommand("IsoCurve", CommandMacroIsoCurve())

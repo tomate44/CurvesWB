@@ -44,9 +44,9 @@ class Discretization:
         n = eval(e.lstrip('Edge'))
         try:
             edge = o.Shape.Edges[n-1]
-            return(edge.FirstParameter, edge.LastParameter)
+            return edge.FirstParameter, edge.LastParameter
         except:
-            return(0,1)
+            return 0,1
 
     def getTarget( self, obj, typ):
         o = obj.Edge[0]
@@ -62,17 +62,17 @@ class Discretization:
                         debug("wire has %d edges"%len(w.Edges))
                         obj.setEditorMode("Target", 0)
                         if typ:
-                            return(w)
-            return(edge)
+                            return w
+            return edge
         except:
-            return(None)
+            return None
 
     def buildPoints(self, obj):
         if obj.Target == "Wire":
             target = self.getTarget(obj, True)
             if not target:
                 debug("Failed to get wire")
-                return(False)
+                return False
             if   obj.Algorithm == "Number":
                 obj.Points = target.discretize( Number = obj.Number)
             elif obj.Algorithm == "QuasiNumber":
@@ -89,7 +89,7 @@ class Discretization:
             target = self.getTarget(obj, False)
             if not target:
                 debug("Failed to get edge")
-                return(False)
+                return False
             if   obj.Algorithm == "Number":
                 obj.Points = target.discretize( Number = obj.Number,         First = obj.ParameterFirst, Last = obj.ParameterLast)
             elif obj.Algorithm == "QuasiNumber":
@@ -194,7 +194,7 @@ class Discretization:
         out = {"name": self.obj.Name,
                "algo": self.obj.Algorithm,
                "target": self.obj.Target}
-        return(out)
+        return out
 
     def __setstate__(self,state):
         self.obj = FreeCAD.ActiveDocument.getObject(state["name"])
@@ -204,7 +204,7 @@ class Discretization:
             self.obj.addProperty("App::PropertyEnumeration",  "Target",    "Discretization",   "Tool target").Target=["Edge","Wire"]
         self.obj.Algorithm = state["algo"]
         self.obj.Target = state["target"]
-        return(None)
+        return None
 
 class ViewProviderDisc:
     def __init__(self,vobj):
@@ -217,11 +217,11 @@ class ViewProviderDisc:
         self.Object = vobj.Object
 
     def __getstate__(self):
-        return({"name": self.Object.Name})
+        return {"name": self.Object.Name}
 
     def __setstate__(self,state):
         self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
-        return(None)
+        return None
 
     def claimChildren(self):
         return [self.Object.Edge[0]]
@@ -230,7 +230,7 @@ class ViewProviderDisc:
         try:
             self.Object.Edge[0].ViewObject.Visibility=True
         except Exception as err:
-            App.Console.PrintError("Error in onDelete: " + err.message)
+            FreeCAD.Console.PrintError("Error in onDelete: {0} \n".format(err))
         return True
 
 class discretize:
@@ -264,9 +264,9 @@ class discretize:
         if FreeCAD.ActiveDocument:
             #f = FreeCADGui.Selection.Filter("SELECT Part::Feature SUBELEMENT Edge COUNT 1..1000")
             #return f.match()
-            return(True)
+            return True
         else:
-            return(False)
+            return False
 
 
     def GetResources(self):

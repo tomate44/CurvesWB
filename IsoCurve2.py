@@ -197,7 +197,7 @@ class ViewProviderIsoCurve:
             #self.Object.Base.ViewObject.show()
             #self.Object.Tool.ViewObject.show()
         #except Exception as err:
-            #App.Console.PrintError("Error in onDelete: " + err.message)
+            #FreeCAD.Console.PrintError("Error in onDelete: {0} \n".format(err))
         return True
 
 class CommandMacroIsoCurve:

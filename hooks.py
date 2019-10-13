@@ -38,10 +38,10 @@ class hook:
             o = obj.Edge[0]
             e = obj.Edge[1][0]
             n = eval(e.lstrip('Edge'))
-            return(o.Shape.Edges[n-1])
+            return o.Shape.Edges[n-1]
         else:
             debug("getEdge failed")
-            return(None)
+            return None
 
     def execute(self, obj):
         debug("* Hook : execute *\n")
@@ -211,7 +211,7 @@ class ViewProviderHook:
             #self.Object.Edge[0].ViewObject.Visibility=True
             ##self.Object.Tool.ViewObject.show()
         #except Exception as err:
-            #App.Console.PrintError("Error in onDelete: " + err.message)
+            #FreeCAD.Console.PrintError("Error in onDelete: {0} \n".format(err))
         #return True
 
 

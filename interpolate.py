@@ -200,11 +200,11 @@ class Interpolate:
 
     def __getstate__(self):
         out = {"name": self.obj.Name}
-        return(out)
+        return out
 
     def __setstate__(self,state):
         self.obj = FreeCAD.ActiveDocument.getObject(state["name"])
-        return(None)
+        return None
 
 class ViewProviderInterpolate:
     def __init__(self,vobj):
@@ -223,11 +223,11 @@ class ViewProviderInterpolate:
         return
 
     def __getstate__(self):
-        return({"name": self.Object.Name})
+        return {"name": self.Object.Name}
 
     def __setstate__(self,state):
         self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
-        return(None)
+        return None
 
     #def claimChildren(self):
         #return [self.Object.PointObject]
@@ -236,8 +236,8 @@ class ViewProviderInterpolate:
         #try:
             #self.Object.PointObject.ViewObject.Visibility=True
         #except Exception as err:
-            #App.Console.PrintError("Error in onDelete: " + err.message)
-        #return(True)
+            #FreeCAD.Console.PrintError("Error in onDelete: {0} \n".format(err))
+        #return True
 
 class interpolate:
     def parseSel(self, selectionObject):
