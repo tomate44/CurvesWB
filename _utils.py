@@ -53,7 +53,8 @@ def getShape(obj, prop, shape_type):
             sh = getSubShape(obj.getPropertyByName(prop)[0].Shape, shape_type, n)
             if sh and hasattr(obj.getPropertyByName(prop)[0], "getGlobalPlacement"):
                 pl = obj.getPropertyByName(prop)[0].getGlobalPlacement()
-                sh.Placement = pl
+                if not pl == FreeCAD.Placement():
+                    sh.Placement = pl
             return sh
         elif obj.getTypeIdOfProperty(prop) == "App::PropertyLinkSubList":
             res = []
@@ -63,7 +64,8 @@ def getShape(obj, prop, shape_type):
                     sh = getSubShape(tup[0].Shape, shape_type, n)
                     if sh and hasattr(obj.getPropertyByName(prop)[0], "getGlobalPlacement"):
                         pl = obj.getPropertyByName(prop)[0].getGlobalPlacement()
-                        sh.Placement = pl
+                        if not pl == FreeCAD.Placement():
+                            sh.Placement = pl
                     res.append(sh)
             return res
         else:
