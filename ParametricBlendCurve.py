@@ -291,32 +291,48 @@ class BlendCurveVP:
                 vobj.Selectable = False
                 self.ps = vobj.PointSize
                 vobj.PointSize = 0.0
+            
             pts = list()
             e1 = _utils.getShape(self.Object, "Edge1", "Edge")
             e2 = _utils.getShape(self.Object, "Edge2", "Edge")
+            
             pa1 = e1.FirstParameter + (e1.LastParameter-e1.FirstParameter)*self.Object.Parameter1
+            pa2 = e2.FirstParameter + (e2.LastParameter-e2.FirstParameter)*self.Object.Parameter2
+            
+            d = e1.valueAt(pa1).distanceToPoint(e2.valueAt(pa2))
+            
             self.m1 = manipulators.EdgeSnapAndTangent(e1.valueAt(pa1), e1)
             pts.append(self.m1)
-            self.t1 = manipulators.TangentSnap(self.m1)
-            self.t1.parameter = self.Object.Scale1
-            pts.append(self.t1)
             self.c1 = manipulators.CycleText(self.m1)
             self.c1.text_list = ["C0","G1","G2","G3","G4"]
             self.c1.text = self.Object.Continuity1
             self.c1.show()
             pts.append(self.c1)
             
-            pa2 = e2.FirstParameter + (e2.LastParameter-e2.FirstParameter)*self.Object.Parameter2
+            self.t1 = manipulators.TangentSnap(self.m1)
+            self.t1._scale = d / 3.0
+            self.t1.parameter = self.Object.Scale1
+            pts.append(self.t1)
+            self.tt1 = manipulators.ParameterText(self.t1)
+            self.tt1.show()
+            pts.append(self.tt1)
+            
             self.m2 = manipulators.EdgeSnapAndTangent(e2.valueAt(pa2), e2)
             pts.append(self.m2)
-            self.t2 = manipulators.TangentSnap(self.m2)
-            self.t2.parameter = self.Object.Scale2
-            pts.append(self.t2)
             self.c2 = manipulators.CycleText(self.m2)
             self.c2.text_list = ["C0","G1","G2","G3","G4"]
             self.c2.text = self.Object.Continuity2
             self.c2.show()
             pts.append(self.c2)
+
+            self.t2 = manipulators.TangentSnap(self.m2)
+            self.t2._scale = d / 3.0
+            self.t2.parameter = self.Object.Scale2
+            pts.append(self.t2)
+            self.tt2 = manipulators.ParameterText(self.t2)
+            self.tt2.show()
+            pts.append(self.tt2)
+            
             self.ip = pointEditor(pts, self.Object)
             debug("pointEditor created\n")
             self.ip.root.on_drag.append(self.update_shape)
@@ -551,8 +567,8 @@ class ParametricBlendCurve:
                 obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Blend Curve") #add object to document
                 BlendCurveFP(obj,edges[i:i+2])
                 BlendCurveVP(obj.ViewObject)
-                obj.Parameter1 = self.normalizedParam(edges[i], param[i], True)
-                obj.Parameter2 = self.normalizedParam(edges[i+1], param[i+1], True)
+                obj.Parameter1 = self.normalizedParam(edges[i], param[i], False)
+                obj.Parameter2 = self.normalizedParam(edges[i+1], param[i+1], False)
                 obj.Continuity1 = "G1"
                 obj.Continuity2 = "G1"
                 obj.Output = "Single"

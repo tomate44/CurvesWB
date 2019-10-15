@@ -99,7 +99,7 @@ class EdgeSnapAndTangent(ShapeSnap):
         #print(par)
         tan = self.snap_shape.tangentAt(par)
         e = Part.makeLine(p, p+tan)
-        self.tangent =  e.Curve.toShape(-200,200)
+        self.tangent =  e.Curve.toShape(-2e10, 2e10)
 
 
 class SubLinkSnap(ShapeSnap):
@@ -139,6 +139,7 @@ class TangentSnap(ShapeSnap):
         super(TangentSnap, self).__init__(FreeCAD.Vector())
         self.parent = manip
         self._par = 1.0
+        self._scale = 1.0
         self.update_tangent()
         #p = self.snap_shape.valueAt(self.par)
         #self.points = [p]
@@ -146,18 +147,17 @@ class TangentSnap(ShapeSnap):
         self.on_drag.append(self.update_parameter)
     def update_tangent(self):
         self.snap_shape = self.parent.tangent
-        p = self.snap_shape.valueAt(self._par)
-        self.points = [p]
+        self.points = [self.snap_shape.valueAt(self._par * self._scale)]
     def update_parameter(self):
         p = self.vector(self.points[0])
-        self._par = self.snap_shape.Curve.parameter(p)
+        self._par = self.snap_shape.Curve.parameter(p) / self._scale
     @property
     def parameter(self):
         return self._par
     @parameter.setter
     def parameter(self, t):
         self._par = t
-        self.points = [self.snap_shape.valueAt(t)]
+        self.points = [self.snap_shape.valueAt(self._par * self._scale)]
         
 
 class WithCustomTangent(object):
@@ -231,6 +231,16 @@ class CycleText(CustomText):
                 self.text = self.text_list[0]
         else:
             self.text = self.text_list[0]
+
+class ParameterText(CustomText):
+    """Text manipulator that displays the parameter value of its parent"""
+    def __init__(self, parent, dynamic=False):
+        super(ParameterText, self).__init__(parent, dynamic)
+        self.parent.on_drag.append(self.update_text)
+        if hasattr(self.parent, "parent"):
+            self.parent.parent.on_drag.append(self.translate)
+    def update_text(self):
+        self.text = '{: 9.3f}'.format(self.parent.parameter)
 
 class MarkerOnShape(graphics.Marker):
     def __init__(self, points, sh=None):
