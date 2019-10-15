@@ -165,7 +165,7 @@ class BsplineBasis(object):
         """
         n = len(self.knots)-self.degree-1
         if u == self.knots[n+1]:
-            return(n-1)
+            return n-1
         low = self.degree
         high = n+1
         mid = int((low+high)/2)
@@ -175,7 +175,7 @@ class BsplineBasis(object):
             else:
                 low = mid
             mid = int((low+high)/2)
-        return(mid)
+        return mid
 
     def basis_funs(self, i, u):
         """ Compute the nonvanishing basis functions.
@@ -196,7 +196,7 @@ class BsplineBasis(object):
                 N[r] = saved + right[r+1] * temp
                 saved = left[j-r]*temp
             N[j] = saved
-        return(N)
+        return N
 
     def ders_basis_funs(self, i, u, n):
         """ Compute nonzero basis functions and their derivatives.
@@ -258,7 +258,7 @@ class BsplineBasis(object):
             for j in range(0,self.degree+1):
                 ders[k][j] *= r
             r *= (self.degree-k)
-        return(ders)
+        return ders
 
     def evaluate(self, u, d):
         """ Compute the derivative d of the basis functions.
@@ -271,7 +271,7 @@ class BsplineBasis(object):
         ders = self.ders_basis_funs(span, u, d)
         for i,val in enumerate(ders[d]):
             f[span-self.degree+i] = val
-        return(f)
+        return f
 
 # This KnotVector class is equivalent to the following knotSeq* functions
 # I am not sure what is best: a class or a set of independent functions ?
@@ -283,11 +283,11 @@ class KnotVector(object):
         self._min_max()
 
     def __repr__(self):
-        return("KnotVector(%s)"%str(self._vector))
+        return "KnotVector(%s)"%str(self._vector)
 
     @property
     def vector(self):
-        return(self._vector)
+        return self._vector
 
     @vector.setter
     def vector(self, v):
@@ -325,7 +325,7 @@ class KnotVector(object):
         newvec = KnotVector()
         newvec.vector = [self._vector[0], pa, self._vector[-1]]
         newvec.reverse()
-        return(newvec.vector[1])
+        return newvec.vector[1]
 
     def create_uniform(self, degree, nb_poles):
         """Create a uniform knotVector from given degree and Nb of poles"""
@@ -342,11 +342,11 @@ class KnotVector(object):
     def get_mults(self):
         """Get the list of multiplicities of the knot vector"""
         no_duplicates = list(set(self._vector))
-        return([self._vector.count(k) for k in no_duplicates])
+        return [self._vector.count(k) for k in no_duplicates]
 
     def get_knots(self):
         """Get the list of unique knots, without duplicates"""
-        return(list(set(self._vector)))
+        return list(set(self._vector))
 
 # ---------------------------------------------------
 
@@ -357,7 +357,7 @@ def knotSeqReverse(knots):
     mi = min(knots)
     newknots = [ma+mi-k for k in knots]
     newknots.reverse()
-    return(newknots)
+    return newknots
 
 def knotSeqNormalize(knots):
     """Normalize a knot vector
@@ -366,7 +366,7 @@ def knotSeqNormalize(knots):
     mi = min(knots)
     ran = ma-mi
     newknots = [(k-mi)/ran for k in knots]
-    return(newknots)
+    return newknots
 
 def knotSeqScale(knots, length = 1.0, start = 0.0):
     """Scales a knot vector to a given length
@@ -378,13 +378,13 @@ def knotSeqScale(knots, length = 1.0, start = 0.0):
         mi = min(knots)
         ran = ma-mi
         newknots = [start+(length*(k-mi)/ran) for k in knots]
-        return(newknots)
+        return newknots
 
 def paramReverse(pa,fp,lp):
     """Returns the image of parameter param when knot sequence [fp,lp] is reversed.
     newparam = paramReverse(param,fp,lp)"""
     seq = [fp,pa,lp]
-    return(knotSeqReverse(seq)[1])
+    return knotSeqReverse(seq)[1]
 
 def createKnots(degree, nbPoles):
     """Create a uniform knotVector from given degree and Nb of poles
@@ -396,7 +396,7 @@ def createKnots(degree, nbPoles):
         start = [0.0 for k in range(degree+1)]
         mid = [float(k) for k in range(1,nbIntKnots+1)]
         end = [float(nbIntKnots+1) for k in range(degree+1)]
-        return(start+mid+end)
+        return start+mid+end
 
 def createKnotsMults(degree, nbPoles):
     """Create a uniform knotVector and a multiplicities list from given degree and Nb of poles
@@ -407,7 +407,7 @@ def createKnotsMults(degree, nbPoles):
         nbIntKnots = nbPoles - degree - 1
         knots = [0.0] + [float(k) for k in range(1,nbIntKnots+1)] + [float(nbIntKnots+1)]
         mults = [degree+1] + [1 for k in range(nbIntKnots)] + [degree+1]
-        return(knots, mults)
+        return knots, mults
 
 # ---------------------------------------------------
 
@@ -422,7 +422,7 @@ def nearest_parameter(bs,pt):
         d,p,i = v.distToShape(e)
         pt1 = p[0][1]
         par = bs.parameter(pt1)
-    return(par)
+    return par
 
 def bspline_copy(bs, reverse = False, scale = 1.0):
     """Copy a BSplineCurve, with knotvector optionally reversed and scaled
@@ -443,7 +443,7 @@ def bspline_copy(bs, reverse = False, scale = 1.0):
         knots = knotSeqReverse(knots)
     bspline = Part.BSplineCurve()
     bspline.buildFromPolesMultsKnots(poles, mults , knots, perio, bs.Degree, weights, ratio)
-    return(bspline)
+    return bspline
 
 def curvematch(c1, c2, par1, level=0, scale=1.0):
     '''Modifies the start of curve C2 so that it joins curve C1 at parameter par1
@@ -508,7 +508,7 @@ def curvematch(c1, c2, par1, level=0, scale=1.0):
     nc = c2.copy()
     for i in range(len(p2)):
         nc.setPole(i+1,p2[i])
-    return(nc)
+    return nc
 
 class blendCurve(object):
     def __init__(self, e1 = None, e2 = None):
@@ -546,9 +546,9 @@ class blendCurve(object):
         v1 = self.edge1.value(self.param1)
         v2 = self.edge2.value(self.param2)
         try:
-            return(Part.LineSegment(v1,v2))
+            return Part.LineSegment(v1,v2)
         except Part.OCCError: # v1 == v2
-            return(False)
+            return False
     
     #def getChordLength(self):
         #ls = self.getChord()
@@ -582,19 +582,19 @@ class blendCurve(object):
                     #res = (self.scale1, self.scale2)
         #self.scale1 = old_scale1
         #self.scale2 = old_scale2
-        #return(res)
+        #return res
 
     def compute(self):
         nbPoles = self.cont1 + self.cont2 + 2
         e = self.getChord()
         if not e:
             self.Curve = None
-            return()
+            return
         try:
             poles = e.discretize(nbPoles)
         except Part.OCCError:
             self.Curve = None
-            return()
+            return
         degree = nbPoles - 1
         if degree > self.maxDegree:
             degree = self.maxDegree
@@ -608,7 +608,7 @@ class blendCurve(object):
 
     def getPoles(self):
         if self.Curve:
-            return(self.Curve.getPoles())
+            return self.Curve.getPoles()
     
     def getCurves(self):
         result = []
@@ -632,29 +632,29 @@ class blendCurve(object):
             if self.param2 < e2.LastParameter:
                 e2.segment(self.param2, e2.LastParameter)
                 result.append(e2)
-        return(result)
+        return result
     
     def getEdges(self):
-        return([c.toShape() for c in self.getCurves()])
+        return [c.toShape() for c in self.getCurves()]
 
     def getWire(self):
-        return(Part.Wire(Part.__sortEdges__(self.getEdges())))
+        return Part.Wire(Part.__sortEdges__(self.getEdges()))
     
     def getJoinedCurve(self):
         c = self.getCurves()
         c0 = c[0]
         for cu in c[1:]:
             c0.join(cu)
-        return(c0)        
+        return c0
 
     def shape(self):
         if self.Curve:
-            return(self.Curve.toShape())
+            return self.Curve.toShape()
         else:
-            return(None)
+            return None
 
     def curve(self):
-        return(self.Curve)
+        return self.Curve
             
 
 # ---------------------------------------------------
@@ -672,7 +672,7 @@ def move_param(c,p1,p2):
     c2.setKnots(knots2)
     #print("New 1 -> %r"%c1.getKnots())
     #print("New 2 -> %r"%c2.getKnots())
-    return(c1,c2)
+    return c1,c2
 
 def move_params(c,p1,p2):
     curves = list()
@@ -687,7 +687,7 @@ def move_params(c,p1,p2):
         print("%s -> %s"%(c1.getKnots(),knots1))
         c1.setKnots(knots1)
         curves.append(c1)
-    return(curves)
+    return curves
 
 def join_curve(c1,c2):
     c = Part.BSplineCurve()
@@ -708,30 +708,30 @@ def join_curve(c1,c2):
     print("mults   -> %r"%new_mults)
     print("knots   -> %r"%new_knots)
     c.buildFromPolesMultsKnots(new_poles, new_mults, new_knots, False, c1.Degree, new_weights, True)
-    return(c)
+    return c
 
 def join_curves(curves):
     c0 = curves[0]
     for c in curves[1:]:
         c0 = join_curve(c0,c)
-    return(c0)
+    return c0
 
 def reparametrize(c, p1, p2):
     '''Reparametrize a BSplineCurve so that parameter p1 is moved to p2'''
     if not isinstance(p1,(list, tuple)):
         c1,c2 = move_param(c, p1, p2)
         c = join_curve(c1,c2)
-        return(c)
+        return c
     else:
         curves = move_params(c, p1, p2)
         c = join_curves(curves)
-        return(c)
+        return c
 
 def param_samples(edge, samples=10):
     fp = edge.FirstParameter
     lp = edge.LastParameter
     ra = lp-fp
-    return([fp+float(i)*ra/(samples-1) for i in range(samples)])
+    return [fp+float(i)*ra/(samples-1) for i in range(samples)]
 
 # doesn't work
 #def eval_smoothness(edge, samples=10):
@@ -755,7 +755,7 @@ def param_samples(edge, samples=10):
         #curvature_score = (m-min(curv))/m
     #else:
         #curvature_score = 0.0
-    #return(length_score,tangent_score,curvature_score)
+    #return length_score,tangent_score,curvature_score
     
 class EdgeInterpolator(object):
     """interpolate data along a path shape
@@ -809,21 +809,21 @@ class EdgeInterpolator(object):
             v = val
         else:
             FreeCAD.Console.PrintError("Failed to convert %s data to FreeCAD.Vector"%type(val))
-        return(v)
+        return v
 
     def vec_to_dat(self, v):
         val = self.data[0][1]
         if isinstance(val,(list, tuple)):
             if len(val) == 1:
-                return([v.x])
+                return [v.x]
             elif len(val) == 2:
-                return([v.x, v.y])
+                return [v.x, v.y]
             if len(val) == 3:
-                return([v.x, v.y, v.z])
+                return [v.x, v.y, v.z]
         elif isinstance(val,FreeCAD.Base.Vector2d):
-            return(FreeCAD.Base.Vector2d(v.x, v.y))
+            return FreeCAD.Base.Vector2d(v.x, v.y)
         elif isinstance(val,FreeCAD.Vector):
-            return(v)
+            return v
         else:
             FreeCAD.Console.PrintError("Failed to convert FreeCAD.Vector to %s"%type(val))
 
@@ -845,9 +845,9 @@ class EdgeInterpolator(object):
     def valueAt(self, p):
         if len(self.data) > 1:
             vec = self.curve.value(p)
-            return(self.vec_to_dat(vec))
+            return self.vec_to_dat(vec)
         else:
-            return(self.data[0][1])
+            return self.data[0][1]
 
 
         
@@ -873,7 +873,7 @@ def test(parm):
         import splipy
     except ImportError:
         print("splipy is not installed.")
-        return(False)
+        return False
     
     basis1 = splipy.BSplineBasis(order=bb.degree+1, knots=bb.knots)
     
