@@ -73,12 +73,13 @@ Sketcher::PropertyConstraintList
 """
 
 class CompSpring(object):
-    def __init__(self, length=10, turns=8, wireDiam=0.5, diameter=4.0):
+    def __init__(self, length=10, turns=8, wireDiam=0.5, diameter=4.0, flatness=100):
         #self.epsilon = 1e-2
         self.length = length
         self.turns = turns
         self.wire_diam = wireDiam
         self.diameter = diameter
+        self.flatness = flatness
 
     def compute_path_cp(self):
         free_turns = self.turns-2
@@ -96,24 +97,24 @@ class CompSpring(object):
         pts.append(Vector2d(i1.X,i1.Y))
         pts.append(Vector2d(i2.X,i2.Y))
         pts.append(Vector2d(self.turns*2*pi,self.length-self.wire_diam/2.))
-        return(pts)
+        return pts
     
-    def path2d(self,w=100):
+    def path2d(self):
         poles = self.compute_path_cp()
         bs = Geom2d.BSplineCurve2d()
         bs.buildFromPoles(poles)
-        bs.setWeight(2,w)
-        bs.setWeight(3,w)
-        return(bs)
+        bs.setWeight(2,self.flatness)
+        bs.setWeight(3,self.flatness)
+        return bs
 
-    def path3d(self,w=100):
+    def path3d(self):
         cyl = Part.makeCylinder((self.diameter-self.wire_diam)/2., self.length-self.wire_diam, Vector(), Vector(0,0,1)).Face1
-        return(self.path2d(w).toShape(cyl.Surface))
+        return self.path2d().toShape(cyl.Surface)
 
     def min_length(self):
-        return((self.turns+1)*self.wire_diam)
+        return (self.turns+1)*self.wire_diam
 
-    def shape(self, single=False):
+    def shape(self):
         path = Part.Wire(self.path3d())
         c = Part.Circle(path.Edges[0].valueAt(path.Edges[0].FirstParameter), path.Edges[0].tangentAt(path.Edges[0].FirstParameter), self.wire_diam/2.0)
         pro = Part.Wire([c.toShape()])
@@ -127,8 +128,8 @@ class CompSpring(object):
         if ps.isReady():
             ps.build()
             ps.makeSolid()
-            return(ps.shape())
-        return(None)
+            return ps.shape()
+        return None
     
     #def offset_points(self,pts,start,step,power=1):
         #npts = list()
@@ -139,17 +140,17 @@ class CompSpring(object):
             #else:
                 #fac = pow(v,power)
             #npts.append(pts[i] + Vector(0,0,start + fac*step))
-        #return(npts)
+        #return npts
 
     #def point_lists(self):
         #helix_radius = (self.diameter - self.wire_diam) / 2.0
         #if self.length < self.min_length():
             #print("Spring too short")
-            #return()
+            #return 
         #free_space = self.length - self.min_length()
         #if self.turns <= 2:
             #print("Spring must have more than 2 turns")
-            #return()
+            #return 
         #step = free_space / (self.turns - 2)
         #circle = Part.Circle(Vector(),Vector(0,0,1),helix_radius)
         #pts = circle.discretize(self.samples)
@@ -164,7 +165,7 @@ class CompSpring(object):
             #start += self.wire_diam+step
         #pts1 = self.offset_points(pts,start,self.wire_diam+self.epsilon,-2)
         #points.append(pts1)
-        #return(points)
+        #return points
 
     #def curves(self):
         #curves = list()
@@ -173,19 +174,19 @@ class CompSpring(object):
             #bs = Part.BSplineCurve()
             #bs.interpolate(pts)
             #curves.append(bs)
-        #return(curves)
+        #return curves
 
     #def edges(self):
         #edges = list()
         #for c in self.curves():
             #edges.append(c.toShape())
-        #return(edges)
+        #return edges
 
     #def wire(self, single=True):
         #if single:
-            #return(Part.Wire(self.path3d())) #self.single_edge()))
+            #return Part.Wire(self.path3d())) #self.single_edge())
         #else:
-            #return(Part.Wire(self.edges()))
+            #return Part.Wire(self.edges())
 
     #def single_curve(self):
         #pl = self.point_lists()
@@ -195,10 +196,10 @@ class CompSpring(object):
         #pts += pl[-1][1:]
         #bs = Part.BSplineCurve()
         #bs.interpolate(pts)
-        #return(bs)
+        #return bs
 
     #def single_edge(self):
-        #return(self.single_curve().toShape())
+        #return self.single_curve().toShape()
 
 
         
@@ -211,25 +212,26 @@ class CompSpringFP:
         obj.addProperty("App::PropertyInteger", "Turns", "CompSpring", "Number of turns").Turns = 5
         obj.addProperty("App::PropertyFloat", "WireDiameter", "CompSpring", "Diameter of the spring wire").WireDiameter = 0.5
         obj.addProperty("App::PropertyFloat", "Diameter", "CompSpring", "Diameter of the spring").Diameter = 4.0
-        #obj.addProperty("App::PropertyInteger", "Samples", "Setting", "Number of point samples by turn").Samples = 16
+        obj.addProperty("App::PropertyInteger", "Flatness", "Setting", "Flatness of spring extremities from 0 to 4").Flatness = 0
         #obj.addProperty("App::PropertyBool", "Smooth", "Setting", "make spring with a single tube surface").Smooth = False
         obj.addProperty("App::PropertyBool", "WireOutput", "Setting", "Output a wire shape").WireOutput=True
         obj.Proxy = self
 
     def spring(self, obj):
         try:
-            return(CompSpring(obj.Length, obj.Turns, obj.WireDiameter, obj.Diameter))
+            f = pow(10, obj.Flatness-1)
+            return CompSpring(obj.Length, obj.Turns, obj.WireDiameter, obj.Diameter, f)
         except AttributeError:
-            return(None)
+            return None
 
     def execute(self, obj):
         cs = self.spring(obj)
-        if not cs: return()
+        if not cs: return 
         if obj.WireOutput:
             obj.Shape = cs.path3d()
         else:
             obj.Shape = cs.shape()
-        return(cs)
+        return cs
 
     def onChanged(self, obj, prop):
         if prop in ("Length","Turns","WireDiameter"):
@@ -237,23 +239,28 @@ class CompSpringFP:
             if cs:
                 if obj.Length < cs.min_length():
                     obj.Length = cs.min_length()
+        if prop == "Flatness":
+            if obj.Flatness < 0:
+                obj.Flatness = 0
+            elif obj.Flatness > 4:
+                obj.Flatness = 4
 
 class CompSpringVP:
     def __init__(self,vobj):
         vobj.Proxy = self
        
     def getIcon(self):
-        return(TOOL_ICON)
+        return TOOL_ICON
 
     def attach(self, vobj):
         self.Object = vobj.Object
 
     def __getstate__(self):
-        return({"name": self.Object.Name})
+        return {"name": self.Object.Name}
 
     def __setstate__(self,state):
         self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
-        return(None)
+        return None
 
 class CompSpringCommand:
     """Creates a Parametric Compression Spring"""
@@ -268,9 +275,9 @@ class CompSpringCommand:
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:
-            return(True)
+            return True
         else:
-            return(False)
+            return False
 
     def GetResources(self):
         return {'Pixmap' : TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
