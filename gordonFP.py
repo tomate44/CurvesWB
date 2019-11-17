@@ -93,8 +93,8 @@ class gordon:
         
         import gordon
         reload(gordon)
-        guide_curves = [e.Curve.toBSpline() for e in guides]
-        profile_curves = [e.Curve.toBSpline() for e in profiles]
+        guide_curves = [e.Curve.toBSpline(e.FirstParameter,e.LastParameter) for e in guides]
+        profile_curves = [e.Curve.toBSpline(e.FirstParameter,e.LastParameter) for e in profiles]
         debug("%d guides / %d profiles"%(len(guide_curves),len(profile_curves)))
         guides_closed = all([c.isClosed() for c in guide_curves])
         profile_closed = all([c.isClosed() for c in profile_curves])
