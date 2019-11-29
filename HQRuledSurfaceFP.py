@@ -78,7 +78,7 @@ class HQ_Ruled_SurfaceFP:
         obj.addProperty("App::PropertyInteger",     "Samples",       "HQ_Ruled_Surface", "Number of orthogonal samples").Samples = 20
         obj.addProperty("App::PropertyFloatConstraint","SmoothingFactorStart", "HQ_Ruled_Surface", "Smoothing factor on curve start")
         obj.addProperty("App::PropertyFloatConstraint","SmoothingFactorEnd", "HQ_Ruled_Surface", "Smoothing factor on curve end")
-        obj.addProperty("App::PropertyInteger",     "Method", "HQ_Ruled_Surface", "Projection method (1,2,3)").Method = 3
+        obj.addProperty("App::PropertyInteger",     "Method", "HQ_Ruled_Surface", "Projection method (1,2,3,4)").Method = 3
         obj.addProperty("App::PropertyFloat", "Tol3D", "HQ_Ruled_Surface", "3D tolerance").Tol3D = 1e-5
         obj.addProperty("App::PropertyFloat", "Tol2D", "HQ_Ruled_Surface", "Parametric tolerance").Tol2D = 1e-8
         obj.SmoothingFactorStart = (0.2, 0.0, 0.5, 0.05)
@@ -94,7 +94,7 @@ class HQ_Ruled_SurfaceFP:
         obj.SourceShapes = shapes
         obj.setEditorMode("Tol3D",2)
         obj.setEditorMode("Tol2D",2)
-        obj.setEditorMode("Method",2)
+        obj.setEditorMode("Method",0)
         obj.Proxy = self
 
     def get_curves(self, obj):

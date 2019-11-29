@@ -59,6 +59,25 @@ def get_ortho_params(e1,e2,n):
             params.append([p,e2.Curve.parameter(pts[0][1])])
     return params
 
+def get_chord_normal_params (e1,e2,n):
+    params = list()
+    fp, lp = e1.ParameterRange
+    chord = Part.makeLine(e1.valueAt(fp), e1.valueAt(lp))
+    pts = chord.discretize(n)
+    plane = Part.Plane(pts[0],chord.tangentAt(chord.FirstParameter))
+    for pt in pts:
+        plane.Position = pt
+        p1 = e1.Curve.intersect(plane)
+        p2 = e2.Curve.intersect(plane)
+        print("{} - {}".format(p1,p2))
+        try:
+            params.append([e1.Curve.parameter(FreeCAD.Vector(p1[0][0].X, p1[0][0].Y, p1[0][0].Z)),
+                           e2.Curve.parameter(FreeCAD.Vector(p2[0][0].X, p2[0][0].Y, p2[0][0].Z))])
+            print("{}".format(params[-1]))
+        except:
+            _utils.warn("chord_normal compute error")
+    return params
+
 def stretch_params(par, edge, start=0.3, end=0.3):
     #_utils.info(len(par))
     npar = par[:]
@@ -118,6 +137,7 @@ def reparametrize(ie1, ie2, num=20, smooth_start=0.2, smooth_end=0.2, method=3):
     1 - Edge 1 projected on Edge 2
     2 - Edge 2 projected on Edge 1
     3 - Best of methods 1 and 2 by number of results
+    4 - Normal plane of chord line
     """
     c1 = normalized_bspline(ie1, False)
     c2 = normalized_bspline(ie2, not _utils.same_direction(ie1, ie2, 10))
@@ -130,7 +150,7 @@ def reparametrize(ie1, ie2, num=20, smooth_start=0.2, smooth_end=0.2, method=3):
     elif method == 2:
         params = [[p[1],p[0]] for p in get_ortho_params(e2, e1, num)]
         sorted_params = get_ascending(params)
-    else:
+    elif method == 3:
         pa1 = get_ortho_params(e1, e2, num)
         so_pa1 = get_ascending(pa1)
         pa2 = [[p[1],p[0]] for p in get_ortho_params(e2, e1, num)]
@@ -141,7 +161,9 @@ def reparametrize(ie1, ie2, num=20, smooth_start=0.2, smooth_end=0.2, method=3):
         else:
             params = pa1
             sorted_params = so_pa1
-
+    else: #elif method == 4:
+        params = get_chord_normal_params(e1,e2,num)
+        sorted_params = get_ascending(params)
     p1 = [s[0] for s in sorted_params]
     p2 = [s[1] for s in sorted_params]
     gp = [1.0*i/(len(p1)-1) for i in range(len(p1))]
