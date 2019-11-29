@@ -40,11 +40,12 @@ class CurvesWorkbench(Workbench):
             import graphics
             marker = graphics.Marker([FreeCAD.Vector()])
             import gordon_profile_FP
-            stablelist = ["gordon_profile"]
+            stablelist = []
             FreeCAD.Console.PrintMessage("Pivy.graphics interaction library enabled\n")
         except:
             FreeCAD.Console.PrintWarning("Pivy.graphics interaction library is not available on this computer\n")
 
+        import lineFP # cleaned
         import curveExtendFP # TODO use basisSpline
         import JoinCurves
         import splitCurves_2 # cleaned
@@ -83,7 +84,7 @@ class CurvesWorkbench(Workbench):
         #if hasattr(Part.BezierSurface,"extendByLength"):
             #import ExtendSurfaceFP
 
-        stablelist.extend(["combined_projection","extend","join","split","Discretize","Approximate","Interpolate","ParametricBlendCurve","ParametricComb","ZebraTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface","pasteSVG","profile","pipeshell","gordon","segment_surface","to_console","SublinkEditor","comp_spring","ReflectLines","oriented_sketch","hq_ruled_surface"])
+        stablelist.extend(["line","gordon_profile","combined_projection","extend","join","split","Discretize","Approximate","Interpolate","ParametricBlendCurve","ParametricComb","ZebraTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface","pasteSVG","profile","pipeshell","gordon","segment_surface","to_console","SublinkEditor","comp_spring","ReflectLines","oriented_sketch","hq_ruled_surface"])
         
         #if hasattr(Part.BezierSurface,"extendByLength"):
             #stablelist.append("extend_surface")
