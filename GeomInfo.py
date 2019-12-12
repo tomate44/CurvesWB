@@ -358,7 +358,9 @@ class GeomInfo:
 
             self.myFont = coin.SoFont()
             self.myFont.name = "FreeMono,FreeSans,sans"
-            self.myFont.size.setValue(14.0)
+            size = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves").GetInt('GeomInfoFontSize', 14)
+            print(size)
+            self.myFont.size.setValue(size)
             #self.trans = coin.SoTranslation()
             self.SoText2  = coin.SoText2()
             #self.trans.translation.setValue(.25,.0,1.25)
