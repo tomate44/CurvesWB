@@ -70,7 +70,7 @@ class CurvesWorkbench(Workbench):
         import pipeshellFP
         import gordonFP
         import toConsole
-        import combined_curve
+        import mixed_curve
         import curve_to_script
         import sublink_edit
         import adjacent_faces
@@ -84,7 +84,7 @@ class CurvesWorkbench(Workbench):
         #if hasattr(Part.BezierSurface,"extendByLength"):
             #import ExtendSurfaceFP
 
-        stablelist.extend(["line","gordon_profile","combined_projection","extend","join","split","Discretize","Approximate","Interpolate","ParametricBlendCurve","ParametricComb","ZebraTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface","pasteSVG","profile","pipeshell","gordon","segment_surface","to_console","SublinkEditor","comp_spring","ReflectLines","oriented_sketch","hq_ruled_surface"])
+        stablelist.extend(["line","gordon_profile","mixed_curve","extend","join","split","Discretize","Approximate","Interpolate","ParametricBlendCurve","ParametricComb","ZebraTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface","pasteSVG","profile","pipeshell","gordon","segment_surface","to_console","SublinkEditor","comp_spring","ReflectLines","oriented_sketch","hq_ruled_surface"])
         
         #if hasattr(Part.BezierSurface,"extendByLength"):
             #stablelist.append("extend_surface")

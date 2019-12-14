@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Constrained Profile"
+__title__ = "Freehand BSpline"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Creates an editable interpolation curve"
+__doc__ = "Creates an freehand BSpline curve"
 
 import sys
 if sys.version_info.major >= 3:
@@ -325,7 +325,7 @@ class GordonProfileCommand:
     q - Apply changes and quit editing\n"""
     
     def makeFeature(self, sub, pts, typ):
-        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Gordon Profile")
+        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Freehand BSpline")
         proxy = GordonProfileFP(fp,sub,pts,typ)
         GordonProfileVP(fp.ViewObject)
         FreeCAD.Console.PrintMessage(GordonProfileCommand.docu)

@@ -3,7 +3,7 @@
 __title__ = "Sketch on surface"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Maps a sketch on a surface"
+__doc__ = "Map a sketch on a surface"
 
 import FreeCAD
 import FreeCADGui
@@ -435,7 +435,7 @@ class SoS:
             FreeCAD.Console.PrintMessage("Please select 1 face (in the 3D view) and optionally 1 sketch\n")
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'SoS', 'ToolTip': 'Maps a sketch on a surface'}
+        return {'Pixmap' : TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
 
 FreeCADGui.addCommand('SoS', SoS())
         

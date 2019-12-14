@@ -1,13 +1,17 @@
-import os
+# -*- coding: utf-8 -*-
+
+__title__ = 'Pipeshell profile'
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = 'Creates a Profile object for PipeShell'
+
 import FreeCAD
 import FreeCADGui
 import Part
-import dummy
+import _utils
 
-path_curvesWB = os.path.dirname(dummy.__file__)
-path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
-
-DEBUG = 0
+TOOL_ICON = _utils.iconsPath() + '/profile.svg'
+DEBUG = False
 
 def debug(string):
     if DEBUG:
@@ -84,7 +88,7 @@ class profileVP:
         vobj.Proxy = self
        
     def getIcon(self):
-        return (path_curvesWB_icons+'/profile.svg')
+        return TOOL_ICON
 
     def attach(self, vobj):
         self.ViewObject = vobj
@@ -156,6 +160,6 @@ class profileCommand:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/profile.svg', 'MenuText': 'Profile object', 'ToolTip': 'Creates a Profile object for PipeShell'}
+        return {'Pixmap' : TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
 
 FreeCADGui.addCommand('profile', profileCommand())

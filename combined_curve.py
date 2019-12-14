@@ -102,7 +102,7 @@ class CombinedProjectionCurveVP:
 class CombinedProjectionCmd:
     """Splits the selected edges."""
     def makeCPCFeature(self,o1,o2,d1,d2):
-        cc = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Combined_projection_curve")
+        cc = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Mixed curve")
         CombinedProjectionCurveFP(cc, o1,o2,d1,d2)
         approximate_extension.ApproximateExtension(cc)
         cc.Active = False

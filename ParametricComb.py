@@ -1,13 +1,19 @@
-from __future__ import division # allows floating point division from integers
-import FreeCAD, Part, math
-import os, dummy, FreeCADGui
+# -*- coding: utf-8 -*-
+
+__title__ = "Comb plot"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = 'Creates a parametric Comb plot on selected edges'
+
+import FreeCAD
+import FreeCADGui
+import Part
+import _utils
 from FreeCAD import Base
 from pivy import coin
 
-path_curvesWB = os.path.dirname(dummy.__file__)
-path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
-
-DEBUG = 0
+TOOL_ICON = _utils.iconsPath() + '/comb.svg'
+DEBUG = False
 
 def debug(string):
     if DEBUG:
@@ -514,7 +520,7 @@ class ViewProviderComb:
         return
         
     def getIcon(self):
-        return (path_curvesWB_icons+'/comb.svg')
+        return TOOL_ICON
 
     def __getstate__(self):
         return None
@@ -583,7 +589,7 @@ class ParametricComb:
             self.appendEdges(combSelected, edges)
             
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/comb.svg', 'MenuText': 'ParametricComb', 'ToolTip': 'Creates a parametric Comb plot on selected edges'}
+        return {'Pixmap' : TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
 
 FreeCADGui.addCommand('ParametricComb', ParametricComb())
 

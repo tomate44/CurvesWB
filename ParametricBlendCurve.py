@@ -582,7 +582,7 @@ class ParametricBlendCurve:
         FreeCAD.ActiveDocument.recompute()
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'ParametricBlendCurve', 'ToolTip': 'Creates a parametric blend curve'}
+        return {'Pixmap' : TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
 
 FreeCADGui.addCommand('ParametricBlendCurve', ParametricBlendCurve())
 

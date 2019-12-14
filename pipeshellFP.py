@@ -1,18 +1,17 @@
-import os
+# -*- coding: utf-8 -*-
+
+__title__ = 'Pipeshell'
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = 'Creates a PipeShell sweep object'
+
 import FreeCAD
 import FreeCADGui
 import Part
-import dummy
 import _utils
 
-import sys
-if sys.version_info.major >= 3:
-    long = int
-
-path_curvesWB = os.path.dirname(dummy.__file__)
-path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
-
-DEBUG = 1
+TOOL_ICON = _utils.iconsPath() + '/pipeshell.svg'
+DEBUG = False
 
 def debug(string):
     if DEBUG:
@@ -304,7 +303,7 @@ class pipeShellVP:
         vobj.Proxy = self
        
     def getIcon(self):
-        return (path_curvesWB_icons+'/pipeshell.svg')
+        return TOOL_ICON
 
     def attach(self, vobj):
         self.ViewObject = vobj
@@ -323,7 +322,7 @@ class pipeShellVP:
         return None
 
     def claimChildren(self):
-        return(self.Object.Profiles + [self.Object.Spine])
+        return (self.Object.Profiles + [self.Object.Spine])
         
     def onDelete(self, feature, subelements): # subelements is a tuple of strings
         return True
@@ -373,6 +372,6 @@ class pipeShellCommand:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/pipeshell.svg', 'MenuText': 'PipeShell object', 'ToolTip': 'Creates a PipeShell object'}
+        return {'Pixmap' : TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
 
 FreeCADGui.addCommand('pipeshell', pipeShellCommand())
