@@ -308,6 +308,7 @@ class sketchOnSurface:
 class sosVP:
     def __init__(self,vobj):
         vobj.Proxy = self
+        self.children = []
        
     def getIcon(self):
         return TOOL_ICON
@@ -336,8 +337,9 @@ class sosVP:
         return self.children
         
     def onDelete(self, feature, subelements): # subelements is a tuple of strings
-        if self.children:
-            self.children.ViewObject.Visibility = True
+        for c in self.children:
+            if hasattr(c,"ViewObject"):
+                c.ViewObject.Visibility = True
         return True
 
 def addFaceWireToSketch(fa, w, sk):
