@@ -80,11 +80,12 @@ class CurvesWorkbench(Workbench):
         import segmentSurfaceFP
         import OrientedSketchFP
         import HQRuledSurfaceFP
+        import multiLoftFP
         #import sectionSketch
         #if hasattr(Part.BezierSurface,"extendByLength"):
             #import ExtendSurfaceFP
 
-        stablelist.extend(["line","gordon_profile","mixed_curve","extend","join","split","Discretize","Approximate","Interpolate","ParametricBlendCurve","ParametricComb","ZebraTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface","pasteSVG","profile","pipeshell","gordon","segment_surface","to_console","SublinkEditor","comp_spring","ReflectLines","oriented_sketch","hq_ruled_surface"])
+        stablelist.extend(["line","gordon_profile","mixed_curve","extend","join","split","Discretize","Approximate","Interpolate","ParametricBlendCurve","ParametricComb","ZebraTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface","pasteSVG","profile","pipeshell","gordon","segment_surface","to_console","SublinkEditor","comp_spring","ReflectLines","oriented_sketch","hq_ruled_surface","MultiLoft"])
         
         #if hasattr(Part.BezierSurface,"extendByLength"):
             #stablelist.append("extend_surface")
