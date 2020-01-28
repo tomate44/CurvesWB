@@ -50,23 +50,21 @@ def getShape(obj, prop, shape_type):
     if hasattr(obj, prop) and obj.getPropertyByName(prop):
         if obj.getTypeIdOfProperty(prop) == "App::PropertyLinkSub":
             n = eval(obj.getPropertyByName(prop)[1][0].lstrip(shape_type))
-            sh = getSubShape(obj.getPropertyByName(prop)[0].Shape, shape_type, n)
+            sh = obj.getPropertyByName(prop)[0].Shape.copy()
             if sh and hasattr(obj.getPropertyByName(prop)[0], "getGlobalPlacement"):
                 pl = obj.getPropertyByName(prop)[0].getGlobalPlacement()
-                if not pl == FreeCAD.Placement():
-                    sh.Placement = pl
-            return sh
+                sh.Placement = pl
+            return getSubShape(sh, shape_type, n)
         elif obj.getTypeIdOfProperty(prop) == "App::PropertyLinkSubList":
             res = []
             for tup in obj.getPropertyByName(prop):
                 for ss in tup[1]:
                     n = eval(ss.lstrip(shape_type))
-                    sh = getSubShape(tup[0].Shape, shape_type, n)
-                    if sh and hasattr(obj.getPropertyByName(prop)[0], "getGlobalPlacement"):
-                        pl = obj.getPropertyByName(prop)[0].getGlobalPlacement()
-                        if not pl == FreeCAD.Placement():
-                            sh.Placement = pl
-                    res.append(sh)
+                    sh = tup[0].Shape.copy()
+                    if sh and hasattr(tup[0], "getGlobalPlacement"):
+                        pl = tup[0].getGlobalPlacement()
+                        sh.Placement = pl
+                    res.append(getSubShape(sh, shape_type, n))
             return res
         else:
             FreeCAD.Console.PrintError("CurvesWB._utils.getShape: wrong property type.\n")

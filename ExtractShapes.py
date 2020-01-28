@@ -18,13 +18,14 @@ class extract:
         s = FreeCADGui.Selection.getSelectionEx()
         for o in s:
             objName = o.ObjectName
-            for so,name in zip(o.SubObjects,o.SubElementNames):
+            sh = o.Object.Shape.copy()
+            if hasattr(o.Object, "getGlobalPlacement"):
+                gpl = o.Object.getGlobalPlacement()
+                sh.Placement = gpl
+            for name in o.SubElementNames:
                 fullname = objName+"_"+name
                 newobj = o.Document.addObject("Part::Feature",fullname)
-                if hasattr(o.Object, "getGlobalPlacement"):
-                    gpl = o.Object.getGlobalPlacement()
-                    so.Placement = gpl
-                newobj.Shape = so
+                newobj.Shape = sh.getElement(name)
             o.Object.ViewObject.Visibility = False
         FreeCAD.ActiveDocument.recompute()
 
