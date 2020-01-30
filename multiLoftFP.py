@@ -77,16 +77,22 @@ class MultiLoftFP:
     def execute(self, obj):
         if not hasattr(obj, "Sources"):
             return
+        src_shapes = []
+        for o in obj.Sources:
+            sh = o.Shape.copy()
+            #pl = sh.Placement
+            sh.Placement = o.getGlobalPlacement() #.multiply(pl)
+            src_shapes.append(sh)
         solids = []
-        num_faces = len(obj.Sources[0].Shape.Faces)
+        num_faces = len(src_shapes[0].Faces)
         for i in range(num_faces):
-            faces = [obj.Sources[0].Shape.Faces[i], obj.Sources[-1].Shape.Faces[i]]
+            faces = [src_shapes[0].Faces[i], src_shapes[-1].Faces[i]]
             loft = []
             num_wires = len(faces[0].Wires)
             for j in range(num_wires):
                 wires = []
-                for o in obj.Sources:
-                    wires.append(o.Shape.Faces[i].Wires[j])
+                for o in src_shapes:
+                    wires.append(o.Faces[i].Wires[j])
                 loft = Part.makeLoft(wires, False, obj.Ruled, obj.Closed, obj.MaxDegree)
                 faces.extend(loft.Faces)
             shell = Part.Shell(faces)
