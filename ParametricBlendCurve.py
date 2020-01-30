@@ -26,6 +26,7 @@ class BlendCurveFP:
         
         obj.addProperty("App::PropertyLinkSub",         "Edge1",      "Edge1", "Edge 1").Edge1 = edges[0]
         obj.addProperty("App::PropertyLinkSub",         "Edge2",      "Edge2", "Edge 2").Edge2 = edges[1]
+        obj.addProperty("App::PropertyLinkSubList",     "InterPoints","BlendCurve", "Interpolation points")
         obj.addProperty("App::PropertyInteger",         "DegreeMax",  "BlendCurve", "Max degree of the Blend curve").DegreeMax = 9
         obj.addProperty("App::PropertyFloatConstraint", "Parameter1", "Edge1", "Location of blend curve")
         obj.addProperty("App::PropertyFloatConstraint", "Scale1",     "Edge1", "Scale of blend curve")
@@ -58,6 +59,7 @@ class BlendCurveFP:
         return None
 
     def execute(self, fp):
+        verts = _utils.getShape(fp, "InterPoints", "Vertex")
         bc = self.compute(fp)
         if (bc is None) or (bc.Curve is None):
             fp.CurvePts = []
@@ -527,6 +529,7 @@ class ParametricBlendCurve:
     def parseSel(self, selectionObject):
         res = []
         param = []
+        verts = []
         for obj in selectionObject:
             for i in range(len(obj.SubObjects)):
                 so = obj.SubObjects[i]
@@ -536,7 +539,9 @@ class ParametricBlendCurve:
                     poe = so.distToShape(Part.Vertex(p))
                     par = poe[2][0][2]
                     param.append(par)
-        return(res,param)
+                elif isinstance(so,Part.Vertex):
+                    verts.append([obj.Object,obj.SubElementNames[i]])
+        return res, param, verts
 
     def line(self, ed, p):
         e = self.getEdge(ed)
@@ -564,21 +569,23 @@ class ParametricBlendCurve:
             s = FreeCADGui.activeWorkbench().Selection
         except AttributeError:
             s = FreeCADGui.Selection.getSelectionEx()
-        edges, param = self.parseSel(s)
-        if len(edges) > 1:
-            for j in range(int(len(edges)/2)):
-                i = j*2
-                obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Blend Curve") #add object to document
-                BlendCurveFP(obj,edges[i:i+2])
-                BlendCurveVP(obj.ViewObject)
-                obj.Parameter1 = self.normalizedParam(edges[i], param[i], False)
-                obj.Parameter2 = self.normalizedParam(edges[i+1], param[i+1], False)
-                obj.Continuity1 = "G1"
-                obj.Continuity2 = "G1"
-                obj.Output = "Single"
-                ori1, ori2 = self.getOrientation(edges[i], param[i], edges[i+1], param[i+1])
-                obj.Scale1 = ori1
-                obj.Scale2 = ori2
+        edges, param, verts = self.parseSel(s)
+        if not len(edges) == 2:
+            FreeCAD.Console.PrintError("You must select 2 edges")
+        else:
+            obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Blend Curve") #add object to document
+            BlendCurveFP(obj,edges)
+            BlendCurveVP(obj.ViewObject)
+            obj.Parameter1 = self.normalizedParam(edges[0], param[0], False)
+            obj.Parameter2 = self.normalizedParam(edges[1], param[1], False)
+            obj.Continuity1 = "G1"
+            obj.Continuity2 = "G1"
+            obj.Output = "Single"
+            ori1, ori2 = self.getOrientation(edges[0], param[0], edges[1], param[1])
+            obj.Scale1 = ori1
+            obj.Scale2 = ori2
+            if verts:
+                obj.InterPoints = verts
         FreeCAD.ActiveDocument.recompute()
 
     def GetResources(self):
