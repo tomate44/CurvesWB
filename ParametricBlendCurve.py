@@ -45,8 +45,13 @@ class BlendCurveFP:
     def compute(self, fp):
         e1 = _utils.getShape(fp, "Edge1", "Edge")
         e2 = _utils.getShape(fp, "Edge2", "Edge")
+        pts = []
+        if hasattr(fp, "InterPoints"):
+            verts = _utils.getShape(fp, "InterPoints", "Vertex")
+            pts = [v.Point for v in verts]
         if e1 and e2:
             bc = nurbs_tools.blendCurve(e1,e2)
+            bc.interp = pts
             bc.param1 = e1.FirstParameter + fp.Parameter1 * (e1.LastParameter - e1.FirstParameter)
             bc.param2 = e2.FirstParameter + fp.Parameter2 * (e2.LastParameter - e2.FirstParameter)
             bc.cont1 = self.getContinuity(fp.Continuity1)
@@ -59,7 +64,6 @@ class BlendCurveFP:
         return None
 
     def execute(self, fp):
-        verts = _utils.getShape(fp, "InterPoints", "Vertex")
         bc = self.compute(fp)
         if (bc is None) or (bc.Curve is None):
             fp.CurvePts = []

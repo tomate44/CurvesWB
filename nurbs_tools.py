@@ -424,6 +424,20 @@ def nearest_parameter(bs,pt):
         par = bs.parameter(pt1)
     return par
 
+def insert_knots(bs, idx1, idx2, num):
+    """For a BSPlineCurve bs, insert num knots between knots of index idx1 and idx2"""
+    n = num + 1
+    if idx1 < 0:
+        idx1 = bs.NbKnots + idx1 + 1
+    if idx2 < 0:
+        idx2 = bs.NbKnots + idx2 + 1
+    k1 = bs.getKnot(idx1)
+    k2 = bs.getKnot(idx2)
+    knot_range = k2 - k1
+    for i in range(1,n):
+        bs.insertKnot(k1 + i * knot_range / n)
+    return bs
+
 def bspline_copy(bs, reverse = False, scale = 1.0):
     """Copy a BSplineCurve, with knotvector optionally reversed and scaled
     newbspline = bspline_copy(bspline, reverse = False, scale = 1.0)
@@ -522,6 +536,7 @@ class blendCurve(object):
         self.autoScale = True
         self.maxDegree = 25 # int(Part.BSplineCurve().MaxDegree)
         self.setEdges(e1,e2)
+        self.interp = []
 
     def setEdges(self, e1, e2):
         if e1 and e2:
@@ -585,24 +600,21 @@ class blendCurve(object):
         #return res
 
     def compute(self):
-        nbPoles = self.cont1 + self.cont2 + 2
-        e = self.getChord()
-        if not e:
-            self.Curve = None
-            return
-        try:
-            poles = e.discretize(nbPoles)
-        except Part.OCCError:
-            self.Curve = None
-            return
-        degree = nbPoles - 1
-        if degree > self.maxDegree:
-            degree = self.maxDegree
-        knots, mults = createKnotsMults(degree, nbPoles)
-        weights = [1.0 for k in range(nbPoles)]
+        v1 = self.edge1.value(self.param1)
+        v2 = self.edge2.value(self.param2)
+        degree = max(self.cont1, self.cont2) + 1
+        pts = [v1] + self.interp + [v2]
         be = Part.BSplineCurve()
-        be.buildFromPolesMultsKnots(poles, mults , knots, False, degree, weights, False)
-        nc = curvematch(self.edge1, be, self.param1, self.cont1, self.scale1)
+        be.interpolate(pts)
+        #if degree > self.maxDegree:
+            #degree = self.maxDegree
+        if be.NbKnots == 2:
+            mid = 0.5 * (be.FirstParameter + be.LastParameter)
+            be.insertKnot(mid)
+        be.increaseDegree(degree)
+        nbs = insert_knots(be,1,2,self.cont1)
+        nnbs = insert_knots(nbs,-2,-1,self.cont2)
+        nc = curvematch(self.edge1, nnbs, self.param1, self.cont1, self.scale1)
         rev = bspline_copy(nc, True, False)
         self.Curve = curvematch(self.edge2, rev, self.param2, self.cont2, self.scale2)
 
