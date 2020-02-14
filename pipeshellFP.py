@@ -163,6 +163,7 @@ class pipeShell:
             if fp.Contact == "ContactOnBorder":
                 FreeCAD.Console.PrintError("\nSorry, ContactOnBorder option is currently broken in OCCT.\n")
                 fp.Contact = "Contact"
+        return True
 
     def add(self, ps, p):
         contact = self.getprop( p, "Contact")
@@ -357,6 +358,13 @@ class pipeShellCommand:
             elif hasattr(selobj.Object,'Proxy'):
                 if selobj.Object.Proxy.__module__ == 'pipeshellProfileFP':
                     profs.append(selobj.Object)
+            else:
+                print("Adding the needed properties to input object")
+                if not hasattr(selobj.Object,"Contact"):
+                    selobj.Object.addProperty("App::PropertyBool", "Contact",    "PipeShellProfile", "Translate profile to contact spine").Contact = False
+                if not hasattr(selobj.Object,"Correction"):
+                    selobj.Object.addProperty("App::PropertyBool", "Correction", "PipeShellProfile", "Rotate profile to be orthogonal to spine").Correction = False
+                profs.append(selobj.Object)
         FreeCAD.Console.PrintMessage(str(path)+"\n")
         FreeCAD.Console.PrintMessage(str(profs)+"\n")
         if path and profs:
