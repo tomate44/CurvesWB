@@ -13,6 +13,7 @@ from operator import itemgetter
 import FreeCAD
 from FreeCAD import Base
 import Part
+vec2 = FreeCAD.Base.Vector2d
 
 class curve(object):
     '''Base class of nurbs curves'''
@@ -63,54 +64,91 @@ class isoCurve:
         else:
             self.parameter = param
 
-    def faceBounds2d(self):
-        edges2d = []
-        for edge3d in self.face.OuterWire.Edges:
-            edges2d.append(self.face.curveOnSurface(edge3d))
-        return(edges2d)
 
-    def getIntersectionPoints(self,l2d,bounds):
-        pts = []
-        for c2d in bounds:
-            try:
-                inter = l2d.intersectCC(c2d[0])
-                for pt in inter:
-                    pts.append((pt.x,pt.y))
-            except RuntimeError:
-                pass
-        return(pts)
 
     def toShape(self):
-        bounds = self.faceBounds2d()
-        prange = [0,1]
-        if self.direction == 'U':
-            self.curve = self.face.Surface.uIso(self.parameter)
-            v1 = Base.Vector2d(self.parameter,self.bounds[2])
-            v2 = Base.Vector2d(self.parameter,self.bounds[3])
-            l2d = Part.Geom2d.Line2dSegment(v1,v2)
-            pts = self.getIntersectionPoints(l2d,bounds)
-            if pts:
-                sortedPts = sorted(pts,key=itemgetter(1))
-                prange = [l2d.parameter(Base.Vector2d(sortedPts[0][0], sortedPts[0][1])), l2d.parameter(Base.Vector2d(sortedPts[-1][0], sortedPts[-1][1]))]
-            else:
-                FreeCAD.Console.PrintMessage("No intersection points")
-        elif self.direction == 'V':
-            self.curve = self.face.Surface.vIso(self.parameter)
-            v1 = Base.Vector2d(self.bounds[0], self.parameter)
-            v2 = Base.Vector2d(self.bounds[1], self.parameter)
-            l2d = Part.Geom2d.Line2dSegment(v1,v2)
-            pts = self.getIntersectionPoints(l2d,bounds)
-            if pts:
-                sortedPts = sorted(pts,key=itemgetter(0))
-                prange = [l2d.parameter(Base.Vector2d(sortedPts[0][0], sortedPts[0][1])), l2d.parameter(Base.Vector2d(sortedPts[-1][0], sortedPts[-1][1]))]
-            else:
-                FreeCAD.Console.PrintMessage("No intersection points")
-        e = l2d.toShape(self.face,prange[0],prange[1])
-        if isinstance(e, Part.Edge):
-            return(e)
+        """computes a face isoCurve.
+        The isoCurve of the underlying surface is trimmed like the face.
+        """
+        bounds = self.face.Surface.bounds()
+        for p in bounds:
+            p = max(p,-1e20)
+            p = min(p, 1e20)
+        [u0, u1, v0, v1] = bounds
+        print([u0, u1, v0, v1])
+        if self.direction in ("v","V"):
+            p0 = vec2(u0, self.parameter)
+            p1 = vec2(u1, self.parameter)
+            inter = [u0, u1]
         else:
-            FreeCAD.Console.PrintMessage("Failed to create isoCurve shape")
-            return(None)
+            p0 = vec2(self.parameter, v0)
+            p1 = vec2(self.parameter, v1)
+            inter = [v0, v1]
+        line = Part.Geom2d.Line2dSegment(p0, p1)
+        for e in self.face.Edges:
+            cos = self.face.curveOnSurface(e)
+            pts = line.intersectCC(cos[0])
+            inter.extend([line.parameter(p) for p in pts])
+        inter.sort()
+        edges = []
+        #print(inter)
+        for i in range(len(inter)-1):
+            mid = inter[i] + 0.5*(inter[i+1] - inter[i])
+            p2 = line.value(mid)
+            if self.face.isPartOfDomain(p2.x, p2.y):
+                edges.append(line.toShape(self.face.Surface, inter[i], inter[i+1]))
+        return edges
+
+#  DEPRECATED
+
+    #def faceBounds2d(self):
+        #edges2d = []
+        #for edge3d in self.face.OuterWire.Edges:
+            #edges2d.append(self.face.curveOnSurface(edge3d))
+        #return(edges2d)
+
+    #def getIntersectionPoints(self,l2d,bounds):
+        #pts = []
+        #for c2d in bounds:
+            #try:
+                #inter = l2d.intersectCC(c2d[0])
+                #for pt in inter:
+                    #pts.append((pt.x,pt.y))
+            #except RuntimeError:
+                #pass
+        #return(pts)
+
+    #def toShape(self):
+        #bounds = self.faceBounds2d()
+        #prange = [0,1]
+        #if self.direction == 'U':
+            #self.curve = self.face.Surface.uIso(self.parameter)
+            #v1 = Base.Vector2d(self.parameter,self.bounds[2])
+            #v2 = Base.Vector2d(self.parameter,self.bounds[3])
+            #l2d = Part.Geom2d.Line2dSegment(v1,v2)
+            #pts = self.getIntersectionPoints(l2d,bounds)
+            #if pts:
+                #sortedPts = sorted(pts,key=itemgetter(1))
+                #prange = [l2d.parameter(Base.Vector2d(sortedPts[0][0], sortedPts[0][1])), l2d.parameter(Base.Vector2d(sortedPts[-1][0], sortedPts[-1][1]))]
+            #else:
+                #FreeCAD.Console.PrintMessage("No intersection points")
+        #elif self.direction == 'V':
+            #self.curve = self.face.Surface.vIso(self.parameter)
+            #v1 = Base.Vector2d(self.bounds[0], self.parameter)
+            #v2 = Base.Vector2d(self.bounds[1], self.parameter)
+            #l2d = Part.Geom2d.Line2dSegment(v1,v2)
+            #pts = self.getIntersectionPoints(l2d,bounds)
+            #if pts:
+                #sortedPts = sorted(pts,key=itemgetter(0))
+                #prange = [l2d.parameter(Base.Vector2d(sortedPts[0][0], sortedPts[0][1])), l2d.parameter(Base.Vector2d(sortedPts[-1][0], sortedPts[-1][1]))]
+            #else:
+                #FreeCAD.Console.PrintMessage("No intersection points")
+        #e = l2d.toShape(self.face,prange[0],prange[1])
+        #if isinstance(e, Part.Edge):
+            #return(e)
+        #else:
+            #FreeCAD.Console.PrintMessage("Failed to create isoCurve shape")
+            #return(None)
 
 class multiIso:
     '''defines a set of multiple iso curves on a face'''
@@ -147,9 +185,9 @@ class multiIso:
     def toShape(self):
         c = []
         for u in self.uiso:
-            c.append(u.toShape())
+            c.extend(u.toShape())
         for v in self.viso:
-            c.append(v.toShape())
+            c.extend(v.toShape())
         return(Part.Compound(c))
 
     def paramList(self, n, fp, lp):
