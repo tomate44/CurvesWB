@@ -21,24 +21,30 @@ class solid:
     def execute(self, obj):
         faces = _utils.getShape(obj,"Faces","Face")
         shell = Part.Shell(faces)
-        obj.Shape = Part.Solid(shell)
+        solid = Part.Solid(shell)
+        if solid.isValid():
+            obj.Shape = solid
+        elif shell.isValid():
+            obj.Shape = shell
+        else:
+            obj.Shape = Part.Compound(faces)
 
 class solidVP:
     def __init__(self,vobj):
         vobj.Proxy = self
        
     def getIcon(self):
-        return (TOOL_ICON)
+        return TOOL_ICON
 
     def attach(self, vobj):
         self.Object = vobj.Object
 
     def __getstate__(self):
-        return({"name": self.Object.Name})
+        return {"name": self.Object.Name}
 
     def __setstate__(self,state):
         self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
-        return(None)
+        return None
 
     #def claimChildren(self):
         #return None #[self.Object.Base, self.Object.Tool]
@@ -75,11 +81,13 @@ class solidCommand:
         if FreeCAD.ActiveDocument:
             #f = FreeCADGui.Selection.Filter("SELECT Part::Feature SUBELEMENT Face COUNT 1..1000")
             #return f.match()
-            return(True)
+            return True
         else:
-            return(False)
+            return False
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Make Solid', 'ToolTip': 'Make a parametric solid from selected faces'}
+        return {'Pixmap' : TOOL_ICON,
+                'MenuText': 'Make Solid',
+                'ToolTip': 'Make a parametric solid from selected faces'}
 
 FreeCADGui.addCommand('solid', solidCommand())
