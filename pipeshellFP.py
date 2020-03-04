@@ -273,11 +273,11 @@ class pipeShell:
 
     def getCode(self, cont):
         if cont == "Contact":
-            return(long(1))
+            return(1)
         elif cont == "ContactOnBorder":
-            return(long(2))
+            return(2)
         else:
-            return(long(0))
+            return(0)
 
     def getRails(self, shapes):
         nbvert = len(shapes[0].Vertexes)
