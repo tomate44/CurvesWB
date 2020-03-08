@@ -76,7 +76,7 @@ class join:
         obj.addProperty("App::PropertyLink",         "Base",         "Join",   "Join all the edges of this base object")
         obj.addProperty("App::PropertyFloat",        "Tolerance",    "Join",   "Tolerance").Tolerance=0.01
         obj.addProperty("App::PropertyBool",         "CornerBreak",  "Join",   "Break on corners").CornerBreak = False
-        obj.addProperty("App::PropertyBool",         "ForceContact", "Join",   "Force connecion of edges").ForceContact = True
+        obj.addProperty("App::PropertyBool",         "ForceContact", "Join",   "Force connection of edges").ForceContact = True
         obj.addProperty("App::PropertyBool",         "ForceClosed",  "Join",   "Force closed curve").ForceClosed = False
         obj.Proxy = self
 
