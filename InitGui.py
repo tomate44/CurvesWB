@@ -8,7 +8,9 @@ __doc__ = "FreeCAD workbench that offers a collection of tools mainly related to
 import os
 import sys
 import _utils
+import FreeCAD
 
+FreeCAD.addImportType("3DM (*.3dm)","import3DM")
 path_curvesWB = os.path.dirname(_utils.__file__)
 sys.path.append(os.path.join(path_curvesWB, 'Gui'))
 path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
