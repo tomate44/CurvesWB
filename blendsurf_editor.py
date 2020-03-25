@@ -95,9 +95,9 @@ class MarkerOnShape(graphics.Marker):
                 foo()
 
 class ConnectionLine(graphics.Line):
-    def __init__(self, markers):
+    def __init__(self, markers, dynamic=True):
         super(ConnectionLine, self).__init__(
-            sum([m.points for m in markers], []), True)
+            sum([m.points for m in markers], []), dynamic)
         self.markers = markers
         for m in self.markers:
             m.on_drag.append(self.updateLine)
