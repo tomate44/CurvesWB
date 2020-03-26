@@ -196,6 +196,9 @@ class HelicalSweepVP:
     def attach(self, vobj):
         self.Object = vobj.Object
 
+    def claimChildren(self):
+        return [self.Object.Profile]
+
     def __getstate__(self):
         return {"name": self.Object.Name}
 
@@ -205,19 +208,37 @@ class HelicalSweepVP:
 
 class HelicalSweepCommand:
     """Creates a HelicalSweep Object"""
+    def make_profile_sketch(self):
+        import Sketcher
+        sk = FreeCAD.ActiveDocument.addObject('Sketcher::SketchObject','Profile')
+        sk.Placement = FreeCAD.Placement(FreeCAD.Vector(0,0,0),FreeCAD.Rotation(0,0,0,1))
+        sk.MapMode = "Deactivated"
+        sk.addGeometry(Part.LineSegment(FreeCAD.Vector(100.0,0.0,0),FreeCAD.Vector(127.0,12.0,0)),False)
+        sk.addConstraint(Sketcher.Constraint('PointOnObject',0,1,-1)) 
+        sk.addGeometry(Part.ArcOfCircle(Part.Circle(FreeCAD.Vector(125.0,17.0,0),FreeCAD.Vector(0,0,1),5.8),-1.156090,1.050925),False)
+        sk.addConstraint(Sketcher.Constraint('Tangent',0,2,1,1)) 
+        sk.addGeometry(Part.LineSegment(FreeCAD.Vector(128.0,22.0,0),FreeCAD.Vector(100.0,37.0,0)),False)
+        sk.addConstraint(Sketcher.Constraint('Tangent',1,2,2,1)) 
+        sk.addConstraint(Sketcher.Constraint('Vertical',0,1,2,2)) 
+        sk.addConstraint(Sketcher.Constraint('DistanceY',0,1,2,2,37.5)) 
+        sk.setDatum(4,FreeCAD.Units.Quantity('35.000000 mm'))
+        sk.renameConstraint(4, u'Lead')
+        sk.addConstraint(Sketcher.Constraint('Equal',2,0)) 
+        FreeCAD.ActiveDocument.recompute()
+        return sk
+
     def makeFeature(self, sel):
         fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Helical Sweep")
         HelicalSweepFP(fp)
-        HelicalSweepVP(fp.ViewObject)
         fp.Profile = sel
+        HelicalSweepVP(fp.ViewObject)
         FreeCAD.ActiveDocument.recompute()
 
     def Activated(self):
         sel = FreeCADGui.Selection.getSelection()
         if sel == []:
-            FreeCAD.Console.PrintError("Select something first !\n")
-        else:
-            self.makeFeature(sel[0])
+            sel.append(self.make_profile_sketch())
+        self.makeFeature(sel[0])
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:
