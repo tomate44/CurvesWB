@@ -250,7 +250,8 @@ class sketchOnSurface:
         compound.connectEdgesToWires(False, 1e-7)
         if hasattr(obj,'Fill'):
             if not obj.Fill:
-                obj.Shape = compound
+                if compound.Edges:
+                    obj.Shape = compound
             else:
                 outer = compound.Wires[0]
                 outer.fixWire()
@@ -272,19 +273,24 @@ class sketchOnSurface:
                     nf.check()
                     obj.Shape = nf
                 except:
-                    obj.Shape = compound
+                    if compound.Edges:
+                        obj.Shape = compound
                     FreeCAD.Console.PrintError("Failed to create face\n")
                     
         return
 
     def execute(self, obj):
-        debug("***** execute *****")
-        self.getSketchBounds(obj)
-        self.updateFace(obj)
-        self.getSurfaceBounds(obj)
-        self.scaleSketch(obj)
-        self.mapOnSurface(obj)
-        debug("----- execute -----")
+        if not obj.Sketch:
+            debug("No Sketch")
+            return
+        if not "Restore" in obj.State:
+            debug("***** execute *****")
+            self.getSketchBounds(obj)
+            self.updateFace(obj)
+            self.getSurfaceBounds(obj)
+            self.scaleSketch(obj)
+            self.mapOnSurface(obj)
+            debug("----- execute -----")
 
     def onChanged(self, fp, prop):
         
@@ -314,12 +320,12 @@ class sosVP:
         return TOOL_ICON
 
     def attach(self, vobj):
-        self.ViewObject = vobj
+        #self.ViewObject = vobj
         self.Object = vobj.Object
-        if self.Object.Sketch:
-            self.children = [self.Object.Sketch]
-        else:
-            self.children = []
+        #if self.Object.Sketch:
+            #self.children = [self.Object.Sketch]
+        #else:
+            #self.children = []
   
     def setEdit(self,vobj,mode):
         return False
@@ -328,13 +334,14 @@ class sosVP:
         return
 
     def __getstate__(self):
-        return None
+        return {"name": self.Object.Name}
 
     def __setstate__(self,state):
+        self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
         return None
 
     def claimChildren(self):
-        return self.children
+        return [self.Object.Sketch]
         
     def onDelete(self, feature, subelements): # subelements is a tuple of strings
         for c in self.children:
@@ -426,13 +433,13 @@ class SoS:
             sos = doc.addObject("Part::FeaturePython","Sketch On Surface")
             sketchOnSurface(sos)
             sos.Sketch = sketch
-            sketch.ViewObject.Visibility = False
-            sos.Face = face
-            if not sketchFound:
-                sos.ConstructionBounds = False
-                sos.Scale = False
             sosVP(sos.ViewObject)
+            sos.Face = face
             doc.recompute()
+            sketch.ViewObject.Visibility = False
+            #if not sketchFound:
+                #sos.ConstructionBounds = False
+                #sos.Scale = False
         else:
             FreeCAD.Console.PrintMessage("Please select 1 face (in the 3D view) and optionally 1 sketch\n")
 
