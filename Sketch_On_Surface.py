@@ -157,9 +157,101 @@ class sketchOnSurface:
         obj.addProperty("App::PropertyLinkSub", "Face",   "SketchOnSurface", "Input face")
         obj.addProperty("App::PropertyLink",    "Sketch", "SketchOnSurface", "Input Sketch")
         obj.addProperty("App::PropertyBool",    "ConstructionBounds", "SketchOnSurface", "include construction geometry in sketch bounds").ConstructionBounds = True
-        obj.addProperty("App::PropertyBool",    "Scale",  "SketchOnSurface", "Scale sketch geometries").Scale = True
+        #obj.addProperty("App::PropertyBool",    "Scale",  "SketchOnSurface", "Scale sketch geometries").Scale = True
         obj.addProperty("App::PropertyBool",    "Fill",   "SketchOnSurface", "Fill face").Fill = False
+        obj.addProperty("App::PropertyFloat",   "Inset",  "SketchOnSurface", "Fill face").Inset = 0.0
+        obj.addProperty("App::PropertyFloat",   "Outset", "SketchOnSurface", "Fill face").Outset = 0.0
         obj.Proxy = self
+
+    def mapping(self, obj, quad, face):
+        proj = quad.project(obj.Sketch.Shape.Edges)
+        new_edges = []
+        for e in proj.Edges:
+            try:
+                c2d, fp, lp = quad.curveOnSurface(e)
+                ne = c2d.toShape(face.Surface, fp, lp)
+                new_edges.append(ne)
+            except TypeError:
+                debug("Failed to get 2D curve")
+        sorted_edges = Part.sortEdges(new_edges)
+        shapes = []
+        for el in sorted_edges:
+            w = Part.Wire(el)
+            if obj.Fill and w.isClosed():
+                f = Part.Face(face.Surface, w)
+                f.validate()
+                shapes.append(f)
+            else:
+                shapes.append(w)
+        return shapes
+
+    def execute(self, obj):
+        if not obj.Sketch:
+            debug("No Sketch")
+            return
+        #if obj.ConstructionBounds:
+        skedges = []
+        for i in obj.Sketch.Geometry:
+            if i.Construction and not obj.ConstructionBounds:
+                continue
+            try:
+                skedges.append(i.toShape())
+            except:
+                print("toShape() error, ignoring geometry")
+        comp = Part.Compound(skedges)
+
+        bb = comp.BoundBox
+        u0, u1, v0, v1 = (bb.XMin,bb.XMax,bb.YMin,bb.YMax)
+        debug("Sketch bounds = {}".format((u0, u1, v0, v1)))
+        
+        if not obj.Face:
+            debug("No Face")
+            return
+        else:
+            n = eval(obj.Face[1][0].lstrip('Face'))
+            face = obj.Face[0].Shape.Faces[n-1]
+            face.Placement = obj.Face[0].getGlobalPlacement()
+        #s0, s1, t0, t1 = face.Surface.bounds() # Full surface
+        s0, s1, t0, t1 = face.ParameterRange # or trimmed face ?
+        debug("Target face bounds = {}".format((s0, s1, t0, t1)))
+        
+        bs = Part.BSplineSurface()
+        poles = [[FreeCAD.Vector(u0,v0,0), FreeCAD.Vector(u0,v1,0)],
+                 [FreeCAD.Vector(u1,v0,0), FreeCAD.Vector(u1,v1,0)]]
+        umults = [2, 2]
+        vmults = [2, 2]
+        uknots = [s0, s1]
+        vknots = [t0, t1]
+        bs.buildFromPolesMultsKnots(poles, umults, vmults, uknots, vknots, False, False, 1, 1)
+        quad = bs.toShape()
+        quad.Placement = obj.Sketch.getGlobalPlacement()
+        shapes = []
+        if (not hasattr(obj,'Inset') or not hasattr(obj,'Outset')):
+            shapes = self.mapping(obj, quad, face)
+        elif (obj.Inset == 0) and (obj.Outset == 0):
+            shapes = self.mapping(obj, quad, face)
+        else:
+            if (obj.Inset > 0):
+                f1 = face.makeOffsetShape(-obj.Inset, 1e-3)
+                sh1 = self.mapping(obj, quad, f1.Face1)
+            else:
+                sh1 = self.mapping(obj, quad, face)
+            if (obj.Outset > 0):
+                f2 = face.makeOffsetShape(obj.Outset, 1e-3)
+                sh2 = self.mapping(obj, quad, f2.Face1)
+            else:
+                sh2 = self.mapping(obj, quad, face)
+            if obj.Fill:
+                for i in range(len(sh1)):
+                    loft = Part.makeLoft([sh1[i].Wires[0], sh2[i].Wires[0]], obj.Fill, True)
+                    shapes.append(loft)
+            else:
+                shapes = sh1+sh2
+
+        if shapes:
+            obj.Shape = Part.Compound(shapes)
+
+        
 
     def getSketchBounds(self, obj):
         if not obj.Sketch:
@@ -193,6 +285,7 @@ class sketchOnSurface:
             self.face = obj.Face[0].Shape.Faces[n-1]
             self.surface = self.face.Surface
             debug("Face update : %s"%str(obj.Face))
+            return obj.Face[0].Shape.Faces[n-1]
 
     def getSurfaceBounds(self, obj):
         # Some surfaces have infinite dimensions (planes, cylinders)
@@ -279,7 +372,7 @@ class sketchOnSurface:
                     
         return
 
-    def execute(self, obj):
+    def execute2(self, obj):
         if not obj.Sketch:
             debug("No Sketch")
             return
@@ -293,17 +386,17 @@ class sketchOnSurface:
             debug("----- execute -----")
 
     def onChanged(self, fp, prop):
-        
-        if prop == "Sketch":
-            #self.getSketchBounds(fp)
-            return
-        if prop == "Face":
-            self.updateFace(fp)
-            #self.getSurfaceBounds(fp)
-            return
-        else:
-            debug("onChanged : %s -> %s"%(fp.Label,prop))
-            return
+        pass
+        #if prop == "Sketch":
+            ##self.getSketchBounds(fp)
+            #return
+        #if prop == "Face":
+            #self.updateFace(fp)
+            ##self.getSurfaceBounds(fp)
+            #return
+        #else:
+            #debug("onChanged : %s -> %s"%(fp.Label,prop))
+            #return
             
     def __getstate__(self):
         return None
@@ -343,11 +436,11 @@ class sosVP:
     def claimChildren(self):
         return [self.Object.Sketch]
         
-    def onDelete(self, feature, subelements): # subelements is a tuple of strings
-        for c in self.children:
-            if hasattr(c,"ViewObject"):
-                c.ViewObject.Visibility = True
-        return True
+    #def onDelete(self, feature, subelements): # subelements is a tuple of strings
+        #for c in self.children:
+            #if hasattr(c,"ViewObject"):
+                #c.ViewObject.Visibility = True
+        #return True
 
 def addFaceWireToSketch(fa, w, sk):
     curves = list()
@@ -374,6 +467,8 @@ def addFaceBoundsToSketch(fa, sk):
     geoList = list()
     conList = list()
     u0,u1,v0,v1 = fa.ParameterRange
+    if isinstance(fa.Surface, Part.Cylinder):
+        u1 *= fa.Surface.Radius
     geoList.append(Part.LineSegment(vec(u0,v0,0),vec(u1,v0,0)))
     geoList.append(Part.LineSegment(vec(u1,v0,0),vec(u1,v1,0)))
     geoList.append(Part.LineSegment(vec(u1,v1,0),vec(u0,v1,0)))
@@ -389,7 +484,7 @@ def addFaceBoundsToSketch(fa, sk):
     conList.append(Sketcher.Constraint('Horizontal',o+2))
     conList.append(Sketcher.Constraint('Vertical',o+1))
     conList.append(Sketcher.Constraint('Vertical',o+3))
-    conList.append(Sketcher.Constraint('DistanceX',o+2,2,o+2,1,u1-u0)) 
+    conList.append(Sketcher.Constraint('DistanceX',o+2,2,o+2,1,u1-u0))
     conList.append(Sketcher.Constraint('DistanceY',o+1,1,o+1,2,v1-v0)) 
     conList.append(Sketcher.Constraint('DistanceX',o+0,1,-1,1,-u0)) 
     conList.append(Sketcher.Constraint('DistanceY',o+0,1,-1,1,-v0)) 
