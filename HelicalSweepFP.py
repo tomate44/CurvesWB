@@ -244,6 +244,7 @@ class HelicalSweepCommand:
         sk.addConstraint(Sketcher.Constraint('DistanceY',0,1,2,2,37.5)) 
         sk.setDatum(4,FreeCAD.Units.Quantity('35.000000 mm'))
         sk.renameConstraint(4, u'Lead')
+        sk.setDriving(4,False)
         sk.addConstraint(Sketcher.Constraint('Equal',2,0)) 
         FreeCAD.ActiveDocument.recompute()
         return sk
