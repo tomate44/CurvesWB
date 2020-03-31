@@ -186,14 +186,23 @@ class HelicalSweepFP:
         hs.rational_approx = obj.Rational
         gpl = obj.Profile.getGlobalPlacement()
         hs.set_placement(gpl)
+        # 3 priorities to get Lead value
+        # 1 : obj.Lead property is >= 0
+        # 2 : Sketch has a constraint called "Lead"
+        # 3 : the longest of the DistanceY constraints
         if hasattr(obj,"Lead") and obj.Lead >= 0:
             hs.lead = obj.Lead
         else:
-            try:
-                hs.lead = obj.Profile.getDatum("Lead").Value
-            except NameError:
-                print("Profile sketch has no 'Lead' constraint")
-                hs.lead = 10.0
+            dmin = 0
+            for c in obj.Profile.Constraints:
+                if c.Name == "Lead":
+                    dmin = c.Value
+                    continue
+                else:
+                    if c.Type == "DistanceY":
+                        if c.Value > dmin:
+                            dmin = c.Value
+            hs.lead = dmin
         hs.nb_of_turns = obj.Turns
         obj.Shape = hs.sweep_wire(Part.Wire(edges), obj.Solid)
         
