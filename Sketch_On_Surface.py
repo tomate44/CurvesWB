@@ -144,11 +144,31 @@ class sketchOnSurface:
     def __init__(self, obj):
         obj.addProperty("App::PropertyLink",    "Sketch", "SketchOnSurface", "Input Sketch")
         obj.addProperty("App::PropertyBool",    "ConstructionBounds", "SketchOnSurface", "include construction geometry in sketch bounds").ConstructionBounds = True
-        obj.addProperty("App::PropertyBool",    "Fill",     "SketchOnSurface", "Fill closed wires").Fill = True
-        obj.addProperty("App::PropertyBool",    "Solid",    "SketchOnSurface", "Fill offset faces to solid").Solid = True
+        obj.addProperty("App::PropertyBool",    "FillFaces",     "SketchOnSurface", "Make faces from closed wires").FillFaces = True
+        obj.addProperty("App::PropertyBool",    "FillExtrusion", "SketchOnSurface", "Add extrusion faces").FillExtrusion = True
         obj.addProperty("App::PropertyFloat",   "Offset",   "SketchOnSurface", "Offset distance of mapped sketch").Offset = 0.0
-        obj.addProperty("App::PropertyFloat",   "Thickness","SketchOnSurface", "Extruding thickness").Thickness = 1.0
+        obj.addProperty("App::PropertyFloat",   "Thickness","SketchOnSurface", "Extrusion thickness").Thickness = 1.0
         obj.Proxy = self
+
+    def build_faces(self, wl, surf):
+        outer = wl[:]
+        inner = []
+        for i in range(len(wl)):
+            for j in range(len(wl)):
+                if (not i == j) and wl[i].BoundBox.isInside(wl[j].BoundBox):
+                    #print("Wire {} is a hole".format(i))
+                    outer.remove(wl[i])
+                    inner.append(wl[i])
+        faces = []
+        for w1 in outer:
+            f = Part.Face(surf, w1)
+            f.validate()
+            for w2 in inner:
+                if w2.BoundBox.isInside(f.BoundBox):
+                    f.cutHoles([w2])
+                    f.validate()
+            faces.append(f)
+        return faces
 
     def mapping(self, obj, quad, face):
         proj = quad.project(obj.Sketch.Shape.Edges)
@@ -161,22 +181,19 @@ class sketchOnSurface:
             except TypeError:
                 debug("Failed to get 2D curve")
         sorted_edges = Part.sortEdges(new_edges)
-        shapes = []
-        for el in sorted_edges:
-            w = Part.Wire(el)
-            if obj.Fill and w.isClosed():
-                f = Part.Face(face.Surface, w)
-                f.validate()
-                shapes.append(f)
-            else:
-                shapes.append(w)
-        return shapes
+        wirelist = [Part.Wire(el) for el in sorted_edges]
+        if obj.FillFaces:
+            return self.build_faces(wirelist, face.Surface)
+        else:
+            return wirelist
 
     def execute(self, obj):
+        def error(msg):
+            func_name = "{} (Sketch_On_Surface)  : ".format(obj.Label)
+            FreeCAD.Console.PrintError(func_name + msg + "\n")
         if not obj.Sketch:
-            debug("No Sketch")
+            error("No Sketch attached")
             return
-        #if obj.ConstructionBounds:
         skedges = []
         for i in obj.Sketch.Geometry:
             if i.Construction and not obj.ConstructionBounds:
@@ -184,20 +201,20 @@ class sketchOnSurface:
             try:
                 skedges.append(i.toShape())
             except:
-                print("toShape() error, ignoring geometry")
+                debug("toShape() error, ignoring geometry")
         comp = Part.Compound(skedges)
 
         bb = comp.BoundBox
         u0, u1, v0, v1 = (bb.XMin,bb.XMax,bb.YMin,bb.YMax)
         debug("Sketch bounds = {}".format((u0, u1, v0, v1)))
         
-        if not obj.Sketch:
-            debug("No Sketch attached !")
-            return
-        else:
+        try:
             n = eval(obj.Sketch.Support[0][1][0].lstrip('Face'))
             face = obj.Sketch.Support[0][0].Shape.Faces[n-1]
             face.Placement = obj.Sketch.Support[0][0].getGlobalPlacement()
+        except (IndexError, AttributeError, SyntaxError) as e:
+            error("Failed to get the face support of the sketch\n")
+            return
         debug("Target face bounds = {}".format(face.ParameterRange))
         
         bs = stretched_plane(geom_range=[u0, u1, v0, v1], param_range=face.ParameterRange)
@@ -216,15 +233,24 @@ class sketchOnSurface:
         else:
             f2 = face.makeOffsetShape(obj.Offset+obj.Thickness, 1e-3)
             shapes_2 = self.mapping(obj, quad, f2.Face1)
-            if not obj.Solid:
+            if not obj.FillExtrusion:
                 if shapes_1 or shapes_2:
                     obj.Shape = Part.Compound(shapes_1 + shapes_2)
                     return
             else:
                 shapes = []
                 for i in range(len(shapes_1)):
-                    loft = Part.makeLoft([shapes_1[i].Wires[0], shapes_2[i].Wires[0]], obj.Fill, True)
-                    shapes.append(loft)
+                    if isinstance(shapes_1[i], Part.Face):
+                        faces = shapes_1[i].Faces + shapes_2[i].Faces
+                        for j in range(len(shapes_1[i].Wires)):
+                            loft = Part.makeLoft([shapes_1[i].Wires[j], shapes_2[i].Wires[j]], False, True)
+                            faces.extend(loft.Faces)
+                        shell = Part.Shell(faces)
+                        solid = Part.Solid(shell)
+                        shapes.append(solid)
+                    else:
+                        loft = Part.makeLoft([shapes_1[i].Wires[0], shapes_2[i].Wires[0]], obj.FillFaces, True)
+                        shapes.append(loft)
                 if shapes:
                     obj.Shape = Part.Compound(shapes)
 
