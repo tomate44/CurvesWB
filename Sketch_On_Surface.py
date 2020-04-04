@@ -193,11 +193,13 @@ class sketchOnSurface:
     "This feature object maps a sketch on a surface"
     def __init__(self, obj):
         obj.addProperty("App::PropertyLink",    "Sketch", "SketchOnSurface", "Input Sketch")
-        obj.addProperty("App::PropertyBool",    "ConstructionBounds", "SketchOnSurface", "include construction geometry in sketch bounds").ConstructionBounds = True
-        obj.addProperty("App::PropertyBool",    "FillFaces",     "SketchOnSurface", "Make faces from closed wires").FillFaces = True
-        obj.addProperty("App::PropertyBool",    "FillExtrusion", "SketchOnSurface", "Add extrusion faces").FillExtrusion = True
-        obj.addProperty("App::PropertyFloat",   "Offset",   "SketchOnSurface", "Offset distance of mapped sketch").Offset = 0.0
-        obj.addProperty("App::PropertyFloat",   "Thickness","SketchOnSurface", "Extrusion thickness").Thickness = 1.0
+        obj.addProperty("App::PropertyBool",    "FillFaces",     "Settings", "Make faces from closed wires").FillFaces = True
+        obj.addProperty("App::PropertyBool",    "FillExtrusion", "Settings", "Add extrusion faces").FillExtrusion = True
+        obj.addProperty("App::PropertyFloat",   "Offset",   "Settings", "Offset distance of mapped sketch").Offset = 0.0
+        obj.addProperty("App::PropertyFloat",   "Thickness","Settings", "Extrusion thickness").Thickness = 1.0
+        obj.addProperty("App::PropertyBool",    "ReverseU", "Touchup", "Reverse U direction").ReverseU = False
+        obj.addProperty("App::PropertyBool",    "ReverseV", "Touchup", "Reverse V direction").ReverseV = False
+        obj.addProperty("App::PropertyBool",    "ConstructionBounds", "Touchup", "include construction geometry in sketch bounds").ConstructionBounds = True
         obj.Proxy = self
 
     def build_faces(self, wl, surf):
@@ -260,6 +262,10 @@ class sketchOnSurface:
             return
         debug("Target face bounds = {}".format(face.ParameterRange))
         
+        if obj.ReverseU:
+            u0, u1 = u1, u0
+        if obj.ReverseV:
+            v0, v1 = v1, v0
         bs = stretched_plane(geom_range=[u0, u1, v0, v1], param_range=face.ParameterRange)
         quad = bs.toShape()
         quad.Placement = obj.Sketch.getGlobalPlacement()
@@ -283,17 +289,15 @@ class sketchOnSurface:
             else:
                 shapes = []
                 for i in range(len(shapes_1)):
-                    if isinstance(shapes_1[i], Part.Face):
-                        faces = shapes_1[i].Faces + shapes_2[i].Faces
-                        for j in range(len(shapes_1[i].Wires)):
-                            loft = Part.makeLoft([shapes_1[i].Wires[j], shapes_2[i].Wires[j]], False, True)
-                            faces.extend(loft.Faces)
-                        shell = Part.Shell(faces)
-                        solid = Part.Solid(shell)
-                        shapes.append(solid)
-                    else:
-                        loft = Part.makeLoft([shapes_1[i].Wires[0], shapes_2[i].Wires[0]], obj.FillFaces, True)
+                    for j in range(len(shapes_1[i].Wires)):
+                        loft = Part.makeLoft([shapes_1[i].Wires[j], shapes_2[i].Wires[j]], obj.FillFaces, True)
                         shapes.append(loft)
+                        #shell = Part.Shell(faces)
+                        #solid = Part.Solid(shell)
+                        #shapes.append(solid)
+                    #else:
+                        #loft = Part.makeLoft([shapes_1[i].Wires[0], shapes_2[i].Wires[0]], obj.FillFaces, True)
+                        #shapes.append(loft)
                 if shapes:
                     obj.Shape = Part.Compound(shapes)
 
