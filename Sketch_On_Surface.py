@@ -289,15 +289,17 @@ class sketchOnSurface:
             else:
                 shapes = []
                 for i in range(len(shapes_1)):
-                    for j in range(len(shapes_1[i].Wires)):
-                        loft = Part.makeLoft([shapes_1[i].Wires[j], shapes_2[i].Wires[j]], obj.FillFaces, True)
+                    if isinstance(shapes_1[i], Part.Face):
+                        faces = shapes_1[i].Faces + shapes_2[i].Faces
+                        for j in range(len(shapes_1[i].Wires)):
+                            loft = Part.makeLoft([shapes_1[i].Wires[j], shapes_2[i].Wires[j]], False, True)
+                            faces.extend(loft.Faces)
+                        shell = Part.Shell(faces)
+                        solid = Part.Solid(shell)
+                        shapes.append(solid)
+                    else:
+                        loft = Part.makeLoft([shapes_1[i].Wires[0], shapes_2[i].Wires[0]], obj.FillFaces, True)
                         shapes.append(loft)
-                        #shell = Part.Shell(faces)
-                        #solid = Part.Solid(shell)
-                        #shapes.append(solid)
-                    #else:
-                        #loft = Part.makeLoft([shapes_1[i].Wires[0], shapes_2[i].Wires[0]], obj.FillFaces, True)
-                        #shapes.append(loft)
                 if shapes:
                     obj.Shape = Part.Compound(shapes)
 
