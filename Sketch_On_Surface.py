@@ -294,9 +294,13 @@ class sketchOnSurface:
                         for j in range(len(shapes_1[i].Wires)):
                             loft = Part.makeLoft([shapes_1[i].Wires[j], shapes_2[i].Wires[j]], False, True)
                             faces.extend(loft.Faces)
-                        shell = Part.Shell(faces)
-                        solid = Part.Solid(shell)
-                        shapes.append(solid)
+                        try:
+                            shell = Part.Shell(faces)
+                            solid = Part.Solid(shell)
+                            shapes.append(solid)
+                        except Part.OCCError:
+                            FreeCAD.Console.PrintWarning("Sketch on surface : failed to create solid #{}.\n".format(i+1))
+                            shapes.extend(faces)
                     else:
                         loft = Part.makeLoft([shapes_1[i].Wires[0], shapes_2[i].Wires[0]], obj.FillFaces, True)
                         shapes.append(loft)
