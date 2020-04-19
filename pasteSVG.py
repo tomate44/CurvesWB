@@ -31,6 +31,6 @@ class pasteSVG:
         #return(True)
 
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/svg.svg', 'MenuText': 'paste SVG', 'ToolTip': 'Pastes the SVG content of the clipboard'}
+        return {'Pixmap' : path_curvesWB_icons+'/svg_rv3.svg', 'MenuText': 'paste SVG', 'ToolTip': 'Pastes the SVG content of the clipboard'}
 
 FreeCADGui.addCommand('pasteSVG', pasteSVG())
