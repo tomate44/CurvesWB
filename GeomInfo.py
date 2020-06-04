@@ -410,10 +410,13 @@ class GeomInfo:
         self.sg.touch()
 
     def removeHUD(self):
-        if self.render:
-            self.render.removeSuperimposition(self.sup)
-            self.removeGrid()
-            self.sg.touch()
+        try:
+            if str(self.activeDoc):
+                self.render.removeSuperimposition(self.sup)
+                self.removeGrid()
+                self.sg.touch()
+        except ReferenceError:
+            print("GeomInfo: doc has been closed")
 
     #def updateCB(self, *args):
         ##return(True)
