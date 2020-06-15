@@ -18,8 +18,8 @@ import graphics
 import manipulators
 
 TOOL_ICON = _utils.iconsPath() + '/splitcurve.svg'
-debug = _utils.debug
-#debug = _utils.doNothing
+#debug = _utils.debug
+debug = _utils.doNothing
 
 class split:
     """Splits the selected edge."""
@@ -39,32 +39,55 @@ class split:
                         #"Parameter list")
         #obj.setEditorMode("Parameters",2)
 
+    def getShape(self, fp):
+        if fp.Source[1] == []: # No subshape given, take wire 1
+            if fp.Source[0].Shape.Wires:
+                w = fp.Source[0].Shape.Wire1
+                e = w.approximate(1e-7, 1e-5, len(w.Edges), 7).toShape()
+                #double tol2d = gp::Resolution();
+                #double tol3d = 0.0001;
+                #int maxseg=10, maxdeg=3;
+                #static char* kwds_approx[] = {"Tol2d","Tol3d","MaxSegments","MaxDegree",NULL};
+            else:
+                return None, None
+        else:
+            e = _utils.getShape(fp, "Source", "Edge")
+            w = False
+        return e, w
+
+    def parse_value(self, edge, v):
+        num_val = None
+        par = None
+        if "%" in v:
+            num_val = float(v.split("%")[0]) * edge.Length / 100
+            t = '%'
+        else:
+            num_val = FreeCAD.Units.parseQuantity(v).Value
+            t = FreeCAD.Units.Unit(v).Type
+        if t == '':
+            par = num_val
+        elif num_val < 0:
+            par = edge.Curve.parameterAtDistance(num_val, edge.LastParameter)
+        else:
+            par = edge.Curve.parameterAtDistance(num_val, edge.FirstParameter)
+        if par > edge.FirstParameter and par < edge.LastParameter:
+            return par, t
+
     def parse_values(self, edge, values):
-        #edge = _utils.getShape(fp, "Source", "Edge")
+        #edge = self.getShape(fp, "Source", "Edge")
         if not edge:
             return
-        l = edge.Length
         parameters = []
         for v in values:
-            num_val = None
-            par = None
-            if "%" in v:
-                num_val = float(v.split("%")[0]) * l / 100
-            else:
-                num_val = FreeCAD.Units.parseQuantity(v).Value
-            if num_val < 0:
-                par = edge.Curve.parameterAtDistance(num_val, edge.LastParameter)
-            else:
-                par = edge.Curve.parameterAtDistance(num_val, edge.FirstParameter)
-            if par > edge.FirstParameter and par < edge.LastParameter :
-                parameters.append(par)
+            par, t = self.parse_value(edge, v)
+            parameters.append(par)
         parameters.sort()
         return parameters
 
     def onChanged(self, fp, prop):
         e = None
         if hasattr(fp, "Source"):
-            e = _utils.getShape(fp, "Source", "Edge")
+            e, w = self.getShape(fp)
         if not e:
             return
         if prop == "Source":
@@ -75,22 +98,57 @@ class split:
             self.execute(fp)
 
     def execute(self, obj):
-        e = _utils.getShape(obj, "Source", "Edge")
+        e, w = self.getShape(obj)
         params = []
         if hasattr(obj, "Values"):
             params = self.parse_values(e, obj.Values)
         if params == []:
-            obj.Shape = e
+            if w:
+                obj.Shape = obj.Source[0].Shape
+            else:
+                obj.Shape = e
             return
         if params[0] > e.FirstParameter:
             params.insert(0, e.FirstParameter)
         if params[-1] < e.LastParameter:
             params.append(e.LastParameter)
-        edges = []
-        for i in range(len(params)-1):
-            c = e.Curve.trim(params[i], params[i+1])
-            edges.append(c.toShape())
-        w = Part.Wire(edges)
+            
+        
+        if w: # No subshape given, take wire 1
+            edges = w.Edges
+            for i in range(len(params)):
+                p = e.valueAt(params[i])
+                d, pts, info = Part.Vertex(p).distToShape(w)
+                #print(info)
+                if info[0][3] == "Edge":
+                    n = info[0][4]
+                    nw = w.Edges[n].split(info[0][5])
+                    nw.Placement = w.Edges[n].Placement
+                    if len(nw.Edges) == 2:
+                        edges[n] = nw.Edges[0]
+                        edges.insert(n+1,nw.Edges[1])
+                        
+                        #print([e.Length for e in edges])
+                        se = Part.sortEdges(edges)
+                        if len(se) > 1:
+                            FreeCAD.Console.PrintError("Split curve : failed to build temp Wire !")
+                            #print(se)
+                        w = Part.Wire(se[0])
+        else:
+            edges = []
+            for i in range(len(params)-1):
+                c = e.Curve.trim(params[i], params[i+1])
+                edges.append(c.toShape())
+        
+        se = Part.sortEdges(edges)
+        if len(se) > 1:
+            FreeCAD.Console.PrintError("Split curve : failed to build final Wire !")
+            wires = []
+            for el in se:
+                wires.append(Part.Wire(el))
+            w = Part.Compound(wires)
+        else:
+            w = Part.Wire(se[0])
         if w.isValid():
             obj.Shape = w
         else:
@@ -110,11 +168,14 @@ class MarkerOnEdge(graphics.Marker):
         self._text_font.size = 13.0
         self._text = coin.SoText2()
         self._text_switch = coin.SoSwitch()
+        self._text_switch.whichChild = coin.SO_SWITCH_ALL
         self._text_switch.addChild(self._text_translate)
         self._text_switch.addChild(self._text_font)
         self._text_switch.addChild(self._text)
-        self.on_drag_start.append(self.add_text)
-        self.on_drag_release.append(self.remove_text)
+        #self.on_drag_start.append(self.add_text)
+        #self.on_drag_release.append(self.remove_text)
+        self.on_drag.append(self.update_text)
+        self.update_text()
         self.addChild(self._text_switch)
         
         if isinstance(sh,Part.Shape):
@@ -131,6 +192,8 @@ class MarkerOnEdge(graphics.Marker):
         self.on_drag.remove(self.update_text)
         
     def update_text(self):
+        if self._shape is None:
+            return
         p = self.points[0]
         par = self._shape.Curve.parameter(FreeCAD.Vector(p[0],p[1],p[2]))
         if self._text_type == 0 :
@@ -370,6 +433,7 @@ class splitVP:
         self.active = False
         self.select_state = vobj.Selectable
         self.ip = None
+        self.ps = 0.0
 
     def setEdit(self,vobj,mode=0):
         if mode == 0:
@@ -380,30 +444,38 @@ class splitVP:
                 vobj.PointSize = 0.0
             pts = list()
             sl = self.Object.Source
-            e = _utils.getShape(self.Object, "Source", "Edge")
+            e,w = self.Object.Proxy.getShape(self.Object)
             params = []
             if hasattr(self.Object, "Values"):
                 params = self.Object.Proxy.parse_values(e, self.Object.Values)
             if params == []:
                 return False
             pts = list()
-            print("Creating markers")
-            for p in params:
-                print("{} -> {}".format(p, e.valueAt(p)))
-                m = MarkerOnEdge([e.valueAt(p)], e)
-                #m = manipulators.EdgeSnapAndTangent(e.valueAt(p), e)
-                pts.append(m)
-            print(pts)
+            #print("Creating markers")
+            if hasattr(self.Object, "Values"):
+                for v in self.Object.Values:
+                    p,t = self.Object.Proxy.parse_value(e, v)
+                    #print("{} -> {}".format(p, e.valueAt(p)))
+                    m = MarkerOnEdge([e.valueAt(p)], e)
+                    if t == '':
+                        m._text_type = 0
+                    elif t == '%':
+                        m._text_type = 2
+                    else:
+                        m._text_type = 1
+                    #m = manipulators.EdgeSnapAndTangent(e.valueAt(p), e)
+                    pts.append(m)
+            #print(pts)
             self.ip = pointEditor(pts, self.Object)
             #self.ip.curve = e.Curve
             #vobj.Visibility = False
             self.active = True
-            print("Edit setup OK")
+            #print("Edit setup OK")
             return True
         return False
 
     def unsetEdit(self,vobj,mode=0):
-        e = _utils.getShape(self.Object, "Source", "Edge")
+        e,w = self.Object.Proxy.getShape(self.Object)
         if isinstance(self.ip, pointEditor):
             params = list()
             for p in self.ip.points: 
@@ -411,7 +483,15 @@ class splitVP:
                     pt = p.points[0]
                     par = e.Curve.parameter(FreeCAD.Vector(pt))
                     temp = e.Curve.trim(e.FirstParameter, par)
-                    params.append("{:.3f}mm".format(temp.length()))
+                    #value = p._text.string.getValues()[0]
+                    #print(value)
+                    if p._text_type == 0:
+                        value = str(par)
+                    elif p._text_type == 1:
+                        value = "{:.3f}mm".format(temp.length())
+                    elif p._text_type == 2:
+                        value = "{:.3f}%".format(100 * temp.length() / e.Length)
+                    params.append(value)
             self.Object.Values = params
             vobj.Selectable = self.select_state
             vobj.PointSize = self.ps
@@ -466,13 +546,15 @@ class splitCommand:
                         if selobj.Object.Shape:
                             if len(selobj.Object.Shape.Edges) == 1:
                                 selobj.Object.ViewObject.Visibility = False
+            else:
+                self.makeSplitFeature((selobj.Object, []))
+            
         
     def IsActive(self):
-        if FreeCAD.ActiveDocument:
-            f = FreeCADGui.Selection.Filter("SELECT Part::Feature SUBELEMENT Edge COUNT 1..1000")
-            return f.match()
+        if FreeCAD.ActiveDocument and FreeCADGui.Selection.getSelectionEx():
+            return True
         else:
-            return(False)
+            return False
 
     def GetResources(self):
         return {'Pixmap' : TOOL_ICON, 'MenuText': 'Split Curve', 'ToolTip': 'Splits the selected edge'}
