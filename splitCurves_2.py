@@ -40,6 +40,8 @@ class split:
         #obj.setEditorMode("Parameters",2)
 
     def getShape(self, fp):
+        if fp.Source is None:
+            return None, None
         if fp.Source[1] == []: # No subshape given, take wire 1
             if fp.Source[0].Shape.Wires:
                 w = fp.Source[0].Shape.Wire1
@@ -86,7 +88,7 @@ class split:
 
     def onChanged(self, fp, prop):
         e = None
-        if hasattr(fp, "Source"):
+        if hasattr(fp, "Source") and fp.Source:
             e, w = self.getShape(fp)
         if not e:
             return
