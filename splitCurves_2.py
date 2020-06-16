@@ -523,7 +523,13 @@ class splitVP:
         return(None)
 
     def claimChildren(self):
-        return [self.Object.Source[0]]
+        if self.Object.Source:
+            return [self.Object.Source[0]]
+    
+    def onDelete(self, feature, subelements):
+        if self.Object.Source and hasattr(self.Object.Source[0],"ViewObject"):
+            self.Object.Source[0].ViewObject.Visibility = True
+        return True
 
 class splitCommand:
     """Splits the selected edges."""
@@ -550,6 +556,8 @@ class splitCommand:
                                 selobj.Object.ViewObject.Visibility = False
             else:
                 self.makeSplitFeature((selobj.Object, []))
+                if hasattr(selobj.Object,"ViewObject"):
+                    selobj.Object.ViewObject.Visibility = False
             
         
     def IsActive(self):
