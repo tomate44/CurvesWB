@@ -14,7 +14,7 @@ from FreeCAD import Base
 from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
 
-TOOL_ICON = os.path.join(ICONPATH, '/sketch_surf.svg')
+TOOL_ICON = os.path.join(ICONPATH, 'sketch_surf.svg')
 
 #debug = _utils.debug
 debug = _utils.doNothing

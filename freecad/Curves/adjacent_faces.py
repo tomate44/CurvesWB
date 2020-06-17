@@ -8,7 +8,7 @@ __doc__ = "Select the Adjacent faces of the selected subshape"
 import FreeCAD
 import FreeCADGui
 import Part
-import _utils
+from freecad.Curves import _utils
 
 TOOL_ICON = 'WhatsThis.svg'
 debug = _utils.debug

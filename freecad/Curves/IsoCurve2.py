@@ -22,7 +22,7 @@ import Part
 import isocurves
 import _utils
 
-TOOL_ICON = _utils.iconsPath() + '/isocurve.svg'
+TOOL_ICON = _utils.iconsPath() + 'isocurve.svg'
 #debug = _utils.debug
 debug = _utils.doNothing
 

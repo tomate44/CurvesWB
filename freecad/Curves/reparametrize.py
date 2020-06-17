@@ -12,9 +12,9 @@ __doc__ = """reparametrize a curve to match another one"""
 import FreeCAD
 import Part
 
-import nurbs_tools
-import _utils
-from BSplineAlgorithms import BSplineAlgorithms
+from freecad.Curves import nurbs_tools
+from freecad.Curves import _utils
+from freecad.Curves.BSplineAlgorithms import BSplineAlgorithms
 
 
 

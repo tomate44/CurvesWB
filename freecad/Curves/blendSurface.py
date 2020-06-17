@@ -1,8 +1,7 @@
 import FreeCAD
 import Part
-from curveOnSurface import curveOnSurface
-import nurbs_tools
-
+from freecad.Curves.curveOnSurface import curveOnSurface
+from freecad.Curves import nurbs_tools
 
 class blendSurface:
     def __init__(self, o1, o2):

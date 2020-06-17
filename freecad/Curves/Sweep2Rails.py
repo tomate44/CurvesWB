@@ -6,7 +6,7 @@ from FreeCAD import Base
 from pivy import coin
 from freecad.Curves import libS2R
 from freecad.Curves import CoinNodes
-
+from freecad.Curves import ICONPATH
 
 DEBUG = 1
 
@@ -15,7 +15,7 @@ def debug(string):
         FreeCAD.Console.PrintMessage(string)
         FreeCAD.Console.PrintMessage("\n")
 
-TOOL_ICON = os.path.join(ICONPATH, '/sw2r.svg')
+TOOL_ICON = os.path.join(ICONPATH, 'sw2r.svg')
 
 fac = 1.0
 DEBUG = False

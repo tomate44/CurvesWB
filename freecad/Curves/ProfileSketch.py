@@ -5,14 +5,14 @@ __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = 'Creates a support plane for sketches'
 
+import os
 import FreeCAD
 import FreeCADGui
 import Part
-import _utils
-import Sketcher
-from pivy.coin import *
+from freecad.Curves import _utils
+from freecad.Curves import ICONPATH
 
-TOOL_ICON = _utils.iconsPath() + '/profileSupport.svg'
+TOOL_ICON = os.path.join( ICONPATH, 'profileSupport.svg')
 DEBUG = False
 
 def debug(string):

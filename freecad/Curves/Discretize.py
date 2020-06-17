@@ -12,7 +12,7 @@ import Part
 from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
 
-TOOL_ICON = os.path.join(ICONPATH, '/discretize.svg')
+TOOL_ICON = os.path.join(ICONPATH, 'discretize.svg')
 debug = _utils.debug
 debug = _utils.doNothing
 

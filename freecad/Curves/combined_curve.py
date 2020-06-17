@@ -11,7 +11,7 @@ import Part
 import _utils
 import approximate_extension
 
-TOOL_ICON = _utils.iconsPath() + '/combined_curve.svg'
+TOOL_ICON = _utils.iconsPath() + 'combined_curve.svg'
 debug = _utils.debug
 #debug = _utils.doNothing
 

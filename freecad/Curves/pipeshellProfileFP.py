@@ -5,12 +5,14 @@ __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = 'Creates a Profile object for PipeShell'
 
+import os
 import FreeCAD
 import FreeCADGui
 import Part
-import _utils
+from freecad.Curves import _utils
+from freecad.Curves import ICONPATH
 
-TOOL_ICON = _utils.iconsPath() + '/profile.svg'
+TOOL_ICON = os.path.join( ICONPATH, 'profile.svg')
 DEBUG = False
 
 def debug(string):

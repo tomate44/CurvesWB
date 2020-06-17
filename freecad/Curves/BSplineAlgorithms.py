@@ -7,7 +7,7 @@
 import FreeCAD
 import Part
 from math import pi
-from BSplineApproxInterp import BSplineApproxInterp
+from freecad.Curves.BSplineApproxInterp import BSplineApproxInterp
 
 DEBUG = False
 

@@ -15,7 +15,7 @@ import Part
 import _utils
 import approximate_extension
 
-TOOL_ICON = _utils.iconsPath() + '/icon.svg'
+TOOL_ICON = _utils.iconsPath() + 'icon.svg'
 #debug = _utils.debug
 #debug = _utils.doNothing
 

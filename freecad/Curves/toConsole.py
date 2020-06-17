@@ -7,9 +7,11 @@ __doc__ = "Objects to python console."
 
 import FreeCAD
 import FreeCADGui
-import _utils
+import os
+from freecad.Curves import _utils
+from freecad.Curves import ICONPATH
 
-TOOL_ICON = _utils.iconsPath() + '/toconsole.svg'
+TOOL_ICON = os.path.join( ICONPATH, 'toconsole.svg')
 #debug = _utils.debug
 debug = _utils.doNothing
 

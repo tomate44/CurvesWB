@@ -13,7 +13,7 @@ from PySide import QtGui, QtCore
 from pivy import coin
 from freecad.Curves.Gui import Zebra_Gui
 
-path_curvesWB_icons =  os.path.join( ICONPATH, 'zebra.svg')
+TOOL_ICON =  os.path.join( ICONPATH, 'zebra.svg')
 
 
 
@@ -160,6 +160,6 @@ class ZebraTool:
 
 
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/zebra.svg', 'MenuText': 'ZebraTool', 'ToolTip': 'Zebra texture for surface inspection'}
+        return {'Pixmap' : TOOL_ICON, 'MenuText': 'ZebraTool', 'ToolTip': 'Zebra texture for surface inspection'}
 
 FreeCADGui.addCommand('ZebraTool', ZebraTool())

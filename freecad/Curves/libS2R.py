@@ -1,11 +1,13 @@
-from __future__ import division # allows floating point division from integers
-import FreeCAD, Part, math
-import os, dummy, FreeCADGui
+import os
+import math
+import FreeCAD
+import FreeCADGui
+import Part
+from freecad.Curves import _utils
+from freecad.Curves import ICONPATH
 from FreeCAD import Base
 from operator import itemgetter
 
-path_curvesWB = os.path.dirname(dummy.__file__)
-path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 
 fac = 1.0
 DEBUG = False

@@ -14,7 +14,7 @@ from freecad.Curves import ICONPATH
 from FreeCAD import Base
 from pivy import coin
 
-TOOL_ICON = os.path.join(ICONPATH, '/comb.svg')
+TOOL_ICON = os.path.join(ICONPATH, 'comb.svg')
 DEBUG = False
 
 def debug(string):

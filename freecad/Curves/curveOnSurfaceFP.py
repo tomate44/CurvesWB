@@ -5,14 +5,16 @@ __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = "Creates a parametric curve on surface object."
 
+import os
 import FreeCAD
 import FreeCADGui
 import Part
-import curveOnSurface
 from FreeCAD import Base
-import _utils
+from freecad.Curves import curveOnSurface
+from freecad.Curves import _utils
+from freecad.Curves import ICONPATH
 
-TOOL_ICON = _utils.iconsPath() + '/curveOnSurface.svg'
+TOOL_ICON = os.path.join( ICONPATH, 'curveOnSurface.svg')
 debug = _utils.debug
 #debug = _utils.doNothing
 

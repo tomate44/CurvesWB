@@ -9,15 +9,18 @@ import sys
 if sys.version_info.major >= 3:
     from importlib import reload
 
+import os
 import FreeCAD
 import FreeCADGui
 import Part
-import _utils
-import nurbs_tools
 from math import pi
+from freecad.Curves import  _utils
+from freecad.Curves import  nurbs_tools
 vec2 = FreeCAD.Base.Vector2d
 
-TOOL_ICON = _utils.iconsPath() + '/helical_sweep.svg'
+from freecad.Curves import ICONPATH
+
+TOOL_ICON = os.path.join( ICONPATH, 'helical_sweep.svg')
 #debug = _utils.debug
 #debug = _utils.doNothing
 

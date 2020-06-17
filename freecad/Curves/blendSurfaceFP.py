@@ -1,17 +1,14 @@
-from __future__ import division # allows floating point division from integers
-import FreeCAD, Part, math
-import os, dummy, FreeCADGui
+import os
+import FreeCAD
+import FreeCADGui
+import Part
 from FreeCAD import Base
-import blendSurface
-import CoinNodes
-from pivy import coin
-from PySide.QtGui import *
+from freecad.Curves import blendSurface
+from freecad.Curves import property_editor
+from freecad.Curves import _utils
+from freecad.Curves import ICONPATH
 
-import sys
-if sys.version_info.major >= 3:
-    from importlib import reload
-import property_editor
-reload(property_editor)
+TOOL_ICON = os.path.join( ICONPATH, 'blendSurf.svg')
 
 DEBUG = 1
 
@@ -19,9 +16,6 @@ def debug(string):
     if DEBUG:
         FreeCAD.Console.PrintMessage(string)
         FreeCAD.Console.PrintMessage("\n")
-
-path_curvesWB = os.path.dirname(dummy.__file__)
-path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
 
 
 def downgradeArray(arr):
@@ -309,7 +303,7 @@ class blendSurfCommand:
 
 
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/blendSurf.svg', 'MenuText': 'Blend Surface', 'ToolTip': 'Blending Surface between to curveOnSurface objects '}
+        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Blend Surface', 'ToolTip': 'Blending Surface between to curveOnSurface objects '}
 
 FreeCADGui.addCommand('blendSurface', blendSurfCommand())
 

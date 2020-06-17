@@ -1,16 +1,9 @@
 import FreeCAD
 import FreeCADGui
 import Part
-
-import _utils
-
-#import sys
-#from PySide2.QtWidgets import QApplication
-#from PySide2.QtGui import QColor
-#from pivy import quarter, coin, graphics, utils
-
 from pivy import coin
-import graphics
+from freecad.Curves import _utils
+from freecad.Curves import graphics
 #from graphics import COLORS
 #FreeCAD.Console.PrintMessage("Using local Pivy.graphics library\n")
 

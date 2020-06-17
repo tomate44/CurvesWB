@@ -5,12 +5,14 @@ __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = "Make a parametric solid from selected faces."
 
+import os
 import FreeCAD
 import FreeCADGui
 import Part
-import _utils
+from freecad.Curves import _utils
+from freecad.Curves import ICONPATH
 
-TOOL_ICON = _utils.iconsPath() + '/solid.svg'
+TOOL_ICON = os.path.join( ICONPATH, 'solid.svg')
 
 class solid:
     """Make a parametric solid from selected faces"""

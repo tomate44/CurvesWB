@@ -1,10 +1,8 @@
-from __future__ import division # allows floating point division from integers
 import FreeCAD
 import Part
 from Part import Geom2d
 from FreeCAD import Base
-import _utils
-
+from freecad.Curves import _utils
 
 #Find the minimum distance to another shape.
 #distToShape(Shape s):  Returns a list of minimum distance and solution point pairs.

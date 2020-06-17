@@ -10,13 +10,16 @@ import sys
 if sys.version_info.major >= 3:
     from importlib import reload
 
+import os
 import FreeCAD
 import FreeCADGui
 import Part
-import _utils
-import reparametrize as rp
+from freecad.Curves import reparametrize as rp
 
-TOOL_ICON = _utils.iconsPath() + '/ruled_surface.svg'
+from freecad.Curves import _utils
+from freecad.Curves import ICONPATH
+
+TOOL_ICON = os.path.join( ICONPATH, 'ruled_surface.svg')
 #debug = _utils.debug
 #debug = _utils.doNothing
 

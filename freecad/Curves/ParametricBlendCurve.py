@@ -18,7 +18,7 @@ from freecad.Curves import CoinNodes
 from freecad.Curves import graphics
 from freecad.Curves import manipulators
 
-TOOL_ICON = os.path.join(ICONPATH, '/blend1.svg')
+TOOL_ICON = os.path.join(ICONPATH, 'blend1.svg')
 debug = _utils.debug
 #debug = _utils.doNothing
 

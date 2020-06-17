@@ -12,7 +12,7 @@ import Part
 from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
 
-TOOL_ICON = os.path.join(ICONPATH, '/extract.svg')
+TOOL_ICON = os.path.join(ICONPATH, 'extract.svg')
 
 class extract:
     """Extract the selected shapes from objects"""

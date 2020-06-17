@@ -9,13 +9,15 @@ import sys
 if sys.version_info.major >= 3:
     from importlib import reload
 
+import os
 import FreeCAD
 import FreeCADGui
 import Part
 import Sketcher
-import _utils
+from freecad.Curves import _utils
+from freecad.Curves import ICONPATH
 
-TOOL_ICON = _utils.iconsPath() + '/oriented_sketch.svg'
+TOOL_ICON = os.path.join( ICONPATH, 'oriented_sketch.svg')
 #debug = _utils.debug
 #debug = _utils.doNothing
 

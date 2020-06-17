@@ -19,7 +19,7 @@ from pivy import coin
 from freecad.Curves import graphics
 from freecad.Curves import manipulators
 
-TOOL_ICON = os.path.join(ICONPATH, '/splitcurve.svg')
+TOOL_ICON = os.path.join(ICONPATH, 'splitcurve.svg')
 #debug = _utils.debug
 debug = _utils.doNothing
 

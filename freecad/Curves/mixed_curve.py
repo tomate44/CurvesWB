@@ -5,13 +5,15 @@ __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = "Builds a 3D curve as the intersection of 2 projected curves."
 
+import os
 import FreeCAD
 import FreeCADGui
 import Part
-import _utils
-import approximate_extension
+from freecad.Curves import approximate_extension
+from freecad.Curves import _utils
+from freecad.Curves import ICONPATH
 
-TOOL_ICON = _utils.iconsPath() + '/combined_curve.svg'
+TOOL_ICON = os.path.join( ICONPATH, 'combined_curve.svg')
 debug = _utils.debug
 #debug = _utils.doNothing
 

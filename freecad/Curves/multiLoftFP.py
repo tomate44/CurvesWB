@@ -5,13 +5,14 @@ __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = """Loft profile objects made of multiple faces in parallel"""
 
-
+import os
 import FreeCAD
 import FreeCADGui
 import Part
-import _utils
+from freecad.Curves import _utils
+from freecad.Curves import ICONPATH
 
-TOOL_ICON = _utils.iconsPath() + '/multiLoft.svg'
+TOOL_ICON = os.path.join( ICONPATH, 'multiLoft.svg')
 #debug = _utils.debug
 #debug = _utils.doNothing
 

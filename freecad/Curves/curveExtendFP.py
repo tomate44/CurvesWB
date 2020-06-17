@@ -13,7 +13,7 @@ from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
 from freecad.Curves import curveExtend
 
-TOOL_ICON = os.path.join(ICONPATH, '/extendcurve.svg')
+TOOL_ICON = os.path.join(ICONPATH, 'extendcurve.svg')
 debug = _utils.debug
 debug = _utils.doNothing
 

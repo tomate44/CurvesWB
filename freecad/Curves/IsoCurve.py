@@ -23,7 +23,7 @@ from freecad.Curves import isocurves
 from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
 
-TOOL_ICON = os.path.join(ICONPATH, '/isocurve.svg')
+TOOL_ICON = os.path.join(ICONPATH, 'isocurve.svg')
 
 #debug = _utils.debug
 debug = _utils.doNothing

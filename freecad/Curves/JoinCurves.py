@@ -13,7 +13,7 @@ from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
 from freecad.Curves import approximate_extension
 
-TOOL_ICON = os.path.join(ICONPATH, '/joincurve.svg')
+TOOL_ICON = os.path.join(ICONPATH, 'joincurve.svg')
 debug = _utils.debug
 #debug = _utils.doNothing
 

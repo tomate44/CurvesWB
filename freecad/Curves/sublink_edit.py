@@ -5,13 +5,14 @@ __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = "Editor widget for sublink properties of objects"
 
-
+import os
 import FreeCAD
 import FreeCADGui
-from PySide import QtGui,QtCore
-import _utils
+from PySide import QtGui, QtCore
+from freecad.Curves import _utils
+from freecad.Curves import ICONPATH
 
-TOOL_ICON = _utils.iconsPath() + '/sublink_edit.svg'
+TOOL_ICON = os.path.join( ICONPATH, 'sublink_edit.svg')
 debug = _utils.debug
 
 try:

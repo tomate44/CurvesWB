@@ -12,9 +12,10 @@ if sys.version_info.major >= 3:
 import FreeCAD
 import FreeCADGui
 import Part
-import _utils
+from freecad.Curves import _utils
+from freecad.Curves import ICONPATH
 
-TOOL_ICON = _utils.iconsPath() + '/icon.svg'
+TOOL_ICON = os.path.join(ICONPATH, 'icon.svg')
 #debug = _utils.debug
 #debug = _utils.doNothing
 

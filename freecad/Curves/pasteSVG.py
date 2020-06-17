@@ -3,12 +3,10 @@ import importSVG
 import os
 import FreeCAD
 import FreeCADGui
-import dummy
 from PySide import QtGui
+from freecad.Curves import ICONPATH
 
-path_curvesWB = os.path.dirname(dummy.__file__)
-path_curvesWB_icons =  os.path.join( path_curvesWB, 'Resources', 'icons')
-
+TOOL_ICON = os.path.join( ICONPATH, 'svg_rv3.svg')
 
 class pasteSVG:
     def Activated(self):
@@ -31,6 +29,6 @@ class pasteSVG:
         #return(True)
 
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/svg_rv3.svg', 'MenuText': 'paste SVG', 'ToolTip': 'Pastes the SVG content of the clipboard'}
+        return {'Pixmap' : TOOL_ICON, 'MenuText': 'paste SVG', 'ToolTip': 'Pastes the SVG content of the clipboard'}
 
 FreeCADGui.addCommand('pasteSVG', pasteSVG())

@@ -25,9 +25,9 @@ class CurvesWorkbench(Gui.Workbench):
         #import bezierCurve
         stablelist = list()
         try:
-            import graphics
+            from freecad.Curves import graphics
             marker = graphics.Marker([App.Vector()])
-            import gordon_profile_FP
+            from freecad.Curves import gordon_profile_FP
             stablelist = []
             App.Console.PrintMessage("Pivy.graphics interaction library enabled\n")
         except:
@@ -48,7 +48,7 @@ class CurvesWorkbench(Gui.Workbench):
         from freecad.Curves import IsoCurve
         from freecad.Curves import Sketch_On_Surface
         from freecad.Curves import Sweep2Rails
-        from freecad.Curves import hooks
+        #from freecad.Curves import hooks
         from freecad.Curves import curveOnSurfaceFP
         from freecad.Curves import blendSurfaceFP
         from freecad.Curves import parametricSolid # cleaned

@@ -9,17 +9,19 @@ import sys
 if sys.version_info.major >= 3:
     from importlib import reload
 
+import os
 import FreeCAD
 import FreeCADGui
 import Part
-import _utils
 from Part import Geom2d
 from math import pi
 Vector = FreeCAD.Base.Vector
 Vector2d = FreeCAD.Base.Vector2d
 
+from freecad.Curves import _utils
+from freecad.Curves import ICONPATH
 
-TOOL_ICON = _utils.iconsPath() + '/spring.svg'
+TOOL_ICON = os.path.join( ICONPATH, 'spring.svg')
 #debug = _utils.debug
 #debug = _utils.doNothing
 
