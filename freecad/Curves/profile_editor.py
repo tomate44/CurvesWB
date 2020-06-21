@@ -296,11 +296,11 @@ class InterpoCurveEditor(object):
                         tans.append(FreeCAD.Vector(1,0,0))
                         flags.append(False)
             elif self.points[i].tangent:
-                for vec in self.points[i].points:
+                for j in range(len(self.points[i].points))
                     tans.append(self.points[i].tangent)
                     flags.append(True)
             else:
-                for vec in self.points[i].points:
+                for j in range(len(self.points[i].points))
                     tans.append(FreeCAD.Vector(0,0,0))
                     flags.append(False)
         return(tans,flags)

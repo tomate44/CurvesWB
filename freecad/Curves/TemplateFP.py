@@ -102,7 +102,7 @@ class TemplateVP:
 
 class ToolCommand:
     """Creates a ..."""
-    def makeFeature(self):
+    def makeFeature(self, sel=None):
         fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","")
         TemplateFP(fp)
         TemplateVP(fp.ViewObject)

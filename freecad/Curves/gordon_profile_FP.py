@@ -91,9 +91,6 @@ class GordonProfileFP:
         obj.Parametrization = ( 1.0, 0.0, 1.0, 0.05 )
         obj.Proxy = self
 
-    def onDocumentRestored(self, fp):
-        fp.Parametrization = ( 1.0, 0.0, 1.0, 0.05 )
-
     def get_shapes(self, fp):
         if hasattr(fp,'Support'):
             sl = list()
@@ -346,7 +343,6 @@ class GordonProfileCommand:
 
         sub = list()
         pts = list()
-        typ = list()
         for obj in s:
             if obj.HasSubObjects:
                 #FreeCAD.Console.PrintMessage("object has subobjects %s\n"%str(obj.SubElementNames))

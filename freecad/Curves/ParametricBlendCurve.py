@@ -234,14 +234,11 @@ class pointEditor(object):
                 o._text_type += 1
     
     def quit(self):
-        if False: #self.fp:
-            self.fp.ViewObject.Proxy.doubleClicked(self.fp.ViewObject)
-        else:
-            self.root.events.removeEventCallback(coin.SoKeyboardEvent.getClassTypeId(), self._controlCB)
-            self.root.unregister()
-            #self.root.removeAllChildren()
-            self.sg.removeChild(self.root)
-            self.root_inserted = False
+        self.root.events.removeEventCallback(coin.SoKeyboardEvent.getClassTypeId(), self._controlCB)
+        self.root.unregister()
+        #self.root.removeAllChildren()
+        self.sg.removeChild(self.root)
+        self.root_inserted = False
             
    
 

@@ -11,7 +11,7 @@ import Part
 from freecad.Curves import _utils
 
 TOOL_ICON = 'WhatsThis.svg'
-debug = _utils.debug
+#debug = _utils.debug
 debug = _utils.doNothing
 
 

@@ -32,7 +32,6 @@ class Object3D(graphics.Object3D):
             return p.Point
         else:
             return FreeCAD.Vector(p[0],p[1],p[2])
-        return None
     @property 
     def vectors(self):
         return [FreeCAD.Vector(p[0],p[1],p[2]) for p in self.points]

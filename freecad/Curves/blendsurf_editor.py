@@ -237,7 +237,7 @@ class BlendSurfEditor(object):
                         tans.append(FreeCAD.Vector(1,0,0))
                         flags.append(False)
             else:
-                for vec in self.points[i].points:
+                for j in range(len(self.points[i].points)):
                     tans.append(FreeCAD.Vector(1,0,0))
                     flags.append(False)
         return(tans,flags)

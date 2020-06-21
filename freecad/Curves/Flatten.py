@@ -92,7 +92,7 @@ dis = rail.Distance
 params = []
 
 for i in range(len(pts)):
-    #params.append(1.0 * i * dis)
+    params.append(1.0 * i * dis)
 
 bs = Part.BSplineCurve()
 bs.interpolate(Points = pts, Parameters = params)

@@ -115,7 +115,7 @@ class VPEditor(QObject):
             FreeCAD.Console.PrintError("Failed to remove from ComboView\n")
 
 class VectorListWidget(QTableWidget):
-    def __init__(self, fp, prop, parent=None):
+    def __init__(self, fp=None, prop=None, parent=None):
     #def __init__(self, parent=None):
         super(VectorListWidget, self).__init__(parent)
         self.fp = fp

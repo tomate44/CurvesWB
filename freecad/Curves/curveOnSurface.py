@@ -134,10 +134,10 @@ def curve2d_extend(curve, start=0.5, end=0.5):
         print(len(knots))
     return bs
     
-    ext1 = Part.Geom2d.BSplineCurve2d()
-    pts = [bs.value(bs.FirstParameter),
-           add2d(bs.value(bs.FirstParameter), mul2d(t1,start*bs.length()))]
-    ext1
+    #ext1 = Part.Geom2d.BSplineCurve2d()
+    #pts = [bs.value(bs.FirstParameter),
+           #add2d(bs.value(bs.FirstParameter), mul2d(t1,start*bs.length()))]
+    #ext1
 
 def intersection2d(curve, c1, c2):
     inter11 = curve.intersectCC(c1)
@@ -172,7 +172,7 @@ def get_offset_curve(bc,c1,c2,dist=0.1):
     
 
 
-class curveOnSurface:
+class curveOnSurface(object):
     
     def __init__(self, edge = None, face = None):
         self.face = face
