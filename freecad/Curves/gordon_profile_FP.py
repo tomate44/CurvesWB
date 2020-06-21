@@ -330,6 +330,7 @@ class GordonProfileCommand:
         GordonProfileVP(fp.ViewObject)
         FreeCAD.Console.PrintMessage(GordonProfileCommand.docu)
         FreeCAD.ActiveDocument.recompute()
+        FreeCADGui.SendMsgToActiveView("ViewFit")
         fp.ViewObject.Document.setEdit(fp.ViewObject)
         
     def Activated(self):
