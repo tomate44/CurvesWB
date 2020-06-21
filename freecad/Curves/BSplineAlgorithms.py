@@ -163,7 +163,7 @@ class BSplineAlgorithms(object):
     def bsplineBasisMat(self, degree, knots, params, derivOrder):
         import numpy as np
         #from scipy import linalg
-        import nurbs_tools # import BsplineBasis
+        from freecad.Curves import nurbs_tools # import BsplineBasis
         ncp = len(knots) - degree - 1
         mx = np.array([[0.]*ncp for i in range(len(params))])
         #math_Matrix mx(1, params.Length(), 1, ncp);

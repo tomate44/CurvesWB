@@ -61,7 +61,7 @@ class Interpolate:
         obj.addProperty("App::PropertyBool",           "Periodic",       "General",    "Set the curve closed").Periodic = False
         obj.addProperty("App::PropertyFloat",          "Tolerance",      "General",    "Interpolation tolerance").Tolerance = 1e-7
         obj.addProperty("App::PropertyBool",           "CustomTangents", "General",    "User specified tangents").CustomTangents = False
-        obj.addProperty("App::PropertyBool",           "DetectAligned",  "General",    "interpolate 3 aligned points with a line").DetectAligned = True
+        obj.addProperty("App::PropertyBool",           "DetectAligned",  "General",    "interpolate 3 aligned points with a line").DetectAligned = False
         obj.addProperty("App::PropertyBool",           "Polygonal",      "General",    "interpolate with a degree 1 polygonal curve").Polygonal = False
         obj.addProperty("App::PropertyBool",           "WireOutput",     "Parameters", "outputs a wire or a single edge").WireOutput = False
         obj.addProperty("App::PropertyFloatList",      "Parameters",     "Parameters", "Parameters of interpolated points")
@@ -71,11 +71,14 @@ class Interpolate:
         obj.Proxy = self
         if isinstance(source, (list, tuple)):
             obj.PointList = source
+            obj.setEditorMode("Source", 2)
         else:
             obj.Source = source
+            obj.setEditorMode("PointList", 2)
         self.obj = obj
         obj.Parametrization = "ChordLength"
         obj.setEditorMode("CustomTangents", 2)
+        obj.setEditorMode("DetectAligned", 2)
 
     def setTolerance(self, obj):
         try:
@@ -132,15 +135,15 @@ class Interpolate:
         else:
             bs = Part.BSplineCurve()
             bs.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Parameters=obj.Parameters)
-            if not (len(obj.Tangents) == len(pts) and len(obj.TangentFlags) == len(pts)) or obj.DetectAligned:
+            if not (len(obj.Tangents) == len(pts) and len(obj.TangentFlags) == len(pts)): # or obj.DetectAligned:
                 if obj.Periodic:
                     obj.Tangents = [bs.tangent(p)[0] for p in obj.Parameters[0:-1]]
                 else:
                     obj.Tangents = [bs.tangent(p)[0] for p in obj.Parameters]
                 obj.TangentFlags = [True]*len(pts)
-            if obj.CustomTangents or obj.DetectAligned:
-                if obj.DetectAligned:
-                    self.detect_aligned_pts(obj, pts)
+            if obj.CustomTangents: # or obj.DetectAligned:
+                #if obj.DetectAligned:
+                    #self.detect_aligned_pts(obj, pts)
                 bs.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Parameters=obj.Parameters, Tangents=obj.Tangents, TangentFlags=obj.TangentFlags) #, Scale=False)
         obj.Shape = bs.toShape()
 

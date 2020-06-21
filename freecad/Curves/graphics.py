@@ -431,6 +431,19 @@ class InteractionSeparator(coin.SoSeparator):
 
     def dragCB(self, attr, event_callback, force=False):
         event = event_callback.getEvent()
+        b = ""
+        s = ""
+        if type(event) == coin.SoMouseButtonEvent:
+            if event.getButton() == coin.SoMouseButtonEvent.BUTTON1:
+                b = "mb1"
+            elif event.getButton() == coin.SoMouseButtonEvent.BUTTON2:
+                b = "mb2"
+            if event.getState() == coin.SoMouseButtonEvent.UP:
+                s = "up"
+            elif event.getState() == coin.SoMouseButtonEvent.DOWN:
+                s = "down"
+            import FreeCAD
+            FreeCAD.Console.PrintMessage("{} {}\n".format(b,s))
         if ((type(event) == coin.SoMouseButtonEvent and
                 event.getState() == coin.SoMouseButtonEvent.UP
                 and event.getButton() == coin.SoMouseButtonEvent.BUTTON1) or 
