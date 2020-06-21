@@ -324,7 +324,7 @@ class Container(coin.SoSeparator):
         self.Highlight(obj)
 
     def SendRay(self, mouse_pos):
-        """sends a ray trough the scene and return the nearest entity"""
+        """sends a ray through the scene and return the nearest entity"""
         render_manager = self.view.getViewer().getSoRenderManager()
         ray_pick = coin.SoRayPickAction(render_manager.getViewportRegion())
         ray_pick.setPoint(coin.SbVec2s(*mouse_pos))

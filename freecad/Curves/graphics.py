@@ -288,7 +288,7 @@ class InteractionSeparator(coin.SoSeparator):
         self.highlightObject(obj)
 
     def sendRay(self, mouse_pos):
-        """sends a ray trough the scene and return the nearest entity"""
+        """sends a ray through the scene and return the nearest entity"""
         ray_pick = coin.SoRayPickAction(self.render_manager.getViewportRegion())
         ray_pick.setPoint(coin.SbVec2s(*mouse_pos))
         ray_pick.setRadius(InteractionSeparator.pick_radius)
