@@ -13,7 +13,7 @@ from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
 
 TOOL_ICON = os.path.join(ICONPATH, "line.svg")
-debug = _utils.debug
+#debug = _utils.debug
 debug = _utils.doNothing
 
 class line:

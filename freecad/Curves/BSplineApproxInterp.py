@@ -131,7 +131,7 @@ class BSplineApproxInterp(object):
         if withKink:
             self.indexOfKinks.append(pointIndex)
     def FitCurveOptimal(self, initialParms, maxIter):
-        parms = list()
+        #parms = list()
         # compute initial parameters, if initialParms empty
         if len(initialParms) == 0:
             parms = self.computeParameters(0.5)

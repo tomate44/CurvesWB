@@ -289,7 +289,7 @@ class combComb(sensorPolyNode):
         #points = self.sensor.getAttachedField()
         a = []
         l = len(points)
-        for i in range(l/2):
+        for i in range(l/2.0):
             a.append(2*i)
             a.append(2*i+1)
             a.append(-1)
@@ -306,7 +306,7 @@ class combCurve(sensorPolyNode):
         #points = self.sensor.getAttachedField()
         a = []
         l = len(points)
-        for i in range(l/2):
+        for i in range(l/2.0):
             a.append(2*i+1)
         a.append(-1)
         self.lines.coordIndex.setValue(0)

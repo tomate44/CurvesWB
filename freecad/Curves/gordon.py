@@ -411,14 +411,14 @@ class InterpolateCurveNetwork(object):
             summ = 0
             for spline_u_idx in range(1, nProfiles+1):
                 summ += intersection_params_u[spline_u_idx - 1][spline_v_idx - 1]
-            newParametersProfiles.append(summ / nProfiles)
+            newParametersProfiles.append(1.0 * summ / nProfiles)
 
         newParametersGuides = list()
         for spline_u_idx in range(1, nProfiles+1):
             summ = 0
             for spline_v_idx in range(1, nGuides+1):
                 summ += intersection_params_v[spline_u_idx - 1][spline_v_idx - 1]
-            newParametersGuides.append(summ / nGuides)
+            newParametersGuides.append(1.0 * summ / nGuides)
 
         debug("newParametersProfiles\n%s"%newParametersProfiles)
         debug("newParametersGuides\n%s"%newParametersGuides)
@@ -531,34 +531,5 @@ class InterpolateCurveNetwork(object):
         for spline_v_idx in range(nGuides):
             if (abs(intersection_params_v[nProfiles - 1][spline_v_idx] - sortedGuides[0].getKnot(sortedGuides[0].NbKnots)) < self.tolerance):
                 intersection_params_v[nProfiles - 1][spline_v_idx] = sortedGuides[0].getKnot(sortedGuides[0].NbKnots)
-
-def main():
-    
-    import FreeCAD
-    import FreeCADGui
-    import Part
-    
-    data = ["test-S2R-2","Compound","Compound001"]
-    #data = ["Gordon-sphere","Compound","Compound001"]
-    data = ["test-birail-3","Compound","Compound001"]
-    #data = ["Gordon-2","profiles","guides"]
-    
-    doc = FreeCAD.open(u"/home/tomate/.FreeCAD/Mod/CurvesWB/TestFiles/%s.fcstd"%data[0])
-    # Create array of curves
-    guide_edges = doc.getObject(data[1]).Shape.Edges
-    profile_edges = doc.getObject(data[2]).Shape.Edges
-    guide_curves = [e.Curve.toBSpline() for e in guide_edges]
-    profile_curves = [e.Curve.toBSpline() for e in profile_edges]
-
-    # create the gordon surface
-    gordon = InterpolateCurveNetwork(profile_curves, guide_curves, 1e-5)
-
-    # display curves and resulting surface
-    Part.show(gordon.surface().toShape())
-    FreeCAD.ActiveDocument.recompute()
-
-if __name__ == "__main__":
-    main()
-
 
 

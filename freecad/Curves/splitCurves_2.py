@@ -443,7 +443,6 @@ class splitVP:
                 vobj.Selectable = False
                 self.ps = vobj.PointSize
                 vobj.PointSize = 0.0
-            pts = list()
             sl = self.Object.Source
             e,w = self.Object.Proxy.getShape(self.Object)
             params = []
