@@ -29,7 +29,8 @@
 import FreeCAD
 import Part
 from math import pi
-from BSplineAlgorithms import BSplineAlgorithms
+from freecad.Curves.BSplineAlgorithms import BSplineAlgorithms
+from freecad.Curves import curve_network_sorter
 
 DEBUG = True
 
@@ -361,7 +362,6 @@ class InterpolateCurveNetwork(object):
                 debug("%dx%d = (%.4f, %.4f)"%(spline_u_idx, spline_v_idx, intersection_params_u[spline_u_idx][spline_v_idx], intersection_params_v[spline_u_idx][spline_v_idx]))
 
     def sort_curves(self, intersection_params_u, intersection_params_v):
-        import curve_network_sorter
         sorterObj = curve_network_sorter.CurveNetworkSorter(self.profiles, self.guides, intersection_params_u, intersection_params_v)
         sorterObj.Perform()
 

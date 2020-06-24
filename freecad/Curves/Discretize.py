@@ -250,7 +250,7 @@ class discretize:
     def Activated(self):
         s = FreeCADGui.Selection.getSelectionEx()
         edges = self.parseSel(s)
-        FreeCADGui.doCommand("import Discretize")
+        FreeCADGui.doCommand("from freecad.Curves import Discretize")
         for e in edges:
             FreeCADGui.doCommand('obj = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Discretized_Edge")')
             FreeCADGui.doCommand('Discretize.Discretization(obj, (FreeCAD.ActiveDocument.getObject("%s"),"%s"))'%(e[0].Name,e[1][0]))

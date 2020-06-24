@@ -15,6 +15,7 @@ import FreeCADGui
 import Part
 from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
+from freecad.Curves.gordon import InterpolateCurveNetwork
 
 TOOL_ICON = os.path.join( ICONPATH, 'gordon.svg')
 #debug = _utils.debug
@@ -45,7 +46,7 @@ def debug(o):
         FreeCAD.Console.PrintMessage("%s\n"%o)
 
 
-class gordon:
+class gordonFP:
     """Creates a surface that skins a network of curves"""
     def __init__(self, obj):
         """Add the properties"""
@@ -93,8 +94,6 @@ class gordon:
                 else:
                     guides.append(e)
         
-        import gordon
-        reload(gordon)
         guide_curves = [e.Curve.toBSpline(e.FirstParameter,e.LastParameter) for e in guides]
         profile_curves = [e.Curve.toBSpline(e.FirstParameter,e.LastParameter) for e in profiles]
         debug("%d guides / %d profiles"%(len(guide_curves),len(profile_curves)))
@@ -107,8 +106,8 @@ class gordon:
             debug("All profiles are closed")
             #guide_curves.append(guide_curves[0])
         # create the gordon surface
-        gordon = gordon.InterpolateCurveNetwork(profile_curves, guide_curves, obj.Tol3D, obj.Tol2D)
-        gordon.max_ctrl_pts = obj.MaxCtrlPts
+        gordon_surf = InterpolateCurveNetwork(profile_curves, guide_curves, obj.Tol3D, obj.Tol2D)
+        gordon_surf.max_ctrl_pts = obj.MaxCtrlPts
         #gordon.perform()
         #s = gordon.surface_intersections()
         #debug(s)
@@ -124,7 +123,7 @@ class gordon:
         # display curves and resulting surface
         if obj.Output == "Wireframe":
             edges = list()
-            s = gordon.surface()
+            s = gordon_surf.surface()
             u0,u1,v0,v1 = s.bounds()
             for i in range(obj.SamplesU+1):
                 pu = u0 + (u1-u0)*float(i)/obj.SamplesU
@@ -134,8 +133,8 @@ class gordon:
                 edges.append(s.vIso(pv).toShape())
             obj.Shape = Part.Compound(edges)
         else:
-            obj.Shape = gordon.surface().toShape()
-        del(gordon)
+            obj.Shape = gordon_surf.surface().toShape()
+        del(gordon_surf)
 
 class gordonVP:
     def __init__(self,vobj):
@@ -164,7 +163,7 @@ class gordonCommand:
     """Creates a surface that skins a network of curves"""
     def makeGordonFeature(self,source):
         gordonObj = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Gordon")
-        gordon(gordonObj)
+        gordonFP(gordonObj)
         gordonVP(gordonObj.ViewObject)
         gordonObj.Sources = source
         FreeCAD.ActiveDocument.recompute()

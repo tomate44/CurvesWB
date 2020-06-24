@@ -1,6 +1,7 @@
 # This file is a python port of /src/guide_curves/CTiglCurveNetworkSorter.cpp
 # from the Tigl library : https://github.com/DLR-SC/tigl under Apache-2 license
 import FreeCAD
+from freecad.Curves import nurbs_tools
 
 DEBUG = False
 
@@ -187,7 +188,6 @@ class CurveNetworkSorter(object):
         for icol in range(len(self.guides)): #(int icol = 0; icol < static_cast<int>(NGuides()); ++icol) {
             self.parmsIntersProfiles[pIdx][icol] = -self.parmsIntersProfiles[pIdx][icol] + firstParm + lastParm
         if not profile is None: #.IsNull()
-            import nurbs_tools
             profile = nurbs_tools.bspline_copy(profile, reverse = True, scale = 1.0)
             self.profiles[profileIdx] = profile
         self.profIdx[profileIdx] = "-" + self.profIdx[profileIdx]
@@ -204,7 +204,6 @@ class CurveNetworkSorter(object):
         for irow in range(len(self.profiles)):
             self.parmsIntersGuides[irow][gIdx] = -self.parmsIntersGuides[irow][gIdx] + firstParm + lastParm
         if not guide is None: #.IsNull()
-            import nurbs_tools
             guide = nurbs_tools.bspline_copy(guide, reverse = True, scale = 1.0)
             self.guides[guideIdx] = guide
         self.guidIdx[guideIdx] = "-" + self.guidIdx[guideIdx]

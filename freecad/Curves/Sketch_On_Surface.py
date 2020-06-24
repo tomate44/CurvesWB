@@ -224,7 +224,11 @@ class sketchOnSurface:
         for e in proj.Edges:
             try:
                 c2d, fp, lp = quad.curveOnSurface(e)
-                ne = c2d.toShape(face.Surface, fp, lp)
+                ne = c2d.toShape(face.Surface, fp, lp) # toShape produces 1e-5 tolerance
+                it = ne.getTolerance(1)
+                ne.fixTolerance(1e-7, Part.Edge) # get back 1e-7 tolerance
+                ft = ne.getTolerance(1)
+                print("fixing tolerance : {0:e} -> {1:e}".format(it,ft))
                 new_edges.append(ne)
             except TypeError:
                 debug("Failed to get 2D curve")
@@ -308,7 +312,10 @@ class sketchOnSurface:
                         loft = Part.makeLoft([shapes_1[i].Wires[0], shapes_2[i].Wires[0]], obj.FillFaces, True)
                         shapes.append(loft)
                 if shapes:
-                    obj.Shape = Part.Compound(shapes)
+                    if len(shapes) == 1:
+                        obj.Shape = shapes[0]
+                    elif len(shapes) > 1:
+                        obj.Shape = Part.Compound(shapes)
 
 
 class sosVP:
