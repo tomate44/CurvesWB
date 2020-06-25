@@ -224,11 +224,12 @@ class sketchOnSurface:
         for e in proj.Edges:
             try:
                 c2d, fp, lp = quad.curveOnSurface(e)
-                ne = c2d.toShape(face.Surface, fp, lp) # toShape produces 1e-5 tolerance
-                it = ne.getTolerance(1)
-                ne.fixTolerance(1e-7, Part.Edge) # get back 1e-7 tolerance
-                ft = ne.getTolerance(1)
-                print("fixing tolerance : {0:e} -> {1:e}".format(it,ft))
+                ne = c2d.toShape(face, fp, lp) # toShape produces 1e-5 tolerance
+                vt = ne.getTolerance(1, Part.Vertex)
+                et = ne.getTolerance(1, Part.Edge)
+                if vt < et:
+                    ne.fixTolerance(et, Part.Vertex)
+                    print("fixing tolerance : {0:e} -> {1:e}".format(vt,et))
                 new_edges.append(ne)
             except TypeError:
                 debug("Failed to get 2D curve")
@@ -303,6 +304,7 @@ class sketchOnSurface:
                             faces.extend(loft.Faces)
                         try:
                             shell = Part.Shell(faces)
+                            shell.sewShape()
                             solid = Part.Solid(shell)
                             shapes.append(solid)
                         except Part.OCCError:
