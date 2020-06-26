@@ -16,8 +16,8 @@ from freecad.Curves import ICONPATH
 
 TOOL_ICON = os.path.join(ICONPATH, 'sketch_surf.svg')
 
-#debug = _utils.debug
-debug = _utils.doNothing
+debug = _utils.debug
+#debug = _utils.doNothing
 vec = FreeCAD.Vector
 
 
@@ -143,11 +143,14 @@ def stretched_plane(geom_range=[0,1,0,1], param_range=[0,2,0,2]):
     return bs
 
 class BoundarySorter:
-    def __init__(self, wires):
+    def __init__(self, wires, only_closed=False):
         self.wires = []
         self.parents = []
         self.sorted_wires = []
         for w in wires:
+            if only_closed and not w.isClosed():
+                debug("Skipping open wire")
+                continue
             self.wires.append(w)
             self.parents.append([])
             self.sorted_wires.append([])
@@ -196,30 +199,43 @@ class sketchOnSurface:
     "This feature object maps a sketch on a surface"
     def __init__(self, obj):
         obj.addProperty("App::PropertyLink",    "Sketch", "SketchOnSurface", "Input Sketch")
-        obj.addProperty("App::PropertyBool",    "FillFaces",     "Settings", "Make faces from closed wires").FillFaces = True
+        obj.addProperty("App::PropertyLinkList",    "ExtraObjects", "SketchOnSurface", "Additional objects that will be mapped on surface")
+        obj.addProperty("App::PropertyBool",    "FillFaces",     "Settings", "Make faces from closed wires").FillFaces = False
         obj.addProperty("App::PropertyBool",    "FillExtrusion", "Settings", "Add extrusion faces").FillExtrusion = True
         obj.addProperty("App::PropertyFloat",   "Offset",   "Settings", "Offset distance of mapped sketch").Offset = 0.0
-        obj.addProperty("App::PropertyFloat",   "Thickness","Settings", "Extrusion thickness").Thickness = 1.0
+        obj.addProperty("App::PropertyFloat",   "Thickness","Settings", "Extrusion thickness").Thickness = 0.0
         obj.addProperty("App::PropertyBool",    "ReverseU", "Touchup", "Reverse U direction").ReverseU = False
         obj.addProperty("App::PropertyBool",    "ReverseV", "Touchup", "Reverse V direction").ReverseV = False
         obj.addProperty("App::PropertyBool",    "ConstructionBounds", "Touchup", "include construction geometry in sketch bounds").ConstructionBounds = True
         obj.Proxy = self
 
-    def build_faces(self, wl, surf):
+    def build_faces(self, wl, face):
         faces = []
-        bs = BoundarySorter(wl)
+        bs = BoundarySorter(wl, True)
         for wirelist in bs.sort():
             #print(wirelist)
-            f = Part.Face(surf, wirelist[0])
-            f.validate()
+            f = Part.Face(face, wirelist[0])
+            if not f.isValid():
+                debug("Invalid face")
+                f.validate()
             if len(wirelist) > 1:
                 f.cutHoles(wirelist[1:])
                 f.validate()
             faces.append(f)
         return faces
 
-    def mapping(self, obj, quad, face):
-        proj = quad.project(obj.Sketch.Shape.Edges)
+    def map_shapelist(self, shapes, quad, face, fillfaces=False):
+        shapelist = []
+        for i,shape in enumerate(shapes):
+            debug("mapping shape # {}".format(i+1))
+            shapelist.extend(self.map_shape(shape, quad, face, fillfaces))
+            debug("Total : {} shapes".format(len(shapelist)))
+        return shapelist
+
+    def map_shape(self, shape, quad, face, fillfaces=False):
+        if not isinstance(shape, Part.Shape):
+            return []
+        proj = quad.project(shape.Edges)
         new_edges = []
         for e in proj.Edges:
             try:
@@ -229,13 +245,13 @@ class sketchOnSurface:
                 et = ne.getTolerance(1, Part.Edge)
                 if vt < et:
                     ne.fixTolerance(et, Part.Vertex)
-                    print("fixing tolerance : {0:e} -> {1:e}".format(vt,et))
+                    #debug("fixing tolerance : {0:e} -> {1:e}".format(vt,et))
                 new_edges.append(ne)
             except TypeError:
-                debug("Failed to get 2D curve")
+                error("Failed to get 2D curve")
         sorted_edges = Part.sortEdges(new_edges)
         wirelist = [Part.Wire(el) for el in sorted_edges]
-        if obj.FillFaces:
+        if fillfaces:
             return self.build_faces(wirelist, face.Surface)
         else:
             return wirelist
@@ -264,7 +280,7 @@ class sketchOnSurface:
         try:
             n = eval(obj.Sketch.Support[0][1][0].lstrip('Face'))
             face = obj.Sketch.Support[0][0].Shape.Faces[n-1]
-            face.Placement = obj.Sketch.Support[0][0].getGlobalPlacement()
+            #face.Placement = obj.Sketch.Support[0][0].getGlobalPlacement()
         except (IndexError, AttributeError, SyntaxError) as e:
             error("Failed to get the face support of the sketch\n")
             return
@@ -277,19 +293,21 @@ class sketchOnSurface:
         bs = stretched_plane(geom_range=[u0, u1, v0, v1], param_range=face.ParameterRange)
         quad = bs.toShape()
         quad.Placement = obj.Sketch.getGlobalPlacement()
+        imput_shapes = [obj.Sketch.Shape] + [o.Shape for o in obj.ExtraObjects]
         shapes_1 = []
         shapes_2 = []
         if (obj.Offset == 0):
-            shapes_1 = self.mapping(obj, quad, face)
+            shapes_1 = self.map_shapelist(imput_shapes, quad, face, obj.FillFaces)
         else:
             f1 = face.makeOffsetShape(obj.Offset, 1e-3)
-            shapes_1 = self.mapping(obj, quad, f1.Face1)
-        if (obj.Thickness == 0) and shapes_1:
-            obj.Shape = Part.Compound(shapes_1)
+            shapes_1 = self.map_shapelist(imput_shapes, quad, f1.Face1, obj.FillFaces)
+        if (obj.Thickness == 0):
+            if shapes_1:
+                obj.Shape = Part.Compound(shapes_1)
             return
         else:
             f2 = face.makeOffsetShape(obj.Offset+obj.Thickness, 1e-3)
-            shapes_2 = self.mapping(obj, quad, f2.Face1)
+            shapes_2 = self.map_shapelist(imput_shapes, quad, f2.Face1, obj.FillFaces)
             if not obj.FillExtrusion:
                 if shapes_1 or shapes_2:
                     obj.Shape = Part.Compound(shapes_1 + shapes_2)
