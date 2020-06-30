@@ -129,16 +129,25 @@ vec = FreeCAD.Vector
     ##print(curve2D)
     #return curve2D
 
-def stretched_plane(geom_range=[0,1,0,1], param_range=[0,2,0,2]):
-    u0, u1, v0, v1 = geom_range
+def stretched_plane(poles, param_range=[0,2,0,2], extend_factor=1.0):
     s0, s1, t0, t1 = param_range
     bs = Part.BSplineSurface()
-    poles = [[FreeCAD.Vector(u0,v0,0), FreeCAD.Vector(u0,v1,0)],
-                [FreeCAD.Vector(u1,v0,0), FreeCAD.Vector(u1,v1,0)]]
     umults = [2, 2]
     vmults = [2, 2]
     uknots = [s0, s1]
     vknots = [t0, t1]
+    if extend_factor > 1.0:
+        ur = s1 - s0
+        vr = t1 - t0
+        uknots = [s0 - extend_factor * ur, s1 + extend_factor * ur]
+        vknots = [t0 - extend_factor * vr, t1 + extend_factor * vr]
+        diag_1 = poles[1][1] - poles[0][0]
+        diag_2 = poles[1][0] - poles[0][1]
+        np1 = poles[0][0] - extend_factor * diag_1
+        np2 = poles[0][1] - extend_factor * diag_2
+        np3 = poles[1][0] + extend_factor * diag_2
+        np4 = poles[1][1] + extend_factor * diag_1
+        poles = [[np1,np2],[np3,np4]]
     bs.buildFromPolesMultsKnots(poles, umults, vmults, uknots, vknots, False, False, 1, 1)
     return bs
 
@@ -212,15 +221,17 @@ class sketchOnSurface:
     def build_faces(self, wl, face):
         faces = []
         bs = BoundarySorter(wl, True)
-        for wirelist in bs.sort():
+        for i, wirelist in enumerate(bs.sort()):
             #print(wirelist)
             f = Part.Face(face, wirelist[0])
             if not f.isValid():
-                debug("Invalid face")
+                debug("{:3}:Invalid initial face".format(i))
                 f.validate()
             if len(wirelist) > 1:
                 f.cutHoles(wirelist[1:])
                 f.validate()
+            if not f.isValid():
+                debug("{:3}:Invalid final face".format(i))
             faces.append(f)
         return faces
 
@@ -238,16 +249,19 @@ class sketchOnSurface:
         proj = quad.project(shape.Edges)
         new_edges = []
         for e in proj.Edges:
-            try:
+            if True:
                 c2d, fp, lp = quad.curveOnSurface(e)
-                ne = c2d.toShape(face, fp, lp) # toShape produces 1e-5 tolerance
+                ne = c2d.toShape(face.Surface, fp, lp) # toShape produces 1e-5 tolerance
+                #debug(ne.Placement)
+                #debug(face.Placement)
+                #ne.Placement = face.Placement
                 vt = ne.getTolerance(1, Part.Vertex)
                 et = ne.getTolerance(1, Part.Edge)
                 if vt < et:
                     ne.fixTolerance(et, Part.Vertex)
                     #debug("fixing tolerance : {0:e} -> {1:e}".format(vt,et))
                 new_edges.append(ne)
-            except TypeError:
+            else: #except TypeError:
                 error("Failed to get 2D curve")
         sorted_edges = Part.sortEdges(new_edges)
         wirelist = [Part.Wire(el) for el in sorted_edges]
@@ -265,12 +279,12 @@ class sketchOnSurface:
             return
         skedges = []
         for i in obj.Sketch.Geometry:
-            if i.Construction and not obj.ConstructionBounds:
-                continue
-            try:
+            if i.Construction and obj.ConstructionBounds:
                 skedges.append(i.toShape())
-            except:
-                debug("toShape() error, ignoring geometry")
+            elif not i.Construction and not obj.ConstructionBounds:
+                skedges.append(i.toShape())
+            #else:
+                #debug("toShape() error, ignoring geometry")
         comp = Part.Compound(skedges)
 
         bb = comp.BoundBox
@@ -290,7 +304,9 @@ class sketchOnSurface:
             u0, u1 = u1, u0
         if obj.ReverseV:
             v0, v1 = v1, v0
-        bs = stretched_plane(geom_range=[u0, u1, v0, v1], param_range=face.ParameterRange)
+        pts = [[FreeCAD.Vector(u0,v0,0), FreeCAD.Vector(u0,v1,0)],
+               [FreeCAD.Vector(u1,v0,0), FreeCAD.Vector(u1,v1,0)]]
+        bs = stretched_plane(pts, face.ParameterRange, 10.0)
         quad = bs.toShape()
         quad.Placement = obj.Sketch.getGlobalPlacement()
         imput_shapes = [obj.Sketch.Shape] + [o.Shape for o in obj.ExtraObjects]
@@ -317,9 +333,14 @@ class sketchOnSurface:
                 for i in range(len(shapes_1)):
                     if isinstance(shapes_1[i], Part.Face):
                         faces = shapes_1[i].Faces + shapes_2[i].Faces
+                        #error_wires = []
                         for j in range(len(shapes_1[i].Wires)):
-                            loft = Part.makeLoft([shapes_1[i].Wires[j], shapes_2[i].Wires[j]], False, True)
-                            faces.extend(loft.Faces)
+                            try:
+                                loft = Part.makeLoft([shapes_1[i].Wires[j], shapes_2[i].Wires[j]], False, True)
+                                faces.extend(loft.Faces)
+                            except Part.OCCError:
+                                #error_wires.extend([shapes_1[i].Wires[j], shapes_2[i].Wires[j]])
+                                FreeCAD.Console.PrintError("Sketch on surface : failed to create loft face ({},{})".format(i,j))
                         try:
                             shell = Part.Shell(faces)
                             shell.sewShape()
@@ -331,6 +352,7 @@ class sketchOnSurface:
                     else:
                         loft = Part.makeLoft([shapes_1[i].Wires[0], shapes_2[i].Wires[0]], obj.FillFaces, True)
                         shapes.append(loft)
+                #shapes.append(quad)
                 if shapes:
                     if len(shapes) == 1:
                         obj.Shape = shapes[0]
