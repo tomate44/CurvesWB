@@ -218,18 +218,27 @@ class sketchOnSurface:
         obj.addProperty("App::PropertyBool",    "ConstructionBounds", "Touchup", "include construction geometry in sketch bounds").ConstructionBounds = True
         obj.Proxy = self
 
+    def force_closed_bspline2d(self, c2d):
+        """Force close a 2D Bspline curve by moving last pole to first"""
+        c2d.setPole(c2d.NbPoles, c2d.getPole(1))
+        debug("Force closing 2D curve")
+
     def build_faces(self, wl, face):
         faces = []
+        for w in wl:
+            w.fixWire(face, 1e-7)
         bs = BoundarySorter(wl, True)
         for i, wirelist in enumerate(bs.sort()):
             #print(wirelist)
-            f = Part.Face(face, wirelist[0])
+            f = Part.Face(face.Surface, wirelist[0])
+            #f.sewShape()
             if not f.isValid():
                 debug("{:3}:Invalid initial face".format(i))
                 f.validate()
             if len(wirelist) > 1:
                 f.cutHoles(wirelist[1:])
                 f.validate()
+            f.sewShape()
             if not f.isValid():
                 debug("{:3}:Invalid final face".format(i))
             faces.append(f)
@@ -246,11 +255,14 @@ class sketchOnSurface:
     def map_shape(self, shape, quad, face, fillfaces=False):
         if not isinstance(shape, Part.Shape):
             return []
-        proj = quad.project(shape.Edges)
+        #proj = quad.project(shape.Edges)
         new_edges = []
-        for e in proj.Edges:
+        for oe in shape.Edges:
             if True:
+                e = quad.project([oe]).Edges[0]
                 c2d, fp, lp = quad.curveOnSurface(e)
+                if oe.isClosed() and not c2d.isClosed():
+                    self.force_closed_bspline2d(c2d)
                 ne = c2d.toShape(face.Surface, fp, lp) # toShape produces 1e-5 tolerance
                 #debug(ne.Placement)
                 #debug(face.Placement)
@@ -266,7 +278,7 @@ class sketchOnSurface:
         sorted_edges = Part.sortEdges(new_edges)
         wirelist = [Part.Wire(el) for el in sorted_edges]
         if fillfaces:
-            return self.build_faces(wirelist, face.Surface)
+            return self.build_faces(wirelist, face)
         else:
             return wirelist
 
@@ -334,13 +346,22 @@ class sketchOnSurface:
                     if isinstance(shapes_1[i], Part.Face):
                         faces = shapes_1[i].Faces + shapes_2[i].Faces
                         #error_wires = []
-                        for j in range(len(shapes_1[i].Wires)):
-                            try:
-                                loft = Part.makeLoft([shapes_1[i].Wires[j], shapes_2[i].Wires[j]], False, True)
-                                faces.extend(loft.Faces)
-                            except Part.OCCError:
-                                #error_wires.extend([shapes_1[i].Wires[j], shapes_2[i].Wires[j]])
-                                FreeCAD.Console.PrintError("Sketch on surface : failed to create loft face ({},{})".format(i,j))
+                        for j in range(len(shapes_1[i].Edges)):
+                            if obj.FillFaces and shapes_1[i].Edges[j].isSeam(shapes_1[i]):
+                                continue
+                            ruled = Part.makeRuledSurface(shapes_1[i].Edges[j], shapes_2[i].Edges[j])
+                            faces.append(ruled)
+                            #try:
+                                #face_is_closed = False
+                                #for ed in shapes_1[i].Wires[j].Edges:
+                                    #if ed.isSeam(shapes_1[i]):
+                                        #face_is_closed = True
+                                        #debug("closed face detected")
+                                #loft = Part.makeLoft([shapes_1[i].Wires[j], shapes_2[i].Wires[j]], False, True, face_is_closed, 5)
+                                #faces.extend(loft.Faces)
+                            #except Part.OCCError:
+                                ##error_wires.extend([shapes_1[i].Wires[j], shapes_2[i].Wires[j]])
+                                #FreeCAD.Console.PrintError("Sketch on surface : failed to create loft face ({},{})".format(i,j))
                         try:
                             shell = Part.Shell(faces)
                             shell.sewShape()
@@ -350,8 +371,8 @@ class sketchOnSurface:
                             FreeCAD.Console.PrintWarning("Sketch on surface : failed to create solid #{}.\n".format(i+1))
                             shapes.extend(faces)
                     else:
-                        loft = Part.makeLoft([shapes_1[i].Wires[0], shapes_2[i].Wires[0]], obj.FillFaces, True)
-                        shapes.append(loft)
+                        ruled = Part.makeRuledSurface(shapes_1[i].Wires[0], shapes_2[i].Wires[0])
+                        shapes.append(ruled)
                 #shapes.append(quad)
                 if shapes:
                     if len(shapes) == 1:
