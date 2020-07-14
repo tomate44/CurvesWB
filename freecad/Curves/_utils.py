@@ -48,23 +48,28 @@ def getSubShape(shape, shape_type, n):
 
 def getShape(obj, prop, shape_type):
     if hasattr(obj, prop) and obj.getPropertyByName(prop):
+        prop_link = obj.getPropertyByName(prop)
         if obj.getTypeIdOfProperty(prop) == "App::PropertyLinkSub":
-            n = eval(obj.getPropertyByName(prop)[1][0].lstrip(shape_type))
-            sh = obj.getPropertyByName(prop)[0].Shape.copy()
-            if sh and hasattr(obj.getPropertyByName(prop)[0], "getGlobalPlacement"):
-                pl = obj.getPropertyByName(prop)[0].getGlobalPlacement()
-                sh.Placement = pl
-            return getSubShape(sh, shape_type, n)
+            if shape_type in prop_link[1][0]:
+                return prop_link[0].getSubObject(prop_link[1][0])
+            #n = eval(obj.getPropertyByName(prop)[1][0].lstrip(shape_type))
+            #sh = obj.getPropertyByName(prop)[0].Shape.copy()
+            #if sh and hasattr(obj.getPropertyByName(prop)[0], "getGlobalPlacement"):
+                #pl = obj.getPropertyByName(prop)[0].getGlobalPlacement()
+                #sh.Placement = pl
+            #return getSubShape(sh, shape_type, n)
         elif obj.getTypeIdOfProperty(prop) == "App::PropertyLinkSubList":
             res = []
-            for tup in obj.getPropertyByName(prop):
+            for tup in prop_link:
                 for ss in tup[1]:
-                    n = eval(ss.lstrip(shape_type))
-                    sh = tup[0].Shape.copy()
-                    if sh and hasattr(tup[0], "getGlobalPlacement"):
-                        pl = tup[0].getGlobalPlacement()
-                        sh.Placement = pl
-                    res.append(getSubShape(sh, shape_type, n))
+                    if shape_type in ss:
+                        res.append(prop_link[0].getSubObject(ss))
+                    #n = eval(ss.lstrip(shape_type))
+                    #sh = tup[0].Shape.copy()
+                    #if sh and hasattr(tup[0], "getGlobalPlacement"):
+                        #pl = tup[0].getGlobalPlacement()
+                        #sh.Placement = pl
+                    #res.append(getSubShape(sh, shape_type, n))
             return res
         else:
             FreeCAD.Console.PrintError("CurvesWB._utils.getShape: wrong property type.\n")
