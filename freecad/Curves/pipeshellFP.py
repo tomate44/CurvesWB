@@ -357,7 +357,7 @@ class pipeShellCommand:
                     if sub[0:4] == 'Edge':
                         path.append((selobj.Object,(sub,)))
             elif hasattr(selobj.Object,'Proxy'):
-                if selobj.Object.Proxy.__module__ == 'pipeshellProfileFP':
+                if selobj.Object.Proxy.__module__ == 'freecad.Curves.pipeshellProfileFP':
                     profs.append(selobj.Object)
         FreeCAD.Console.PrintMessage(str(path)+"\n")
         FreeCAD.Console.PrintMessage(str(profs)+"\n")

@@ -63,7 +63,7 @@ def getShape(obj, prop, shape_type):
             for tup in prop_link:
                 for ss in tup[1]:
                     if shape_type in ss:
-                        res.append(prop_link[0].getSubObject(ss))
+                        res.append(tup[0].getSubObject(ss))
                     #n = eval(ss.lstrip(shape_type))
                     #sh = tup[0].Shape.copy()
                     #if sh and hasattr(tup[0], "getGlobalPlacement"):
