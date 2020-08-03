@@ -11,6 +11,7 @@ import FreeCADGui
 import Part
 from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
+from freecad.Curves.nurbs_tools import knotSeqNormalize
 
 TOOL_ICON = os.path.join(ICONPATH, 'discretize.svg')
 debug = _utils.debug
@@ -31,6 +32,11 @@ class Discretization:
         obj.addProperty("App::PropertyFloat",        "ParameterFirst",     "Parameters",   "Start parameter")
         obj.addProperty("App::PropertyFloat",        "ParameterLast",      "Parameters",   "End parameter")
         obj.addProperty("App::PropertyVectorList",   "Points",    "Discretization",   "Points")
+        obj.addProperty("App::PropertyFloatList",
+                        "NormalizedParameters",
+                        "Output",
+                        "Normalized parameters list")
+        obj.setEditorMode("NormalizedParameters",1)
         obj.Proxy = self
         self.obj = obj
         obj.Algorithm = "Number"
@@ -111,6 +117,15 @@ class Discretization:
         debug("* Discretization : execute *")
         if self.buildPoints( obj):
             obj.Shape = Part.Compound([Part.Vertex(i) for i in obj.Points])
+            if obj.Target == "Wire":
+                w = self.getTarget(obj, True)
+                target = w.approximate(1e-7, 1e-5, len(w.Edges), 7).toShape()
+            else:
+                target = self.getTarget(obj, False)
+            params = []
+            for p in obj.Points:
+                params.append(target.Curve.parameter(p))
+            obj.NormalizedParameters = knotSeqNormalize(params)
 
     def onChanged(self, fp, prop):
         #print fp
