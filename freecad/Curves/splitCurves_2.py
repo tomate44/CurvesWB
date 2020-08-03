@@ -15,9 +15,12 @@ import FreeCADGui
 import Part
 from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
+from freecad.Curves.nurbs_tools import knotSeqNormalize
+
 from pivy import coin
 from freecad.Curves import graphics
 from freecad.Curves import manipulators
+
 
 TOOL_ICON = os.path.join(ICONPATH, 'splitcurve.svg')
 #debug = _utils.debug
@@ -29,17 +32,25 @@ class split:
         obj.Proxy = self
         obj.addProperty("App::PropertyLinkSub",
                         "Source",
-                        "Split",
+                        "Base",
                         "Edge to split").Source = e
         obj.addProperty("App::PropertyStringList",
                         "Values",
                         "Split",
                         "List of splitting locations\n% and units are allowed\nNegative values are computed from edge end")
-        #obj.addProperty("App::PropertyFloatList",
-                        #"Parameters",
-                        #"Split",
-                        #"Parameter list")
-        #obj.setEditorMode("Parameters",2)
+        obj.addProperty("App::PropertyLinkList",
+                        "CuttingObjects",
+                        "Split",
+                        "List of objects that cut the curve")
+        obj.addProperty("App::PropertyDistance",
+                        "Distance",
+                        "Split",
+                        "Expression-ready distance value")
+        obj.addProperty("App::PropertyFloatList",
+                        "NormalizedParameters",
+                        "Output",
+                        "Normalized parameters list")
+        obj.setEditorMode("NormalizedParameters",2)
 
     def getShape(self, fp):
         if fp.Source is None:
@@ -76,6 +87,7 @@ class split:
             par = edge.Curve.parameterAtDistance(num_val, edge.FirstParameter)
         if par > edge.FirstParameter and par < edge.LastParameter:
             return par, t
+        return None, None
 
     def parse_values(self, edge, values):
         #edge = self.getShape(fp, "Source", "Edge")
@@ -84,7 +96,8 @@ class split:
         parameters = []
         for v in values:
             par, t = self.parse_value(edge, v)
-            parameters.append(par)
+            if par:
+                parameters.append(par)
         parameters.sort()
         return parameters
 
@@ -103,15 +116,32 @@ class split:
 
     def execute(self, obj):
         e, w = self.getShape(obj)
-        params = []
+        if not isinstance(e, Part.Edge):
+            return
+        val = []
         if hasattr(obj, "Values"):
-            params = self.parse_values(e, obj.Values)
+            val = obj.Values
+        if hasattr(obj, "Distance"):
+            val.append(obj.Distance.toStr())
+        
+        params = []
+        if val:
+            params = self.parse_values(e, val)
+        if hasattr(obj, "CuttingObjects"):
+            for o in obj.CuttingObjects:
+                d, pts, info = e.distToShape(o.Shape)
+                if info[0][0] == 'Edge':
+                    debug('adding param : {}'.format(info[0][2]))
+                    params.append(info[0][2])
+
         if params == []:
             if w:
                 obj.Shape = obj.Source[0].Shape
             else:
                 obj.Shape = e
             return
+
+        params.sort()
         if params[0] > e.FirstParameter:
             params.insert(0, e.FirstParameter)
         if params[-1] < e.LastParameter:
@@ -155,6 +185,7 @@ class split:
             w = Part.Wire(se[0])
         if w.isValid():
             obj.Shape = w
+            obj.NormalizedParameters = knotSeqNormalize(params)
         else:
             FreeCAD.Console.PrintError("Split curve : Invalid Wire !")
             obj.Shape = e
