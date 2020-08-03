@@ -15,6 +15,7 @@ import FreeCADGui
 import Part
 from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
+from freecad.Curves.nurbs_tools import knotSeqScale
 
 TOOL_ICON = os.path.join( ICONPATH, 'segment_surface.svg')
 #debug = _utils.debug
@@ -77,8 +78,10 @@ class SegmentSurface:
         obj.addProperty("App::PropertyLinkSub",     "Source",    "Base",   "Initial Face").Source = face
         obj.addProperty("App::PropertyEnumeration", "Option",    "Base",   "Option list").Option = self.Options
         obj.addProperty("App::PropertyEnumeration", "Direction", "OptionAuto",   "Segmenting direction").Direction = ["U","V","Both"]
-        obj.addProperty("App::PropertyFloatList",   "KnotsU",    "OptionCustom", "Splitting parameters un U direction")
-        obj.addProperty("App::PropertyFloatList",   "KnotsV",    "OptionCustom", "Splitting parameters un V direction")
+        obj.addProperty("App::PropertyFloatList",   "KnotsU",    "OptionCustom", "Splitting parameters in U direction")
+        obj.addProperty("App::PropertyFloatList",   "KnotsV",    "OptionCustom", "Splitting parameters in V direction")
+        obj.addProperty("App::PropertyLink",   "KnotsUProvider", "OptionCustom", "Object generating normalized parameters in U direction")
+        obj.addProperty("App::PropertyLink",   "KnotsVProvider", "OptionCustom", "Object generating normalized parameters in V direction")
         obj.Proxy = self
         obj.Option = "Auto"
 
@@ -93,6 +96,15 @@ class SegmentSurface:
             if m >= target:
                 cutknots.append(knots[i])
         return cutknots
+
+    def get_normalized_params(self, obj, prop):
+        if not hasattr(obj, prop):
+            return False
+        lnk = obj.getPropertyByName(prop)
+        if not hasattr(lnk, 'NormalizedParameters'):
+            return False
+        params = lnk.getPropertyByName('NormalizedParameters')
+        return params
 
     def execute(self, obj):
         f = _utils.getShape(obj, "Source", "Face")
@@ -111,10 +123,20 @@ class SegmentSurface:
                 mults = bs.getVMultiplicities()
                 cutKnotsV = self.get_intervals(knots, mults)
         elif obj.Option == "Custom":
-            for k in obj.KnotsU:
+            knots = self.get_normalized_params(obj, 'KnotsUProvider')
+            if knots:
+                uknots = knotSeqScale(knots, u1-u0, u0)
+            else:
+                uknots = obj.KnotsU
+            knots = self.get_normalized_params(obj, 'KnotsVProvider')
+            if knots:
+                vknots = knotSeqScale(knots, v1-v0, v0)
+            else:
+                vknots = obj.KnotsV
+            for k in uknots:
                 if (k > u0) and (k < u1):
                     cutKnotsU.append(k)
-            for k in obj.KnotsV:
+            for k in vknots:
                 if (k > v0) and (k < v1):
                     cutKnotsV.append(k)
             cutKnotsU = list(set(cutKnotsU))
