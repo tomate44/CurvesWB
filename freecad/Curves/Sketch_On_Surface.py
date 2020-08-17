@@ -152,10 +152,11 @@ def stretched_plane(poles, param_range=[0,2,0,2], extend_factor=1.0):
     return bs
 
 class BoundarySorter:
-    def __init__(self, wires, only_closed=False):
+    def __init__(self, wires, surface=None, only_closed=False):
         self.wires = []
         self.parents = []
         self.sorted_wires = []
+        self.surface = surface
         for w in wires:
             if only_closed and not w.isClosed():
                 debug("Skipping open wire")
@@ -164,12 +165,25 @@ class BoundarySorter:
             self.parents.append([])
             self.sorted_wires.append([])
         self.done = False
+    def fine_check_inside(self, w1, w2):
+        if self.surface is not None:
+            f = Part.Face(self.surface, w2)
+        else:
+            f = Part.Face(w2)
+        if not f.isValid():
+            f.validate()
+        if f.isValid():
+            pt = w1.Vertex1.Point
+            u,v = f.Surface.parameter(pt)
+            return f.isPartOfDomain(u,v)
+        return False
     def check_inside(self):
         for i, w1 in enumerate(self.wires):
             for j, w2 in enumerate(self.wires):
                 if not i == j:
                     if w2.BoundBox.isInside(w1.BoundBox):
-                        self.parents[i].append(j)
+                        if self.fine_check_inside(w1, w2):
+                            self.parents[i].append(j)
     def sort_pass(self):
         to_remove = []
         for i,p in enumerate(self.parents):
@@ -215,6 +229,7 @@ class sketchOnSurface:
         obj.addProperty("App::PropertyFloat",   "Thickness","Settings", "Extrusion thickness").Thickness = 0.0
         obj.addProperty("App::PropertyBool",    "ReverseU", "Touchup", "Reverse U direction").ReverseU = False
         obj.addProperty("App::PropertyBool",    "ReverseV", "Touchup", "Reverse V direction").ReverseV = False
+        obj.addProperty("App::PropertyBool",    "SwapUV", "Touchup", "Swap U and V directions").ReverseV = False
         obj.addProperty("App::PropertyBool",    "ConstructionBounds", "Touchup", "include construction geometry in sketch bounds").ConstructionBounds = True
         obj.Proxy = self
 
@@ -227,7 +242,7 @@ class sketchOnSurface:
         faces = []
         for w in wl:
             w.fixWire(face, 1e-7)
-        bs = BoundarySorter(wl, True)
+        bs = BoundarySorter(wl, face.Surface, True)
         for i, wirelist in enumerate(bs.sort()):
             #print(wirelist)
             f = Part.Face(face.Surface, wirelist[0])
@@ -258,8 +273,8 @@ class sketchOnSurface:
         #proj = quad.project(shape.Edges)
         new_edges = []
         for oe in shape.Edges:
-            if True:
-                e = quad.project([oe]).Edges[0]
+            proj = quad.project([oe])
+            for e in proj.Edges:
                 c2d, fp, lp = quad.curveOnSurface(e)
                 if oe.isClosed() and not c2d.isClosed():
                     self.force_closed_bspline2d(c2d)
@@ -273,8 +288,8 @@ class sketchOnSurface:
                     ne.fixTolerance(et, Part.Vertex)
                     #debug("fixing tolerance : {0:e} -> {1:e}".format(vt,et))
                 new_edges.append(ne)
-            else: #except TypeError:
-                error("Failed to get 2D curve")
+            #else: #except TypeError:
+                #error("Failed to get 2D curve")
         sorted_edges = Part.sortEdges(new_edges)
         wirelist = [Part.Wire(el) for el in sorted_edges]
         if fillfaces:
@@ -312,13 +327,19 @@ class sketchOnSurface:
             return
         debug("Target face bounds = {}".format(face.ParameterRange))
         
+        prange = face.ParameterRange
         if obj.ReverseU:
             u0, u1 = u1, u0
         if obj.ReverseV:
             v0, v1 = v1, v0
+        if obj.SwapUV:
+            #u0, u1, v0, v1 = v0, v1, u0, u1
+            prange = face.ParameterRange[2:] + face.ParameterRange[:2]
         pts = [[FreeCAD.Vector(u0,v0,0), FreeCAD.Vector(u0,v1,0)],
                [FreeCAD.Vector(u1,v0,0), FreeCAD.Vector(u1,v1,0)]]
-        bs = stretched_plane(pts, face.ParameterRange, 10.0)
+        bs = stretched_plane(pts, prange, 10.0)
+        if obj.SwapUV:
+            bs.exchangeUV()
         quad = bs.toShape()
         quad.Placement = obj.Sketch.getGlobalPlacement()
         imput_shapes = [obj.Sketch.Shape] + [o.Shape for o in obj.ExtraObjects]
@@ -418,9 +439,9 @@ def addFaceWireToSketch(fa, w, sk):
     const = list()
     pl = Part.Plane()
     for idx in range(len(w.Edges)):
-        e = fa.curveOnSurface(w.Edges[idx])
-        e3d = e[0].toShape(pl)
-        tc = e3d.Curve.trim(e[1],e[2])
+        e,fp,lp = fa.curveOnSurface(w.Edges[idx])
+        e3d = e.toShape(pl)
+        tc = e3d.Curve.trim(fp, lp)
         curves.append(tc)
     o = int(sk.GeometryCount)
     sk.addGeometry(curves,False)
@@ -458,15 +479,16 @@ def build_sketch(sk, fa):
     # add the bounding box of the face to the sketch
     u0,u1,v0,v1 = fa.ParameterRange
     if isinstance(fa.Surface, Part.Cylinder):
+        u0 *= fa.Surface.Radius
         u1 *= fa.Surface.Radius
         addFaceBoundsToSketch([u0,u1,v0,v1], sk)
-    elif isinstance(fa.Surface, Part.Cone):
-        u1 = 0.5 * (fa.Edge1.Length + fa.Edge3.Length)
-        addFaceBoundsToSketch([u0,u1,v0,v1], sk)
-    elif len(fa.Edges) == 4:
-        u1 = 0.5 * (fa.Edge1.Length + fa.Edge3.Length)
-        v1 = 0.5 * (fa.Edge2.Length + fa.Edge4.Length)
-        addFaceBoundsToSketch([0,u1,0,v1], sk)
+    #elif isinstance(fa.Surface, Part.Cone):
+        #u1 = 0.5 * (fa.Edge1.Length + fa.Edge3.Length)
+        #addFaceBoundsToSketch([u0,u1,v0,v1], sk)
+    #elif len(fa.Edges) == 4:
+        #u1 = 0.5 * (fa.Edge1.Length + fa.Edge3.Length)
+        #v1 = 0.5 * (fa.Edge2.Length + fa.Edge4.Length)
+        #addFaceBoundsToSketch([0,u1,0,v1], sk)
     else:
         for w in fa.Wires:
             addFaceWireToSketch(fa, w, sk)
