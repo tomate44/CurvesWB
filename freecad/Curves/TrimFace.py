@@ -40,7 +40,7 @@ class trimFace:
                 n = eval(s.lstrip('Face'))
                 debug("Face %d"%n)
                 return(o.Shape.Faces[n-1])
-        return(None)
+        return None
 
     def getEdges( self, link):
         res = []
@@ -52,7 +52,7 @@ class trimFace:
                     n = eval(s.lstrip('Edge'))
                     debug("Edge %d"%n)
                     res.append(o.Shape.Edges[n-1])
-        return(res)
+        return res
 
     def getVector( self, obj):
         if hasattr(obj,"DirVector"):
@@ -60,15 +60,15 @@ class trimFace:
                 v = FreeCAD.Vector(obj.DirVector.Direction)
                 debug("choosing DirVector : %s"%str(v))
                 if v.Length > 1e-6:
-                    return(v)
+                    return v
         if hasattr(obj,"Direction"):
             if obj.Direction:
                 v = FreeCAD.Vector(obj.Direction)
                 debug("choosing Direction : %s"%str(v))
                 if v.Length > 1e-6:
-                    return(v)
+                    return v
         debug("choosing (0,0,-1)")
-        return(FreeCAD.Vector(0,0,-1))
+        return FreeCAD.Vector(0,0,-1)
 
     def execute(self, obj):
         debug("* trimFace execute *")
@@ -113,53 +113,20 @@ class trimFace:
             if f.isPartOfDomain(u,v):
                 obj.Shape = f
                 return
-        
-        #vert = Part.Vertex(obj.PickedPoint)
-        #min = 1e6
-        #index = 0
-        #for i in range(len(bf.Faces)):
-            #dts = vert.distToShape(bf.Faces[i])[0]
-            #if dts < min:
-                #min = dts
-                #index = i
-        #if bf.Faces:
-            #obj.Shape = bf.Faces[index]
 
     def onChanged(self, fp, prop):
         pass
-
-    def __getstate__(self):
-        #out = {"name": self.obj.Name,
-               #"algo": self.obj.Algorithm,
-               #"target": self.obj.Target}
-        #return out
-        return None
-
-    def __setstate__(self,state):
-        #self.obj = FreeCAD.ActiveDocument.getObject(state["name"])
-        #if not "Algorithm" in self.obj.PropertiesList:
-            #self.obj.addProperty("App::PropertyEnumeration",  "Algorithm", "Method",   "Discretization Method").Algorithm=["Number","QuasiNumber","Distance","Deflection","QuasiDeflection","Angular-Curvature"]
-        #if not "Target" in self.obj.PropertiesList:
-            #self.obj.addProperty("App::PropertyEnumeration",  "Target",    "Discretization",   "Tool target").Target=["Edge","Wire"]
-        #self.obj.Algorithm = state["algo"]
-        #self.obj.Target = state["target"]
-        return None
 
 class trimFaceVP:
     def __init__(self,vobj):
         vobj.Proxy = self
        
     def getIcon(self):
-        return (path_curvesWB_icons+'/trimFace.svg')
+        return TOOL_ICON
 
     def attach(self, vobj):
         self.ViewObject = vobj
         self.Object = vobj.Object
-  
-    def updateData(self, fp, prop):
-        if (prop == "Origin") or (prop == "Direction"):
-            # update coordinates
-            pass
 
     def doubleClicked(self,vobj):
         if hasattr(self.Object,"Direction"):
@@ -180,19 +147,7 @@ class trimFaceVP:
                 l.append(self.Object.Tool[0])
         #for o in l:
             #o.ViewObject.Visibility=False
-        return(l)
-  
-    #def setEdit(self,vobj,mode):
-        #return False
-    
-    #def unsetEdit(self,vobj,mode):
-        #return
-
-    def __getstate__(self):
-        return None
-
-    def __setstate__(self,state):
-        return None
+        return l
 
 class trim:
     def findVector(self, selectionObject):
@@ -204,7 +159,7 @@ class trim:
                 res.pop(i)
                 return (v,res)
             i += 1
-        return(None,selectionObject)
+        return None, selectionObject
 
     def findCurve(self, selectionObject):
         res = []
@@ -216,7 +171,7 @@ class trim:
                         #res.pop(i)
                         res.append((obj.Object,obj.SubElementNames[i]))
                     i += 1
-        return(res,selectionObject)
+        return res, selectionObject
 
     def findFaces(self, selectionObject):
         res = []
@@ -230,7 +185,7 @@ class trim:
                         u,v = subobj.Surface.parameter(p)
                         res.append((f,FreeCAD.Vector(u,v,0)))
                     i += 1
-        return(res)
+        return res
 
     def Activated(self):
         s = FreeCADGui.Selection.getSelectionEx()
