@@ -409,6 +409,45 @@ def createKnotsMults(degree, nbPoles):
         mults = [degree+1] + [1 for k in range(nbIntKnots)] + [degree+1]
         return knots, mults
 
+def parameterization(pts, fac, force_closed=False):
+    # Computes a knot Sequence for a set of points
+    # fac (0-1) : parameterization factor
+    # fac=0 -> Uniform / fac=0.5 -> Centripetal / fac=1.0 -> Chord-Length
+    if force_closed and pts[0].distanceToPoint(pts[-1]) > 1e-7: # we need to add the first point as the end point
+        pts.append(pts[0])
+    params = [0]
+    for i in range(1,len(pts)):
+        p = pts[i]-pts[i-1]
+        if isinstance(p,FreeCAD.Vector):
+            l = p.Length
+        else:
+            l = p.length()
+        pl = pow(l, fac)
+        params.append(params[-1] + pl)
+    return params
+
+def createKnotsFromPointParameters(degree, params):
+    """NURBS Book, eq. 9.8"""
+    knots = [0.0] * (degree+1)
+    for j in range(len(params)-degree-1):
+        knots.append(sum(params[j:j+degree])/degree)
+    knots.extend([1.0] * (degree+1))
+    return knots
+
+
+def createKnotsFromPointParameters2(degree, nb_data_pts, nb_ctrl_pts, params):
+    """NURBS Book, eq. 9.69"""
+    knots = [0.0] * (degree+1)
+    d = float(nb_data_pts) / float(nb_ctrl_pts - degree)
+    for j in range(1, nb_ctrl_pts - degree):
+        i = int(j * d)
+        a = (j * d) - i
+        k = ((1.0 - a) * params[i-1]) + (a * params[i])
+        knots.append(k)
+    knots.extend([1.0 for _ in range(degree + 1)])
+    return knots
+
+
 # ---------------------------------------------------
 
 def nearest_parameter(bs,pt):
