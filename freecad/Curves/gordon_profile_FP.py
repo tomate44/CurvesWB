@@ -100,6 +100,8 @@ class GordonProfileFP:
                         n = eval(name.lstrip("Vertex"))
                         if len(ob.Shape.Vertexes) >= n:
                             sl.append(ob.Shape.Vertexes[n-1])
+                    elif ("Point" in name):
+                        sl.append(Part.Vertex(ob.Shape.Point))
                     elif ("Edge" in name):
                         n = eval(name.lstrip("Edge"))
                         if len(ob.Shape.Edges) >= n:
