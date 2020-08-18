@@ -75,7 +75,7 @@ def getShape(obj, prop, shape_type):
             FreeCAD.Console.PrintError("CurvesWB._utils.getShape: wrong property type.\n")
             return None
     else:
-        FreeCAD.Console.PrintError("CurvesWB._utils.getShape: %r has no property %r\n"%(obj, prop))
+        #FreeCAD.Console.PrintError("CurvesWB._utils.getShape: %r has no property %r\n"%(obj, prop))
         return None
 
 def same_direction(e1, e2, num=10):
