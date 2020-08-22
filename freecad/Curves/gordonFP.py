@@ -57,14 +57,27 @@ class gordonFP:
         obj.addProperty("App::PropertyEnumeration", "Output", "Base", "Output type").Output=["Surface","Wireframe"]
         obj.addProperty("App::PropertyInteger", "SamplesU", "Wireframe", "Number of samples in U direction").SamplesU = 16
         obj.addProperty("App::PropertyInteger", "SamplesV", "Wireframe", "Number of samples in V direction").SamplesV = 16
+        obj.addProperty("App::PropertyBool", "FlipNormal", "Surface", "Flip surface normal").FlipNormal = False
         obj.Output = "Surface"
         obj.setEditorMode("Tol2D", 2)
+        obj.setEditorMode("SamplesU", 2)
+        obj.setEditorMode("SamplesV", 2)
         obj.Proxy = self
 
     def onDocumentRestored(self, fp):
         if not hasattr(fp,"Output"):
             fp.addProperty("App::PropertyEnumeration", "Output", "Base", "Output type").Output=["Surface","Wireframe"]
-            fp.Output = "Surface"
+
+    def onChanged(self, fp, prop):
+        if prop == "Output":
+            if fp.Output == "Surface":
+                fp.setEditorMode("SamplesU", 2)
+                fp.setEditorMode("SamplesV", 2)
+                fp.setEditorMode("FlipNormal", 0)
+            else:
+                fp.setEditorMode("SamplesU", 0)
+                fp.setEditorMode("SamplesV", 0)
+                fp.setEditorMode("FlipNormal", 2)
 
     def execute(self, obj):
         if len(obj.Sources) == 0:
@@ -121,9 +134,9 @@ class gordonFP:
             #poly.append(Part.makePolygon(row))
         #obj.Shape = gordon.curve_network()
         # display curves and resulting surface
+        s = gordon_surf.surface()
         if obj.Output == "Wireframe":
             edges = list()
-            s = gordon_surf.surface()
             u0,u1,v0,v1 = s.bounds()
             for i in range(obj.SamplesU+1):
                 pu = u0 + (u1-u0)*float(i)/obj.SamplesU
@@ -133,7 +146,10 @@ class gordonFP:
                 edges.append(s.vIso(pv).toShape())
             obj.Shape = Part.Compound(edges)
         else:
-            obj.Shape = gordon_surf.surface().toShape()
+            f = s.toShape()
+            if obj.FlipNormal:
+                f.reverse()
+            obj.Shape = f
         del(gordon_surf)
 
 class gordonVP:
