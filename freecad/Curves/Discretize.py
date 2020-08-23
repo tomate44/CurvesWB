@@ -258,13 +258,15 @@ class discretize:
                 subobj = obj.SubObjects[0]
                 if issubclass(type(subobj),Part.Edge):
                     res.append((obj.Object,[obj.SubElementNames[0]]))
-            else:
+            elif hasattr(obj.Object,"Shape") and hasattr(obj.Object.Shape,"Edge1"):
                 res.append((obj.Object,["Edge1"]))
         return res
 
     def Activated(self):
         s = FreeCADGui.Selection.getSelectionEx()
         edges = self.parseSel(s)
+        if not edges:
+            FreeCAD.Console.PrintError("Select an edge in the 3D view\n")
         FreeCADGui.doCommand("from freecad.Curves import Discretize")
         for e in edges:
             FreeCADGui.doCommand('obj = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Discretized_Edge")')
