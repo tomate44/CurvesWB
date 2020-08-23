@@ -23,57 +23,10 @@ TOOL_ICON = os.path.join( ICONPATH, 'editableSpline.svg')
 #debug = _utils.debug
 #debug = _utils.doNothing
 
-'''Available properties :
-App::PropertyBool
-App::PropertyBoolList
-App::PropertyFloat
-App::PropertyFloatList
-App::PropertyFloatConstraint
-App::PropertyQuantity
-App::PropertyQuantityConstraint
-App::PropertyAngle
-App::PropertyDistance
-App::PropertyLength
-App::PropertySpeed
-App::PropertyAcceleration
-App::PropertyForce
-App::PropertyPressure
-App::PropertyInteger
-App::PropertyIntegerConstraint
-App::PropertyPercent
-App::PropertyEnumeration
-App::PropertyIntegerList
-App::PropertyIntegerSet
-App::PropertyMap
-App::PropertyString
-App::PropertyUUID
-App::PropertyFont
-App::PropertyStringList
-App::PropertyLink
-App::PropertyLinkSub
-App::PropertyLinkList
-App::PropertyLinkSubList
-App::PropertyMatrix
-App::PropertyVector
-App::PropertyVectorList
-App::PropertyPlacement
-App::PropertyPlacementLink
-App::PropertyColor
-App::PropertyColorList
-App::PropertyMaterial
-App::PropertyPath
-App::PropertyFile
-App::PropertyFileIncluded
-App::PropertyPythonObject
-Part::PropertyPartShape
-Part::PropertyGeometryList
-Part::PropertyShapeHistory
-Part::PropertyFilletEdges
-Sketcher::PropertyConstraintList'''
 
 def midpoint(e):
     p = e.FirstParameter + 0.5 * (e.LastParameter - e.FirstParameter)
-    return(e.valueAt(p))
+    return e.valueAt(p)
 
 class GordonProfileFP:
     """Creates an editable interpolation curve"""
@@ -110,7 +63,7 @@ class GordonProfileFP:
                         n = eval(name.lstrip("Face"))
                         if len(ob.Shape.Faces) >= n:
                             sl.append(ob.Shape.Faces[n-1])
-            return(sl)
+            return sl
 
     def get_points(self, fp, stretch=True):
         touched = False
@@ -156,9 +109,9 @@ class GordonProfileFP:
                     #FreeCAD.Console.PrintMessage("Stretch %s #%d: %s to %s\n"%(fp.Label,i,pts[i],curve.value(params[i])))
                     pts[i] += curve.value(params[i])
         if touched:
-            return(pts)
+            return pts
         else:
-            return(False)
+            return False
 
     def execute(self, obj):
         try:
@@ -257,8 +210,8 @@ class GordonProfileVP:
                 self.ip.lines[i].tangent = self.Object.LinearSegments[i]
                 self.ip.lines[i].updateLine()
             self.active = True
-            return(True)
-        return(False)
+            return True
+        return False
 
     def unsetEdit(self,vobj,mode=0):
         if isinstance(self.ip,profile_editor.InterpoCurveEditor):
@@ -293,7 +246,8 @@ class GordonProfileVP:
             self.ip.quit()
         self.ip = None
         self.active = False
-        return(True)
+        self.Object.Document.recompute()
+        return True
 
     def doubleClicked(self,vobj):
         if not hasattr(self,'active'):
@@ -305,14 +259,14 @@ class GordonProfileVP:
         else:
             vobj.Document.resetEdit()
             self.active = False
-        return(True)
+        return True
 
     def __getstate__(self):
-        return({"name": self.Object.Name})
+        return {"name": self.Object.Name}
 
     def __setstate__(self,state):
         self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
-        return(None)
+        return None
 
 class GordonProfileCommand:
     """Creates a editable interpolation curve"""
@@ -367,9 +321,9 @@ class GordonProfileCommand:
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:
-            return(True)
+            return True
         else:
-            return(False)
+            return False
 
     def GetResources(self):
         return {'Pixmap' : TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
