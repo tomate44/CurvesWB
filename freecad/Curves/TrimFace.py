@@ -125,7 +125,6 @@ class trimFaceVP:
         return TOOL_ICON
 
     def attach(self, vobj):
-        self.ViewObject = vobj
         self.Object = vobj.Object
 
     def doubleClicked(self,vobj):
@@ -145,9 +144,14 @@ class trimFaceVP:
         if hasattr(self.Object,"Tool"):
             if self.Object.Tool:
                 l.append(self.Object.Tool[0])
-        #for o in l:
-            #o.ViewObject.Visibility=False
         return l
+
+    def __getstate__(self):
+        return {"name": self.Object.Name}
+
+    def __setstate__(self,state):
+        self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
+        return None
 
 class trim:
     def findVector(self, selectionObject):
