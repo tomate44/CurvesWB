@@ -81,7 +81,6 @@ class blendSurface:
 
     def cross_curves2(self):
         self.curves = list()
-        import nurbs_tools
         params1 = self.cos1.build_param_list(self.railSamples)
         params2 = self.cos2.build_param_list(self.railSamples)
         if self.untwist:
@@ -115,7 +114,6 @@ class blendSurface:
 
     def cross_curves(self):
         self.curves = list()
-        import nurbs_tools
         c1 = self.cos1.get_cross_curves(self.railSamples, 1.0)
         c2 = self.cos2.get_cross_curves(self.railSamples, 1.0)
         sc1 = self.compute_scale(self.var_scale1, self.cos1.edge)
@@ -143,7 +141,6 @@ class blendSurface:
     
     def blend_curves(self):
         blend_curves = list()
-        import nurbs_tools
         offset_curve_1 = self.cos1.get_offset_curve2d(0.1)
         offset_curve_2 = self.cos2.get_offset_curve2d(0.1)
         sc1 = self.compute_scale(self.var_scale1, self.cos1.edge)

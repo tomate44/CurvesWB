@@ -148,7 +148,7 @@ class blendSurfVP:
         #self.attach(obj)
         
     def getIcon(self):
-        return (path_curvesWB_icons+'/blendSurf.svg')
+        return TOOL_ICON
 
     def attach(self, vobj):
         #self.ViewObject = vobj
