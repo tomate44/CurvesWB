@@ -448,27 +448,13 @@ class BSplineApproxInterp(object):
         #}
         #debug("lhs : %s"%str(lhs))
         #debug("rhsx : %s"%str(rhsx))
-        
-        cp_x = np.linalg.solve(lhs, rhsx)
-        if not np.allclose(np.dot(lhs, cp_x), rhsx):
-            raise RuntimeError("Singular Matrix")
-
-        #solver.Solve(rhsy, cp_y)
-        #if (!solver.IsDone()) {
-            #raise RuntimeError("Singular Matrix")
-        #}
-        cp_y = np.linalg.solve(lhs, rhsy)
-        if not np.allclose(np.dot(lhs, cp_y), rhsy):
-            raise RuntimeError("Singular Matrix")
-        
-        #solver.Solve(rhsz, cp_z)
-        #if (!solver.IsDone()) {
-            #raise RuntimeError("Singular Matrix")
-        #}
-        cp_z = np.linalg.solve(lhs, rhsz)
-        if not np.allclose(np.dot(lhs, cp_z), rhsz):
-            raise RuntimeError("Singular Matrix")
-        
+        try:
+            cp_x = np.linalg.solve(lhs, rhsx)
+            cp_y = np.linalg.solve(lhs, rhsy)
+            cp_z = np.linalg.solve(lhs, rhsz)
+        except LinAlgError:
+            Err("Numpy linalg solver failed\n")
+            return None, None
         poles = [FreeCAD.Vector(cp_x[i], cp_y[i], cp_z[i]) for i in range(nCtrPnts)]
         #TColgp_Array1OfPnt poles(1, nCtrPnts)
         #for (Standard_Integer icp = 1 icp <= nCtrPnts ++icp) {
@@ -490,7 +476,7 @@ class BSplineApproxInterp(object):
 
             error = result.value(par).distanceToPoint(p)
             max_error = max(max_error, error)
-        return(result, max_error)
+        return result, max_error
     def optimizeParameters(self, curve, params):
         #/**
         #* @brief Recalculates the curve parameters t_k after the
