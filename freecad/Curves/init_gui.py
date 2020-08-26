@@ -67,14 +67,19 @@ class CurvesWorkbench(Gui.Workbench):
         from freecad.Curves import ReflectLinesFP
         from freecad.Curves import segmentSurfaceFP
         from freecad.Curves import OrientedSketchFP
-        from freecad.Curves import HQRuledSurfaceFP
+        #from freecad.Curves import HQRuledSurfaceFP
         from freecad.Curves import multiLoftFP
-        from freecad.Curves import HelicalSweepFP
+        #from freecad.Curves import HelicalSweepFP
         #import sectionSketch
         #if hasattr(Part.BezierSurface,"extendByLength"):
             #import ExtendSurfaceFP
 
-        stablelist.extend(["line","gordon_profile","mixed_curve","extend","join","split","Discretize","Approximate","Interpolate","ParametricBlendCurve","ParametricComb","ZebraTool","Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd","cos","blendSurface","pasteSVG","profile","pipeshell","gordon","segment_surface","to_console","SublinkEditor","comp_spring","ReflectLines","oriented_sketch","hq_ruled_surface","MultiLoft","HelicalSweep"])
+        stablelist.extend(["line","gordon_profile","mixed_curve","extend","join","split","Discretize"
+                           "Approximate","Interpolate","ParametricBlendCurve","ParametricComb","ZebraTool",
+                           "Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd",
+                           "cos","blendSurface","pasteSVG","profile","pipeshell","gordon","segment_surface",
+                           "to_console","SublinkEditor","comp_spring","ReflectLines","oriented_sketch",
+                           "MultiLoft"]) # "hq_ruled_surface","HelicalSweep"])
         
         #if hasattr(Part.BezierSurface,"extendByLength"):
             #stablelist.append("extend_surface")
