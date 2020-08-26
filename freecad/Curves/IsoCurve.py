@@ -185,7 +185,7 @@ class ViewProviderIsoCurve:
         return {"name": self.Object.Name}
 
     def __setstate__(self,state):
-        self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
+        self.Object = App.ActiveDocument.getObject(state["name"])
         return None
 
 class CommandMacroIsoCurve:
