@@ -70,7 +70,8 @@ class IsoCurve:
         self.u0, self.u1, self.v0, self.v1 = face.ParameterRange
 
     def getFace(self, obj):
-        return _utils.getShape(obj, "Face", "Face")
+        if hasattr(obj, "Face"):
+            return _utils.getShape(obj, "Face", "Face")
 
     def tangentAt(self, selfobj, p):
         if selfobj.Orientation == 'U':
@@ -117,8 +118,6 @@ class IsoCurve:
                 w = ci.toShape()
             selfobj.Shape = w
             selfobj.Placement = face.Placement
-        else:
-            return False
 
     def onChanged(self, selfobj, prop):
         if prop == 'Face':
@@ -182,29 +181,6 @@ class ViewProviderIsoCurve:
     def attach(self, vobj):
         self.ViewObject = vobj
         self.Object = vobj.Object
-  
-    def setEdit(self,vobj,mode):
-        return False
-    
-    def unsetEdit(self,vobj,mode):
-        return
-
-    def __getstate__(self):
-        return None
-
-    def __setstate__(self,state):
-        return None
-
-    #def claimChildren(self):
-        #return None #[self.Object.Base, self.Object.Tool]
-        
-    def onDelete(self, feature, subelements): # subelements is a tuple of strings
-        #try:
-            #self.Object.Base.ViewObject.show()
-            #self.Object.Tool.ViewObject.show()
-        #except Exception as err:
-            #FreeCAD.Console.PrintError("Error in onDelete: {0} \n".format(err))
-        return True
 
 class CommandMacroIsoCurve:
     "Command to create IsoCurve feature"
