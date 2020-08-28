@@ -74,7 +74,7 @@ class CurvesWorkbench(Gui.Workbench):
         #if hasattr(Part.BezierSurface,"extendByLength"):
             #import ExtendSurfaceFP
 
-        stablelist.extend(["line","gordon_profile","mixed_curve","extend","join","split","Discretize"
+        stablelist.extend(["line","gordon_profile","mixed_curve","extend","join","split","Discretize",
                            "Approximate","Interpolate","ParametricBlendCurve","ParametricComb","ZebraTool",
                            "Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd",
                            "cos","blendSurface","pasteSVG","profile","pipeshell","gordon","segment_surface",
