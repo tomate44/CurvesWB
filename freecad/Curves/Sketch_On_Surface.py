@@ -20,9 +20,6 @@ debug = _utils.debug
 vec = FreeCAD.Vector
 
 
-#  DEPRECATED
-
-
 def stretched_plane(poles, param_range=[0, 2, 0, 2], extend_factor=1.0):
     s0, s1, t0, t1 = param_range
     bs = Part.BSplineSurface()
@@ -117,6 +114,21 @@ class BoundarySorter:
                 result.append(w)
         return result
 
+def tolerance_msg(shape, ty):
+    a = shape.getTolerance(-1, ty)
+    b = shape.getTolerance(0,  ty)
+    c = shape.getTolerance(1,  ty)
+    print("{0} : {1:.2e} / {2:.2e} / {3:.2e}".format(ty, a, b, c))
+    
+
+def print_tolerance(shape):
+    if shape.Faces:
+        tolerance_msg(shape, Part.Face)
+    if shape.Edges:
+        tolerance_msg(shape, Part.Edge)
+    if shape.Vertexes:
+        tolerance_msg(shape, Part.Vertex)
+
 
 class sketchOnSurface:
     "This feature object maps a sketch on a surface"
@@ -157,14 +169,19 @@ class sketchOnSurface:
         for i, wirelist in enumerate(bs.sort()):
             # print(wirelist)
             f = Part.Face(face.Surface, wirelist[0])
-            # f.sewShape()
+            try:
+                f.check()
+            except Exception as e:
+                debug(str(e))
             if not f.isValid():
                 debug("{:3}:Invalid initial face".format(i))
                 f.validate()
             if len(wirelist) > 1:
                 f.cutHoles(wirelist[1:])
                 f.validate()
-            f.sewShape()
+            #f.sewShape()
+            #f.check(True)
+            print_tolerance(f)
             if not f.isValid():
                 debug("{:3}:Invalid final face".format(i))
             faces.append(f)
@@ -184,12 +201,15 @@ class sketchOnSurface:
         # proj = quad.project(shape.Edges)
         new_edges = []
         for oe in shape.Edges:
+            debug("original edge has : {} Pcurves : {}".format(_utils.nb_pcurves(oe), oe.curveOnSurface(0)))
             proj = quad.project([oe])
             for e in proj.Edges:
+                debug("edge on quad has : {} Pcurves : {}".format(_utils.nb_pcurves(e), e.curveOnSurface(0)))
                 c2d, fp, lp = quad.curveOnSurface(e)
                 if oe.isClosed() and not c2d.isClosed():
                     self.force_closed_bspline2d(c2d)
                 ne = c2d.toShape(face.Surface, fp, lp)
+                debug("edge on face has : {} Pcurves : {}".format(_utils.nb_pcurves(ne), ne.curveOnSurface(0)))
                 # debug(ne.Placement)
                 # debug(face.Placement)
                 # ne.Placement = face.Placement
@@ -258,14 +278,14 @@ class sketchOnSurface:
         if (obj.Offset == 0):
             shapes_1 = self.map_shapelist(imput_shapes, quad, face, obj.FillFaces)
         else:
-            f1 = face.makeOffsetShape(obj.Offset, 1e-3)
+            f1 = face.makeOffsetShape(obj.Offset, 1e-7)
             shapes_1 = self.map_shapelist(imput_shapes, quad, f1.Face1, obj.FillFaces)
         if (obj.Thickness == 0):
             if shapes_1:
                 obj.Shape = Part.Compound(shapes_1)
             return
         else:
-            f2 = face.makeOffsetShape(obj.Offset+obj.Thickness, 1e-3)
+            f2 = face.makeOffsetShape(obj.Offset+obj.Thickness, 1e-7)
             shapes_2 = self.map_shapelist(imput_shapes, quad, f2.Face1, obj.FillFaces)
             if not obj.FillExtrusion:
                 if shapes_1 or shapes_2:
@@ -281,6 +301,7 @@ class sketchOnSurface:
                             if obj.FillFaces and shapes_1[i].Edges[j].isSeam(shapes_1[i]):
                                 continue
                             ruled = Part.makeRuledSurface(shapes_1[i].Edges[j], shapes_2[i].Edges[j])
+                            ruled.check(True)
                             faces.append(ruled)
                             # try:
                                 # face_is_closed = False
@@ -296,13 +317,16 @@ class sketchOnSurface:
                         try:
                             shell = Part.Shell(faces)
                             shell.sewShape()
+                            #print_tolerance(shell)
                             solid = Part.Solid(shell)
+                            solid.fixTolerance(1e-5)
                             shapes.append(solid)
-                        except Part.OCCError:
+                        except Exception as e:
                             FreeCAD.Console.PrintWarning("Sketch on surface : failed to create solid # {}.\n".format(i+1))
                             shapes.extend(faces)
                     else:
                         ruled = Part.makeRuledSurface(shapes_1[i].Wires[0], shapes_2[i].Wires[0])
+                        ruled.check(True)
                         shapes.append(ruled)
                 # shapes.append(quad)
                 if shapes:
