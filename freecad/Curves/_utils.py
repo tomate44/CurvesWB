@@ -158,6 +158,31 @@ def ruled_surface(e1,e2):
     else:
         return Part.makeRuledSurface(e1,e2)
 
+def nb_pcurves(edge):
+    """returns the number of Pcurves of this edge"""
+    i = 0
+    while edge.curveOnSurface(i): # is not None:
+        i += 1
+    return i
+
+def get_pcurves(edge, idx=-1):
+    """returns all the Pcurves of this edge
+    if idx is in [0,5], only this item is returned"""
+    pcurves = []
+    i = 0
+    if idx >=0 and idx <6:
+        pc = edge.curveOnSurface(i)[idx]
+    else:
+        pc = edge.curveOnSurface(i)
+    while pc: # is not None:
+        pcurves.append(pc)
+        i += 1
+        if idx >=0 and idx <6:
+            pc = edge.curveOnSurface(i)[idx]
+        else:
+            pc = edge.curveOnSurface(i)
+    return pcurves
+
 def anim(obj, path, on_path=False, reverse=False, duration=1.0, samples=100):
     """
     Animate obj along path

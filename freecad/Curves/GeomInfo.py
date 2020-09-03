@@ -525,7 +525,8 @@ class GeomInfo:
                     ret.append(s)
         return(ret)
         
-    def getCurvInfo(self,curve):
+    def getCurvInfo(self, edge):
+        curve = edge.Curve
         ret = []
         ret.append(beautify(str(curve)))
         props = ['Center','Axis','Position','Radius','Direction','Location','Degree', 'NbPoles', 'Continuity']
@@ -553,7 +554,12 @@ class GeomInfo:
                 ret.append(s)
             else:
                 ret.append("Length : Infinite")
-        return(ret)
+        pclist = _utils.get_pcurves(edge)
+        for pc in pclist:
+            s = "{} on {} ".format(str(pc[0])[1:-8],
+                                   str(pc[1])[1:-8])
+            ret.append(s)
+        return ret
 
     def getTopo(self):
         sel = FreeCADGui.Selection.getSelectionEx()
@@ -585,7 +591,7 @@ class GeomInfo:
             elif self.ss.ShapeType == 'Edge':
                 #FreeCAD.Console.PrintMessage("Edge detected"+ "\n")
                 cur = self.ss.Curve
-                t = self.getCurvInfo(cur)
+                t = self.getCurvInfo(self.ss)
                 self.SoText2.string.setValues(0,len(t),t)
                 self.removeGrid()
                 #self.root = self.so.ViewObject.RootNode
