@@ -6,35 +6,46 @@ __license__ = "LGPL 2.1"
 __doc__ = "Curves workbench utilities common to all tools."
 
 import FreeCAD
+import Part
+from FreeCAD import Base
+
 
 def setIconsPath(path):
     global icons_path
     icons_path = path
     return True
 
+
 def iconsPath():
     global icons_path
     return icons_path
 
+
 def info(string):
-    FreeCAD.Console.PrintMessage("%s\n"%string)
-    
+    FreeCAD.Console.PrintMessage("{}\n".format(string))
+
+
 def warn(string):
-    FreeCAD.Console.PrintWarning("%s\n"%string)
+    FreeCAD.Console.PrintWarning("{}\n".format(string))
+
 
 def error(string):
-    FreeCAD.Console.PrintError("%s\n"%string)
+    FreeCAD.Console.PrintError("{}\n".format(string))
+
 
 def debug(string):
-    FreeCAD.Console.PrintMessage("%s\n"%string)
+    FreeCAD.Console.PrintMessage("{}\n".format(string))
+
 
 def doNothing(string):
     return None
+
 
 def setEditorMode(fp, group, mode):
     """set the editor mode of a group of properties"""
     for prop in group:
         fp.setEditorMode(prop, mode)
+
 
 def getSubShape(shape, shape_type, n):
     if shape_type == "Vertex" and len(shape.Vertexes) >= n:
@@ -46,37 +57,39 @@ def getSubShape(shape, shape_type, n):
     else:
         return None
 
+
 def getShape(obj, prop, shape_type):
     if hasattr(obj, prop) and obj.getPropertyByName(prop):
         prop_link = obj.getPropertyByName(prop)
         if obj.getTypeIdOfProperty(prop) == "App::PropertyLinkSub":
             if shape_type in prop_link[1][0]:
                 return prop_link[0].getSubObject(prop_link[1][0])
-            #n = eval(obj.getPropertyByName(prop)[1][0].lstrip(shape_type))
-            #sh = obj.getPropertyByName(prop)[0].Shape.copy()
-            #if sh and hasattr(obj.getPropertyByName(prop)[0], "getGlobalPlacement"):
-                #pl = obj.getPropertyByName(prop)[0].getGlobalPlacement()
-                #sh.Placement = pl
-            #return getSubShape(sh, shape_type, n)
+#            n = eval(obj.getPropertyByName(prop)[1][0].lstrip(shape_type))
+#            sh = obj.getPropertyByName(prop)[0].Shape.copy()
+#            if sh and hasattr(obj.getPropertyByName(prop)[0], "getGlobalPlacement"):
+#                pl = obj.getPropertyByName(prop)[0].getGlobalPlacement()
+#                sh.Placement = pl
+#            return getSubShape(sh, shape_type, n)
         elif obj.getTypeIdOfProperty(prop) == "App::PropertyLinkSubList":
             res = []
             for tup in prop_link:
                 for ss in tup[1]:
                     if shape_type in ss:
                         res.append(tup[0].getSubObject(ss))
-                    #n = eval(ss.lstrip(shape_type))
-                    #sh = tup[0].Shape.copy()
-                    #if sh and hasattr(tup[0], "getGlobalPlacement"):
-                        #pl = tup[0].getGlobalPlacement()
-                        #sh.Placement = pl
-                    #res.append(getSubShape(sh, shape_type, n))
+#                    n = eval(ss.lstrip(shape_type))
+#                    sh = tup[0].Shape.copy()
+#                    if sh and hasattr(tup[0], "getGlobalPlacement"):
+#                        pl = tup[0].getGlobalPlacement()
+#                        sh.Placement = pl
+#                    res.append(getSubShape(sh, shape_type, n))
             return res
         else:
             FreeCAD.Console.PrintError("CurvesWB._utils.getShape: wrong property type.\n")
             return None
     else:
-        #FreeCAD.Console.PrintError("CurvesWB._utils.getShape: %r has no property %r\n"%(obj, prop))
+        # FreeCAD.Console.PrintError("CurvesWB._utils.getShape: %r has no property %r\n"%(obj, prop))
         return None
+
 
 def same_direction(e1, e2, num=10):
     """bool = same_direction(e1, e2, num=10)
@@ -96,6 +109,7 @@ def same_direction(e1, e2, num=10):
     else:
         return False
 
+
 def info_subshapes(shape):
     """Print the list of subshapes of a shape in FreeCAD console.
     info_subshapes(my_shape)
@@ -113,9 +127,10 @@ def info_subshapes(shape):
         subs = shape.__getattribute__(s)
         if subs:
             if (len(subs) == 1) and (subs[0].isEqual(shape)):
-                pass # hide self
+                pass  # hide self
             else:
                 info("{}: {}".format(s, len(subs)))
+
 
 def ancestors(shape, sub):
     '''list_of_shapes = ancestors(shape, sub)
@@ -134,11 +149,12 @@ def ancestors(shape, sub):
            Part.Compound)
     for i in range(len(shd)-1):
         if isinstance(sub, shd[i]):
-            for j in range(i+1,len(shd)):
+            for j in range(i+1, len(shd)):
                 manc = shape.ancestorsOfType(sub, shd[j])
                 if manc:
                     print("{} belongs to {} {}.".format(cleanup(sub), len(manc), cleanup(manc[0])))
                     return manc
+
 
 def rootNode(shape, mode=2, deviation=0.3, angle=0.4):
     buf = shape.writeInventor(mode, deviation, angle)
@@ -148,59 +164,62 @@ def rootNode(shape, mode=2, deviation=0.3, angle=0.4):
     node = coin.SoDB.readAll(inp)
     return node
 
-def ruled_surface(e1,e2):
+
+def ruled_surface(e1, e2):
     """ creates a ruled surface between 2 edges, with automatic orientation."""
-    import Part
-    if not same_direction(e1,e2):
+    if not same_direction(e1, e2):
         e = e2.copy()
         e.reverse()
-        return Part.makeRuledSurface(e1,e)
+        return Part.makeRuledSurface(e1, e)
     else:
-        return Part.makeRuledSurface(e1,e2)
+        return Part.makeRuledSurface(e1, e2)
+
 
 def nb_pcurves(edge):
     """returns the number of Pcurves of this edge"""
     i = 0
-    while edge.curveOnSurface(i): # is not None:
+    while edge.curveOnSurface(i):
         i += 1
     return i
 
+
 def get_pcurves(edge, idx=-1):
     """returns all the Pcurves of this edge
-    if idx is in [0,5], only this item is returned"""
+    pcurve_list = get_pcurves(edge, idx=-1)
+    each pcurve of the list is a tuple of 5 items :
+    - curve 2d
+    - surface
+    - placement
+    - first parameter
+    - last parameter
+    if idx is in [0,4], only this item of the tuple is returned"""
     pcurves = []
     i = 0
-    if idx >=0 and idx <6:
-        pc = edge.curveOnSurface(i)[idx]
-    else:
-        pc = edge.curveOnSurface(i)
-    while pc: # is not None:
+    pc = edge.curveOnSurface(i)
+    if pc and idx >= 0 and idx < 6:
+        pc = pc[idx]
+    while pc:
         pcurves.append(pc)
         i += 1
-        if idx >=0 and idx <6:
-            pc = edge.curveOnSurface(i)[idx]
-        else:
-            pc = edge.curveOnSurface(i)
+        pc = edge.curveOnSurface(i)
+        if pc and idx >= 0 and idx < 6:
+            pc = pc[idx]
     return pcurves
+
 
 def anim(obj, path, on_path=False, reverse=False, duration=1.0, samples=100):
     """
     Animate obj along path
-
     anim(obj, path, on_path=False, duration=1.0, samples=100)
-
     path must be an edge or a wire
-
     if on_path is True, the animation path is absolute
     else, the animation path is relative to current obj placement
-
     reverse : reverse path direction
-
     duration : animation duration in seconds
-
     samples : number of animation samples
     """
     from time import sleep
+    import FreeCADGui
     pts = path.discretize(samples)
     if reverse:
         pts.reverse()
@@ -211,136 +230,97 @@ def anim(obj, path, on_path=False, reverse=False, duration=1.0, samples=100):
         origin = pts[0]
     for p in rpts:
         obj.Placement.Base = origin + p
-        Gui.ActiveDocument.update()
+        FreeCADGui.ActiveDocument.update()
         sleep(float(duration) / samples)
 
 
+def is_equal(obj1, obj2, tol=1e-7):
+    """Test equality of two objects, with tolerance
+    bool = is_equal(obj1, obj2, tol=1e-7)
+    obj1, obj2 can be of type:
+    - float
+    - int
+    - Vector
+    - Vector2d
+    - list of the above types"""
+    if isinstance(obj1, (list, tuple)):
+        equal = True
+        for o1, o2 in zip(obj1, obj2):
+            equal = equal and is_equal(o1, o2, tol)
+        return equal
+    if isinstance(obj1, FreeCAD.Vector):
+        return obj1.isEqual(obj2, tol)
+    if isinstance(obj1, FreeCAD.Base.Vector2d):
+        v1 = FreeCAD.Vector(obj1.x, obj1.y, 0)
+        v2 = FreeCAD.Vector(obj2.x, obj2.y, 0)
+        return v1.isEqual(v2, tol)
+    if isinstance(obj1, float):
+        return abs(obj1 - obj2) < tol
+    else:
+        return obj1 == obj2
 
 
-class SilentFPO:
-    '''Fake FeaturePython object that has no interaction with other FreeCAD objects.
-    It is used as a temporary FPO during editing'''
-    def __init__(self):
-        self.Proxy = None
-        self.Shape = None
-        self.props = []
-    def addProperty(ptype, pname, pgroup="", pdoc=""):
-        setattr(self, pname, None)
-        self.props.append(pname)
-        return self
-    def get_data(self, realfpo):
-        for prop in self.props:
-            setattr(self, pname, getattr(realfpo, prop))
-    def set_data(self, realfpo):
-        for prop in self.props:
-            setattr(realfpo, pname, getattr(self, prop))
-    def status(self):
-        for prop in self.props:
-            print("%s = %s"%(prop, str(getattr(self, prop))))
+def have_equal_property(geom1, geom2, prop, tol=1e-7):
+    """Test equality of property prop of two geometries
+    bool = have_equal_property(geom1, geom2, prop, tol=1e-7)
+    Input :
+    - geom1, geom2 (Part.Geometry): the two curves or surfaces to test
+    - prop (string): the name of the property to test
+    - tol (float): equality tolerance"""
+    attr1 = getattr(geom1, prop)
+    attr2 = getattr(geom2, prop)
+    try:
+        attr1 = attr1()
+        attr2 = attr2()
+    except TypeError:
+        pass  # They're not callable
+    return is_equal(attr1, attr2, tol)
 
 
+def geom_equal(geom1, geom2, tol=1e-7):
+    """Test equality between two geometries
+    by comparing their defining properties
+    bool = geom_equal(geom1, geom2, tol=1e-7)
+    geom1 and geom2 must be of type Part.Curve or Part.Surface"""
+    if not geom1.TypeId == geom2.TypeId:
+        return False
+    curve_properties = ["FirstParameter", "LastParameter"]
+    conic_properties = curve_properties + ["Location", "AngleXU", "Axis", "XAxis", "YAxis"]
+    
+    test_properties = dict()
+    test_properties[Part.Point] = ["X", "Y", "Z"]
+    test_properties[FreeCAD.Base.Vector] = ["x", "y", "z"]
+    test_properties[FreeCAD.Base.Vector2d] = ["x", "y"]
+    # Curves
+    test_properties[Part.Line] = curve_properties + ["Location", "Direction"]
+    test_properties[Part.Circle] = conic_properties + ["Radius"]
+    test_properties[Part.Ellipse] = conic_properties + ["Focal", "Focus1", "Focus2", "MajorRadius", "MinorRadius"]
+    test_properties[Part.Hyperbola] = conic_properties + ["Focal", "Focus1", "Focus2", "MajorRadius", "MinorRadius"]
+    test_properties[Part.Parabola] = conic_properties + ["Focal", "Focus"]
+    test_properties[Part.LineSegment] = test_properties[Part.Line]
+    test_properties[Part.ArcOfCircle] = test_properties[Part.Circle]
+    test_properties[Part.ArcOfEllipse] = test_properties[Part.Ellipse]
+    test_properties[Part.ArcOfHyperbola] = test_properties[Part.Hyperbola]
+    test_properties[Part.ArcOfParabola] = test_properties[Part.Parabola]
+# BasisCurve is not implemented
+#    test_properties[Part.OffsetCurve] = ["BasisCurve", "OffsetDirection", "OffsetValue"]
+#    test_properties[Part.TrimmedCurve] = ["BasisCurve", "OffsetDirection", "OffsetValue"]
+    test_properties[Part.BezierCurve] = curve_properties + ["Degree", "NbPoles", "getPoles", "getWeights"]
+    test_properties[Part.BSplineCurve] = test_properties[Part.BezierCurve] + ["NbKnots", "KnotSequence"]
+    # Surfaces
+    test_properties[Part.Plane] = ["Axis", "Position"]
+    test_properties[Part.Cone] = ["Apex", "Axis", "Center", "Radius", "SemiAngle"]
+    test_properties[Part.Cylinder] = ["Axis", "Center", "Radius"]
+    test_properties[Part.Sphere] = ["Axis", "Center", "Radius"]
+    test_properties[Part.Toroid] = ["Axis", "Center", "MajorRadius", "MinorRadius"]
+    test_properties[Part.BezierSurface] = ["UDegree", "VDegree", "NbUPoles", "NbVPoles", "getPoles", "getWeights"]
+    test_properties[Part.BSplineSurface] = test_properties[Part.BezierSurface] + ["NbUKnots", "NbVKnots", "UKnotSequence", "VKnotSequence"]
+    test_properties[Part.OffsetSurface] = ["BasisSurface", "OffsetValue"]
+    test_properties[Part.SurfaceOfExtrusion] = ["BasisCurve", "Direction"]
+    test_properties[Part.SurfaceOfRevolution] = ["BasisCurve", "Direction", "Location"]
 
-class EasyProxy(object):
-    def __init__(self, fp):
-        self.document_restored = True
-        self.ep_add_properties(fp)
-        fp.Proxy = self
-        self.ep_init(fp)
-
-    def execute(self, fp):
-        if not self.document_restored:
-            debug("Skipping %s.execute() ..."%fp.Label)
+    for prop in test_properties[geom1.__class__]:
+        if not have_equal_property(geom1, geom2, prop, tol):
             return False
-        else:
-            self.ep_execute(fp)
-
-    def onChanged(self, fp, prop):
-        if not self.document_restored:
-            debug("Skipping %s.onChanged(%s) ..."%(fp.Label,prop))
-            return False
-        else:
-            self.ep_prop_changed(fp, prop)
-
-    def onBeforeChange(self, fp, prop):
-        if prop == "Proxy":
-            return False
-        if not self.document_restored:
-            debug("Skipping %s.onBeforeChange(%s) ..."%(fp.Label,prop))
-            return False
-        else:
-            self.ep_before_prop_change(fp, prop)
-
-    def onDocumentRestored(self, fp):
-        self.document_restored = True
-        debug("%s restored !"%fp.Label)
-        self.ep_init(fp)
-
-    def __getstate__(self):
-        debug("EasyProxy.__getstate__")
-        state = self.ep_on_save()
-        # add additional instance variables
-        # state["variable"] = self.variable
-        return state
-
-    def __setstate__(self,state):
-        debug("EasyProxy.__setstate__")
-        self.document_restored = False
-        self.ep_on_restore(state)
-        # restore additional instance variables
-        # self.variable = state["variable"]
-        return None
-
-    def ep_add_properties(self, fp):
-        #fp.addProperty("App::PropertyInteger", "myprop", "Test", "a property").myprop = 1
-        return None
-
-    def ep_init(self, fp):
-        return None
-
-    def ep_execute(self, fp):
-        return None
-
-    def ep_prop_changed(self, fp, prop):
-        return None
-
-    def ep_before_prop_change(self, fp, prop):
-        return None
-
-    def ep_on_save(self):
-        return dict()
-
-    def ep_on_restore(self, state):
-        return None
-
-
-
-class MyProxy(EasyProxy):
-
-    def ep_add_properties(self, fp):
-        debug("---MyProxy.ep_add_properties")
-        fp.addProperty("App::PropertyVector", "position", "Test", "a property")
-        fp.addProperty("App::PropertyVector", "direction", "Test", "a property")
-        fp.addProperty("App::PropertyFloat", "Length", "Test", "a property").Length = 10.0
-        fp.addProperty("App::PropertyFloat", "Width", "Test", "a property").Width = 5.0
-        fp.addProperty("App::PropertyFloat", "Height", "Test", "a property").Height = 1.0
-
-    def ep_init(self, fp):
-        debug("---MyProxy.ep_init(%s)"%fp.Label)
-
-    def ep_execute(self, fp):
-        debug("---MyProxy.ep_execute(%s)"%fp.Label)
-
-    def ep_prop_changed(self, fp, prop):
-        debug("---MyProxy.ep_prop_changed: %s(%s)"%(fp.Label,prop))
-
-    def ep_before_prop_change(self, fp, prop):
-        debug("---MyProxy.ep_before_prop_change: %s(%s)"%(fp.Label,prop))
-
-    def ep_on_save(self):
-        debug("---MyProxy.ep_on_save")
-        return None
-
-    def ep_on_restore(self,state):
-        debug("---MyProxy.ep_on_restore")
-        return None
-
+    return True
+    
