@@ -63,25 +63,30 @@ def getShape(obj, prop, shape_type):
         prop_link = obj.getPropertyByName(prop)
         if obj.getTypeIdOfProperty(prop) == "App::PropertyLinkSub":
             if shape_type in prop_link[1][0]:
-                return prop_link[0].getSubObject(prop_link[1][0])
-#            n = eval(obj.getPropertyByName(prop)[1][0].lstrip(shape_type))
-#            sh = obj.getPropertyByName(prop)[0].Shape.copy()
-#            if sh and hasattr(obj.getPropertyByName(prop)[0], "getGlobalPlacement"):
-#                pl = obj.getPropertyByName(prop)[0].getGlobalPlacement()
-#                sh.Placement = pl
-#            return getSubShape(sh, shape_type, n)
+                try:  # FC 0.19+
+                    return prop_link[0].getSubObject(prop_link[1][0])
+                except AttributeError:  # FC 0.18 (stable)
+                    n = eval(obj.getPropertyByName(prop)[1][0].lstrip(shape_type))
+                    sh = obj.getPropertyByName(prop)[0].Shape.copy()
+                    if sh and hasattr(obj.getPropertyByName(prop)[0], "getGlobalPlacement"):
+                        pl = obj.getPropertyByName(prop)[0].getGlobalPlacement()
+                        sh.Placement = pl
+                    return getSubShape(sh, shape_type, n)
+
         elif obj.getTypeIdOfProperty(prop) == "App::PropertyLinkSubList":
             res = []
             for tup in prop_link:
                 for ss in tup[1]:
                     if shape_type in ss:
-                        res.append(tup[0].getSubObject(ss))
-#                    n = eval(ss.lstrip(shape_type))
-#                    sh = tup[0].Shape.copy()
-#                    if sh and hasattr(tup[0], "getGlobalPlacement"):
-#                        pl = tup[0].getGlobalPlacement()
-#                        sh.Placement = pl
-#                    res.append(getSubShape(sh, shape_type, n))
+                        try:  # FC 0.19+
+                            res.append(tup[0].getSubObject(ss))
+                        except AttributeError:  # FC 0.18 (stable)
+                            n = eval(ss.lstrip(shape_type))
+                            sh = tup[0].Shape.copy()
+                            if sh and hasattr(tup[0], "getGlobalPlacement"):
+                                pl = tup[0].getGlobalPlacement()
+                                sh.Placement = pl
+                            res.append(getSubShape(sh, shape_type, n))
             return res
         else:
             FreeCAD.Console.PrintError("CurvesWB._utils.getShape: wrong property type.\n")
@@ -152,7 +157,9 @@ def ancestors(shape, sub):
             for j in range(i+1, len(shd)):
                 manc = shape.ancestorsOfType(sub, shd[j])
                 if manc:
-                    print("{} belongs to {} {}.".format(cleanup(sub), len(manc), cleanup(manc[0])))
+                    print("{} belongs to {} {}.".format(cleanup(sub),
+                                                        len(manc),
+                                                        cleanup(manc[0])))
                     return manc
 
 
