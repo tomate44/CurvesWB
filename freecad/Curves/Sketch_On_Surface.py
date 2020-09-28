@@ -201,15 +201,15 @@ class sketchOnSurface:
         # proj = quad.project(shape.Edges)
         new_edges = []
         for oe in shape.Edges:
-            debug("original edge has : {} Pcurves : {}".format(_utils.nb_pcurves(oe), oe.curveOnSurface(0)))
+            # debug("original edge has : {} Pcurves : {}".format(_utils.nb_pcurves(oe), oe.curveOnSurface(0)))
             proj = quad.project([oe])
             for e in proj.Edges:
-                debug("edge on quad has : {} Pcurves : {}".format(_utils.nb_pcurves(e), e.curveOnSurface(0)))
+                # debug("edge on quad has : {} Pcurves : {}".format(_utils.nb_pcurves(e), e.curveOnSurface(0)))
                 c2d, fp, lp = quad.curveOnSurface(e)
                 if oe.isClosed() and not c2d.isClosed():
                     self.force_closed_bspline2d(c2d)
                 ne = c2d.toShape(face.Surface, fp, lp)
-                debug("edge on face has : {} Pcurves : {}".format(_utils.nb_pcurves(ne), ne.curveOnSurface(0)))
+                # debug("edge on face has : {} Pcurves : {}".format(_utils.nb_pcurves(ne), ne.curveOnSurface(0)))
                 # debug(ne.Placement)
                 # debug(face.Placement)
                 # ne.Placement = face.Placement
