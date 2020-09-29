@@ -177,8 +177,11 @@ class sketchOnSurface:
                 debug("{:3}:Invalid initial face".format(i))
                 f.validate()
             if len(wirelist) > 1:
-                f.cutHoles(wirelist[1:])
-                f.validate()
+                try:
+                    f.cutHoles(wirelist[1:])
+                    f.validate()
+                except AttributeError:
+                    error("Faces with internal holes require FC 0.19 or higher")
             #f.sewShape()
             #f.check(True)
             print_tolerance(f)
