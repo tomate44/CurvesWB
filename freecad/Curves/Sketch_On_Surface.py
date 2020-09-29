@@ -15,10 +15,10 @@ from freecad.Curves import ICONPATH
 
 TOOL_ICON = os.path.join(ICONPATH, 'sketch_surf.svg')
 
-debug = _utils.debug
-# debug = _utils.doNothing
+# debug = _utils.debug
+debug = _utils.doNothing
 vec = FreeCAD.Vector
-
+error = FreeCAD.Console.PrintError
 
 def stretched_plane(poles, param_range=[0, 2, 0, 2], extend_factor=1.0):
     s0, s1, t0, t1 = param_range
@@ -114,12 +114,13 @@ class BoundarySorter:
                 result.append(w)
         return result
 
+
 def tolerance_msg(shape, ty):
     a = shape.getTolerance(-1, ty)
     b = shape.getTolerance(0,  ty)
     c = shape.getTolerance(1,  ty)
     print("{0} : {1:.2e} / {2:.2e} / {3:.2e}".format(ty, a, b, c))
-    
+
 
 def print_tolerance(shape):
     if shape.Faces:
@@ -181,12 +182,12 @@ class sketchOnSurface:
                     f.cutHoles(wirelist[1:])
                     f.validate()
                 except AttributeError:
-                    debug("Faces with internal holes require FC 0.19 or higher")
-            #f.sewShape()
-            #f.check(True)
-            print_tolerance(f)
+                    error("Faces with holes require FC 0.19 or higher\nIgnoring holes\n")
+            # f.sewShape()
+            # f.check(True)
+            # print_tolerance(f)
             if not f.isValid():
-                debug("{:3}:Invalid final face".format(i))
+                error("{:3}:Invalid final face".format(i))
             faces.append(f)
         return faces
 
@@ -234,7 +235,7 @@ class sketchOnSurface:
     def execute(self, obj):
         def error(msg):
             func_name = "{} (Sketch_On_Surface)  : ".format(obj.Label)
-            FreeCAD.Console.PrintError(func_name + msg + "\n")
+            error(func_name + msg + "\n")
         if not obj.Sketch:
             error("No Sketch attached")
             return
@@ -320,11 +321,11 @@ class sketchOnSurface:
                         try:
                             shell = Part.Shell(faces)
                             shell.sewShape()
-                            #print_tolerance(shell)
+                            # print_tolerance(shell)
                             solid = Part.Solid(shell)
                             solid.fixTolerance(1e-5)
                             shapes.append(solid)
-                        except Exception as e:
+                        except Exception:
                             FreeCAD.Console.PrintWarning("Sketch on surface : failed to create solid # {}.\n".format(i+1))
                             shapes.extend(faces)
                     else:
