@@ -181,7 +181,7 @@ class sketchOnSurface:
                     f.cutHoles(wirelist[1:])
                     f.validate()
                 except AttributeError:
-                    error("Faces with internal holes require FC 0.19 or higher")
+                    debug("Faces with internal holes require FC 0.19 or higher")
             #f.sewShape()
             #f.check(True)
             print_tolerance(f)
