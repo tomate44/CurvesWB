@@ -3,6 +3,7 @@ import Part
 from freecad.Curves.curveOnSurface import curveOnSurface
 from freecad.Curves import nurbs_tools
 
+
 class blendSurface:
     def __init__(self, o1, o2):
 
@@ -11,13 +12,13 @@ class blendSurface:
         f1 = self.getFace(o1)
         f2 = self.getFace(o2)
 
-        self.cos1 = curveOnSurface(e1,f1)
-        self.cos2 = curveOnSurface(e2,f2)
+        self.cos1 = curveOnSurface(e1, f1)
+        self.cos2 = curveOnSurface(e2, f2)
         if o1.Reverse:
             self.cos1.reverse()
         if o2.Reverse:
             self.cos2.reverse()
-        
+
         self.cont1 = 2
         self.cont2 = 2
         self.scale1 = 1.0
@@ -25,13 +26,13 @@ class blendSurface:
         self.var_scale1 = None
         self.var_scale2 = None
 
-        #self.cos1.reverseTangent =  o1.ReverseTangent
-        #self.cos1.reverseNormal =   o1.ReverseNormal
-        #self.cos1.reverseBinormal = o1.ReverseBinormal
+        # self.cos1.reverseTangent =  o1.ReverseTangent
+        # self.cos1.reverseNormal =   o1.ReverseNormal
+        # self.cos1.reverseBinormal = o1.ReverseBinormal
 
-        #self.cos2.reverseTangent =  o2.ReverseTangent
-        #self.cos2.reverseNormal =   o2.ReverseNormal
-        #self.cos2.reverseBinormal = o2.ReverseBinormal
+        # self.cos2.reverseTangent =  o2.ReverseTangent
+        # self.cos2.reverseNormal =   o2.ReverseNormal
+        # self.cos2.reverseBinormal = o2.ReverseBinormal
 
         self.railSamples = 20
         self.profSamples = 20
@@ -62,18 +63,18 @@ class blendSurface:
     def compute_scale(self, sc, edge):
         if sc is None:
             return(False)
-        if isinstance(sc,(list,tuple)):
+        if isinstance(sc, (list, tuple)):
             res = list()
             ei = nurbs_tools.EdgeInterpolator(edge)
             for v in sc:
-                ei.add_data(v.x,v)
-            #ei.add_mult_data(sc)
+                ei.add_data(v.x, v)
+            # ei.add_mult_data(sc)
             ei.interpolate()
             for i in range(self.railSamples):
                 p = float(i) / (self.railSamples - 1)
                 res.append(ei.valueAt(p))
             return(res)
-        elif isinstance(sc,(float,int)):
+        elif isinstance(sc, (float, int)):
             return([float(sc)]*self.railSamples)
         else:
             FreeCAD.Console.PrintError("BlendSurface : failed to compute scale\n%s\n"%str(sc))
@@ -87,16 +88,18 @@ class blendSurface:
             self.cos2.param_list.reverse()
         sc1 = self.compute_scale(self.var_scale1, self.cos1.edge)
         sc2 = self.compute_scale(self.var_scale2, self.cos2.edge)
-        #if self.untwist:
-            #c2 = self.cos2.get_cross_curves(self.railSamples, 1.0, True)
-            #sc2.reverse()
+        # if self.untwist:
+        #   c2 = self.cos2.get_cross_curves(self.railSamples, 1.0, True)
+        #   sc2.reverse()
         blends = list()
         for i in range(self.railSamples):
             pt1 = self.cos1.edgeOnFace.valueAt(self.cos1.param_list[i])
             pt2 = self.cos2.edgeOnFace.valueAt(self.cos2.param_list[i])
-            c1 = self.cos1.get_cross_curve_toward_point(self.cos1.param_list[i], pt2, 1e-1, False)
-            c2 = self.cos2.get_cross_curve_toward_point(self.cos2.param_list[i], pt1, 1e-1, False)
-            b = nurbs_tools.blendCurve(c1,c2)
+            c1 = self.cos1.get_cross_curve_toward_point(self.cos1.param_list[i],
+                                                        pt2, 1e-1, False)
+            c2 = self.cos2.get_cross_curve_toward_point(self.cos2.param_list[i],
+                                                        pt1, 1e-1, False)
+            b = nurbs_tools.blendCurve(c1, c2)
             b.cont1 = self.cont1
             b.cont2 = self.cont2
             if sc1:
@@ -123,7 +126,7 @@ class blendSurface:
             sc2.reverse()
         blends = list()
         for i in range(self.railSamples):
-            b = nurbs_tools.blendCurve(c1[i],c2[i])
+            b = nurbs_tools.blendCurve(c1[i], c2[i])
             b.cont1 = self.cont1
             b.cont2 = self.cont2
             if sc1:
@@ -138,7 +141,7 @@ class blendSurface:
             blends.append(b.shape())
             self.curves.append(b)
         return(blends)
-    
+
     def blend_curves(self):
         blend_curves = list()
         offset_curve_1 = self.cos1.get_offset_curve2d(0.1)
@@ -151,9 +154,11 @@ class blendSurface:
             self.cos2.param_list.reverse()
             sc2.reverse()
         for i in range(self.railSamples):
-            c1 = self.cos1.get_cross_curve( offset_curve_1, self.cos1.param_list[i])
-            c2 = self.cos2.get_cross_curve( offset_curve_2, self.cos2.param_list[i])
-            b = nurbs_tools.blendCurve(c1,c2)
+            c1 = self.cos1.get_cross_curve(offset_curve_1,
+                                           self.cos1.param_list[i])
+            c2 = self.cos2.get_cross_curve(offset_curve_2,
+                                           self.cos2.param_list[i])
+            b = nurbs_tools.blendCurve(c1, c2)
             b.cont1 = self.cont1
             b.cont2 = self.cont2
             b.param1 = b.edge1.LastParameter
@@ -185,9 +190,6 @@ class blendSurface:
             pts.append(e.discretize(self.profSamples))
         return(pts)
 
-
-        
-        
     def getEdge(self, obj):
         res = None
         if hasattr(obj, "InputEdge"):
@@ -212,26 +214,21 @@ class blendSurface:
         return(cos.lastParameter - cos.firstParameter)
 
 
-
-
-
 def main():
-
+    import FreeCADGui
     s = FreeCADGui.Selection.getSelection()
 
     o1 = s[0]
     o2 = s[1]
-    
-    bs = blendSurface(o1,o2)
+
+    bs = blendSurface(o1, o2)
     bs.railSamples = 32
     bs.profSamples = 16
     bs.untwist = False
-    
+
     bs.buildCurves()
     pts = bs.getPoints()
 
+
 if __name__ == '__main__':
     main()
-
-
- 
