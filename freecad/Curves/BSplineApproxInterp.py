@@ -6,22 +6,24 @@
 
 import FreeCAD
 import Part
+import numpy as np
+from freecad.Curves import nurbs_tools
 #  from math import pi
 
-DEBUG = False
+DEBUG = True
 
 
 def debug(o):
     if not DEBUG:
         return()
-    if isinstance(o,Part.BSplineCurve):
+    if isinstance(o, Part.BSplineCurve):
         FreeCAD.Console.PrintWarning("\nBSplineCurve\n")
-        FreeCAD.Console.PrintWarning("Degree: %d\n"%(o.Degree))
-        FreeCAD.Console.PrintWarning("NbPoles: %d\n"%(o.NbPoles))
-        FreeCAD.Console.PrintWarning("Knots: %d (%0.2f - %0.2f)\n"%(o.NbKnots, o.FirstParameter, o.LastParameter))
-        FreeCAD.Console.PrintWarning("Mults: %s\n"%(o.getMultiplicities()))
-        FreeCAD.Console.PrintWarning("Periodic: %s\n"%(o.isPeriodic()))
-    elif isinstance(o,Part.BSplineSurface):
+        FreeCAD.Console.PrintWarning("Degree: {}\n".format(o.Degree))
+        FreeCAD.Console.PrintWarning("NbPoles: {}\n".format(o.NbPoles))
+        FreeCAD.Console.PrintWarning("Knots: {} ({:0.2f} - {:0.2f})\n".format(o.NbKnots, o.FirstParameter, o.LastParameter))
+        FreeCAD.Console.PrintWarning("Mults: {}\n".format(o.getMultiplicities()))
+        FreeCAD.Console.PrintWarning("Periodic: {}\n".format(o.isPeriodic()))
+    elif isinstance(o, Part.BSplineSurface):
         FreeCAD.Console.PrintWarning("\nBSplineSurface\n************\n")
         try:
             u = o.uIso(o.UKnotSequence[0])
@@ -48,35 +50,32 @@ def square_magnitude(v1):
 
 
 def find(val, array, tol=1e-5):
+    """Return index of val in array, within given tolerance
+    Else return -1"""
     for i in range(len(array)):
         if abs(val - array[i]) < tol:
             return(int(i))
-    return(-1)
+    return -1
 
 
 def insertKnot(knot, count, degree, knots, mults, tol=1e-5):
+    """Insert knot in knots, with multiplicity count in mults"""
     if (knot < knots[0] or knot > knots[-1]):
         raise RuntimeError("knot out of range")
 
-    #  pos = std::find_if(knots.begin(), knots.end(), helper_function_find(knot, tol)) - knots.begin();
     pos = find(knot, knots, tol)
-
-    if (pos == -1):
-        #  knot not found, insert new one
+    if (pos == -1):  # knot not found, insert new one
         pos = 0
         while (knots[pos] < knot):
             pos += 1
         knots.insert(pos, knot)
         mults.insert(pos, min(count, degree))
-    else:
-        #  knot found, increase multiplicity
+    else:  # knot found, increase multiplicity
         mults[pos] = min(mults[pos] + count, degree)
 
 
 def bsplineBasisMat(degree, knots, params, derivOrder):
-    import numpy as np
-    # from scipy import linalg
-    from freecad.Curves import nurbs_tools  # import BsplineBasis
+    """Return a matrix of values of BSpline Basis functions(or derivatives)"""
     ncp = len(knots) - degree - 1
     mx = np.array([[0.] * ncp for i in range(len(params))])
     # math_Matrix mx(1, params.Length(), 1, ncp);
@@ -118,6 +117,8 @@ def bsplineBasisMat(degree, knots, params, derivOrder):
 
 
 class BSplineApproxInterp(object):
+    """BSpline curve approximating a list of points
+    Some points can be interpolated, or be set as C0 kinks"""
     #  used in BSplineAlgorithms.reparametrizeBSplineContinuouslyApprox
     def __init__(self, points, nControlPoints, degree, continuous_if_closed):
         self.pnts = points
@@ -129,6 +130,8 @@ class BSplineApproxInterp(object):
         self.indexOfKinks = list()
 
     def InterpolatePoint(self, pointIndex, withKink):
+        """Switch point from approximation to interpolation
+        If withKink, also set it as Kink"""
         if pointIndex not in self.indexOfApproximated:
             debug("Invalid index in CTiglBSplineApproxInterp::InterpolatePoint")
             debug("{} is not in {}".format(pointIndex, self.indexOfApproximated))
@@ -140,7 +143,7 @@ class BSplineApproxInterp(object):
             self.indexOfKinks.append(pointIndex)
 
     def FitCurveOptimal(self, initialParms, maxIter):
-        # parms = list()
+        """Iterative fitting of a BSpline curve on the points"""
         #  compute initial parameters, if initialParms empty
         if len(initialParms) == 0:
             parms = self.computeParameters(0.5)
@@ -152,59 +155,47 @@ class BSplineApproxInterp(object):
 
         #  Compute knots from parameters
         knots, mults = self.computeKnots(self.ncp, parms)
-        # debug("python_solve(ncp, params, knots, ):\n%s\n%s\n%s"%(self.ncp, parms, knots))
-        # TColStd_Array1OfInteger occMults(1, static_cast<Standard_Integer>(mults.size()));
-        # TColStd_Array1OfReal occKnots(1, static_cast<Standard_Integer>(knots.size()));
-        # for (size_t i = 0; i < knots.size(); ++i) {
-            # Standard_Integer idx = static_cast<Standard_Integer>(i + 1);
-            # occKnots.SetValue(idx, knots[i]);
-            # occMults.SetValue(idx, mults[i]);
-        # }
-        iteration = 0
 
-        #  solve system
+        # solve system
+        iteration = 0
         result, error = self.python_solve(parms, knots, mults)  # TODO occKnots, occMults ???? See above
         old_error = error * 2
 
-        debug("FitCurveOptimal iteration # %d"%iteration)
-        debug("error = %f"%error)
-        debug("(%0.4f - %0.4f)/max(%0.4f,1e-6) = %0.5f "%(old_error,error,error,((old_error-error)/max(error, 1e-6))))
-
-        while ( (error>0) and ((old_error-error)/max(error, 1e-6) > 1e-6) and (iteration < maxIter) ):
-            debug("FitCurveOptimal iteration # %d"%iteration)
+        debug("FitCurveOptimal iteration # {}".format(iteration))
+        debug("error = {}".format(error))
+        while ((error > 0) and ((old_error - error) / max(error, 1e-6) > 1e-6) and (iteration < maxIter)):
+            debug("FitCurveOptimal iteration # {}".format(iteration))
             old_error = error
             self.optimizeParameters(result, parms)
             result, error = self.python_solve(parms, knots, mults)
-            debug("error = %f"%error)
-            debug("(%0.4f - %0.4f)/max(%0.4f,1e-6) = %0.5f "%(old_error,error,error,((old_error-error)/max(error, 1e-6))))
+            debug("error = {}".format(error))
             iteration += 1
         return result, error
 
     def computeParameters(self, alpha):
+        """Computes parameters for the points self.pnts
+        alpha is a parametrization factor
+        alpha = 0.0 -> Uniform
+        alpha = 0.5 -> Centripetal
+        alpha = 1.0 -> ChordLength"""
         sum = 0.0
-
         nPoints = len(self.pnts)
-        t = [0] * nPoints
-
-        t[0] = 0.0
+        t = [0.0]
         #  calc total arc length: dt^2 = dx^2 + dy^2
-        for i in range(1, nPoints):  # (size_t i = 1; i < nPoints; i++) {
-            #  Standard_Integer idx = static_cast<Standard_Integer>(i);
+        for i in range(1, nPoints):
             len2 = square_distance(self.pnts[i - 1], self.pnts[i])
             sum += pow(len2, alpha / 2.)
-            # print(i)
-            t[i] = sum
-
+            t.append(sum)
         #  normalize parameter with maximum
-        tmax = t[nPoints - 1]
+        tmax = t[-1]
         for i in range(1, nPoints):
             t[i] /= tmax
-
         #  reset end value to achieve a better accuracy
-        t[nPoints - 1] = 1.0
-        return(t)
+        t[-1] = 1.0
+        return t
 
     def computeKnots(self, ncp, parms):
+        """Computes knots and mults from parameters"""
         order = self.degree + 1
         if (ncp < order):
             raise RuntimeError("Number of control points to small!")
@@ -223,7 +214,7 @@ class BSplineApproxInterp(object):
         #  number of knots between the multiplicities
         N = (ncp - order)
         #  set uniform knot distribution
-        for i in range(1, N + 1):  # (size_t i = 1; i <= N; ++i ) {
+        for i in range(1, N + 1):
             knots[i] = umin + (umax - umin) * float(i) / float(N + 1)
             mults[i] = 1
 
@@ -231,8 +222,6 @@ class BSplineApproxInterp(object):
         knots[N + 1] = umax
         mults[N + 1] = order
 
-        # for (std::vector<size_t>::const_iterator it = m_indexOfKinks.begin(); it != m_indexOfKinks.end(); ++it) {
-            # size_t idx = *it;
         for i in self.indexOfKinks:
             insertKnot(parms[i], self.degree, self.degree, knots, mults, 1e-4)
 
@@ -240,30 +229,35 @@ class BSplineApproxInterp(object):
         return knots, mults
 
     def maxDistanceOfBoundingBox(self, points):
+        """return maximum distance of a group of points"""
         maxDistance = 0.
-        for i in range(len(points)):  # (int i = points.Lower(); i <= points.Upper(); ++i) {
-            for j in range(len(points)):  # for (int j = points.Lower(); j <= points.Upper(); ++j) {
+        for i in range(len(points)):
+            for j in range(len(points)):
                 distance = points[i].distanceToPoint(points[j])
                 if (maxDistance < distance):
                     maxDistance = distance
         return maxDistance
 
     def isClosed(self):
+        """Returns True if first and last points are close enough"""
+        if not self.C2Continuous:
+            return False
         maxDistance = self.maxDistanceOfBoundingBox(self.pnts)
         error = 1e-12 * maxDistance
-        return(self.pnts[0].distanceToPoint(self.pnts[-1]) < error)
+        return self.pnts[0].distanceToPoint(self.pnts[-1]) < error
 
     def firstAndLastInterpolated(self):
+        """Returns True if first and last points must be interpolated"""
         first = 0 in self.indexOfInterpolated
         last = (len(self.pnts) - 1) in self.indexOfInterpolated
-        # std::find(m_indexOfInterpolated.begin(), m_indexOfInterpolated.end(), m_pnts.Length() - 1) != m_indexOfInterpolated.end();
-        return(first and last)
+        return first and last
 
     def matrix(self, nrow, ncol, val=0.):
-        import numpy as np
+        """nrow x ncol matrix filled with val"""
         return np.array([[val] * ncol for i in range(nrow)])
 
     def getContinuityMatrix(self, nCtrPnts, contin_cons, params, flatKnots):
+        """Additional matrix for continuity conditions on closed curves"""
         continuity_entries = self.matrix(contin_cons, nCtrPnts)
         continuity_params1 = [params[0]]  # TColStd_Array1OfReal continuity_params1(params[0], 1, 1);
         continuity_params2 = [params[-1]]  # TColStd_Array1OfReal continuity_params2(params[params.size() - 1], 1, 1);
@@ -293,7 +287,10 @@ class BSplineApproxInterp(object):
         return continuity_entries
 
     def python_solve(self, params, knots, mults):
-        import numpy as np
+        """Compute the BSpline curve that fits the points
+        Returns the curve, and the max error between points and curve
+        This method is used by iterative function FitCurveOptimal"""
+
         # debug("python_solve(params, knots, mults):\n%s\n%s\n%s"%(params, knots, mults))
 
         #  TODO knots and mults are OCC arrays (1-based)
@@ -314,7 +311,7 @@ class BSplineApproxInterp(object):
         n_apprxmated = len(self.indexOfApproximated)
         n_intpolated = len(self.indexOfInterpolated)
         n_continuityConditions = 0
-        if self.isClosed() and self.C2Continuous:
+        if self.isClosed():
             #  C0, C1, C2
             n_continuityConditions = 3
             if self.firstAndLastInterpolated():
@@ -324,7 +321,6 @@ class BSplineApproxInterp(object):
         nCtrPnts = len(flatKnots) - self.degree - 1
 
         if (nCtrPnts < (n_intpolated + n_continuityConditions) or nCtrPnts < (self.degree + 1 + n_continuityConditions)):
-            debug("nCtrPnts %d n_intpolated %d n_continuityConditions %d self.degree %d "%(nCtrPnts, n_intpolated, n_continuityConditions, self.degree))
             raise RuntimeError("Too few control points for curve interpolation!")
 
         if (n_apprxmated == 0 and not nCtrPnts == (n_intpolated + n_continuityConditions)):
@@ -337,19 +333,13 @@ class BSplineApproxInterp(object):
         # lhs.Init(0.)
 
         #  Allocate right hand side
-        # math_Vector rhsx(1, n_vars)
-        # math_Vector rhsy(1, n_vars)
-        # math_Vector rhsz(1, n_vars)
         rhsx = np.array([0.] * n_vars)
         rhsy = np.array([0.] * n_vars)
         rhsz = np.array([0.] * n_vars)
         # debug(n_apprxmated)
         if (n_apprxmated > 0):
             #  Write b vector. These are the points to be approximated
-            appParams = np.array([0.] * n_apprxmated)  # TColStd_Array1OfReal appParams(1, n_apprxmated)
-            # math_Vector bx(1, n_apprxmated)
-            # math_Vector by(1, n_apprxmated)
-            # math_Vector bz(1, n_apprxmated)
+            appParams = np.array([0.] * n_apprxmated)
             bx = np.array([0.] * n_apprxmated)
             by = np.array([0.] * n_apprxmated)
             bz = np.array([0.] * n_apprxmated)
@@ -387,10 +377,10 @@ class BSplineApproxInterp(object):
             # debug("mul : %s"%str(mul.shape))
             # debug("rhsx : %s"%(rhsx.shape))
             # debug("np.matmul(At,bx) : %s"%(np.matmul(At,bx).shape))
-            l = len(np.matmul(At, bx))
-            rhsx[0:l] = np.matmul(At, bx)
-            rhsy[0:l] = np.matmul(At, by)
-            rhsz[0:l] = np.matmul(At, bz)
+            le = len(np.matmul(At, bx))
+            rhsx[0:le] = np.matmul(At, bx)
+            rhsy[0:le] = np.matmul(At, by)
+            rhsz[0:le] = np.matmul(At, bz)
         # debug("lhs : %s"%str(lhs))
         if (n_intpolated + n_continuityConditions > 0):
             #  Write d vector. These are the points that should be interpolated as well as the continuity constraints for closed curve
@@ -429,7 +419,7 @@ class BSplineApproxInterp(object):
                 # debug("lhs : %s"%str(lhs.shape))
 
             #  sets the C2 continuity constraints for closed curves on the left hand side if requested
-            if (self.isClosed() and self.C2Continuous):
+            if self.isClosed():
                 continuity_entries = self.getContinuityMatrix(nCtrPnts, n_continuityConditions, params, flatKnots)
                 continuity_entriest = continuity_entries.T
                 debug("continuity_entries : {}".format(str(continuity_entries.shape)))
@@ -466,24 +456,21 @@ class BSplineApproxInterp(object):
             debug("Numpy linalg solver failed\n")
             return None, None
         poles = [FreeCAD.Vector(cp_x[i], cp_y[i], cp_z[i]) for i in range(nCtrPnts)]
-        # TColgp_Array1OfPnt poles(1, nCtrPnts)
-        # for (Standard_Integer icp = 1 icp <= nCtrPnts ++icp) {
-            # gp_Pnt pnt(cp_x.Value(icp), cp_y.Value(icp), cp_z.Value(icp))
-            # poles.SetValue(icp, pnt)
-        # }
 
         result = Part.BSplineCurve()
+        debug("{} poles : {}".format(len(poles), poles))
+        debug("{} knots : {}".format(len(knots), knots))
+        debug("{} mults : {}".format(len(mults), mults))
+        debug("degree : {}".format(self.degree))
+        debug("conti : {}".format(self.C2Continuous))
         result.buildFromPolesMultsKnots(poles, mults, knots, False, self.degree)
 
         #  compute error
         max_error = 0.
-        # for (std::vector<size_t>::const_iterator it_idx = m_indexOfApproximated.begin() it_idx != m_indexOfApproximated.end() ++it_idx) {
-            # Standard_Integer ipnt = static_cast<Standard_Integer>(*it_idx + 1)
         for idx in range(len(self.indexOfApproximated)):
             ioa = self.indexOfApproximated[idx]
             p = self.pnts[ioa]
             par = params[ioa]
-
             error = result.value(par).distanceToPoint(p)
             max_error = max(max_error, error)
         return result, max_error
@@ -496,10 +483,10 @@ class BSplineApproxInterp(object):
         #  optimize each parameter by finding it's position on the curve
         #  for (std::vector<size_t>::const_iterator it_idx = m_indexOfApproximated.begin(); it_idx != m_indexOfApproximated.end(); ++it_idx) {
         for i in self.indexOfApproximated:  # range(len(self.indexOfApproximated)):
-            parameter, error = self.projectOnCurve(self.pnts[i], curve, params[i])
+            # parameter, error = self.projectOnCurve(self.pnts[i], curve, params[i])
             # debug("optimize Parameter %d from %0.4f to %0.4f"%(i,params[i],parameter))
             #  store optimised parameter
-            params[i] = parameter
+            params[i] = curve.parameter(self.pnts[i])  # parameter
 
     def projectOnCurve(self, pnt, curve, inital_Parm):
         maxIter = 10  # maximum No of iterations

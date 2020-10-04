@@ -6,23 +6,25 @@
 
 import FreeCAD
 import Part
+from FreeCAD import Base
 from math import pi
 from freecad.Curves.BSplineApproxInterp import BSplineApproxInterp
 
+vec2d = Base.Vector2d
 DEBUG = False
 
 
 def debug(o):
     if not DEBUG:
         return()
-    if isinstance(o,Part.BSplineCurve):
+    if isinstance(o, Part.BSplineCurve):
         FreeCAD.Console.PrintWarning("\nBSplineCurve\n")
-        FreeCAD.Console.PrintWarning("Degree: %d\n"%(o.Degree))
-        FreeCAD.Console.PrintWarning("NbPoles: %d\n"%(o.NbPoles))
-        FreeCAD.Console.PrintWarning("Knots: %d (%0.2f - %0.2f)\n"%(o.NbKnots, o.FirstParameter, o.LastParameter))
-        FreeCAD.Console.PrintWarning("Mults: %s\n"%(o.getMultiplicities()))
-        FreeCAD.Console.PrintWarning("Periodic: %s\n"%(o.isPeriodic()))
-    elif isinstance(o,Part.BSplineSurface):
+        FreeCAD.Console.PrintWarning("Degree: {}\n".format(o.Degree))
+        FreeCAD.Console.PrintWarning("NbPoles: {}\n".format(o.NbPoles))
+        FreeCAD.Console.PrintWarning("Knots: {} ({:0.2f} - {:0.2f})\n".format(o.NbKnots, o.FirstParameter, o.LastParameter))
+        FreeCAD.Console.PrintWarning("Mults: {}\n".format(o.getMultiplicities()))
+        FreeCAD.Console.PrintWarning("Periodic: {}\n".format(o.isPeriodic()))
+    elif isinstance(o, Part.BSplineSurface):
         FreeCAD.Console.PrintWarning("\nBSplineSurface\n************\n")
         try:
             u = o.uIso(o.UKnotSequence[0])
@@ -40,13 +42,17 @@ def debug(o):
 
 
 def IsInsideTolerance(array, value, tolerance=1e-15):
+    """Return index of value in array, within given tolerance
+    Else return -1"""
     for i in range(len(array)):
         if abs(array[i] - value) <= tolerance:
             return(i)
-    return(-1)
+    return -1
 
 
 def LinspaceWithBreaks(umin, umax, n_values, breaks):
+    """Returns a knot sequence of n_values between umin and umax
+    that will also contain the breaks"""
     du = float(umax - umin) / (n_values - 1)
     result = list()  # size = n_values
     for i in range(n_values):
@@ -55,18 +61,18 @@ def LinspaceWithBreaks(umin, umax, n_values, breaks):
 
     eps = 0.3
     # remove points, that are closer to each break point than du*eps
-    for breakpoint in breaks:
-        pos = IsInsideTolerance(result, breakpoint, du * eps)  # std::find_if(result.begin(), result.end(), IsInsideTolerance(breakpoint, du*eps));
+    for break_point in breaks:
+        pos = IsInsideTolerance(result, break_point, du * eps)  # std::find_if(result.begin(), result.end(), IsInsideTolerance(breakpoint, du*eps));
         if pos >= 0:
             # point found, replace it
-            result[pos] = breakpoint
+            result[pos] = break_point
         else:
             # find closest element
-            pos = IsInsideTolerance(result, breakpoint, (0.5 + 1e-8) * du)
-            if (result[pos] > breakpoint):
-                result.insert(pos, breakpoint)
+            pos = IsInsideTolerance(result, break_point, (0.5 + 1e-8) * du)
+            if (result[pos] > break_point):
+                result.insert(pos, break_point)
             else:
-                result.insert(pos + 1, breakpoint)
+                result.insert(pos + 1, break_point)
     return result
 
 
@@ -160,6 +166,7 @@ class BSplineAlgorithms(object):
         print(mes)
 
     def scale(self, c):
+        """Returns the max size of a curve (or list of curves) poles"""
         res = 0
         if isinstance(c, (tuple, list)):
             for cu in c:
@@ -171,6 +178,7 @@ class BSplineAlgorithms(object):
         return res
 
     def scale_pt_array(self, points):
+        """Returns the max distance of a 2D array of points"""
         theScale = 0.
         for uidx in range(len(points)):
             pFirst = points[uidx][0]
@@ -179,49 +187,182 @@ class BSplineAlgorithms(object):
                 theScale = max(theScale, dist)
         return theScale
 
-    def bsplineBasisMat(self, degree, knots, params, derivOrder):
-        import numpy as np
-        # from scipy import linalg
-        from freecad.Curves import nurbs_tools  # import BsplineBasis
-        ncp = len(knots) - degree - 1
-        mx = np.array([[0.] * ncp for i in range(len(params))])
-        # math_Matrix mx(1, params.Length(), 1, ncp);
-        # mx.Init(0.);
-        bspl_basis = np.array([[0.] * (ncp) for i in range(derivOrder + 1)])
-        # math_Matrix bspl_basis(1, derivOrder + 1, 1, degree + 1);
-        # bspl_basis.Init(0.);
-        # debug("params %s"%str(params))
-        for iparm in range(len(params)):  # for (Standard_Integer iparm = 1; iparm <= params.Length(); ++iparm) {
-            basis_start_index = 0
-            bb = nurbs_tools.BsplineBasis()
-            bb.knots = knots
-            bb.degree = degree
-            # span = bb.find_span(params[iparm])
-            # res = bb.ders_basis_funs( span, params[iparm], derivOrder)
-            for irow in range(derivOrder + 1):
-                # debug("irow %s"%str(irow))
-                # debug("bspl_basis[irow] %s"%str(bspl_basis[irow]))
-                bspl_basis[irow] = bb.evaluate(params[iparm], d=irow)
-                # debug("bspl_basis[irow] %s"%str(bspl_basis[irow]))
-                # for ival in range(len(res[irow])):
-                    # bspl_basis[irow][ival+span] = res[irow][ival]
-            # #if OCC_VERSION_HEX >= VERSION_HEX_CODE(7,1,0)
-                    # BSplCLib::EvalBsplineBasis(derivOrder, degree + 1, knots, params.Value(iparm), basis_start_index, bspl_basis);
-            # #else
-                    # BSplCLib::EvalBsplineBasis(1, derivOrder, degree + 1, knots, params.Value(iparm), basis_start_index, bspl_basis);
-            # #endif
-            # if(derivOrder > 0):
-                # help_vector = np.array([0.]*ncp) #(1, ncp);
-                # ##help_vector.Init(0.);
-                # #help_vector.Set(basis_start_index, basis_start_index + degree, bspl_basis.Row(derivOrder + 1));
-                # mx[iparm] = bspl_basis[derivOrder] #mx.SetRow(iparm, help_vector);
-            # else:
-                # mx[iparm] = bspl_basis[derivOrder] #  mx.Set(iparm, iparm, basis_start_index, basis_start_index + degree, bspl_basis);
-            for i in range(len(bspl_basis[derivOrder])):
-                mx[iparm][basis_start_index + i] = bspl_basis[derivOrder][i]
-        return mx
+    def isUDirClosed(self, points, tolerance):
+        """check that first row and last row of a 2D array of points are the same"""
+        uDirClosed = True
+        for v_idx in range(len(points[0])):
+            uDirClosed = uDirClosed and (points[0][v_idx].distanceToPoint(points[-1][v_idx]) < tolerance)
+        return uDirClosed
+
+    def isVDirClosed(self, points, tolerance):
+        """check that first column and last column of a 2D array of points are the same"""
+        vDirClosed = True
+        for u_idx in range(len(points)):
+            vDirClosed = vDirClosed and (points[u_idx][0].distanceToPoint(points[u_idx][-1]) < tolerance)
+        return vDirClosed
+
+    def matchDegree(self, curves):
+        """Match degree of all curves by increasing degree where needed"""
+        maxDegree = 0
+        for bs in curves:
+            curDegree = bs.Degree
+            if (curDegree > maxDegree):
+                maxDegree = curDegree
+        for bs in curves:
+            curDegree = bs.Degree
+            if (curDegree < maxDegree):
+                bs.increaseDegree(maxDegree)
+
+    def flipSurface(self, surf):
+        """Flip U/V parameters of a surface"""
+        result = surf.copy()
+        result.exchangeUV()
+        return result
+
+    def haveSameRange(self, splines_vector, par_tolerance):
+        """Check that all curves have the same parameter range"""
+        begin_param_dir = splines_vector[0].getKnot(1)
+        end_param_dir = splines_vector[0].getKnot(splines_vector[0].NbKnots)
+        for spline_idx in range(1, len(splines_vector)):  # (unsigned int spline_idx = 1; spline_idx < splines_vector.size(); ++spline_idx) {
+            curSpline = splines_vector[spline_idx]
+            begin_param_dir_surface = curSpline.getKnot(1)
+            end_param_dir_surface = curSpline.getKnot(curSpline.NbKnots)
+            if (abs(begin_param_dir_surface - begin_param_dir) > par_tolerance or abs(end_param_dir_surface - end_param_dir) > par_tolerance):
+                return False
+        return True
+
+    def haveSameDegree(self, splines):
+        """Check that all curves have the same degree"""
+        degree = splines[0].Degree
+        for splineIdx in range(1, len(splines)):  # (unsigned int splineIdx = 1; splineIdx < splines.size(); ++splineIdx) {
+            if not splines[splineIdx].Degree == degree:
+                return False
+        return True
+
+    def findKnot(self, spline, knot, tolerance=1e-15):
+        """Return index of knot in spline, within given tolerance
+        Else return -1"""
+        for curSplineKnotIdx in range(spline.NbKnots):  # (int curSplineKnotIdx = 1; curSplineKnotIdx <= spline.getNKnots(); ++curSplineKnotIdx) {
+            if (abs(spline.getKnot(curSplineKnotIdx + 1) - knot) < tolerance):
+                return curSplineKnotIdx
+        return -1
+
+    def clampBSpline(self, curve):
+        """If curve is periodic, it is trimmed to First / Last Parameters"""
+        if not curve.isPeriodic():
+            return
+        # curve.setNotPeriodic()
+        curve.trim(curve.FirstParameter, curve.LastParameter)
+        # TODO is the code below really needed in FreCAD ?
+        # Handle(Geom_Curve) c = new Geom_TrimmedCurve(curve, curve->FirstParameter(), curve->LastParameter());
+        # curve = GeomConvert::CurveToBSplineCurve(c);
+
+    def makeGeometryCompatibleImpl(self, splines_vector, par_tolerance):
+        """Modify all the splines, so that they have the same knots / mults"""
+        # all B-spline splines must have the same parameter range in the chosen direction
+        if not self.haveSameRange(splines_vector, par_tolerance):
+            self.error("B-splines don't have the same parameter range at least in one direction (u / v) in method createCommonKnotsVectorImpl!")
+        # all B-spline splines must have the same degree in the chosen direction
+        if not self.haveSameDegree(splines_vector):
+            self.error("B-splines don't have the same degree at least in one direction (u / v) in method createCommonKnotsVectorImpl!")
+        # create a vector of all knots in chosen direction (u or v) of all splines
+        resultKnots = list()
+        for spline in splines_vector:
+            for k in spline.getKnots():
+                resultKnots.append(k)
+
+        # sort vector of all knots in given direction of all splines
+        resultKnots.sort()
+        prev = resultKnots[0]
+        unique = [prev]
+        for i in range(1, len(resultKnots)):
+            if abs(resultKnots[i] - prev) > par_tolerance:
+                unique.append(resultKnots[i])
+            prev = resultKnots[i]
+        resultKnots = unique
+
+        # find highest multiplicities
+        resultMults = [0] * len(resultKnots)
+        for spline in splines_vector:
+            for knotIdx in range(len(resultKnots)):
+                # get multiplicity of current knot in surface
+                splKnotIdx = self.findKnot(spline, resultKnots[knotIdx], par_tolerance)
+                if (splKnotIdx > -1):
+                    resultMults[knotIdx] = max(resultMults[knotIdx], spline.getMultiplicity(splKnotIdx + 1))
+
+        for spline in splines_vector:
+            # debug("\n%d - %d poles\n%s\n%s"%(spline.Degree, spline.NbPoles, spline.getKnots(), spline.getMultiplicities()))
+            for knotIdx in range(len(resultKnots)):
+                # get multiplicity of current knot in surface
+                splKnotIdx = self.findKnot(spline, resultKnots[knotIdx], par_tolerance)
+                if (splKnotIdx > -1):
+                    if int(spline.getMultiplicity(knotIdx + 1)) < resultMults[knotIdx]:
+                        # debug("increasing mult %f / %d"%(resultKnots[knotIdx], resultMults[knotIdx]))
+                        spline.increaseMultiplicity(knotIdx + 1, resultMults[knotIdx])
+                else:
+                    # debug("inserting knot %f / %d"%(resultKnots[knotIdx], resultMults[knotIdx]))
+                    spline.insertKnot(resultKnots[knotIdx], resultMults[knotIdx], par_tolerance)
+
+    def createCommonKnotsVectorCurve(self, curves, tol):
+        """Modify all the splines, so that they have the same knots / mults"""
+        # TODO: Match parameter range
+        # Create a copy that we can modify
+        splines_adapter = [c.copy() for c in curves]
+        self.makeGeometryCompatibleImpl(splines_adapter, tol)
+        return splines_adapter
+
+    def createCommonKnotsVectorSurface(self, old_surfaces_vector, tol):
+        """Make all the surfaces have the same knots / mults"""
+        # all B-spline surfaces must have the same parameter range in u- and v-direction
+        # TODO: Match parameter range
+
+        # Create a copy that we can modify
+        adapterSplines = list()
+        for i in range(len(old_surfaces_vector)):
+            # debug(old_surfaces_vector[i])
+            adapterSplines.append(SurfAdapterView(old_surfaces_vector[i].copy(), 0))
+        # first in u direction
+        self.makeGeometryCompatibleImpl(adapterSplines, tol)
+
+        for i in range(len(old_surfaces_vector)):
+            adapterSplines[i].d = 1
+
+        # now in v direction
+        self.makeGeometryCompatibleImpl(adapterSplines, tol)
+
+        return [ads.s for ads in adapterSplines]
+
+    def reparametrizeBSpline(self, spline, umin, umax, tol):
+        """reparametrize BSpline to range [umin, umax]"""
+        knots = spline.getKnots()
+        ma = knots[-1]
+        mi = knots[0]
+        if abs(mi - umin) > tol or abs(ma - umax) > tol:
+            ran = ma - mi
+            newknots = [(k - mi) / ran for k in knots]
+            spline.setKnots(newknots)
+
+    def getKinkParameters(self, curve):
+        """Returns a list of knots of sharp points in curve"""
+        if not curve:
+            raise ValueError("Null Pointer curve")
+
+        eps = self.tol
+
+        kinks = list()
+        for knotIndex in range(2, curve.NbKnots):
+            if curve.getMultiplicity(knotIndex) == curve.Degree:
+                knot = curve.getKnot(knotIndex)
+                # check if really a kink
+                angle = curve.tangent(knot + eps)[0].getAngle(curve.tangent(knot - eps)[0])
+                if (angle > 6. / 180. * pi):
+                    kinks.append(knot)
+        return kinks
+
+# Below are the most important methods of BSplineAlgorithms
 
     def intersections(self, spline1, spline2, tol3d):
+        """Returns a list of tuples (param1, param2) that are intersection parameters of spline1 with spline2"""
         # light weight simple minimizer
         # check parametrization of B-splines beforehand
         # find out the average scale of the two B-splines in order to being able to handle a more approximate curves and find its intersections
@@ -252,22 +393,22 @@ class BSplineAlgorithms(object):
                 intersection_params_vector.append([param1, param2])
             else:
                 debug("Curves do not intersect each other")
-            # for closed B-splines:
-            if len(inters) == 1:
-                if spline1.isClosed():
-                    if abs(param1 - spline1.getKnot(1)) < self.tol:
-                        # GeomAPI_ExtremaCurveCurve doesn't find second intersection point at the end of the closed curve, so add it by hand
-                        intersection_params_vector.append([spline1.getKnot(spline1.NbKnots), param2])
-                    elif abs(param1 - spline1.getKnot(spline1.NbKnots)) < self.tol:
-                        # GeomAPI_ExtremaCurveCurve doesn't find second intersection point at the beginning of the closed curve, so add it by hand
-                        intersection_params_vector.append([spline1.getKnot(1), param2])
-                elif spline2.isClosed():
-                    if abs(param2 - spline2.getKnot(1)) < self.tol:
-                        # GeomAPI_ExtremaCurveCurve doesn't find second intersection point at the end of the closed curve, so add it by hand
-                        intersection_params_vector.append([param1, spline2.getKnot(spline2.NbKnots)])
-                    elif abs(param2 - spline2.getKnot(spline2.NbKnots)) < self.tol:
-                        # GeomAPI_ExtremaCurveCurve doesn't find second intersection point at the beginning of the closed curve, so add it by hand
-                        intersection_params_vector.append([param1, spline2.getKnot(1)])
+        # for closed B-splines:
+        if len(inters) == 1:
+            if spline1.isClosed():
+                if abs(param1 - spline1.getKnot(1)) < self.tol:
+                    # GeomAPI_ExtremaCurveCurve doesn't find second intersection point at the end of the closed curve, so add it by hand
+                    intersection_params_vector.append([spline1.getKnot(spline1.NbKnots), param2])
+                if abs(param1 - spline1.getKnot(spline1.NbKnots)) < self.tol:
+                    # GeomAPI_ExtremaCurveCurve doesn't find second intersection point at the beginning of the closed curve, so add it by hand
+                    intersection_params_vector.append([spline1.getKnot(1), param2])
+            elif spline2.isClosed():
+                if abs(param2 - spline2.getKnot(1)) < self.tol:
+                    # GeomAPI_ExtremaCurveCurve doesn't find second intersection point at the end of the closed curve, so add it by hand
+                    intersection_params_vector.append([param1, spline2.getKnot(spline2.NbKnots)])
+                if abs(param2 - spline2.getKnot(spline2.NbKnots)) < self.tol:
+                    # GeomAPI_ExtremaCurveCurve doesn't find second intersection point at the beginning of the closed curve, so add it by hand
+                    intersection_params_vector.append([param1, spline2.getKnot(1)])
 
         if len(inters) == 0:
             debug("intersectCC failed !")
@@ -280,21 +421,8 @@ class BSplineAlgorithms(object):
             intersection_params_vector.append([spline1.parameter(p1), spline2.parameter(p2)])
         return intersection_params_vector
 
-    def isUDirClosed(self, points, tolerance):
-        uDirClosed = True
-        # check that first row and last row are the same
-        for v_idx in range(len(points[0])):  # (int v_idx = points.LowerCol(); v_idx <= points.UpperCol(); ++v_idx) {
-            uDirClosed = uDirClosed and (points[0][v_idx].distanceToPoint(points[-1][v_idx]) < tolerance)
-        return uDirClosed
-
-    def isVDirClosed(self, points, tolerance):
-        vDirClosed = True
-        # check that first row and last row are the same
-        for u_idx in range(len(points)):  # (int v_idx = points.LowerCol(); v_idx <= points.UpperCol(); ++v_idx) {
-            vDirClosed = vDirClosed and (points[u_idx][0].distanceToPoint(points[u_idx][-1]) < tolerance)
-        return vDirClosed
-
     def curvesToSurface(self, curves, vParameters, continuousIfClosed):
+        """Returns a surface that skins the list of curves"""
         # check amount of given parameters
         if not len(vParameters) == len(curves):
             raise ValueError("The amount of given parameters has to be equal to the amount of given B-splines!")
@@ -336,7 +464,7 @@ class BSplineAlgorithms(object):
             try:
                 interpSpline.interpolate(Points=interpPointsVDir, Parameters=vParameters, PeriodicFlag=makeClosed, Tolerance=tolerance)
             except Part.OCCError:
-                print("interpSpline")
+                print("interpSpline creation failed")
                 print("%d points" % len(interpPointsVDir))
                 for p in interpPointsVDir:
                     print("%0.4f %0.4f %0.4f" % (p.x, p.y, p.z))
@@ -376,47 +504,8 @@ class BSplineAlgorithms(object):
 
         return skinnedSurface
 
-    def matchDegree(self, curves):
-        maxDegree = 0
-        for bs in curves:  # (std::vector<Handle(Geom_BSplineCurve) >::const_iterator it = bsplines.begin(); it != bsplines.end(); ++it) {
-            curDegree = bs.Degree
-            if (curDegree > maxDegree):
-                maxDegree = curDegree
-        for bs in curves:  # (std::vector<Handle(Geom_BSplineCurve) >::const_iterator it = bsplines.begin(); it != bsplines.end(); ++it) {
-            curDegree = bs.Degree
-            if (curDegree < maxDegree):
-                bs.increaseDegree(maxDegree)
-
-    def flipSurface(self, surf):
-        result = surf.copy()
-        result.exchangeUV()
-        return(result)
-
-    def haveSameRange(self, splines_vector, par_tolerance):
-        begin_param_dir = splines_vector[0].getKnot(1)
-        end_param_dir = splines_vector[0].getKnot(splines_vector[0].NbKnots)
-        for spline_idx in range(1, len(splines_vector)):  # (unsigned int spline_idx = 1; spline_idx < splines_vector.size(); ++spline_idx) {
-            curSpline = splines_vector[spline_idx]
-            begin_param_dir_surface = curSpline.getKnot(1)
-            end_param_dir_surface = curSpline.getKnot(curSpline.NbKnots)
-            if (abs(begin_param_dir_surface - begin_param_dir) > par_tolerance or abs(end_param_dir_surface - end_param_dir) > par_tolerance):
-                return False
-        return True
-
-    def haveSameDegree(self, splines):
-        degree = splines[0].Degree
-        for splineIdx in range(1, len(splines)):  # (unsigned int splineIdx = 1; splineIdx < splines.size(); ++splineIdx) {
-            if not splines[splineIdx].Degree == degree:
-                return False
-        return True
-
-    def findKnot(self, spline, knot, tolerance=1e-15):
-        for curSplineKnotIdx in range(spline.NbKnots):  # (int curSplineKnotIdx = 1; curSplineKnotIdx <= spline.getNKnots(); ++curSplineKnotIdx) {
-            if (abs(spline.getKnot(curSplineKnotIdx + 1) - knot) < tolerance):
-                return curSplineKnotIdx
-        return -1
-
     def pointsToSurface(self, points, uParams, vParams, uContinuousIfClosed, vContinuousIfClosed):
+        """Returns a surface that skins the 2D array of points"""
         # debug("-   pointsToSurface")
         tolerance = self.REL_TOL_CLOSED * self.scale_pt_array(points)
         makeVDirClosed = vContinuousIfClosed and self.isVDirClosed(points, tolerance)
@@ -447,71 +536,13 @@ class BSplineAlgorithms(object):
         interpolatingSurf = self.curvesToSurface(uSplines, vParams, makeVDirClosed)
         return interpolatingSurf
 
-    def createCommonKnotsVectorCurve(self, curves, tol):
-        # TODO: Match parameter range
-        # Create a copy that we can modify
-        splines_adapter = [c.copy() for c in curves]
-        self.makeGeometryCompatibleImpl(splines_adapter, tol)
-        return splines_adapter
-
-    def createCommonKnotsVectorSurface(self, old_surfaces_vector, tol):
-        # all B-spline surfaces must have the same parameter range in u- and v-direction
-        # TODO: Match parameter range
-
-        # Create a copy that we can modify
-        adapterSplines = list()  # [s.copy() for s in old_surfaces_vector]
-        for i in range(len(old_surfaces_vector)):  # (size_t i = 0; i < old_surfaces_vector.size(); ++i) {
-            # debug(old_surfaces_vector[i])
-            adapterSplines.append(SurfAdapterView(old_surfaces_vector[i].copy(), 0))
-        # first in u direction
-        self.makeGeometryCompatibleImpl(adapterSplines, tol)
-
-        for i in range(len(old_surfaces_vector)):  # (size_t i = 0; i < old_surfaces_vector.size(); ++i) adapterSplines[i].setDir(vdir);
-            adapterSplines[i].d = 1
-
-        # now in v direction
-        self.makeGeometryCompatibleImpl(adapterSplines, tol)
-
-        return [ads.s for ads in adapterSplines]
-
-    def reparametrizeBSpline(self, spline, umin, umax, tol):
-        knots = spline.getKnots()
-        ma = knots[-1]
-        mi = knots[0]
-        if abs(mi - umin) > tol or abs(ma - umax) > tol:
-            ran = ma - mi
-            newknots = [(k - mi) / ran for k in knots]
-            spline.setKnots(newknots)
-
-    def getKinkParameters(self, curve):
-        if not curve:
-            raise ValueError("Null Pointer curve")
-
-        eps = self.tol
-
-        kinks = list()
-        for knotIndex in range(2, curve.NbKnots):  # (int knotIndex = 2; knotIndex < curve->NbKnots(); ++knotIndex) {
-            if curve.getMultiplicity(knotIndex) == curve.Degree:
-                knot = curve.getKnot(knotIndex)
-                # check if really a kink
-                angle = curve.tangent(knot + eps)[0].getAngle(curve.tangent(knot - eps)[0])
-                if (angle > 6. / 180. * pi):
-                    kinks.append(knot)
-        return kinks
-
     def reparametrizeBSplineContinuouslyApprox(self, spline, old_parameters, new_parameters, n_control_pnts):
-        # return(spline)
-        from FreeCAD import Base
-        vec2d = Base.Vector2d
+        """Approximate spline while moving old_parameters to new_parameters"""
         if not len(old_parameters) == len(new_parameters):
             self.error("parameter sizes don't match")
 
         # create a B-spline as a function for reparametrization
         old_parameters_pnts = [vec2d(old_parameters[i], 0) for i in range(len(old_parameters))]
-        # old_parameters_pnts = [0]*len(old_parameters) #new TColgp_HArray1OfPnt2d(1, old_parameters.size());
-        # for parameter_idx in range(len(old_parameters)): #(size_t parameter_idx = 0; parameter_idx < old_parameters.size(); ++parameter_idx) {
-            # occIdx = parameter_idx # + 1
-            # old_parameters_pnts[occIdx] = vec2d(old_parameters[parameter_idx], 0)
 
         reparametrizing_spline = Part.Geom2d.BSplineCurve2d()
         try:
@@ -522,49 +553,29 @@ class BSplineAlgorithms(object):
             self.error("nb_par = %d" % (len(new_parameters)))
             self.error("pts = %s" % old_parameters_pnts)
             self.error("pars = %s" % new_parameters)
-            # reparametrizing_spline.interpolate(Points=old_parameters_pnts, PeriodicFlag=False, Tolerance=self.tol)
 
         # Create a vector of parameters including the intersection parameters
         breaks = new_parameters[1:-1]
-        # for (size_t ipar = 1; ipar < new_parameters.size() - 1; ++ipar) {
-            # breaks.push_back(new_parameters[ipar]);
-        # }
-
         par_tol = 1e-10
-
         # kinks is the list of C0 knots of input spline without tangency
         kinks = self.getKinkParameters(spline)
         # convert kink parameters into reparametrized parameter using the
         # inverse reparametrization function
-        for ikink in range(len(kinks)):  # (size_t ikink = 0; ikink < kinks.size(); ++ikink) {
+        for ikink in range(len(kinks)):
             kinks[ikink] = reparametrizing_spline.parameter(vec2d(kinks[ikink], 0.))
 
-        for kink in kinks:  # (size_t ikink = 0; ikink < kinks.size(); ++ikink) {
+        for kink in kinks:
             pos = IsInsideTolerance(breaks, kink, par_tol)
             if pos >= 0:
                 breaks.pop(pos)
-                # kink = kinks[ikink]
-                # std::vector<double>::iterator it = std::find_if(breaks.begin(), breaks.end(), IsInsideTolerance(kink, par_tol));
-                # if (it != breaks.end()) {
-                    # breaks.erase(it);
-                # }
-            # }
-        # #endif
 
         # create equidistance array of parameters, including the breaks
         parameters = LinspaceWithBreaks(new_parameters[0], new_parameters[-1], max(101, n_control_pnts * 2), breaks)
 
-        # #ifdef MODEL_KINKS
-            # # insert kinks into parameters array at the correct position
-        for kink in kinks:  # for (size_t ikink = 0; ikink < kinks.size(); ++ikink) {
-            # double kink = kinks[ikink];
+        # insert kinks into parameters array at the correct position
+        for kink in kinks:
             parameters.append(kink)
         parameters.sort()
-                # parameters.insert( 
-                    # std::upper_bound( parameters.begin(), parameters.end(), kink),
-                    # kink);
-            # }
-        # #endif
 
         # Compute points on spline at the new parameters
         # Those will be approximated later on
@@ -576,7 +587,6 @@ class BSplineAlgorithms(object):
         makeContinuous = spline.isClosed() and (spline.tangent(spline.FirstParameter)[0].getAngle(spline.tangent(spline.LastParameter)[0]) < 6. / 180. * pi)
 
         # # Create the new spline as a interpolation of the old one
-        # CTiglBSplineApproxInterp approximationObj(points, static_cast<int>(n_control_pnts), 3, makeContinuous);
         approximationObj = BSplineApproxInterp(points, n_control_pnts, 3, makeContinuous)
 
         breaks.insert(0, new_parameters[0])
@@ -584,90 +594,17 @@ class BSplineAlgorithms(object):
         # # Interpolate points at breaking parameters (required for gordon surface)
         # for (size_t ibreak = 0; ibreak < breaks.size(); ++ibreak) {
         for thebreak in breaks:
-            # thebreak = breaks[ibreak]
             pos = IsInsideTolerance(parameters, thebreak, par_tol)
-            # size_t idx = static_cast<size_t>(
-                # std::find_if(parameters.begin(), parameters.end(), IsInsideTolerance(thebreak)) -
-                # parameters.begin());
             if pos >= 0:
                 approximationObj.InterpolatePoint(pos, False)
 
-        # ##ifdef MODEL_KINKS
         for kink in kinks:
             pos = IsInsideTolerance(parameters, kink, par_tol)
             if pos >= 0:
                 approximationObj.InterpolatePoint(pos, True)
-            # #for (size_t ikink = 0; ikink < kinks.size(); ++ikink) {
-                # #double kink = kinks[ikink];
-                # #size_t idx = static_cast<size_t>(
-                    # #std::find_if(parameters.begin(), parameters.end(), IsInsideTolerance(kink, par_tol)) -
-                    # #parameters.begin());
-                # #approximationObj.InterpolatePoint(idx, true);
-            # #}
-        # ##endif
 
         result, error = approximationObj.FitCurveOptimal(parameters, 10)
         if not isinstance(result, Part.BSplineCurve):
             raise ValueError("FitCurveOptimal failed to compute a valid curve")
-        # Handle(Geom_BSplineCurve) reparametrized_spline = result.curve;
-        # assert(!reparametrized_spline.IsNull());
-        # return(reparametrized_spline)
         return result
 
-    def clampBSpline(self, curve):
-        if not curve.isPeriodic():
-            return()
-        # curve.setNotPeriodic()
-        curve.trim(curve.FirstParameter, curve.LastParameter)
-        # TODO is the code below really needed in FreCAD ?
-        # Handle(Geom_Curve) c = new Geom_TrimmedCurve(curve, curve->FirstParameter(), curve->LastParameter());
-        # curve = GeomConvert::CurveToBSplineCurve(c);
-
-    def makeGeometryCompatibleImpl(self, splines_vector, par_tolerance):
-        # all B-spline splines must have the same parameter range in the chosen direction
-        if not self.haveSameRange(splines_vector, par_tolerance):
-            self.error("B-splines don't have the same parameter range at least in one direction (u / v) in method createCommonKnotsVectorImpl!")
-        # all B-spline splines must have the same degree in the chosen direction
-        if not self.haveSameDegree(splines_vector):
-            self.error("B-splines don't have the same degree at least in one direction (u / v) in method createCommonKnotsVectorImpl!")
-        # create a vector of all knots in chosen direction (u or v) of all splines
-        resultKnots = list()
-        for spline in splines_vector:
-            # (typename std::vector<SplineAdapter>::const_iterator splineIt = splines_vector.begin(); splineIt != splines_vector.end(); ++splineIt) {
-            for k in spline.getKnots():  # (int knot_idx = 1; knot_idx <= spline.getNKnots(); ++knot_idx) {
-                resultKnots.append(k)
-
-        # sort vector of all knots in given direction of all splines
-        # std::sort(resultKnots.begin(), resultKnots.end());
-        # delete duplicate knots, so that in all_knots are all unique knots
-        # resultKnots.erase(std::unique(resultKnots.begin(), resultKnots.end(), helper_function_unique(par_tolerance)), resultKnots.end());
-        resultKnots.sort()
-        prev = resultKnots[0]
-        unique = [prev]
-        for i in range(1, len(resultKnots)):
-            if abs(resultKnots[i] - prev) > par_tolerance:
-                unique.append(resultKnots[i])
-            prev = resultKnots[i]
-        resultKnots = unique
-
-        # find highest multiplicities
-        resultMults = [0] * len(resultKnots)
-        for spline in splines_vector:
-            for knotIdx in range(len(resultKnots)):  # (unsigned int knotIdx = 0; knotIdx < resultKnots.size(); ++knotIdx) {
-                # get multiplicity of current knot in surface
-                splKnotIdx = self.findKnot(spline, resultKnots[knotIdx], par_tolerance)
-                if (splKnotIdx > -1):
-                    resultMults[knotIdx] = max(resultMults[knotIdx], spline.getMultiplicity(splKnotIdx + 1))
-
-        for spline in splines_vector:
-            # debug("\n%d - %d poles\n%s\n%s"%(spline.Degree, spline.NbPoles, spline.getKnots(), spline.getMultiplicities()))
-            for knotIdx in range(len(resultKnots)):  # (unsigned int knotIdx = 0; knotIdx < resultKnots.size(); ++knotIdx) {
-                # get multiplicity of current knot in surface
-                splKnotIdx = self.findKnot(spline, resultKnots[knotIdx], par_tolerance)
-                if (splKnotIdx > -1):
-                    if int(spline.getMultiplicity(knotIdx + 1)) < resultMults[knotIdx]:
-                        # debug("increasing mult %f / %d"%(resultKnots[knotIdx], resultMults[knotIdx]))
-                        spline.increaseMultiplicity(knotIdx + 1, resultMults[knotIdx])
-                else:
-                    # debug("inserting knot %f / %d"%(resultKnots[knotIdx], resultMults[knotIdx]))
-                    spline.insertKnot(resultKnots[knotIdx], resultMults[knotIdx], par_tolerance)
