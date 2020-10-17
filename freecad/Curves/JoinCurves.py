@@ -14,8 +14,8 @@ from freecad.Curves import ICONPATH
 from freecad.Curves import approximate_extension
 
 TOOL_ICON = os.path.join(ICONPATH, 'joincurve.svg')
-debug = _utils.debug
-# debug = _utils.doNothing
+# debug = _utils.debug
+debug = _utils.doNothing
 
 
 def forceC1Continuity(c, tol):
@@ -23,7 +23,7 @@ def forceC1Continuity(c, tol):
     for i in range(len(mults))[1:-1]:
         if mults[i] >= c.Degree:
             try:
-                rk = c.removeKnot(i + 1, c.Degree - 1, tol)
+                c.removeKnot(i + 1, c.Degree - 1, tol)
             except Part.OCCError:
                 debug('failed to increase continuity.')
     return c
@@ -79,12 +79,13 @@ class join:
     "joins the selected edges into a single BSpline Curve"
     def __init__(self, obj):
         ''' Add the properties '''
-        obj.addProperty("App::PropertyLinkSubList",  "Edges",        "Join",   "List of edges to join")
-        obj.addProperty("App::PropertyLink",         "Base",         "Join",   "Join all the edges of this base object")
-        obj.addProperty("App::PropertyFloat",        "Tolerance",    "Join",   "Tolerance").Tolerance = 0.01
-        obj.addProperty("App::PropertyBool",         "CornerBreak",  "Join",   "Break on corners").CornerBreak = False
-        obj.addProperty("App::PropertyBool",         "ForceContact", "Join",   "Force connection of edges").ForceContact = True
-        obj.addProperty("App::PropertyBool",         "ForceClosed",  "Join",   "Force closed curve").ForceClosed = False
+        obj.addProperty("App::PropertyLinkSubList", "Edges", "Join", "List of edges to join")
+        obj.addProperty("App::PropertyLink", "Base", "Join", "Join all the edges of this base object")
+        obj.addProperty("App::PropertyFloat", "Tolerance", "Join", "Tolerance").Tolerance = 0.01
+        obj.addProperty("App::PropertyBool", "CornerBreak", "Join", "Break on corners").CornerBreak = False
+        obj.addProperty("App::PropertyBool", "ForceContact", "Join", "Force connection of edges").ForceContact = True
+        obj.addProperty("App::PropertyBool", "ForceClosed", "Join", "Force closed curve").ForceClosed = False
+        obj.addProperty("App::PropertyInteger", "StartOffset", "Join", "Set the start point of closed curve").StartOffset = 0
         obj.Proxy = self
 
     def onChanged(self, fp, prop):
@@ -98,10 +99,8 @@ class join:
                 res = obj.Base.Shape.Edges
         if hasattr(obj, "Edges"):
             for link in obj.Edges:
-                o = link[0]
                 for ss in link[1]:
-                    n = eval(ss.lstrip('Edge'))
-                    res.append(o.Shape.Edges[n - 1])
+                    res.append(link[0].getSubObject(ss))
         return res
 
     def execute(self, obj):
@@ -147,6 +146,9 @@ class join:
         outcurves.append(c0)
         if obj.ForceClosed:
             forceClosed(outcurves)
+        if len(outcurves) == 1 and outcurves[0].isClosed():
+            outcurves[0].setPeriodic()
+            outcurves[0].setOrigin(1 + obj.StartOffset % outcurves[0].NbKnots)
         outEdges = [Part.Edge(c) for c in outcurves]
 
         if hasattr(obj, "ExtensionProxy"):
@@ -189,7 +191,7 @@ class joinCommand:
         else:
             joinCurve.Base = source
         FreeCAD.ActiveDocument.recompute()
-        joinCurve.ViewObject.LineWidth = 2.0
+        # joinCurve.ViewObject.LineWidth = 1.0
         joinCurve.ViewObject.LineColor = (0.3, 0.0, 0.5)
 
     def Activated(self):
