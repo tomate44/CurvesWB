@@ -6,9 +6,6 @@ __license__ = "LGPL 2.1"
 __doc__ = """Segment a surface on isocurves"""
 
 import os
-import sys
-if sys.version_info.major >= 3:
-    from importlib import reload
 
 import FreeCAD
 import FreeCADGui
@@ -17,9 +14,9 @@ from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
 from freecad.Curves.nurbs_tools import knotSeqScale
 
-TOOL_ICON = os.path.join( ICONPATH, 'segment_surface.svg')
-#debug = _utils.debug
-#debug = _utils.doNothing
+TOOL_ICON = os.path.join(ICONPATH, 'segment_surface.svg')
+# debug = _utils.debug
+# debug = _utils.doNothing
 
 props = """
 App::PropertyBool
@@ -70,18 +67,19 @@ Part::PropertyFilletEdges
 Sketcher::PropertyConstraintList
 """
 
+
 class SegmentSurface:
     """Creates a ..."""
     def __init__(self, obj, face):
         """Add the properties"""
-        self.Options = ["Auto","Custom"]
-        obj.addProperty("App::PropertyLinkSub",     "Source",    "Base",   "Initial Face").Source = face
-        obj.addProperty("App::PropertyEnumeration", "Option",    "Base",   "Option list").Option = self.Options
-        obj.addProperty("App::PropertyEnumeration", "Direction", "OptionAuto",   "Segmenting direction").Direction = ["U","V","Both"]
-        obj.addProperty("App::PropertyFloatList",   "KnotsU",    "OptionCustom", "Splitting parameters in U direction")
-        obj.addProperty("App::PropertyFloatList",   "KnotsV",    "OptionCustom", "Splitting parameters in V direction")
-        obj.addProperty("App::PropertyLink",   "KnotsUProvider", "OptionCustom", "Object generating normalized parameters in U direction")
-        obj.addProperty("App::PropertyLink",   "KnotsVProvider", "OptionCustom", "Object generating normalized parameters in V direction")
+        self.Options = ["Auto", "Custom"]
+        obj.addProperty("App::PropertyLinkSub", "Source", "Base", "Initial Face").Source = face
+        obj.addProperty("App::PropertyEnumeration", "Option", "Base", "Option list").Option = self.Options
+        obj.addProperty("App::PropertyEnumeration", "Direction", "OptionAuto", "Segmenting direction").Direction = ["U", "V", "Both"]
+        obj.addProperty("App::PropertyFloatList", "KnotsU", "OptionCustom", "Splitting parameters in U direction")
+        obj.addProperty("App::PropertyFloatList", "KnotsV", "OptionCustom", "Splitting parameters in V direction")
+        obj.addProperty("App::PropertyLink", "KnotsUProvider", "OptionCustom", "Object generating normalized parameters in U direction")
+        obj.addProperty("App::PropertyLink", "KnotsVProvider", "OptionCustom", "Object generating normalized parameters in V direction")
         obj.Proxy = self
         obj.Option = "Auto"
 
@@ -92,7 +90,7 @@ class SegmentSurface:
             return mults
         target = ml[-2]
         cutknots = list()
-        for i,m in enumerate(mults):
+        for i, m in enumerate(mults):
             if m >= target:
                 cutknots.append(knots[i])
         return cutknots
@@ -110,27 +108,27 @@ class SegmentSurface:
         f = _utils.getShape(obj, "Source", "Face")
         bs = f.toNurbs().Faces[0].Surface
         surfs = list()
-        u0,u1,v0,v1 = bs.bounds()
-        cutKnotsU = [u0,u1]
-        cutKnotsV = [v0,v1]
+        u0, u1, v0, v1 = bs.bounds()
+        cutKnotsU = [u0, u1]
+        cutKnotsV = [v0, v1]
         if obj.Option == "Auto":
-            if obj.Direction in ["U","Both"]:
+            if obj.Direction in ["U", "Both"]:
                 knots = bs.getUKnots()
                 mults = bs.getUMultiplicities()
                 cutKnotsU = self.get_intervals(knots, mults)
-            if obj.Direction in ["V","Both"]:
+            if obj.Direction in ["V", "Both"]:
                 knots = bs.getVKnots()
                 mults = bs.getVMultiplicities()
                 cutKnotsV = self.get_intervals(knots, mults)
         elif obj.Option == "Custom":
             knots = self.get_normalized_params(obj, 'KnotsUProvider')
             if knots:
-                uknots = knotSeqScale(knots, u1-u0, u0)
+                uknots = knotSeqScale(knots, u1 - u0, u0)
             else:
                 uknots = obj.KnotsU
             knots = self.get_normalized_params(obj, 'KnotsVProvider')
             if knots:
-                vknots = knotSeqScale(knots, v1-v0, v0)
+                vknots = knotSeqScale(knots, v1 - v0, v0)
             else:
                 vknots = obj.KnotsV
             for k in uknots:
@@ -143,10 +141,10 @@ class SegmentSurface:
             cutKnotsV = list(set(cutKnotsV))
             cutKnotsU.sort()
             cutKnotsV.sort()
-        for i in range(len(cutKnotsU)-1):
-            for j in range(len(cutKnotsV)-1):
+        for i in range(len(cutKnotsU) - 1):
+            for j in range(len(cutKnotsV) - 1):
                 s = bs.copy()
-                s.segment(cutKnotsU[i], cutKnotsU[i+1], cutKnotsV[j], cutKnotsV[j+1])
+                s.segment(cutKnotsU[i], cutKnotsU[i + 1], cutKnotsV[j], cutKnotsV[j + 1])
                 surfs.append(s)
         obj.Shape = Part.Shell([s.toShape() for s in surfs])
 
@@ -156,20 +154,21 @@ class SegmentSurface:
             if prop in group:
                 option = obj.getPropertyByName(prop)
                 if group == prop + option:
-                    obj.setEditorMode(p,0)
+                    obj.setEditorMode(p, 0)
                 else:
-                    obj.setEditorMode(p,2)
+                    obj.setEditorMode(p, 2)
 
     def onChanged(self, obj, prop):
         if prop == "Option":
             self.setOption(obj, prop)
 
+
 class SegmentSurfaceVP:
-    def __init__(self,vobj):
+    def __init__(self, vobj):
         vobj.Proxy = self
-       
+
     def getIcon(self):
-        return(TOOL_ICON)
+        return TOOL_ICON
 
     def attach(self, vobj):
         self.Object = vobj.Object
@@ -180,17 +179,18 @@ class SegmentSurfaceVP:
             return [self.Object.Source[0]]
 
     def __getstate__(self):
-        return({"name": self.Object.Name})
+        return {"name": self.Object.Name}
 
-    def __setstate__(self,state):
+    def __setstate__(self, state):
         self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
-        return(None)
+        return None
+
 
 class SegSurfCommand:
     """Creates a ..."""
     def makeFeature(self, s):
-        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Segment_Surface")
-        SegmentSurface(fp, (s.Object,s.SubElementNames[0]))
+        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "Segment_Surface")
+        SegmentSurface(fp, (s.Object, s.SubElementNames[0]))
         SegmentSurfaceVP(fp.ViewObject)
         FreeCAD.ActiveDocument.recompute()
 
@@ -208,6 +208,7 @@ class SegSurfCommand:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
+        return {'Pixmap': TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
+
 
 FreeCADGui.addCommand('segment_surface', SegSurfCommand())
