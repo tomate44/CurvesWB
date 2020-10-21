@@ -127,11 +127,15 @@ class Approximate:
                 debug("Array : %d x %d"%(len(a),len(a[0])))
             else:
                 self.Points = []
-        else:
-            try:
+        elif hasattr(obj.PointObject,'Points'):
+            if isinstance(obj.PointObject.Points, (list, tuple)):
                 self.Points = obj.PointObject.Points
-            except:
-                self.Points = [v.Point for v in obj.PointObject.Shape.Vertexes]
+            elif hasattr(obj.PointObject.Points,'Points'):
+                self.Points = obj.PointObject.Points.Points
+        elif hasattr(obj.PointObject.Shape,'OrderedVertexes'):
+            self.Points = [v.Point for v in obj.PointObject.Shape.OrderedVertexes]
+        else:
+            self.Points = [v.Point for v in obj.PointObject.Shape.Vertexes]
 
     def buildCurve(self, obj):
         pts = self.Points[obj.FirstIndex:obj.LastIndex+1]
@@ -330,7 +334,9 @@ class approx:
         for obj in selectionObject:
             if hasattr(obj.Object,'Group'):
                 return obj.Object
-            if len(obj.Object.Shape.Vertexes) > 1:
+            if hasattr(obj.Object, "Shape") and len(obj.Object.Shape.Vertexes) > 1:
+                res.append(obj.Object)
+            if hasattr(obj.Object, "Points"):
                 res.append(obj.Object)
         if res:
             return res
