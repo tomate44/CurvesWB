@@ -7,9 +7,7 @@ import FreeCADGui
 import Part
 from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
-from FreeCAD import Base
 from pivy import coin
-from freecad.Curves import isocurves
 from freecad.Curves import CoinNodes as coinNodes
 reload(coinNodes)
 
@@ -18,10 +16,12 @@ TOOL_ICON = os.path.join(ICONPATH, 'info.svg')
 
 DEBUG = 1
 
+
 def debug(string):
     if DEBUG:
         FreeCAD.Console.PrintMessage(string)
         FreeCAD.Console.PrintMessage("\n")
+
 
 def beautify(shp):
     if not shp:
@@ -32,42 +32,47 @@ def beautify(shp):
             t = shp[1:-1]
         return(t.split()[0])
 
+
 def getString(weights):
     weightStr = []
     for w in weights:
         if abs(w-1.0) < 0.001:
             weightStr.append("")
         elif w.is_integer():
-            weightStr.append(" %d"%int(w))
+            weightStr.append(" %d" % int(w))
         else:
-            weightStr.append(" %0.2f"%w)
-    return(weightStr)
+            weightStr.append(" %0.2f" % w)
+    return weightStr
+
 
 def cleanString(arr):
     strArr = ""
     for w in arr:
-        if isinstance(w,float):
-            strArr += "%0.2f, "%w
+        if isinstance(w, float):
+            strArr += "%0.2f, " % w
         else:
-            strArr += "%d, "%int(w)
-    return(strArr[:-2])
+            strArr += "%d, " % int(w)
+    return strArr[:-2]
+
 
 def coordStr(v):
-    if hasattr(v,'x'):
-        s = "%0.2f"%v.x
-        if hasattr(v,'y'):
-            s += ", %0.2f"%v.y
-            if hasattr(v,'z'):
-                s += ", %0.2f"%v.z
-        return(s)
+    if hasattr(v, 'x'):
+        s = "%0.2f" % v.x
+        if hasattr(v, 'y'):
+            s += ", %0.2f" % v.y
+            if hasattr(v, 'z'):
+                s += ", %0.2f" % v.z
+        return s
     else:
-        return(v)
+        return v
+
 
 def removeDecim(arr):
     r = []
     for fl in arr:
-        r.append("%0.2f"%fl)
+        r.append("%0.2f" % fl)
     return r
+
 
 def to1D(arr):
     array = []
@@ -76,17 +81,19 @@ def to1D(arr):
             array.append(el)
     return array
 
+
 def paramList(n, fp, lp):
     rang = lp-fp
-    l = []
+    params = []
     if n == 1:
-        l = [fp + rang / 2.0]
+        params = [fp + rang / 2.0]
     elif n == 2:
-        l = [fp,lp]
+        params = [fp, lp]
     elif n > 2:
         for i in range(n):
-            l.append( fp + 1.0* i* rang / (n-1) )
-    return(l)
+            params.append(fp + 1.0 * i * rang / (n - 1))
+    return params
+
 
 def curveNode(cur):
     bspline = False
@@ -107,24 +114,26 @@ def curveNode(cur):
     except:
         bspline = False
 
-
-    # *** Set poles ***    
+    # *** Set poles ***
     polesnode = coinNodes.coordinate3Node(poles)
 
-    # *** Set weights ***    
+    # *** Set weights ***
     weightStr = getString(weights)
 
-    polySep = coinNodes.polygonNode((0.5,0.5,0.5),1)
+    polySep = coinNodes.polygonNode((0.5, 0.5, 0.5), 1)
     polySep.vertices = poles
 
-    # *** Set markers ***    
-    markerSep = coinNodes.markerSetNode((1,0,0),coin.SoMarkerSet.DIAMOND_FILLED_9_9)
-    markerSep.color = [(1,0,0)]+[(0.5,0.0,0.5)]*(len(poles)-1)
+    # *** Set markers ***
+    markerSep = coinNodes.markerSetNode((1, 0, 0), coin.SoMarkerSet.DIAMOND_FILLED_9_9)
+    markerSep.color = [(1, 0, 0)] + [(0.5, 0.0, 0.5)] * (len(poles) - 1)
 
     if rational:
         # *** Set weight text ***
-        weightSep = coinNodes.multiTextNode((1,0,0),"osiFont,FreeSans,sans",16,0)
-        weightSep.data = (poles,weightStr)
+        weightSep = coinNodes.multiTextNode((1, 0, 0),
+                                            "osiFont,FreeSans,sans",
+                                            16,
+                                            0)
+        weightSep.data = (poles, weightStr)
 
     if bspline:
 
@@ -132,21 +141,22 @@ def curveNode(cur):
         knotPoints = []
         for k in knots:
             p = cur.value(k)
-            knotPoints.append((p.x,p.y,p.z))
-        
+            knotPoints.append((p.x, p.y, p.z))
         knotsnode = coinNodes.coordinate3Node(knotPoints)
-        
-        # *** Set texts ***        
+        # *** Set texts ***
         multStr = []
         for m in mults:
-            multStr.append("\n%d"%m)
-        
-        knotMarkerSep = coinNodes.markerSetNode((0,0,1),coin.SoMarkerSet.CIRCLE_FILLED_5_5)
-        knotMarkerSep.color = [(0,0,1)]*len(knotPoints)
+            multStr.append("\n%d" % m)
 
-        # *** Set mult text ***        
-        multSep = coinNodes.multiTextNode((0,0,1),"osiFont,FreeSans,sans",16,1)
-        multSep.data = (knotPoints,multStr)
+        knotMarkerSep = coinNodes.markerSetNode((0, 0, 1), coin.SoMarkerSet.CIRCLE_FILLED_5_5)
+        knotMarkerSep.color = [(0, 0, 1)] * len(knotPoints)
+
+        # *** Set mult text ***
+        multSep = coinNodes.multiTextNode((0, 0, 1),
+                                          "osiFont,FreeSans,sans",
+                                          16,
+                                          1)
+        multSep.data = (knotPoints, multStr)
 
     vizSep = coin.SoSeparator()
     vizSep.addChild(polesnode)
@@ -159,7 +169,6 @@ def curveNode(cur):
         vizSep.addChild(knotMarkerSep)
         vizSep.addChild(multSep)
     return vizSep
-
 
 
 def surfNode(surf):
@@ -178,40 +187,45 @@ def surfNode(surf):
         pass
     try:
         uknots = surf.getUKnots()
-        umults = surf.getUMultiplicities()
         vknots = surf.getVKnots()
-        vmults = surf.getVMultiplicities()
         bspline = True
     except:
         bspline = False
 
-
-    # *** Set poles ***    
+    # *** Set poles ***
     flatPoles = to1D(poles)
     polesnode = coinNodes.coordinate3Node(flatPoles)
 
-    # *** Set weights ***    
+    # *** Set weights ***
     flatW = to1D(weights)
     weightStr = getString(flatW)
 
-    polyRowSep = coinNodes.rowNode((0.5,0,0),1)
-    polyRowSep.vertices=(nbU,nbV)
-    polyRowSep.color = [(0.5,0.0,0.0)]*len(flatPoles)
-    polyColSep = coinNodes.colNode((0,0,0.5),1)
-    polyColSep.vertices=(nbU,nbV)
-    polyColSep.color = [(0.0,0.0,0.5)]*len(flatPoles)
+    polyRowSep = coinNodes.rowNode((0.5, 0, 0), 1)
+    polyRowSep.vertices = (nbU, nbV)
+    polyRowSep.color = [(0.5, 0.0, 0.0)] * len(flatPoles)
+    polyColSep = coinNodes.colNode((0, 0, 0.5), 1)
+    polyColSep.vertices = (nbU, nbV)
+    polyColSep.color = [(0.0, 0.0, 0.5)] * len(flatPoles)
 
-    # *** Set markers ***    
-    markerSep = coinNodes.markerSetNode((1,0,0),coin.SoMarkerSet.DIAMOND_FILLED_9_9)
-    markerSep.color = [(1,0,0)]+[(0.5,0.0,0.5)]*(len(flatPoles)-1)
+    # *** Set markers ***
+    markerSep = coinNodes.markerSetNode((1, 0, 0), coin.SoMarkerSet.DIAMOND_FILLED_9_9)
+    markerSep.color = [(1, 0, 0)] + [(0.5, 0.0, 0.5)] * (len(flatPoles) - 1)
 
-    u0,u1,v0,v1 = surf.bounds()
+    u0, u1, v0, v1 = surf.bounds()
     halfU = u0 + 1.*(u1-u0)/2
     halfV = v0 + 1.*(v1-v0)/2
-    UPos = surf.value(halfU,v0)
-    Uletter = coinNodes.text2dNode((0,0,0),"osiFont,FreeSans,sans",20,(UPos.x,UPos.y,UPos.z),'U')
+    UPos = surf.value(halfU, v0)
+    Uletter = coinNodes.text2dNode((0, 0, 0),
+                                   "osiFont,FreeSans,sans",
+                                   20,
+                                   (UPos.x, UPos.y, UPos.z),
+                                   'U')
     VPos = surf.value(u0,halfV)
-    Vletter = coinNodes.text2dNode((0,0,0),"osiFont,FreeSans,sans",20,(VPos.x,VPos.y,VPos.z),'V')
+    Vletter = coinNodes.text2dNode((0, 0, 0),
+                                   "osiFont,FreeSans,sans",
+                                   20,
+                                   (VPos.x, VPos.y, VPos.z),
+                                   'V')
 
     vizSep = coin.SoSeparator()
     vizSep.addChild(polesnode)
@@ -222,8 +236,10 @@ def surfNode(surf):
     vizSep.addChild(Vletter)
     if rational:
         # *** Set weight text ***
-        weightSep = coinNodes.multiTextNode((1,0,0),"osiFont,FreeSans,sans",16,0)
-        weightSep.data = (flatPoles,weightStr)
+        weightSep = coinNodes.multiTextNode((1, 0, 0),
+                                            "osiFont,FreeSans,sans",
+                                            16, 0)
+        weightSep.data = (flatPoles, weightStr)
         vizSep.addChild(weightSep)
 
     if bspline:
@@ -237,21 +253,20 @@ def surfNode(surf):
                 epts = uIso.toShape().discretize(100)
                 if len(epts) == 100:
                     for p in epts:
-                        uknotPoints.append((p.x,p.y,p.z))
+                        uknotPoints.append((p.x, p.y, p.z))
                     nb_curves += 1
             except:
                 FreeCAD.Console.PrintError("Error computing surface U Iso\n")
-            
+
         if nb_curves > 0:
             uknotsnode = coinNodes.coordinate3Node(uknotPoints)
-            uCurves = coinNodes.rowNode((1.0,0.5,0.3),3)
-            uCurves.color = [(1.0,0.5,0.3)]*99
-            uCurves.color += [(0.7,0.0,0.3)]*(nb_curves-1)*99
-            uCurves.vertices=(nb_curves,100)
+            uCurves = coinNodes.rowNode((1.0, 0.5, 0.3), 3)
+            uCurves.color = [(1.0, 0.5, 0.3)] * 99
+            uCurves.color += [(0.7, 0.0, 0.3)] * (nb_curves - 1) * 99
+            uCurves.vertices = (nb_curves, 100)
             vizSep.addChild(uknotsnode)
             vizSep.addChild(uCurves)
-            #debug(str(uCurves.vertices))
-        
+
         vknotPoints = []
         nb_curves = 0
         for k in vknots:
@@ -260,18 +275,17 @@ def surfNode(surf):
                 epts = vIso.toShape().discretize(100)
                 if len(epts) == 100:
                     for p in epts:
-                        vknotPoints.append((p.x,p.y,p.z))
+                        vknotPoints.append((p.x, p.y, p.z))
                     nb_curves += 1
             except:
                 FreeCAD.Console.PrintError("Error computing surface V Iso\n")
-        
-        
+
         if nb_curves > 0:
             vknotsnode = coinNodes.coordinate3Node(vknotPoints)
-            vCurves = coinNodes.rowNode((0.3,0.5,1.0),3)
-            vCurves.color = [(0.8,0.8,0.0)]*99
-            vCurves.color += [(0.3,0.0,0.7)]*(nb_curves-1)*99
-            vCurves.vertices=(nb_curves,100)
+            vCurves = coinNodes.rowNode((0.3, 0.5, 1.0), 3)
+            vCurves.color = [(0.8, 0.8, 0.0)] * 99
+            vCurves.color += [(0.3, 0.0, 0.7)] * (nb_curves - 1) * 99
+            vCurves.vertices = (nb_curves, 100)
             vizSep.addChild(vknotsnode)
             vizSep.addChild(vCurves)
 
@@ -334,65 +348,44 @@ def surfNode(surf):
         #multSep = coinNodes.multiTextNode((0,0,1),"osiFont,FreeSans,sans",16,1)
         #multSep.data = (knotPoints,multStr)
 
-    return(vizSep)
+    return vizSep
 
 
 class GeomInfo:
     "this class displays info about the geometry of the selected shape"
-    def Activated(self,index=0):
+    def Activated(self, index=0):
 
         if index == 1:
             debug("GeomInfo activated")
-            #self.activeDoc = FreeCADGui.ActiveDocument
-            #self.view = self.activeDoc.ActiveView
             self.stack = []
-            FreeCADGui.Selection.addObserver(self)    # install the function in resident mode
-            #FreeCADGui.Selection.addObserver(self.getTopo)
+            # install the function in resident mode
+            FreeCADGui.Selection.addObserver(self)
             self.active = True
-            #self.sg = self.view.getSceneGraph()
             self.textSep = coin.SoSeparator()
-            
             self.cam = coin.SoOrthographicCamera()
             self.cam.aspectRatio = 1
             self.cam.viewportMapping = coin.SoCamera.LEAVE_ALONE
 
             self.trans = coin.SoTranslation()
-            self.trans.translation = (-0.98,0.90,0)
+            self.trans.translation = (-0.98, 0.90, 0)
 
             self.myFont = coin.SoFont()
             self.myFont.name = "FreeMono,FreeSans,sans"
             size = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves").GetInt('GeomInfoFontSize', 14)
             print(size)
             self.myFont.size.setValue(size)
-            #self.trans = coin.SoTranslation()
-            self.SoText2  = coin.SoText2()
-            #self.trans.translation.setValue(.25,.0,1.25)
-            self.SoText2.string = "" #"Nothing Selected\r2nd line"
+            self.SoText2 = coin.SoText2()
+            self.SoText2.string = ""  # "Nothing Selected\r2nd line"
             self.color = coin.SoBaseColor()
-            self.color.rgb = (0,0,0)
+            self.color.rgb = (0, 0, 0)
 
             self.textSep.addChild(self.cam)
             self.textSep.addChild(self.trans)
             self.textSep.addChild(self.color)
             self.textSep.addChild(self.myFont)
-            #self.textSep.addChild(self.trans)
             self.textSep.addChild(self.SoText2)
-            #self.Active = False
-            #self.sg.addChild(self.textSep)
-            
-            #self.viewer=self.view.getViewer()
-            #self.render=self.viewer.getSoRenderManager()
-            #self.sup = self.render.addSuperimposition(self.textSep)
-            #self.sg.touch()
-            #self.cam2 = coin.SoPerspectiveCamera()
-            #self.sg.addChild(self.cam2)
-            
-            #self.sensor = coin.SoFieldSensor(self.updateCB, None)
-            #self.sensor.setData(self.sensor)
-            #self.sensor.setPriority(0)
-            
+
             self.addHUD()
-            
             self.Active = True
             self.viz = False
             self.getTopo()
@@ -407,8 +400,8 @@ class GeomInfo:
         self.activeDoc = FreeCADGui.ActiveDocument
         self.view = self.activeDoc.ActiveView
         self.sg = self.view.getSceneGraph()
-        self.viewer=self.view.getViewer()
-        self.render=self.viewer.getSoRenderManager()
+        self.viewer = self.view.getViewer()
+        self.render = self.viewer.getSoRenderManager()
         self.sup = self.render.addSuperimposition(self.textSep)
         self.sg.touch()
 
@@ -421,139 +414,152 @@ class GeomInfo:
         except ReferenceError:
             print("GeomInfo: doc has been closed")
 
-    #def updateCB(self, *args):
-        ##return(True)
-        #self.getTopo()
-
     def removeGrid(self):
         if self.viz:
-            #self.root.removeChild(self.trans)
             self.root.removeChild(self.node)
             self.viz = False
-            #self.sensor.detach()
+
     def insertGrid(self):
         if self.node:
-            #self.trans = coin.SoMatrixTransform()
-            #mat = self.placement.toMatrix()
-            #self.trans.matrix.setValue(mat.A11, mat.A12, mat.A13, mat.A14, 
-                                       #mat.A21, mat.A22, mat.A23, mat.A24, 
-                                       #mat.A31, mat.A32, mat.A33, mat.A34, 
-                                       #mat.A41, mat.A42, mat.A43, mat.A44 )
-            #self.trans.matrix.setValue(mat.A11, mat.A21, mat.A31, mat.A41, 
-                                       #mat.A12, mat.A22, mat.A32, mat.A42, 
-                                       #mat.A13, mat.A23, mat.A33, mat.A43, 
-                                       #mat.A14, mat.A24, mat.A34, mat.A44 )
-            #self.root.addChild(self.trans)
             self.root.addChild(self.node)
             self.viz = True
-            #self.sensor.attach(self.root)
 
 # ------ Selection Observer --------
 
-    def addSelection(self,doc,obj,sub,pnt):   # Selection
-        FreeCAD.Console.PrintMessage("addSelection %s %s\n"%(obj,str(sub)))
+    def addSelection(self, doc, obj, sub, pnt):  # Selection
+        # FreeCAD.Console.PrintMessage("addSelection %s %s\n" % (obj, str(sub)))
         if self.Active:
             if not doc == self.activeDoc:
                 self.removeHUD()
-                self.addHUD()                
+                self.addHUD()
             self.getTopo()
-    def removeSelection(self,doc,obj,sub):    # Effacer l'objet selectionne
-        FreeCAD.Console.PrintMessage("removeSelection %s %s\n"%(obj,str(sub)))
+
+    def removeSelection(self, doc, obj, sub):  # Effacer l'objet selectionne
+        # FreeCAD.Console.PrintMessage("removeSelection %s %s\n" % (obj, str(sub)))
         if self.Active:
             self.SoText2.string = ""
             self.removeGrid()
+
     def setPreselection(self, doc, obj, sub):
         pass
-    def clearSelection(self,doc):             # Si clic sur l'ecran, effacer la selection
-        FreeCAD.Console.PrintMessage("clearSelection\n")
+
+    def clearSelection(self, doc):  # Si clic sur l'ecran, effacer la selection
+        # FreeCAD.Console.PrintMessage("clearSelection\n")
         if self.Active:
             self.SoText2.string = ""
             self.removeGrid()
 
 # ------ get info about shape --------
 
-
-    def propStr(self,c,att):
-        if hasattr(c,att):
+    def propStr(self, c, att):
+        if hasattr(c, att):
             a = c.__getattribute__(att)
             if not a:
-                return(False)
-            elif hasattr(a,'x') and hasattr(a,'y') and hasattr(a,'z'):
-                return("%s : (%0.2f, %0.2f, %0.2f)"%(att,a.x,a.y,a.z))
+                return False
+            elif hasattr(a, 'x') and hasattr(a, 'y') and hasattr(a, 'z'):
+                return "%s : (%0.2f, %0.2f, %0.2f)" % (att, a.x, a.y, a.z)
             else:
-                return("%s : %s"%(att,str(a)))
+                return "%s : %s" % (att, str(a))
         else:
-            return(False)
+            return False
 
-    def propMeth(self,c,att):
-        if hasattr(c,att):
+    def propMeth(self, c, att):
+        if hasattr(c, att):
             a = c.__getattribute__(att)()
             if not a:
-                return(False)
-            elif hasattr(a,'x') and hasattr(a,'y') and hasattr(a,'z'):
-                return("%s : (%0.2f, %0.2f, %0.2f)"%(att,a.x,a.y,a.z))
+                return False
+            elif hasattr(a, 'x') and hasattr(a, 'y') and hasattr(a, 'z'):
+                return "%s : (%0.2f, %0.2f, %0.2f)" % (att, a.x, a.y, a.z)
             else:
-                return("%s : %s"%(att,str(a)))
+                return "%s : %s"%(att, str(a))
         else:
-            return(False)
+            return False
 
-    def getSurfInfo(self,surf):
+    def getSurfInfo(self, face):
+        surf = face.Surface
         ret = []
         ret.append(beautify(str(surf)))
-        props = ['Center','Axis','Position','Radius','Direction','Location','Continuity']
+        props = ['Center',
+                 'Axis',
+                 'Position',
+                 'Radius',
+                 'Direction',
+                 'Location',
+                 'Continuity']
         for p in props:
-            s = self.propStr(surf,p)
+            s = self.propStr(surf, p)
             if s:
                 ret.append(s)
         if isinstance(surf, (Part.BSplineSurface, Part.BezierSurface)):
-            ret.append("Degree : %d x %d"%(surf.UDegree, surf.VDegree))
-            ret.append("Poles  : %d x %d (%d)"%(surf.NbUPoles, surf.NbVPoles, surf.NbUPoles * surf.NbVPoles))
-        props = ['isURational', 'isVRational', 'isUPeriodic', 'isVPeriodic', 'isUClosed', 'isVClosed']
+            ret.append("Degree : %d x %d" % (surf.UDegree, surf.VDegree))
+            ret.append("Poles  : %d x %d (%d)" % (surf.NbUPoles,
+                                                  surf.NbVPoles,
+                                                  surf.NbUPoles * surf.NbVPoles))
+        props = ['isURational',
+                 'isVRational',
+                 'isUPeriodic',
+                 'isVPeriodic',
+                 'isUClosed',
+                 'isVClosed']
         for p in props:
-            s = self.propMeth(surf,p)
+            s = self.propMeth(surf, p)
             if s:
                 ret.append(s)
         if isinstance(surf, Part.BSplineSurface):
-            funct = [(surf.getUKnots,"U Knots"),
-                    (surf.getUMultiplicities,"U Mults"),
-                    (surf.getVKnots,"V Knots"),
-                    (surf.getVMultiplicities,"V Mults")]
+            funct = [(surf.getUKnots, "U Knots"),
+                     (surf.getUMultiplicities, "U Mults"),
+                     (surf.getVKnots, "V Knots"),
+                     (surf.getVMultiplicities, "V Mults")]
             for i in funct:
                 r = i[0]()
                 if r:
                     s = str(i[1]) + " : " + cleanString(r)
                     ret.append(s)
-        return(ret)
-        
+        if hasattr(face, 'getTolerance'):
+            s = "Shape Tolerance : {}".format(face.getTolerance(1))
+            ret.append(s)
+        return ret
+
     def getCurvInfo(self, edge):
         curve = edge.Curve
         ret = []
         ret.append(beautify(str(curve)))
-        props = ['Center','Axis','Position','Radius','Direction','Location','Degree', 'NbPoles', 'Continuity']
+        props = ['Center',
+                 'Axis',
+                 'Position',
+                 'Radius',
+                 'Direction',
+                 'Location',
+                 'Degree',
+                 'NbPoles',
+                 'Continuity']
         for p in props:
-            s = self.propStr(curve,p)
+            s = self.propStr(curve, p)
             if s:
                 ret.append(s)
         props = ['isRational', 'isPeriodic', 'isClosed']
         for p in props:
-            s = self.propMeth(curve,p)
+            s = self.propMeth(curve, p)
             if s:
                 ret.append(s)
-        if hasattr(curve,'getKnots'):
+        if hasattr(curve, 'getKnots'):
             r = curve.getKnots()
             s = "Knots : " + cleanString(r)
             ret.append(s)
-        if hasattr(curve,'getMultiplicities'):
+        if hasattr(curve, 'getMultiplicities'):
             r = curve.getMultiplicities()
             s = "Mults : " + cleanString(r)
             ret.append(s)
-        if hasattr(curve,'length'):
+        if hasattr(curve, 'length'):
             r = curve.length()
             if r < 1e80:
                 s = "Length : " + cleanString([r])
                 ret.append(s)
             else:
                 ret.append("Length : Infinite")
+        if hasattr(edge, 'getTolerance'):
+            s = "Shape Tolerance : {}".format(edge.getTolerance(1))
+            ret.append(s)
         pclist = _utils.get_pcurves(edge)
         for pc in pclist:
             s = "{} on {} ".format(str(pc[0])[1:-8],
@@ -564,7 +570,6 @@ class GeomInfo:
     def getTopo(self):
         sel = FreeCADGui.Selection.getSelectionEx()
         if sel != []:
-            
             sel0 = sel[0]
             if sel0.HasSubObjects:
                 try:
@@ -575,35 +580,25 @@ class GeomInfo:
             else:
                 return
             if self.ss.ShapeType == 'Face':
-                #FreeCAD.Console.PrintMessage("Face detected"+ "\n")
                 surf = self.ss.Surface
-                t = self.getSurfInfo(surf)
-                self.SoText2.string.setValues(0,len(t),t)
+                t = self.getSurfInfo(self.ss)
+                self.SoText2.string.setValues(0, len(t), t)
                 self.removeGrid()
-                #self.root = self.so.ViewObject.RootNode
                 self.root = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
-                #self.coord = self.root.getChild(1)
                 self.node = surfNode(surf)
-                #self.placement = self.ss.Placement
                 self.insertGrid()
-                #self.sensor.detach()
-                #self.sensor.attach(self.coord.point)
             elif self.ss.ShapeType == 'Edge':
-                #FreeCAD.Console.PrintMessage("Edge detected"+ "\n")
                 cur = self.ss.Curve
                 t = self.getCurvInfo(self.ss)
-                self.SoText2.string.setValues(0,len(t),t)
+                self.SoText2.string.setValues(0, len(t), t)
                 self.removeGrid()
-                #self.root = self.so.ViewObject.RootNode
                 self.root = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
-                #self.coord = self.root.getChild(1)
                 self.node = curveNode(cur)
-                #self.placement = self.ss.Placement
                 self.insertGrid()
-                #self.sensor.detach()
-                #self.sensor.attach(self.coord.point)
 
     def GetResources(self):
-        #return {'Pixmap'  : 'python', 'MenuText': 'Toggle command', 'ToolTip': 'Example toggle command', 'Checkable': True}
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Geometry Info', 'ToolTip': 'displays info about the geometry of the selected topology', 'Checkable': False}
+        return {'Pixmap': TOOL_ICON,
+                'MenuText': 'Geometry Info',
+                'ToolTip': 'displays info about the geometry of the selected topology',
+                'Checkable': False}
 FreeCADGui.addCommand('GeomInfo', GeomInfo())
