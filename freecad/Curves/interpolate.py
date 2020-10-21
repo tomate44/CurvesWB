@@ -89,7 +89,10 @@ class Interpolate:
 
     def getPoints( self, obj):
         if obj.Source:
-            return [v.Point for v in obj.Source.Shape.Vertexes]
+            if hasattr(obj.Source.Shape,"OrderedVertexes"):
+                return [v.Point for v in obj.Source.Shape.OrderedVertexes]
+            else:
+                return [v.Point for v in obj.Source.Shape.Vertexes]
         elif obj.PointList:
             vl = _utils.getShape(obj, "PointList", "Vertex")
             return [v.Point for v in vl]

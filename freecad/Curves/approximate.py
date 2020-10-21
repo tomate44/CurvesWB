@@ -132,6 +132,8 @@ class Approximate:
                 self.Points = obj.PointObject.Points
             elif hasattr(obj.PointObject.Points,'Points'):
                 self.Points = obj.PointObject.Points.Points
+        elif hasattr(obj.PointObject.Shape,'OrderedVertexes'):
+            self.Points = [v.Point for v in obj.PointObject.Shape.OrderedVertexes]
         else:
             self.Points = [v.Point for v in obj.PointObject.Shape.Vertexes]
 
