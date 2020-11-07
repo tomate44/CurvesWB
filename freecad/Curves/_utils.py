@@ -7,7 +7,6 @@ __doc__ = "Curves workbench utilities common to all tools."
 
 import FreeCAD
 import Part
-from FreeCAD import Base
 
 
 def setIconsPath(path):
@@ -49,11 +48,11 @@ def setEditorMode(fp, group, mode):
 
 def getSubShape(shape, shape_type, n):
     if shape_type == "Vertex" and len(shape.Vertexes) >= n:
-        return shape.Vertexes[n-1]
+        return shape.Vertexes[n - 1]
     elif shape_type == "Edge" and len(shape.Edges) >= n:
-        return shape.Edges[n-1]
+        return shape.Edges[n - 1]
     elif shape_type == "Face" and len(shape.Faces) >= n:
-        return shape.Faces[n-1]
+        return shape.Faces[n - 1]
     else:
         return None
 
@@ -63,30 +62,30 @@ def getShape(obj, prop, shape_type):
         prop_link = obj.getPropertyByName(prop)
         if obj.getTypeIdOfProperty(prop) == "App::PropertyLinkSub":
             if shape_type in prop_link[1][0]:
-                try:  # FC 0.19+
-                    return prop_link[0].getSubObject(prop_link[1][0])
-                except AttributeError:  # FC 0.18 (stable)
-                    n = eval(obj.getPropertyByName(prop)[1][0].lstrip(shape_type))
-                    sh = obj.getPropertyByName(prop)[0].Shape.copy()
-                    if sh and hasattr(obj.getPropertyByName(prop)[0], "getGlobalPlacement"):
-                        pl = obj.getPropertyByName(prop)[0].getGlobalPlacement()
-                        sh.Placement = pl
-                    return getSubShape(sh, shape_type, n)
+                # try:  # FC 0.19+
+                # return prop_link[0].getSubObject(prop_link[1][0])
+                # except AttributeError:  # FC 0.18 (stable)
+                n = eval(obj.getPropertyByName(prop)[1][0].lstrip(shape_type))
+                sh = obj.getPropertyByName(prop)[0].Shape.copy()
+                if sh and hasattr(obj.getPropertyByName(prop)[0], "getGlobalPlacement"):
+                    pl = obj.getPropertyByName(prop)[0].getGlobalPlacement()
+                    sh.Placement = pl
+                return getSubShape(sh, shape_type, n)
 
         elif obj.getTypeIdOfProperty(prop) == "App::PropertyLinkSubList":
             res = []
             for tup in prop_link:
                 for ss in tup[1]:
                     if shape_type in ss:
-                        try:  # FC 0.19+
-                            res.append(tup[0].getSubObject(ss))
-                        except AttributeError:  # FC 0.18 (stable)
-                            n = eval(ss.lstrip(shape_type))
-                            sh = tup[0].Shape.copy()
-                            if sh and hasattr(tup[0], "getGlobalPlacement"):
-                                pl = tup[0].getGlobalPlacement()
-                                sh.Placement = pl
-                            res.append(getSubShape(sh, shape_type, n))
+                        # try:  # FC 0.19+
+                        # res.append(tup[0].getSubObject(ss))
+                        # except AttributeError:  # FC 0.18 (stable)
+                        n = eval(ss.lstrip(shape_type))
+                        sh = tup[0].Shape.copy()
+                        if sh and hasattr(tup[0], "getGlobalPlacement"):
+                            pl = tup[0].getGlobalPlacement()
+                            sh.Placement = pl
+                        res.append(getSubShape(sh, shape_type, n))
             return res
         else:
             FreeCAD.Console.PrintError("CurvesWB._utils.getShape: wrong property type.\n")
@@ -108,7 +107,7 @@ def same_direction(e1, e2, num=10):
     pts2 = e2.discretize(num)
     for i in range(num):
         v1.append(pts1[i].distanceToPoint(pts2[i]))
-        v2.append(pts1[i].distanceToPoint(pts2[num-1-i]))
+        v2.append(pts1[i].distanceToPoint(pts2[num - 1 - i]))
     if sum(v1) < sum(v2):
         return True
     else:
@@ -152,9 +151,9 @@ def ancestors(shape, sub):
            Part.Solid,
            Part.CompSolid,
            Part.Compound)
-    for i in range(len(shd)-1):
+    for i in range(len(shd) - 1):
         if isinstance(sub, shd[i]):
-            for j in range(i+1, len(shd)):
+            for j in range(i + 1, len(shd)):
                 manc = shape.ancestorsOfType(sub, shd[j])
                 if manc:
                     print("{} belongs to {} {}.".format(cleanup(sub),
@@ -230,7 +229,7 @@ def anim(obj, path, on_path=False, reverse=False, duration=1.0, samples=100):
     pts = path.discretize(samples)
     if reverse:
         pts.reverse()
-    rpts = [p-pts[0] for p in pts]
+    rpts = [p - pts[0] for p in pts]
     if not on_path:
         origin = obj.Placement.Base
     else:
@@ -293,7 +292,7 @@ def geom_equal(geom1, geom2, tol=1e-7):
         return False
     curve_properties = ["FirstParameter", "LastParameter"]
     conic_properties = curve_properties + ["Location", "AngleXU", "Axis", "XAxis", "YAxis"]
-    
+
     test_properties = dict()
     test_properties[Part.Point] = ["X", "Y", "Z"]
     test_properties[FreeCAD.Base.Vector] = ["x", "y", "z"]
@@ -330,4 +329,4 @@ def geom_equal(geom1, geom2, tol=1e-7):
         if not have_equal_property(geom1, geom2, prop, tol):
             return False
     return True
-    
+
