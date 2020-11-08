@@ -276,11 +276,11 @@ def have_equal_property(geom1, geom2, prop, tol=1e-7):
     attr1 = getattr(geom1, prop)
     attr2 = getattr(geom2, prop)
     try:
-        attr1 = attr1()
-        attr2 = attr2()
-    except TypeError:
-        pass  # They're not callable
-    return is_equal(attr1, attr2, tol)
+        val1 = attr1()
+        val2 = attr2()
+        return is_equal(val1, val2, tol)
+    except TypeError:  # They're not callable
+        return is_equal(attr1, attr2, tol)
 
 
 def geom_equal(geom1, geom2, tol=1e-7):
