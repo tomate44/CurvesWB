@@ -472,7 +472,7 @@ class oldBlendCurveVP:
             self.active = False
             self.switch.whichChild = 0
         # self.Object.DegreeMax = self.Object.DegreeMax
-        # FreeCAD.ActiveDocument.recompute()
+            self.Object.Document.recompute()
         return True
 
     def setEdit(self, vobj, mode):

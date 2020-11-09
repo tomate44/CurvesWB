@@ -107,11 +107,8 @@ class split:
             e, w = self.getShape(fp)
         if not e:
             return
-        if prop == "Source":
-            debug("Split : Source changed")
-            self.execute(fp)
-        if prop == "Values":
-            debug("Split : Values changed")
+        if prop in ["Source", "Values", "Distance", "CuttingObjects"]:
+            debug("Split : {} changed".format(prop))
             self.execute(fp)
 
     def execute(self, obj):
@@ -530,6 +527,7 @@ class splitVP:
         self.ip = None
         self.active = False
         #vobj.Visibility = True
+        self.Object.Document.recompute()
         return True
 
     def doubleClicked(self,vobj):

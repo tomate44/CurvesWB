@@ -252,7 +252,8 @@ def is_equal(obj1, obj2, tol=1e-7):
     if isinstance(obj1, (list, tuple)):
         equal = True
         for o1, o2 in zip(obj1, obj2):
-            equal = equal and is_equal(o1, o2, tol)
+            res = is_equal(o1, o2, tol)
+            equal = equal and res
         return equal
     if isinstance(obj1, FreeCAD.Vector):
         return obj1.isEqual(obj2, tol)
