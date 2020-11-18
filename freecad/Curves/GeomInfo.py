@@ -550,10 +550,13 @@ class GeomInfo:
             r = curve.getMultiplicities()
             s = "Mults : " + cleanString(r)
             ret.append(s)
-        if hasattr(curve, 'length'):
-            r = curve.length()
-            if r < 1e80:
-                s = "Length : " + cleanString([r])
+        if hasattr(edge, 'Length'):
+            r = edge.Length
+            s = "Length : {:3.3f}".format(r)
+            if hasattr(curve, 'length'):
+                le = curve.length()
+                if not le == r:
+                    s += " ({:3.3f})".format(le)
                 ret.append(s)
             else:
                 ret.append("Length : Infinite")
