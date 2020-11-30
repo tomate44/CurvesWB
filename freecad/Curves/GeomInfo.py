@@ -602,6 +602,6 @@ class GeomInfo:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': 'Geometry Info',
-                'ToolTip': 'displays info about the geometry of the selected topology',
+                'ToolTip': 'Display info about the geometry of the selected topology',
                 'Checkable': False}
 FreeCADGui.addCommand('GeomInfo', GeomInfo())
