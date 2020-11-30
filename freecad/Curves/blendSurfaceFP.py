@@ -303,7 +303,7 @@ class blendSurfCommand:
 
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Blend Surface', 'ToolTip': 'Blending Surface between to curveOnSurface objects '}
+        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Blend Surface', 'ToolTip': 'Blend surface between two curveOnSurface objects'}
 
 FreeCADGui.addCommand('blendSurface', blendSurfCommand())
 

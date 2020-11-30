@@ -172,7 +172,7 @@ def rootNode(shape, mode=2, deviation=0.3, angle=0.4):
 
 
 def ruled_surface(e1, e2):
-    """ creates a ruled surface between 2 edges, with automatic orientation."""
+    """creates a ruled surface between 2 edges, with automatic orientation."""
     if not same_direction(e1, e2):
         e = e2.copy()
         e.reverse()
