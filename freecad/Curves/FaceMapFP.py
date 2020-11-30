@@ -70,14 +70,28 @@ class FaceMapFP:
     """Creates a ..."""
     def __init__(self, obj):
         """Add the properties"""
-        obj.addProperty("App::PropertyLinkList", "Sources",
-                        "Group", "Tooltip")
-        obj.addProperty("App::PropertyFloat", "float",
-                        "Group", "Tooltip")
+        obj.addProperty("App::App::PropertyLinkSub", "Source",
+                        "Base", "Input face")
+        obj.addProperty("App::PropertyFloat", "SizeU",
+                        "Dimensions", "Size of the map in the U direction")
+        obj.addProperty("App::PropertyFloat", "SizeV",
+                        "Dimensions", "Size of the map in the V direction")
+        obj.addProperty("App::PropertyBool", "AddBounds",
+                        "Settings", "Add the bounding box of the face")
+        obj.SizeU = 1.0
+        obj.SizeV = 1.0
         obj.Proxy = self
 
     def execute(self, obj):
-        obj.Shape = None
+        face = obj.Source[0].getElement(obj.Source[1])
+        if not isinstance(face, Part.Face):
+            obj.Shape = None
+            return
+        for w in face.Wires:
+            el = []
+            for e in w.Edges:
+                cos, fp, lp = face.curveOnSurface(e)
+                
 
     def onChanged(self, obj, prop):
         return False

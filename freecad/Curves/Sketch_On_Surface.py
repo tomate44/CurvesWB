@@ -271,7 +271,7 @@ class sketchOnSurface:
             prange = face.ParameterRange[2:] + face.ParameterRange[:2]
         pts = [[FreeCAD.Vector(u0, v0, 0), FreeCAD.Vector(u0, v1, 0)],
                [FreeCAD.Vector(u1, v0, 0), FreeCAD.Vector(u1, v1, 0)]]
-        bs = stretched_plane(pts, prange, 10.0)
+        bs = stretched_plane(pts, prange, 1000.0)
         if obj.SwapUV:
             bs.exchangeUV()
         quad = bs.toShape()
