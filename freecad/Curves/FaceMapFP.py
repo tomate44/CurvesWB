@@ -10,6 +10,7 @@ import FreeCAD
 import FreeCADGui
 import Part
 from freecad.Curves import _utils
+from freecad.Curves.nurbs_tools import nurbs_quad
 from freecad.Curves import ICONPATH
 
 TOOL_ICON = os.path.join(ICONPATH, 'icon.svg')

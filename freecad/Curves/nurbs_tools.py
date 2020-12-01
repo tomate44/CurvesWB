@@ -757,6 +757,35 @@ def param_samples(edge, samples=10):
     return [fp + float(i) * ra / (samples - 1) for i in range(samples)]
 
 
+def nurbs_quad(poles, param_range=[0.0, 1.0, 0.0, 1.0], extend_factor=1.0):
+    """Create a Nurbs Quad surface between the four supplied poles.
+    The parameter range is given by param_range
+    The surface can be extended multiple times with extend_factor
+    This is used as a projection surface for face mapping.
+    """
+    s0, s1, t0, t1 = param_range
+    bs = Part.BSplineSurface()
+    umults = [2, 2]
+    vmults = [2, 2]
+    uknots = [s0, s1]
+    vknots = [t0, t1]
+    if extend_factor > 1.0:
+        ur = s1 - s0
+        vr = t1 - t0
+        uknots = [s0 - extend_factor * ur, s1 + extend_factor * ur]
+        vknots = [t0 - extend_factor * vr, t1 + extend_factor * vr]
+        diag_1 = poles[1][1] - poles[0][0]
+        diag_2 = poles[1][0] - poles[0][1]
+        np1 = poles[0][0] - extend_factor * diag_1
+        np2 = poles[0][1] - extend_factor * diag_2
+        np3 = poles[1][0] + extend_factor * diag_2
+        np4 = poles[1][1] + extend_factor * diag_1
+        poles = [[np1, np2], [np3, np4]]
+    bs.buildFromPolesMultsKnots(poles, umults, vmults, uknots, vknots,
+                                False, False, 1, 1)
+    return bs
+
+
 class EdgeInterpolator(object):
     """interpolate data along a path shape
     ei = EdgeInterpolator(edge or wire)"""
