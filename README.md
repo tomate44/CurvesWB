@@ -6,21 +6,26 @@
 
 This is a python workbench, with a collection of tools for NURBS curves and surfaces. This workbench is developed with FreeCAD Master (currently 0.19) and OCC 7.4
 
-Some tools may not work with earlier versions.
-
-**Note:** This workbench is in ALPHA state and should NOT be used for any serious work.
+**Important Notes:**  
+* This workbench is in ALPHA state and should NOT be used for any serious work.
+* Some tools may not work with earlier versions.
 
 ## Installation 
 There are 2 methods to install Curves WB:
 
+### Automatic (recommended)
+
 For FreeCAD version 0.17 or higher it's preferred to install this workbench with the [FreeCAD's addon manager](https://github.com/FreeCAD/FreeCAD-addons) under the label "Curves".
 
-Manual method:
+### Manual
 
-- go in your personal FreeCAD folder ( usually ~/.FreeCAD on Linux )
-- cd ./Mod ( or create this folder if it doesn't exist )
-- git clone https://github.com/tomate44/CurvesWB
-- start FreeCAD
+- Identify the location of your personal FreeCAD folder 
+    - On Linux it is usually `/home/username/.FreeCAD/Mod/`
+    - On Windows it is `%APPDATA%\FreeCAD\Mod\` which is usually `C:\Users\username\Appdata\Roaming\FreeCAD\Mod\`
+    - On macOS it is usually `/Users/username/Library/Preferences/FreeCAD/Mod/`
+- `cd .FreeCAD/Mod` (create the `Mod/` folder if it doesn't exist)
+- `git clone https://github.com/tomate44/CurvesWB`
+- Start FreeCAD
 
 "Curves" workbench should now show up in the workbench dropdown list.
 
