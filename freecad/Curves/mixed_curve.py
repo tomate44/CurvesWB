@@ -13,7 +13,7 @@ from freecad.Curves import approximate_extension
 from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
 
-TOOL_ICON = os.path.join( ICONPATH, 'combined_curve.svg')
+TOOL_ICON = os.path.join( ICONPATH, 'mixed_curve.svg')
 debug = _utils.debug
 #debug = _utils.doNothing
 
