@@ -66,7 +66,7 @@ class CurvesWorkbench(Gui.Workbench):
         from freecad.Curves import comp_spring
         from freecad.Curves import ReflectLinesFP
         from freecad.Curves import segmentSurfaceFP
-        from freecad.Curves import OrientedSketchFP
+        #from freecad.Curves import OrientedSketchFP
         #from freecad.Curves import HQRuledSurfaceFP
         from freecad.Curves import multiLoftFP
         #from freecad.Curves import HelicalSweepFP
@@ -78,7 +78,7 @@ class CurvesWorkbench(Gui.Workbench):
                            "Approximate","Interpolate","ParametricBlendCurve","ParametricComb","ZebraTool",
                            "Trim","GeomInfo","extract","solid","IsoCurve","SoS","sw2r","profileSupportCmd",
                            "cos","blendSurface","pasteSVG","profile","pipeshell","gordon","segment_surface",
-                           "to_console","SublinkEditor","comp_spring","ReflectLines","oriented_sketch",
+                           "to_console","SublinkEditor","comp_spring","ReflectLines",
                            "MultiLoft"]) # "hq_ruled_surface","HelicalSweep"])
         
         #if hasattr(Part.BezierSurface,"extendByLength"):
