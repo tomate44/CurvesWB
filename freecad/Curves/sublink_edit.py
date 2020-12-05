@@ -12,7 +12,7 @@ from PySide import QtGui, QtCore
 from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
 
-TOOL_ICON = os.path.join( ICONPATH, 'sublink_edit.svg')
+TOOL_ICON = os.path.join(ICONPATH, 'sublink_edit.svg')
 debug = _utils.debug
 
 try:
@@ -23,6 +23,7 @@ except AttributeError:
 
 try:
     _encoding = QtGui.QApplication.UnicodeUTF8
+
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig, _encoding)
 except AttributeError:
@@ -31,55 +32,26 @@ except AttributeError:
 
 
 def getMainWindow():
-   "returns the main window"
-   # using QtGui.qApp.activeWindow() isn't very reliable because if another
-   # widget than the mainwindow is active (e.g. a dialog) the wrong widget is
-   # returned
-   toplevel = QtGui.qApp.topLevelWidgets()
-   for i in toplevel:
-       if i.metaObject().className() == "Gui::MainWindow":
-           return i
-   raise Exception("No main window found")
+    "returns the main window"
+    # using QtGui.qApp.activeWindow() isn't very reliable because if another
+    # widget than the mainwindow is active (e.g. a dialog) the wrong widget is
+    # returned
+    toplevel = QtGui.qApp.topLevelWidgets()
+    for i in toplevel:
+        if i.metaObject().className() == "Gui::MainWindow":
+            return i
+    raise Exception("No main window found")
+
 
 def getComboView(mw):
-   dw = mw.findChildren(QtGui.QDockWidget)
-   for i in dw:
-       if str(i.objectName()) == "Combo View":
-           return i.findChild(QtGui.QTabWidget)
-       elif str(i.objectName()) == "Python Console":
-           return i.findChild(QtGui.QTabWidget)
-   raise Exception ("No tab widget found")
+    dw = mw.findChildren(QtGui.QDockWidget)
+    for i in dw:
+        if str(i.objectName()) == "Combo View":
+            return i.findChild(QtGui.QTabWidget)
+        elif str(i.objectName()) == "Python Console":
+            return i.findChild(QtGui.QTabWidget)
+    raise Exception("No tab widget found")
 
-class proxy(object):
-    """Feature python proxy"""
-    def __init__(self, obj):
-        obj.addProperty("App::PropertyLinkSubList",  "Profile",    "Profile", "SubShapes of the profile")
-        obj.addProperty("App::PropertyLinkSub",      "Location1",   "Profile", "Vertex location on spine")
-        obj.addProperty("App::PropertyLinkSub",      "Location2",   "Profile", "Vertex location on spine")
-        obj.addProperty("App::PropertyLinkSub",      "Location3",   "Profile", "Vertex location on spine")
-        obj.Proxy = self
-
-class proxyVP(object):
-    """View provider proxy"""
-    def __init__(self, obj ):
-        debug("VP init")
-        obj.Proxy = self
-
-    def attach(self, vobj):
-        self.Object = vobj.Object
-
-    def setEdit(self,vobj,mode):
-        debug("Start Edit / mode: %d"%mode)
-        # https://www.freecadweb.org/wiki/PySide_Advanced_Examples/fr
-        self.edit_widget = SubLinkEditorWidget(self.Object)
-        return(True)
-
-    def unsetEdit(self,vobj,mode):
-        debug("End Edit")
-        if self.edit_widget:
-            del(self.edit_widget)
-        #self.combo.removeTab(self.tab.idx) 
-        return(True)
 
 class SubLinkEditorWidget(object):
     def __init__(self, obj):
@@ -88,15 +60,15 @@ class SubLinkEditorWidget(object):
         self.widget = QtGui.QDockWidget()
         self.widget.ui = myWidget_Ui(obj)
         self.widget.ui.setupUi(self.widget)
-        
+
         self.widget.ui.pushButton_7.clicked.connect(self.accept)
-        
-        self.main_win.addDockWidget(QtCore.Qt.RightDockWidgetArea,self.widget)
+
+        self.main_win.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.widget)
         self.widget.setFloating(True)
-        
+
         self.initial_visibility = self.obj.ViewObject.Visibility
         self.obj.ViewObject.Visibility = False
-        
+
     def quit(self):
         print("SubLinkEditorWidget quits")
 
@@ -114,17 +86,18 @@ class SubLinkEditorWidget(object):
         FreeCADGui.Control.closeDialog()
         return(True)
 
+
 class myGrpBox(QtGui.QGroupBox):
     def __init__(self, parent, link, obj):
         super(myGrpBox, self).__init__(parent)
-        #self.rootNode = node
+        # self.rootNode = node
         self.obj = obj
         self.link = link
         self.parent = parent
         self.setupUi()
-        
+
     def setupUi(self):
-        #self.groupBox = QtGui.QGroupBox(self.dockWidgetContents)
+        # self.groupBox = QtGui.QGroupBox(self.dockWidgetContents)
         self.setObjectName(_fromUtf8(self.link))
         self.horizontalLayout = QtGui.QHBoxLayout(self)
         self.horizontalLayout.setObjectName(_fromUtf8("horizontalLayout"))
@@ -151,63 +124,64 @@ class myGrpBox(QtGui.QGroupBox):
         return(sel)
 
     def set_selection(self):
-        #self.obj.ViewObject.Visibility = False
+        # self.obj.ViewObject.Visibility = False
         self.selection_buffer = self.getSelection()
         FreeCADGui.Selection.clearSelection()
         lnk = self.obj.getPropertyByName(self.link)
         self.sublink_viz = list()
         if lnk:
-            if not isinstance(lnk[0],(list,tuple)):
-                self.sublink_viz.append((lnk[0],lnk[0].ViewObject.Visibility))
+            if not isinstance(lnk[0], (list, tuple)):
+                self.sublink_viz.append((lnk[0], lnk[0].ViewObject.Visibility))
                 lnk[0].ViewObject.Visibility = True
-                FreeCADGui.Selection.addSelection(lnk[0],lnk[1])
+                FreeCADGui.Selection.addSelection(lnk[0], lnk[1])
             else:
                 for o in lnk:
-                    self.sublink_viz.append((o[0],o[0].ViewObject.Visibility))
+                    self.sublink_viz.append((o[0], o[0].ViewObject.Visibility))
                     o[0].ViewObject.Visibility = True
                     for n in o[1]:
-                        FreeCADGui.Selection.addSelection(o[0],n)
+                        FreeCADGui.Selection.addSelection(o[0], n)
 
     def reset_selection(self):
-        #self.obj.ViewObject.Visibility = True
+        # self.obj.ViewObject.Visibility = True
         FreeCADGui.Selection.clearSelection()
         for o in self.selection_buffer:
             if o[0].HasSubObjects:
                 for n in o[0].SubElementNames:
-                    FreeCADGui.Selection.addSelection(o[0].Object,n)
+                    FreeCADGui.Selection.addSelection(o[0].Object, n)
                     o[0].Object.ViewObject.Visibility = o[1]
         for t in self.sublink_viz:
             t[0].ViewObject.Visibility = t[1]
 
     def view_link(self):
-        debug("%s.%s = %s"%(self.obj.Label, self.link, self.obj.getPropertyByName(self.link)))
-        #FreeCADGui.doCommand("print(FreeCAD.ActiveDocument.getObject('%s').%s)"%(self.obj.Name, self.link))
+        debug("%s.%s = %s" % (self.obj.Label, self.link, self.obj.getPropertyByName(self.link)))
+        # FreeCADGui.doCommand("print(FreeCAD.ActiveDocument.getObject('%s').%s)"%(self.obj.Name, self.link))
 
     def set_link(self):
-        #debug("%s.%s -> Set button pressed"%(self.obj.Label, self.link))
+        # debug("%s.%s -> Set button pressed"%(self.obj.Label, self.link))
         subs = list()
         sel = FreeCADGui.Selection.getSelectionEx()
         if sel == []:
             FreeCAD.Console.PrintError("Nothing selected !\n")
         for selobj in sel:
             if selobj.HasSubObjects:
-                subs.append(("(FreeCAD.ActiveDocument.getObject('%s'),%s)"%(selobj.Object.Name, selobj.SubElementNames)))
+                subs.append(("(FreeCAD.ActiveDocument.getObject('%s'),%s)" % (selobj.Object.Name, selobj.SubElementNames)))
         if self.obj.getTypeIdOfProperty(self.link) == 'App::PropertyLinkSub':
             if not len(subs) == 1:
                 FreeCAD.Console.PrintError("This property accept only 1 subobject !\n")
             else:
-                #FreeCADGui.doCommand("subobj = FreeCAD.ActiveDocument.getObject('%s')"%(subs[0][0].Name))
-                FreeCADGui.doCommand("FreeCAD.ActiveDocument.getObject('%s').%s = %s"%(self.obj.Name, self.link, subs[0]))
+                # FreeCADGui.doCommand("subobj = FreeCAD.ActiveDocument.getObject('%s')"%(subs[0][0].Name))
+                FreeCADGui.doCommand("FreeCAD.ActiveDocument.getObject('%s').%s = %s" % (self.obj.Name, self.link, subs[0]))
         elif self.obj.getTypeIdOfProperty(self.link) == 'App::PropertyLinkSubList':
-                FreeCADGui.doCommand("FreeCAD.ActiveDocument.getObject('%s').%s = %s"%(self.obj.Name, self.link, self.concat(subs)))
+            FreeCADGui.doCommand("FreeCAD.ActiveDocument.getObject('%s').%s = %s" % (self.obj.Name, self.link, self.concat(subs)))
         self.view_link()
 
-    def concat(self,subs):
+    def concat(self, subs):
         st = "("
         for o in subs:
-            st += o+","
+            st += o + ","
         st += ")"
         return(st)
+
 
 class myWidget_Ui(object):
     def __init__(self, obj):
@@ -215,7 +189,7 @@ class myWidget_Ui(object):
         self.obj = obj
         for pro in obj.PropertiesList:
             if obj.getTypeIdOfProperty(pro) in ('App::PropertyLinkSub', 'App::PropertyLinkSubList'):
-                print("%s (%s)"%(pro, obj.getTypeIdOfProperty(pro)))
+                print("%s (%s)" % (pro, obj.getTypeIdOfProperty(pro)))
                 self.link_sub.append(pro)
 
     def setupUi(self, DockWidget):
@@ -224,13 +198,13 @@ class myWidget_Ui(object):
         self.dockWidgetContents = QtGui.QWidget()
         self.dockWidgetContents.setObjectName(_fromUtf8("dockWidgetContents"))
         self.verticalLayout = QtGui.QVBoxLayout(self.dockWidgetContents)
-        #self.verticalLayout.setMargin(0)
+        # self.verticalLayout.setMargin(0)
         self.verticalLayout.setObjectName(_fromUtf8("verticalLayout"))
-        
+
         for link in self.link_sub:
             groupBox = myGrpBox(self.dockWidgetContents, link, self.obj)
             self.verticalLayout.addWidget(groupBox)
-        
+
         self.pushButton_7 = QtGui.QPushButton(self.dockWidgetContents)
         self.pushButton_7.setObjectName(_fromUtf8("pushButton_7"))
         self.verticalLayout.addWidget(self.pushButton_7, 0, QtCore.Qt.AlignHCenter)
@@ -242,7 +216,7 @@ class myWidget_Ui(object):
         QtCore.QMetaObject.connectSlotsByName(DockWidget)
 
     def retranslateUi(self, DockWidget):
-        DockWidget.setWindowTitle( self.obj.Label+" sublink editor")
+        DockWidget.setWindowTitle(self.obj.Label + " sublink editor")
         self.pushButton_7.setText(_translate("DockWidget", "Quit", None))
 
 
@@ -258,7 +232,7 @@ class sle:
                     hasSubLink = True
         if hasSubLink:
             self.sle = SubLinkEditorWidget(s[0])
-            
+
     def IsActive(self):
         if FreeCAD.ActiveDocument:
             selection = FreeCADGui.Selection.getSelection()
@@ -267,17 +241,56 @@ class sle:
         return False
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Sublink editor', 'ToolTip': 'Editor widget for sublink properties of objects'}
+        return {'Pixmap': TOOL_ICON,
+                'MenuText': __title__,
+                'ToolTip': __doc__}
+
 
 FreeCADGui.addCommand('SublinkEditor', sle())
 
 
+####################
+#     testing      #
+####################
+class proxy(object):
+    """Feature python proxy"""
+    def __init__(self, obj):
+        obj.addProperty("App::PropertyLinkSubList", "Profile", "Profile", "SubShapes of the profile")
+        obj.addProperty("App::PropertyLinkSub", "Location1", "Profile", "Vertex location on spine")
+        obj.addProperty("App::PropertyLinkSub", "Location2", "Profile", "Vertex location on spine")
+        obj.addProperty("App::PropertyLinkSub", "Location3", "Profile", "Vertex location on spine")
+        obj.Proxy = self
+
+
+class proxyVP(object):
+    """View provider proxy"""
+    def __init__(self, obj):
+        debug("VP init")
+        obj.Proxy = self
+
+    def attach(self, vobj):
+        self.Object = vobj.Object
+
+    def setEdit(self, vobj, mode):
+        debug("Start Edit / mode: %d" % mode)
+        # https://www.freecadweb.org/wiki/PySide_Advanced_Examples/fr
+        self.edit_widget = SubLinkEditorWidget(self.Object)
+        return(True)
+
+    def unsetEdit(self, vobj, mode):
+        debug("End Edit")
+        if self.edit_widget:
+            del(self.edit_widget)
+        # self.combo.removeTab(self.tab.idx)
+        return(True)
+
 
 def main():
     doc = FreeCAD.ActiveDocument
-    obj = doc.addObject("Part::FeaturePython","test")
+    obj = doc.addObject("Part::FeaturePython", "test")
     proxy(obj)
     proxyVP(obj.ViewObject)
+
 
 if __name__ == '__main__':
     main()

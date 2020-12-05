@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__ = "Paste SVG"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = 'Paste the SVG content of the clipboard'
+
 import xml.sax
 import importSVG
 import os
@@ -34,8 +41,8 @@ class pasteSVG:
 
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
-                'MenuText': 'paste SVG',
-                'ToolTip': 'Pastes the SVG content of the clipboard'}
+                'MenuText': __title__,
+                'ToolTip': __doc__}
 
 
 FreeCADGui.addCommand('pasteSVG', pasteSVG())

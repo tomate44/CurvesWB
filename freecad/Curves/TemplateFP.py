@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Face Map"
-__author__ = "Christophe Grellier (Chris_G)"
-__license__ = "LGPL 2.1"
-__doc__ = """Flat map of a 3D face"""
+__title__ = 'Title'
+__author__ = 'Christophe Grellier (Chris_G)'
+__license__ = 'LGPL 2.1'
+__doc__ = 'Doc'
 
 import os
 import FreeCAD
 import FreeCADGui
-import Part
-from freecad.Curves import _utils
+# import Part
+# from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
 
 TOOL_ICON = os.path.join(ICONPATH, 'icon.svg')
@@ -102,7 +102,7 @@ class FaceMapVP:
 
 
 class ToolCommand:
-    """Creates a ..."""
+    """Create a ... feature"""
     def makeFeature(self, sel=None):
         fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "")
         FaceMapFP(fp)

@@ -9,64 +9,16 @@ import os
 import FreeCAD
 import FreeCADGui
 import Part
-from freecad.Curves import _utils
+# from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
 
-TOOL_ICON = os.path.join( ICONPATH, 'multiLoft.svg')
-#debug = _utils.debug
-#debug = _utils.doNothing
+TOOL_ICON = os.path.join(ICONPATH, 'multiLoft.svg')
+# debug = _utils.debug
+# debug = _utils.doNothing
 
-props = """
-App::PropertyBool
-App::PropertyBoolList
-App::PropertyFloat
-App::PropertyFloatList
-App::PropertyFloatConstraint
-App::PropertyQuantity
-App::PropertyQuantityConstraint
-App::PropertyAngle
-App::PropertyDistance
-App::PropertyLength
-App::PropertySpeed
-App::PropertyAcceleration
-App::PropertyForce
-App::PropertyPressure
-App::PropertyInteger
-App::PropertyIntegerConstraint
-App::PropertyPercent
-App::PropertyEnumeration
-App::PropertyIntegerList
-App::PropertyIntegerSet
-App::PropertyMap
-App::PropertyString
-App::PropertyUUID
-App::PropertyFont
-App::PropertyStringList
-App::PropertyLink
-App::PropertyLinkSub
-App::PropertyLinkList
-App::PropertyLinkSubList
-App::PropertyMatrix
-App::PropertyVector
-App::PropertyVectorList
-App::PropertyPlacement
-App::PropertyPlacementLink
-App::PropertyColor
-App::PropertyColorList
-App::PropertyMaterial
-App::PropertyPath
-App::PropertyFile
-App::PropertyFileIncluded
-App::PropertyPythonObject
-Part::PropertyPartShape
-Part::PropertyGeometryList
-Part::PropertyShapeHistory
-Part::PropertyFilletEdges
-Sketcher::PropertyConstraintList
-"""
 
 class MultiLoftFP:
-    """Creates a ..."""
+    """Creates a MultiLoft"""
     def __init__(self, obj):
         """Add the properties"""
         obj.addProperty("App::PropertyLinkList", "Sources", "Multiloft", "Objects to loft")
@@ -81,12 +33,11 @@ class MultiLoftFP:
         src_shapes = []
         for o in obj.Sources:
             sh = o.Shape.copy()
-            #pl = sh.Placement
-            sh.Placement = o.getGlobalPlacement() #.multiply(pl)
+            # pl = sh.Placement
+            sh.Placement = o.getGlobalPlacement()
             src_shapes.append(sh)
         solids = []
-        num_faces = len(src_shapes[0].Faces)
-        for i in range(num_faces):
+        for i in range(len(src_shapes[0].Faces)):
             faces = [src_shapes[0].Faces[i], src_shapes[-1].Faces[i]]
             loft = []
             num_wires = len(faces[0].Wires)
@@ -106,14 +57,15 @@ class MultiLoftFP:
                 obj.MaxDegree = 1
             if obj.MaxDegree > 25:
                 obj.MaxDegree = 25
-        if prop in ["Ruled","Closed","MaxDegree"]:
+        if prop in ["Ruled", "Closed", "MaxDegree"]:
             self.execute(obj)
         return
 
+
 class MultiLoftVP:
-    def __init__(self,vobj):
+    def __init__(self, vobj):
         vobj.Proxy = self
-       
+
     def getIcon(self):
         return TOOL_ICON
 
@@ -123,28 +75,29 @@ class MultiLoftVP:
     def __getstate__(self):
         return {"name": self.Object.Name}
 
-    def __setstate__(self,state):
+    def __setstate__(self, state):
         self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
         return None
 
     def claimChildren(self):
         return self.Object.Sources
 
-    def onDelete(self, feature, subelements): # subelements is a tuple of strings
+    def onDelete(self, feature, subelements):  # subelements is a tuple of strings
         for c in self.Object.Sources:
-            if hasattr(c,"ViewObject"):
+            if hasattr(c, "ViewObject"):
                 c.ViewObject.Visibility = True
         return True
 
+
 class MultiLoftCommand:
-    """Creates a MultiLoft"""
+    """Creates a MultiLoft feature"""
     def makeFeature(self, sel):
-        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","MultiLoft")
+        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "MultiLoft")
         MultiLoftFP(fp)
         MultiLoftVP(fp.ViewObject)
         fp.Sources = sel
         for c in sel:
-            if hasattr(c,"ViewObject"):
+            if hasattr(c, "ViewObject"):
                 c.ViewObject.Visibility = False
         FreeCAD.ActiveDocument.recompute()
 
@@ -162,6 +115,9 @@ class MultiLoftCommand:
             return False
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
+        return {'Pixmap': TOOL_ICON,
+                'MenuText': __title__,
+                'ToolTip': __doc__}
+
 
 FreeCADGui.addCommand('MultiLoft', MultiLoftCommand())

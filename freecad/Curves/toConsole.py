@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "to console"
-__author__ = "Christophe Grellier (Chris_G)"
-__license__ = "LGPL 2.1"
-__doc__ = "Objects to python console."
+__title__ = 'to Console'
+__author__ = 'Christophe Grellier (Chris_G)'
+__license__ = 'LGPL 2.1'
+__doc__ = 'Objects to python console.'
 
 import FreeCAD
 import FreeCADGui
@@ -11,22 +11,22 @@ import os
 from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
 
-TOOL_ICON = os.path.join( ICONPATH, 'toconsole.svg')
-#debug = _utils.debug
+TOOL_ICON = os.path.join(ICONPATH, 'toconsole.svg')
+# debug = _utils.debug
 debug = _utils.doNothing
+
 
 class ToConsole:
     "Brings the selected objects to the python console"
     def GetResources(self):
-        return {'Pixmap'  : TOOL_ICON,
-                'MenuText': "to Console",
+        return {'Pixmap': TOOL_ICON,
+                'MenuText': __title__,
                 'Accel': "",
-                'ToolTip': "Objects to console"}
+                'ToolTip': __doc__}
 
     def Activated(self):
         doc = ''
         obj = ''
-        sob = ''
         sublinks = '('
 
         doc_num = 0
@@ -43,46 +43,46 @@ class ToConsole:
             if not selobj.DocumentName == doc:
                 doc = selobj.DocumentName
                 doc_num += 1
-                FreeCADGui.doCommand("doc%d = FreeCAD.getDocument('%s')"%(doc_num,doc))
+                FreeCADGui.doCommand("doc{} = FreeCAD.getDocument('{}')".format(doc_num, doc))
             if not selobj.ObjectName == obj:
                 obj = selobj.ObjectName
                 obj_num += 1
-                FreeCADGui.doCommand("o%d = doc%d.getObject('%s')"%(obj_num,doc_num,obj))
+                FreeCADGui.doCommand("o{} = doc{}.getObject('{}')".format(obj_num, doc_num, obj))
             if selobj.HasSubObjects:
                 for sub in selobj.SubElementNames:
-                    sublinks += "(o%d,('%s')),"%(obj_num,sub)
+                    sublinks += "(o{},('{}')),".format(obj_num, sub)
                     if 'Vertex' in sub:
                         vert_num += 1
-                        FreeCADGui.doCommand("v%d = o%d.Shape.%s"%(vert_num,obj_num,sub))
+                        FreeCADGui.doCommand("v{} = o{}.Shape.{}".format(vert_num, obj_num, sub))
                     if 'Edge' in sub:
                         edge_num += 1
-                        FreeCADGui.doCommand("e%d = o%d.Shape.%s"%(edge_num,obj_num,sub))
+                        FreeCADGui.doCommand("e{} = o{}.Shape.{}".format(edge_num, obj_num, sub))
                     if 'Face' in sub:
                         face_num += 1
-                        FreeCADGui.doCommand("f%d = o%d.Shape.%s"%(face_num,obj_num,sub))
+                        FreeCADGui.doCommand("f{} = o{}.Shape.{}".format(face_num, obj_num, sub))
         sublinks += ")"
         if len(sublinks) > 1:
-            FreeCADGui.doCommand("_sub_link_buffer = %s"%sublinks)
+            FreeCADGui.doCommand("_sub_link_buffer = {}".format(sublinks))
         if obj_num > 1:
             ol = ''
             for oi in range(obj_num):
-                ol += "o%d,"%(oi+1)
-            FreeCADGui.doCommand("ol = (%s)"%ol)
+                ol += "o{},".format(oi + 1)
+            FreeCADGui.doCommand("ol = ({})".format(ol))
         if vert_num > 1:
             vl = ''
             for vi in range(vert_num):
-                vl += "v%d,"%(vi+1)
-            FreeCADGui.doCommand("vl = (%s)"%vl)
+                vl += "v{},".format(vi + 1)
+            FreeCADGui.doCommand("vl = ({})".format(vl))
         if edge_num > 1:
             el = ''
             for ei in range(edge_num):
-                el += "e%d,"%(ei+1)
-            FreeCADGui.doCommand("el = (%s)"%el)
+                el += "e{},".format(ei + 1)
+            FreeCADGui.doCommand("el = ({})".format(el))
         if face_num > 1:
             fl = ''
             for fi in range(face_num):
-                fl += "f%d,"%(fi+1)
-            FreeCADGui.doCommand("fl = (%s)"%fl)
+                fl += "f{},".format(fi + 1)
+            FreeCADGui.doCommand("fl = ({})".format(fl))
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:
@@ -92,4 +92,5 @@ class ToConsole:
         else:
             return False
 
-FreeCADGui.addCommand('to_console',ToConsole())
+
+FreeCADGui.addCommand('to_console', ToConsole())
