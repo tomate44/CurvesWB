@@ -6,12 +6,13 @@ import FreeCADGui
 from PySide import QtGui
 from freecad.Curves import ICONPATH
 
-TOOL_ICON = os.path.join( ICONPATH, 'svg_rv3.svg')
+TOOL_ICON = os.path.join(ICONPATH, 'svg_rv3.svg')
+
 
 class pasteSVG:
     def Activated(self):
         cb = QtGui.QApplication.clipboard()
-        t=cb.text()
+        t = cb.text()
 
         if t[0:5] == '<?xml':
             h = importSVG.svgHandler()
@@ -19,16 +20,22 @@ class pasteSVG:
             if not doc:
                 doc = FreeCAD.newDocument("SvgImport")
             h.doc = doc
-            xml.sax.parseString(t,h)
+            xml.sax.parseString(t, h)
             doc.recompute()
             FreeCADGui.SendMsgToActiveView("ViewFit")
         else:
             FreeCAD.Console.PrintError('Invalid clipboard content.\n')
-        
-    #def IsActive(self):
-        #return(True)
+
+    def IsActive(self):
+        cb = QtGui.QApplication.clipboard()
+        cb_content = cb.text()
+        if cb_content[0:5] == '<?xml':
+            return True
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'paste SVG', 'ToolTip': 'Pastes the SVG content of the clipboard'}
+        return {'Pixmap': TOOL_ICON,
+                'MenuText': 'paste SVG',
+                'ToolTip': 'Pastes the SVG content of the clipboard'}
+
 
 FreeCADGui.addCommand('pasteSVG', pasteSVG())
