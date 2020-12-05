@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Curve extend"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Extend Curve"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Extend an edge by a given distance."
+__doc__     = "Extend an edge by a given distance."
 
 import os
 import FreeCAD
@@ -137,6 +137,9 @@ class extendCommand:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Extend Curve', 'ToolTip': 'Extends the selected edge'}
+        return {'Pixmap' : TOOL_ICON,
+                'MenuText': 'Extend Curve',
+                'ToolTip': 'Extends the selected edge'
+        }
 
 FreeCADGui.addCommand('extend', extendCommand())

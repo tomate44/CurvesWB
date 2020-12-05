@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__   = "Nurbs surface match"
+__author__  = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__     = ""
+
 import FreeCAD
 import Part
 
@@ -300,6 +307,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
 

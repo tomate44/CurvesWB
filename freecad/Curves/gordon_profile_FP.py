@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Freehand BSpline"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Freehand BSpline"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Creates an freehand BSpline curve"
+__doc__     = "Creates an freehand BSpline curve"
 
 import sys
 if sys.version_info.major >= 3:
@@ -326,6 +326,9 @@ class GordonProfileCommand:
             return False
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
+        return {'Pixmap' : TOOL_ICON,
+                'MenuText': __title__,
+                'ToolTip': __doc__
+        }
 
 FreeCADGui.addCommand('gordon_profile', GordonProfileCommand())

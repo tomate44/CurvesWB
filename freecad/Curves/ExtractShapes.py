@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Extract subshape"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Extract subshape"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Extract selected subshapes from objects."
+__doc__     = "Extract selected subshapes from objects."
 
 import os
 import FreeCAD
@@ -32,6 +32,9 @@ class extract:
         FreeCAD.ActiveDocument.recompute()
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Extract', 'ToolTip': 'Extract selected subshapes from objects'}
+        return {'Pixmap' : TOOL_ICON,
+                'MenuText': 'Extract',
+                'ToolTip': 'Extract selected subshapes from objects'
+        }
 
-FreeCADGui.addCommand('extract', extract()) 
+FreeCADGui.addCommand('extract', extract())

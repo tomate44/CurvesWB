@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Face Map"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Face Map"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = """Flat map of a 3D face"""
+__doc__     = "Flat map of a 3D face
 
 import os
 import FreeCAD

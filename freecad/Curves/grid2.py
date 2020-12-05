@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__   = "Grid 2"
+__author__  = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__     = ""
+
 from math import pi
 from pivy import coin
 import Part
@@ -45,13 +52,13 @@ class gridView(coin.SoSeparator):
         self.addChild(self.sep1)
         self.addChild(self.sep2)
         self.addChild(self.sep3)
-        
+
         ps = coin.SoPointSet()
         ds = coin.SoDrawStyle()
         ds.pointSize = 1
         self.sep1.addChild(ds)
         self.sep1.addChild(ps)
-        
+
         self.color1 = (0.82, 0.15, 0.15) # red (X)
         self.color2 = (0.40, 0.59, 0.20) # green (Y)
         self.color3 = (0.13, 0.49, 0.88) # blue (Z)
@@ -101,7 +108,7 @@ class gridView(coin.SoSeparator):
     def build_lines(self):
         np = self._number_of_points
         n = 1 + 2 * np
-        
+
         self.line_mat1 = coin.SoMaterial()
         ol = list() #[(0.2,0.2,0.2)] + [(0.6,0.6,0.6)] * 9
         bind1 = coin.SoMaterialBinding()
@@ -121,7 +128,7 @@ class gridView(coin.SoSeparator):
             #print(ind)
         self.line_mat1.diffuseColor.setValues(0, len(ol), ol )
         l1.coordIndex.setValues(0, len(ind), ind)
-        
+
         l2 = coin.SoIndexedLineSet()
         l2.coordIndex.setValue(0)
         ind2 = list()
@@ -137,8 +144,8 @@ class gridView(coin.SoSeparator):
             #print(ind)
         #self.line_mat1.diffuseColor.setValues(0, len(ol), ol )
         l2.coordIndex.setValues(0, len(ind2), ind2)
-        
-        
+
+
         self.sep2.addChild(bind1)
         self.sep2.addChild(self.line_mat1)
         self.sep2.addChild(l1)
@@ -155,11 +162,11 @@ class gridView(coin.SoSeparator):
     def build_axis(self):
         np = self._number_of_points
         n = 1 + 2 * np
-        
+
         ds = coin.SoDrawStyle()
         ds.lineWidth = 2
         self.sep3.addChild(ds)
-        
+
         self.mat1 = coin.SoMaterial()
         #bind1 = coin.SoMaterialBinding()
         #bind1.value = coin.SoMaterialBinding.PER_PART
@@ -169,7 +176,7 @@ class gridView(coin.SoSeparator):
         #self.sep3.addChild(bind1)
         self.sep3.addChild(self.mat1)
         self.sep3.addChild(ax)
-        
+
         self.mat2 = coin.SoMaterial()
         #bind2 = coin.SoMaterialBinding()
         #bind2.value = coin.SoMaterialBinding.PER_PART
@@ -211,7 +218,7 @@ class orthoToggleSwitch(coin.SoSwitch):
         self.calc2 = coin.SoCalculator()
         self.calc2.a.connectFrom(self.calc.od)
         self.calc2.expression.set1Value(0, "oa=(a>0)?1:0") # tolerance
-        
+
         self.scaleEngine = coin.SoCalculator()
         #self.scaleEngine.a.connectFrom(cam.height)
         self.scaleEngine.expression.set1Value(0,"ta=floor(log10(a/10))")
@@ -238,7 +245,7 @@ class orthoToggleSwitch(coin.SoSwitch):
         self.view_1.build_axis()
         self.view_1.build_lines()
         self.addChild(self.view_1)
-        
+
         if cam:
             self.connectCamera(cam)
         else:
@@ -288,7 +295,7 @@ class orthoViewSwitch(coin.SoSwitch):
         self.addChild(self.view_y)
         self.view_x = gridView("X_view")
         self.addChild(self.view_x)
-        
+
         if cam:
             self.connectCamera(cam)
         else:

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = 'Profile support plane'
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = 'Profile support plane'
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = 'Creates a support plane for sketches'
+__doc__     = 'Creates a support plane for sketches'
 
 import os
 import FreeCAD
@@ -149,6 +149,9 @@ class profSupCommand:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
+        return {'Pixmap' : TOOL_ICON,
+                'MenuText': __title__,
+                'ToolTip': __doc__
+        }
 
 FreeCADGui.addCommand('profileSupportCmd', profSupCommand())

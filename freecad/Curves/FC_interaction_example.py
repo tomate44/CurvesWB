@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__   = ""
+__author__  = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__     = ""
+
 import FreeCAD
 import FreeCADGui
 import Part
@@ -134,7 +141,7 @@ class InterpolationPolygon(object):
                 self.points = [MarkerOnEdge([p]) for p in points]
             else:
                 FreeCAD.Console.PrintError("InterpolationPolygon : bad input")
-        
+
         # Setup coin objects
         if not FreeCAD.ActiveDocument:
             appdoc = FreeCAD.newDocument("New")
@@ -178,10 +185,10 @@ class InterpolationPolygon(object):
     def build_lines(self):
         self.lines = list()
         for i in range(len(self.points)-1):
-            line = ConnectionLine([self.points[i], self.points[i+1]]) 
+            line = ConnectionLine([self.points[i], self.points[i+1]])
             line.set_color("blue")
             self.lines.append(line)
-    
+
     def controlCB(self, attr, event_callback):
         event = event_callback.getEvent()
         if event.getState() == event.UP:
@@ -190,7 +197,7 @@ class InterpolationPolygon(object):
                 self.subdivide()
             elif event.getKey() == ord("q"):
                 self.quit()
-    
+
     def subdivide(self):
         # get selected lines and subdivide them
         pts = list()
@@ -211,13 +218,13 @@ class InterpolationPolygon(object):
                     par1 = self.curve.parameter(FreeCAD.Vector(p1))
                     par2 = self.curve.parameter(FreeCAD.Vector(p2))
                     midpar = (par1+par2)/2.0
-                    pts.append(ConnectionMarker([self.curve.value(midpar)]))                    
+                    pts.append(ConnectionMarker([self.curve.value(midpar)]))
         pts.append(self.points[-1])
         self.points = pts
         self.setup_InteractionSeparator()
         self.update_curve()
         return(True)
-    
+
     def quit(self):
         #self.sg.removeChild(self.root)
         #self.root_inserted = False
@@ -225,7 +232,7 @@ class InterpolationPolygon(object):
         self.root.unregister()
         self.sg.removeChild(self.root)
         self.root_inserted = False
-            
+
 
 
 

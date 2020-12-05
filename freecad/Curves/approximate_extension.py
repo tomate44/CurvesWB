@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Approximate extension"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Approximate extension"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Approximate extension for other FeaturePython objects."
+__doc__     = "Approximate extension for other FeaturePython objects."
 
 import os
 import FreeCAD

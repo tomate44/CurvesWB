@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Sublink Editor"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Sublink Editor"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Editor widget for sublink properties of objects"
+__doc__     = "Editor widget for sublink properties of objects"
 
 import os
 import FreeCAD
@@ -267,7 +267,10 @@ class sle:
         return False
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Sublink editor', 'ToolTip': 'Editor widget for sublink properties of objects'}
+        return {'Pixmap' : TOOL_ICON,
+                'MenuText': 'Sublink editor',
+                'ToolTip': 'Editor widget for sublink properties of objects'
+        }
 
 FreeCADGui.addCommand('SublinkEditor', sle())
 

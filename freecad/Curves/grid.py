@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__   = "Grid"
+__author__  = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__     = ""
+
 import FreeCAD
 import FreeCADGui
 import math
@@ -83,7 +90,7 @@ class gridNode(coin.SoSeparator):
         self.addChild(self.material4)
         self.addChild(self.coord2)
         self.addChild(self.lineSet2)
-       
+
         self._vector1 = coin.SbVec3f(1,0,0)
         self._vector2 = coin.SbVec3f(0,1,0)
         self.normal = self._vector1.cross(self._vector2)
@@ -92,7 +99,7 @@ class gridNode(coin.SoSeparator):
         self._subDim = 10
         self._maxviz = 1.0
         self._factor = 1.0
-       
+
         self._numGridLines = 4
         self.material1.diffuseColor = coin.SbColor(1,0,0)
         self.material2.diffuseColor = coin.SbColor(0,1,0)
@@ -167,7 +174,7 @@ class gridNode(coin.SoSeparator):
     def mainDim(self, n):
         self._mainDim = n
         self.buildGrid()
-       
+
     @property
     def subDim(self):
         return self._subDim
@@ -203,31 +210,31 @@ class gridNode(coin.SoSeparator):
 #          // First get hold of an SoPath through the scenegraph down to the
 #          // node ("mynode") you want to query about its current world space
 #          // transformation(s).
-#        
+#
 #          SoSearchAction * searchaction = new SoSearchAction;
 #          searchaction->setNode(mynode);
 #          searchaction->apply(myscenegraphroot);
-#        
+#
 #          SoPath * path = searchaction->getPath();
 #          assert(path != NULL);
-#        
+#
 #          // Then apply the SoGetMatrixAction to get the full transformation
 #          // matrix from world space.
-#        
+#
 #          const SbViewportRegion vpr = myviewer->getViewportRegion();
 #          SoGetMatrixAction * getmatrixaction = new SoGetMatrixAction(vpr);
 #          getmatrixaction->apply(path);
-#        
+#
 #          SbMatrix transformation = getmatrixaction->getMatrix();
-#        
+#
 #          // And if you want to access the individual transformation
 #          // components of the matrix:
-#        
+#
 #          SbVec3f translation;
 #          SbRotation rotation;
 #          SbVec3f scalevector;
 #          SbRotation scaleorientation;
-#        
+#
 #          transformation.getTransform(translation, rotation, scalevector, scaleorientation);
         searchaction = coin.SoSearchAction()
         searchaction.setNode(self)
@@ -262,13 +269,13 @@ class gridNode(coin.SoSeparator):
 
     def buildGrid(self):
         n = int(1.0 * self._mainDim / self._subDim)
-        
+
         pts = []
         pts.append(-self._mainDim * self._vector1)
         pts.append( self._mainDim * self._vector1)
         pts.append(-self._mainDim * self._vector2)
         pts.append( self._mainDim * self._vector2)
-        
+
         pts += self.gridPts(n,1)
         self.coord.point.setValues(0,len(pts),pts)
         self._numGridLines = len(pts) / 2.0
@@ -313,7 +320,7 @@ class gridObject:
             ro = fp.Placement.Rotation.Q
             fp.ViewObject.Proxy.trans.translation = coin.SbVec3f(tr.x,tr.y,tr.z)
             fp.ViewObject.Proxy.trans.rotation = coin.SbRotation(ro[0],ro[1],ro[2],ro[3])
-    
+
 
 class gridVP:
     def __init__(self, obj ):
@@ -340,7 +347,7 @@ class gridVP:
         self.xy.mainDim = 100
         self.xy.subDim = 10
         self.xy.maxviz = 1.0
-   
+
         self.xz = gridNode()
         self.xz.vector1dir = (1,0,0)
         self.xz.vector1color = (0.827,0.149,0.149) # red (X)
@@ -349,7 +356,7 @@ class gridVP:
         self.xz.mainDim = 100
         self.xz.subDim = 10
         self.xz.maxviz = 0.5
-   
+
         self.yz = gridNode()
         self.yz.vector1dir = (0,1,0)
         self.yz.vector1color = (0.400,0.590,0.200) # green (Y)
@@ -358,10 +365,10 @@ class gridVP:
         self.yz.mainDim = 100
         self.yz.subDim = 10
         self.yz.maxviz = 0.5
-   
+
         self.sg = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
         self.cam = FreeCADGui.ActiveDocument.ActiveView.getCameraNode()
-   
+
         self.xy.linkTo(self.cam)
         self.xy.factor = 1.
         self.xz.linkTo(self.cam)

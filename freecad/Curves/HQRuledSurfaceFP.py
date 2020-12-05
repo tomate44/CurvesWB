@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "HQ Ruled surface"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "HQ Ruled surface"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = """High Quality ruled surface.
+__doc__     = """High Quality ruled surface.
 The 2 edges (or wires) are reparametrized before surface creation."""
 
 import sys
@@ -176,6 +176,9 @@ class HQ_Ruled_Surface_Command:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
+        return {'Pixmap' : TOOL_ICON,
+                'MenuText': __title__,
+                'ToolTip': __doc__
+        }
 
 FreeCADGui.addCommand('hq_ruled_surface', HQ_Ruled_Surface_Command())

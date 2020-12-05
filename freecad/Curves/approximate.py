@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Approximate"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Approximate"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Approximate a set of points."
+__doc__     = "Approximate a set of points."
 
 import os
 import FreeCAD

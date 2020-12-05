@@ -1,9 +1,9 @@
 #  -*- coding: utf-8 -*-
 
-__title__ = "Sketch on surface"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Sketch on surface"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Map a sketch on a surface"
+__doc__     = "Map a sketch on a surface"
 
 import os
 import FreeCAD
@@ -461,7 +461,7 @@ class SoS:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': __title__,
-                'ToolTip': __doc__}
-
+                'ToolTip': __doc__
+        }
 
 FreeCADGui.addCommand('SoS', SoS())

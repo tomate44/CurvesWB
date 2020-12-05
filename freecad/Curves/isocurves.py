@@ -1,7 +1,9 @@
-__title__ = "isoCurves for FreeCAD"
-__author__ = "Chris_G"
+# -*- coding: utf-8 -*-
+
+__title__   = "isoCurves for FreeCAD"
+__author__  = "Chris_G"
 __license__ = "LGPL 2.1"
-__doc__ = '''
+__doc__     = '''
 import isocurves
 single = isocurves.isoCurve(face,'U',0.5)
 Part.show(single.toShape())

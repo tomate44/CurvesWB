@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Select Adjacent faces"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Select Adjacent faces"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Select the Adjacent faces of the selected subshape"
+__doc__     = "Select the Adjacent faces of the selected subshape"
 
 # import FreeCAD
 from FreeCADGui import Selection as sel
@@ -66,7 +66,7 @@ class adjacentfacesCommand:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': 'Adjacent faces',
-                'ToolTip': 'Select the adjacent faces of the selected shape'}
-
+                'ToolTip': 'Select the adjacent faces of the selected shape'
+        }
 
 addCommand('adjacent_faces', adjacentfacesCommand())

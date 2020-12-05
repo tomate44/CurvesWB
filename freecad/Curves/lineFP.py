@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Parametric line"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Parametric line"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Parametric line between two vertexes."
+__doc__     = "Parametric line between two vertices."
 
 import os
 import FreeCAD
@@ -17,7 +17,7 @@ TOOL_ICON = os.path.join(ICONPATH, "line.svg")
 debug = _utils.doNothing
 
 class line:
-    """Creates a parametric line between two vertexes"""
+    """Creates a parametric line between two vertices"""
     def __init__(self, obj):
         """Add the properties"""
         obj.addProperty("App::PropertyLinkSub", "Vertex1", "Line", "First Vertex")
@@ -36,7 +36,7 @@ class line:
 class lineVP:
     def __init__(self,vobj):
         vobj.Proxy = self
-       
+
     def getIcon(self):
         return(TOOL_ICON)
 
@@ -51,7 +51,7 @@ class lineVP:
         return(None)
 
 class lineCommand:
-    """Creates a parametric line between two vertexes"""
+    """Creates a parametric line between two vertices"""
     def makeLineFeature(self,source):
         lineObj = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Line")
         line(lineObj)
@@ -64,7 +64,7 @@ class lineCommand:
         verts = []
         sel = FreeCADGui.Selection.getSelectionEx()
         if sel == []:
-            FreeCAD.Console.PrintError("Select 2 vertexes !\n")
+            FreeCAD.Console.PrintError("Select 2 vertices !\n")
         for selobj in sel:
             if selobj.HasSubObjects:
                 for i in range(len(selobj.SubObjects)):
@@ -81,6 +81,9 @@ class lineCommand:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Line', 'ToolTip': 'Creates a line between 2 vertexes'}
+        return {'Pixmap' : TOOL_ICON,
+                'MenuText': 'Line',
+                'ToolTip': 'Creates a line between 2 vertices'
+        }
 
 FreeCADGui.addCommand('line', lineCommand())

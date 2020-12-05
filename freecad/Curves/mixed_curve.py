@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Mixed curve"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Mixed curve"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Builds a 3D curve as the intersection of 2 projected curves."
+__doc__     = "Builds a 3D curve as the intersection of 2 projected curves."
 
 import os
 import FreeCAD
@@ -137,6 +137,9 @@ class MixedCurveCmd:
         return False
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Mixed curve', 'ToolTip': 'Builds a 3D curve as the intersection of 2 projected curves'}
+        return {'Pixmap' : TOOL_ICON,
+                'MenuText': 'Mixed curve',
+                'ToolTip': 'Builds a 3D curve as the intersection of 2 projected curves'
+        }
 
 FreeCADGui.addCommand('mixed_curve', MixedCurveCmd())

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "BSpline to script"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "BSpline to script"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Creates a python script to build the selected BSpline curves."
+__doc__     = "Creates a python script to build the selected BSpline curves."
 
 import os
 import FreeCAD

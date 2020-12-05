@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Split curve"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Split curve"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Splits the selected edge."
+__doc__     = "Splits the selected edge."
 
 import sys
 if sys.version_info.major >= 3:
@@ -594,6 +594,9 @@ class splitCommand:
             return False
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Split Curve', 'ToolTip': 'Splits the selected edge'}
+        return {'Pixmap' : TOOL_ICON,
+                'MenuText': 'Split Curve',
+                'ToolTip': 'Splits the selected edge'
+        }
 
 FreeCADGui.addCommand('split', splitCommand())

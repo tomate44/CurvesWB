@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Segment surface"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Segment surface"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = """Segment a surface on isocurves"""
+__doc__     = "Segment a surface on isocurves"
 
 import os
 
@@ -208,7 +208,9 @@ class SegSurfCommand:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
-
+        return {'Pixmap': TOOL_ICON,
+                'MenuText': __title__,
+                'ToolTip': __doc__
+        }
 
 FreeCADGui.addCommand('segment_surface', SegSurfCommand())

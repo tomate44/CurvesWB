@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Blend curve"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Blend curve"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Blend curve between two edges."
+__doc__     = "Blend curve between two edges."
 
 import os
 import FreeCAD
@@ -578,7 +578,9 @@ class ParametricBlendCurve:
         FreeCAD.ActiveDocument.recompute()
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
-
+        return {'Pixmap': TOOL_ICON,
+                'MenuText': __title__,
+                'ToolTip': __doc__
+        }
 
 FreeCADGui.addCommand('ParametricBlendCurve', ParametricBlendCurve())

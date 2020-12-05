@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Outline Curve"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Outline Curve"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = """Outline curve of a shape"""
+__doc__     = "Outline curve of a shape"
 
 import sys
 if sys.version_info.major >= 3:
@@ -153,6 +153,9 @@ class outline_cmd:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
+        return {'Pixmap' : TOOL_ICON,
+                'MenuText': __title__,
+                'ToolTip': __doc__
+        }
 
 FreeCADGui.addCommand('outline', outline_cmd())

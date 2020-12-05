@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__   = "Curve on Surface"
+__author__  = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__     = ""
+
 import FreeCAD
 import Part
 from Part import Geom2d
@@ -26,7 +33,7 @@ from freecad.Curves import _utils
 #
 #    params1, params2 are parameters of internal space of the elements. For
 #    vertices, params is None. For edges, params is one float, u. For faces,
-#    params is a tuple (u,v). 
+#    params is a tuple (u,v).
 
 debug = _utils.debug
 
@@ -61,7 +68,7 @@ def linearDeviation(edge, radius=1.0):
         elif i[0] in ("Vertex",b"Vertex"):
             params.append(edge.parameterAt(edge.Vertexes[i[1]]))
     return (radius-d), params
-    
+
 def isLinear(edge, tol=1e-7):
     d, params = linearDeviation(edge)
     if d < tol:
@@ -75,7 +82,7 @@ def mul2d(vec, fac):
     return Base.Vector2d(vec.x*fac, vec.y*fac)
 
 """ Doc of Part.Geom2d.BSplineCurve2d.buildFromPolesMultsKnots()
-				
+
 				Builds a B-Spline by a lists of Poles, Mults, Knots.
 				arguments: poles (sequence of Base.Vector), [mults , knots, periodic, degree, weights (sequence of float), CheckRational]
 
@@ -111,7 +118,7 @@ def curve2d_extend(curve, start=0.5, end=0.5):
     poles = bs.getPoles()
     mults = bs.getMultiplicities()
     knots = bs.getKnots()
-    
+
     pre = list()
     post = list()
     for i in range(bs.Degree):
@@ -133,7 +140,7 @@ def curve2d_extend(curve, start=0.5, end=0.5):
         print(sum(mults))
         print(len(knots))
     return bs
-    
+
     #ext1 = Part.Geom2d.BSplineCurve2d()
     #pts = [bs.value(bs.FirstParameter),
            #add2d(bs.value(bs.FirstParameter), mul2d(t1,start*bs.length()))]
@@ -154,26 +161,26 @@ def get_offset_curve(bc,c1,c2,dist=0.1):
     intersec = intersection2d(off1, c1, c2)
     if intersec:
         return intersec
-    
+
     off2 = Part.Geom2d.OffsetCurve2d(bc,-dist)
     intersec = intersection2d(off1, c1, c2)
     if intersec:
         return intersec
-    
+
     ext1 = curve2d_extend(off1, 0.2, 0.2)
     intersec = intersection2d(ext1, c1, c2)
     if intersec:
         return intersec
-    
+
     ext2 = curve2d_extend(off2, 0.2, 0.2)
     intersec = intersection2d(ext2, c1, c2)
     if intersec:
         return intersec
-    
+
 
 
 class curveOnSurface(object):
-    
+
     def __init__(self, edge = None, face = None):
         self.face = face
         self.edge = edge
@@ -206,7 +213,7 @@ class curveOnSurface(object):
     def reversed(self, b):
         if not self._reversed is bool(b):
             self.reverse()
-        
+
 
     def reverse(self):
         if self.isValid:
@@ -227,7 +234,7 @@ class curveOnSurface(object):
     def setEdge(self, edge):
         self.edge = edge
         self.validate()
-        
+
     def getEdge(self):
         return(self.edgeOnFace.transformGeometry(self.face.Placement.toMatrix()))
 
@@ -289,7 +296,7 @@ class curveOnSurface(object):
         else:
             p = self.edge.valueAt(t)
             surf = self.face.Surface
-            u,v = surf.parameter(p)            
+            u,v = surf.parameter(p)
             return(self.face.Surface.value(u,v))
 
     def tangentAt(self, t):
@@ -576,6 +583,4 @@ class curveOnSurface(object):
         par1 = cos1[0].parameter(Base.Vector2d(pt1[0],pt1[1]))
         tan1 = cos1[0].tangent(par1)
         return(tan1)
-    
-        
-    
+

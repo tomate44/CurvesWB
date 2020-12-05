@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Nurbs tools"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Nurbs tools"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Collection of tools for Nurbs."
+__doc__     = "Collection of tools for Nurbs."
 
 import FreeCAD
 import Part

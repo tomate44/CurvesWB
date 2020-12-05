@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Parametric solid"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Parametric solid"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Make a parametric solid from selected faces."
+__doc__     = "Make a parametric solid from selected faces."
 
 import os
 import FreeCAD
@@ -97,6 +97,5 @@ class solidCommand:
         return {'Pixmap': TOOL_ICON,
                 'MenuText': 'Make Solid',
                 'ToolTip': 'Make a parametric solid from selected faces'}
-
 
 FreeCADGui.addCommand('solid', solidCommand())

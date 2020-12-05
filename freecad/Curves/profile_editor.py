@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__   = "Profile Editor"
+__author__  = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__     = ""
+
 import FreeCAD
 import FreeCADGui
 import Part
@@ -46,7 +53,7 @@ class MarkerOnShape(graphics.Marker):
         self.on_drag_start.append(self.add_text)
         self.on_drag_release.append(self.remove_text)
         self.addChild(self._text_switch)
-        
+
         if isinstance(sh,Part.Shape):
             self.snap_shape = sh
         elif isinstance(sh,(tuple,list)):
@@ -67,11 +74,11 @@ class MarkerOnShape(graphics.Marker):
     def add_text(self):
         self._text_switch.whichChild = coin.SO_SWITCH_ALL
         self.on_drag.append(self.update_text)
-        
+
     def remove_text(self):
         self._text_switch.whichChild = coin.SO_SWITCH_NONE
         self.on_drag.remove(self.update_text)
-        
+
     def update_text(self):
         p = self.points[0]
         coords = ['{: 9.3f}'.format(p[0]),'{: 9.3f}'.format(p[1]),'{: 9.3f}'.format(p[2])]
@@ -230,7 +237,7 @@ class InterpoCurveEditor(object):
                 self.points.append(p)
             else:
                 FreeCAD.Console.PrintError("InterpoCurveEditor : bad input")
-        
+
         # Setup coin objects
         if self.fp:
             self.guidoc = self.fp.ViewObject.Document
@@ -326,10 +333,10 @@ class InterpoCurveEditor(object):
     def build_lines(self):
         self.lines = list()
         for i in range(len(self.points)-1):
-            line = ConnectionLine([self.points[i], self.points[i+1]]) 
+            line = ConnectionLine([self.points[i], self.points[i+1]])
             line.set_color("blue")
             self.lines.append(line)
-    
+
     def controlCB(self, attr, event_callback):
         event = event_callback.getEvent()
         if event.getState() == event.UP:
@@ -369,7 +376,7 @@ class InterpoCurveEditor(object):
                 self.points = pts
                 self.setup_InteractionSeparator()
                 self.update_curve()
-   
+
     def toggle_linear(self):
         for o in self.root.selected_objects:
             if isinstance(o,ConnectionLine):
@@ -468,11 +475,9 @@ class InterpoCurveEditor(object):
         for l in self.lines:
             l.updateLine()
         self.update_curve()
-        
-                            
-                    
-            
-            
+
+
+
 
     def subdivide(self):
         # get selected lines and subdivide them
@@ -499,14 +504,14 @@ class InterpoCurveEditor(object):
         self.root.selected_objects = new_select
         self.update_curve()
         return(True)
-    
+
     def quit(self):
         self.root.events.removeEventCallback(coin.SoKeyboardEvent.getClassTypeId(), self._controlCB)
         self.root.unregister()
         #self.root.removeAllChildren()
         self.sg.removeChild(self.root)
         self.root_inserted = False
-            
+
 
 
 

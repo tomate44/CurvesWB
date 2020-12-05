@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__="Macro IsoCurves"
-__author__ = "Chris_G"
-__doc__ = '''
+__title__   = "Macro IsoCurves"
+__author__  = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__     = '''
 Macro IsoCurves.
 Creates a parametric isoCurve from a face
 

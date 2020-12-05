@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Interpolate"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Interpolate"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Interpolate a set of points."
+__doc__     = "Interpolate a set of points."
 
 import os
 import FreeCAD
@@ -277,11 +277,11 @@ class interpolate:
         Interpolate(obj,source)
         ViewProviderInterpolate(obj.ViewObject)
         FreeCAD.ActiveDocument.recompute()
-            
+
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Interpolate', 'ToolTip': 'Interpolate points with a BSpline curve'}
+        return {'Pixmap' : TOOL_ICON,
+                'MenuText': 'Interpolate',
+                'ToolTip': 'Interpolate points with a BSpline curve'
+        }
 
 FreeCADGui.addCommand('Interpolate', interpolate())
-
-
-

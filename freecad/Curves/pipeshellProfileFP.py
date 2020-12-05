@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = 'Pipeshell profile'
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = 'Pipeshell profile'
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = 'Creates a Profile object for PipeShell'
+__doc__     = 'Creates a Profile object for PipeShell'
 
 import os
 import FreeCAD
@@ -162,6 +162,9 @@ class profileCommand:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
+        return {'Pixmap' : TOOL_ICON,
+                'MenuText': __title__,
+                'ToolTip': __doc__
+        }
 
 FreeCADGui.addCommand('profile', profileCommand())

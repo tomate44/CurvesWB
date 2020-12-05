@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "to console"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "to console"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Objects to python console."
+__doc__     = "Objects to python console."
 
 import FreeCAD
 import FreeCADGui
@@ -21,7 +21,8 @@ class ToConsole:
         return {'Pixmap'  : TOOL_ICON,
                 'MenuText': "to Console",
                 'Accel': "",
-                'ToolTip': "Objects to console"}
+                'ToolTip': "Objects to console"
+        }
 
     def Activated(self):
         doc = ''

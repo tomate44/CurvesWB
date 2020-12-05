@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Curves workbench utilities"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Curves workbench utilities"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Curves workbench utilities common to all tools."
+__doc__     = "Curves workbench utilities common to all tools."
 
 import FreeCAD
 import Part

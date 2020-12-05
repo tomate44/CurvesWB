@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Curve re-parametrize"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Curve re-parametrize"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = """reparametrize a curve to match another one"""
+__doc__     = "reparametrize a curve to match another one"
 
 #import sys
 #if sys.version_info.major >= 3:

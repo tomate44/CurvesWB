@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Reflect Lines"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Reflect Lines"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = """Creates the reflect lines on a shape, according to a view direction"""
+__doc__     = "Creates the reflect lines on a shape, according to a view direction"
 
 import sys
 if sys.version_info.major >= 3:
@@ -138,7 +138,10 @@ class ReflectLinesCommand:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
+        return {'Pixmap' : TOOL_ICON,
+                'MenuText': __title__,
+                'ToolTip': __doc__
+        }
 
 def run():
     ReflectLinesCommand().Activated()

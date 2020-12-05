@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "joinCurves"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "joinCurves"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Joins the selected edges into BSpline Curves"
+__doc__     = "Joins the selected edges into BSpline Curves"
 
 import os
 import FreeCAD
@@ -227,7 +227,8 @@ class joinCommand:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': 'Join Curves',
-                'ToolTip': 'Joins the selected edges into BSpline Curves'}
+                'ToolTip': 'Joins the selected edges into BSpline Curves'
+        }
 
 
 FreeCADGui.addCommand('join', joinCommand())

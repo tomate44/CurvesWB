@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Discretize"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Discretize"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Discretize an edge or a wire."
+__doc__     = "Discretize an edge or a wire."
 
 import os
 import FreeCAD
@@ -289,9 +289,9 @@ class discretize:
 
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Discretize', 'ToolTip': 'Discretize an edge or a wire'}
+        return {'Pixmap' : TOOL_ICON,
+                'MenuText': 'Discretize',
+                'ToolTip': 'Discretize an edge or a wire'
+        }
 
 FreeCADGui.addCommand('Discretize', discretize())
-
-
-

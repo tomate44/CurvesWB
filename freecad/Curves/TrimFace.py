@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__   = "Trim Face"
+__author__  = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__     = "Trim a face with a projected curve"
+
 import os
 import FreeCAD
 import FreeCADGui
@@ -85,7 +92,7 @@ class trimFace:
             debug("No Direction")
             return
         scale = 10000
-        
+
         v = self.getVector(obj)
         v.normalize().multiply(scale)
         debug("Vector : %s"%str(v))
@@ -106,7 +113,7 @@ class trimFace:
         except:
             bf = Part.BOPTools.SplitAPI.slice(face, cuttool, "Split", 1e-6)
         debug("shape has %d faces"%len(bf.Faces))
-        
+
         u = obj.PickedPoint.x
         v = obj.PickedPoint.y
         for f in bf.Faces:
@@ -120,7 +127,7 @@ class trimFace:
 class trimFaceVP:
     def __init__(self,vobj):
         vobj.Proxy = self
-       
+
     def getIcon(self):
         return TOOL_ICON
 
@@ -132,7 +139,7 @@ class trimFaceVP:
             d = self.Object.Direction
             FreeCADGui.ActiveDocument.ActiveView.setViewDirection((d.x,d.y,d.z))
             return True
-  
+
     def claimChildren(self):
         l=[]
         if hasattr(self.Object,"DirVector"):
@@ -196,7 +203,7 @@ class trim:
         vector, selObj1 = self.findVector(s)
         trimmingCurve, selObj2 = self.findCurve(selObj1[::-1])
         faces = self.findFaces(selObj2)
-        
+
         if trimmingCurve and faces:
             for f in faces:
                 obj=FreeCAD.ActiveDocument.addObject("Part::FeaturePython","TrimmedFace") #add object to document
@@ -212,13 +219,14 @@ class trim:
                     obj.DirVector.ViewObject.Visibility=False
                 else:
                     obj.Direction = FreeCADGui.ActiveDocument.ActiveView.getViewDirection()
-        
+
         FreeCAD.ActiveDocument.recompute()
-            
+
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Trim face', 'ToolTip': 'Trim a face with a projected curve'}
+        return {'Pixmap' : TOOL_ICON,
+                'MenuText': 'Trim face',
+                'ToolTip': 'Trim a face with a projected curve'
+        }
 
 FreeCADGui.addCommand('Trim', trim())
-
-
 

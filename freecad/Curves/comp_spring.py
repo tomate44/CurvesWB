@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Compression Spring"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Compression Spring"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = """Parametric Compression Spring"""
+__doc__     = "Parametric Compression Spring"
 
 import sys
 if sys.version_info.major >= 3:
@@ -282,6 +282,9 @@ class CompSpringCommand:
             return False
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
+        return {'Pixmap' : TOOL_ICON, 
+                'MenuText': __title__, 
+                'ToolTip': __doc__
+        }
 
 FreeCADGui.addCommand('comp_spring', CompSpringCommand())

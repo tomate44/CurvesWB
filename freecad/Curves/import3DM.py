@@ -1,7 +1,7 @@
-__title__ = "import3DM"
-__author__ = "Christophe Grellier (Chris_G) - Keith Sloan (keithsloan52)"
+__title__   = "import3DM"
+__author__  = "Christophe Grellier (Chris_G) - Keith Sloan (keithsloan52)"
 __license__ = "LGPL 2.1"
-__doc__ = "import of 3DM file"
+__doc__     = "Import of 3DM file"
 
 import FreeCAD
 import os, io, sys
@@ -33,13 +33,11 @@ def insert(filename,docname):
 
 def process3DM(doc, filename) :
     FreeCAD.Console.PrintMessage('Import 3DM file : '+filename+'\n')
-    FreeCAD.Console.PrintMessage('Import3DM Version 0.1\n')
+    FreeCAD.Console. PrintMessage('Import3DM Version 0.1\n')
 
     pathName = os.path.dirname(os.path.normpath(filename))
     print("Add code to parse 3DM file")
 
     FreeCAD.Console.PrintMessage('3DM File Imported\n')
 
-
-    
 

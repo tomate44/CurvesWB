@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__   = "Geometry Info"
+__author__  = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__     = "Display info about the geometry of the selected topology"
+
 import sys
 if sys.version_info.major >= 3:
     from importlib import reload
@@ -291,7 +298,7 @@ def surfNode(surf):
 
         # removed because of several FC crashes
         ## ***** isoCurves ******
-        
+
         #uparam = paramList(16,u0,u1)
         #uisoPoints = []
         #nb_curves = 0
@@ -305,7 +312,7 @@ def surfNode(surf):
                     #nb_curves += 1
             #except:
                 #FreeCAD.Console.PrintError("Error computing surface U Iso\n")
-        
+
         #if nb_curves > 0:
             #uisonode = coinNodes.coordinate3Node(uisoPoints)
             #uisoCurves = coinNodes.rowNode((0.0,0.0,0.0),1)
@@ -314,7 +321,7 @@ def surfNode(surf):
             #vizSep.addChild(uisonode)
             #vizSep.addChild(uisoCurves)
             ##debug(str(uCurves.vertices))
-        
+
         #vparam = paramList(16,v0,v1)
         #visoPoints = []
         #nb_curves = 0
@@ -328,7 +335,7 @@ def surfNode(surf):
                     #nb_curves += 1
             #except:
                 #FreeCAD.Console.PrintError("Error computing surface V Iso\n")
-        
+
         #if nb_curves > 0:
             #visonode = coinNodes.coordinate3Node(visoPoints)
             #visoCurves = coinNodes.rowNode((0.0,0.0,0.0),1)
@@ -337,14 +344,14 @@ def surfNode(surf):
             #vizSep.addChild(visonode)
             #vizSep.addChild(visoCurves)
 
-        ## *** Set texts ***        
+        ## *** Set texts ***
         #multStr = []
         #for m in mults:
             #multStr.append("%d"%m)
-        
+
         #knotMarkerSep = coinNodes.markerSetNode((0,0,1),coin.SoMarkerSet.CIRCLE_FILLED_9_9)
 
-        ## *** Set mult text ***        
+        ## *** Set mult text ***
         #multSep = coinNodes.multiTextNode((0,0,1),"osiFont,FreeSans,sans",16,1)
         #multSep.data = (knotPoints,multStr)
 
@@ -604,4 +611,5 @@ class GeomInfo:
                 'MenuText': 'Geometry Info',
                 'ToolTip': 'Display info about the geometry of the selected topology',
                 'Checkable': False}
+
 FreeCADGui.addCommand('GeomInfo', GeomInfo())

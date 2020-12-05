@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__   = "Curve Extend"
+__author__  = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__     = ""
+
 import math
 import FreeCAD
 import Part
@@ -34,7 +41,7 @@ def trim(curve,min,max,length,tol):
     elif c.length() > length:
         r = trim(curve,min,mid,length,tol)
     return(r)
-    
+
 
 def trimToLength(ed, l, tol = 1e-5):
     """Trim an edge to a given length."""
@@ -59,9 +66,9 @@ def extendCurve( curve, end = 1, scale = 1, degree = 1):
     tan = curve.tangent(p)[0]
     tan.normalize()
     tan.multiply(sc)
-    
+
     bez = Part.BezierCurve()
-    
+
     if degree == 1:
         bez.setPoles([val,val.add(tan)])
         return(bez)
@@ -104,7 +111,7 @@ def extendToPoint( curve, pt, end = 1, degree = 1):
         val = curve.value(curve.LastParameter)
     dist = val.distanceToPoint(pt)
     ratio = 1.0 * degree / (degree + 1)
-    
+
     bez = extendCurve( curve, end, dist * ratio, degree)
     nbez = Part.BezierCurve()
     nbez.setPoles(bez.getPoles()+[pt])

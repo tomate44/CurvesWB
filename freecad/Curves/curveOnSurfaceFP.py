@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Curve on surface"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Curve on surface"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Creates a parametric curve on surface object."
+__doc__     = "Creates a parametric curve on surface object."
 
 import os
 import FreeCAD
@@ -135,6 +135,9 @@ class cosCommand:
 
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'CurveOnSurface', 'ToolTip': 'Create a curve on surface object'}
+        return {'Pixmap' : TOOL_ICON,
+                'MenuText': 'CurveOnSurface',
+                'ToolTip': 'Create a curve on surface object'
+        }
 
 FreeCADGui.addCommand('cos', cosCommand())

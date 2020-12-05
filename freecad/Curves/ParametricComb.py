@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Comb plot"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Comb plot"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = 'Creates a parametric Comb plot on selected edges'
+__doc__     = 'Creates a parametric Comb plot on selected edges'
 
 import os
 import FreeCAD
@@ -589,9 +589,12 @@ class ParametricComb:
             ViewProviderComb(obj.ViewObject)
         else:
             self.appendEdges(combSelected, edges)
-            
+
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
+        return {'Pixmap' : TOOL_ICON,
+                'MenuText': __title__,
+                'ToolTip': __doc__
+        }
 
 FreeCADGui.addCommand('ParametricComb', ParametricComb())
 

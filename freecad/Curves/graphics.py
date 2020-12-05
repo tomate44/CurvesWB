@@ -1,9 +1,16 @@
+# -*- coding: utf-8 -*-
+
+__title__   = "graphics"
+__author__  = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__     = ""
+
 from pivy import coin
 #from pivy.utils import getPointOnScreen
 
 def getPointOnScreen(render_manager, screen_pos, normal="camera", point=None):
     """get coordinates from pixel position"""
-    
+
     pCam = render_manager.getCamera()
     vol = pCam.getViewVolume()
 
@@ -266,7 +273,7 @@ class InteractionSeparator(coin.SoSeparator):
             else:
                 self.static_objects.append(child)
         else:
-            super(InteractionSeparator, self).addChild(child)  
+            super(InteractionSeparator, self).addChild(child)
 
 #-----------------------HIGHLIGHTING-----------------------#
 # a SoLocation2Event calling a function which sends rays   #
@@ -312,7 +319,7 @@ class InteractionSeparator(coin.SoSeparator):
             #if point != []:
                 #return point[0]
         return None
-        
+
 
 
 #------------------------SELECTION------------------------#
@@ -387,7 +394,7 @@ class InteractionSeparator(coin.SoSeparator):
         pos = event.getPosition()
         # print(list(getPointOnScreen1(self.render_manager, pos)))
         return getPointOnScreen(self.render_manager, pos)
-    
+
 
     def constrained_vector(self, vector):
         if self._direction is None:
@@ -446,7 +453,7 @@ class InteractionSeparator(coin.SoSeparator):
             FreeCAD.Console.PrintMessage("{} {}\n".format(b,s))
         if ((type(event) == coin.SoMouseButtonEvent and
                 event.getState() == coin.SoMouseButtonEvent.UP
-                and event.getButton() == coin.SoMouseButtonEvent.BUTTON1) or 
+                and event.getButton() == coin.SoMouseButtonEvent.BUTTON1) or
                 force):
             self.register()
             if self._dragCB:

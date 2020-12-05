@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__   = "Helix on face"
+__author__  = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__     = ""
+
 def helix_on_face(face, turns=1.0, wire_output=True):
     """
     Create an helix shape on a periodic face.

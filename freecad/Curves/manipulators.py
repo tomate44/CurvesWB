@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Manipulators"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Manipulators"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "FreeCAD interactive editing library"
+__doc__     = "FreeCAD interactive editing library"
 
 import sys
 if sys.version_info.major >= 3:

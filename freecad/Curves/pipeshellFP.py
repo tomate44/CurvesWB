@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = 'Pipeshell'
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = 'Pipeshell'
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = 'Creates a PipeShell sweep object'
+__doc__     = 'Creates a PipeShell sweep object'
 
 import os
 import FreeCAD
@@ -374,6 +374,9 @@ class pipeShellCommand:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
+        return {'Pixmap' : TOOL_ICON,
+                'MenuText': __title__,
+                'ToolTip': __doc__
+        }
 
 FreeCADGui.addCommand('pipeshell', pipeShellCommand())

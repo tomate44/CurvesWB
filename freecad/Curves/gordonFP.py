@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Parametric Gordon surface"
-__author__ = "Christophe Grellier (Chris_G)"
+__title__   = "Parametric Gordon surface"
+__author__  = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Creates a surface that skins a network of curves."
+__doc__     = "Creates a surface that skins a network of curves."
 
 import sys
 if sys.version_info.major >= 3:
@@ -199,6 +199,9 @@ class gordonCommand:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Gordon surface', 'ToolTip': 'Creates a surface that skins a network of curves'}
+        return {'Pixmap' : TOOL_ICON,
+                'MenuText': 'Gordon surface', 
+                'ToolTip': 'Creates a surface that skins a network of curves'
+        }
 
 FreeCADGui.addCommand('gordon', gordonCommand())
