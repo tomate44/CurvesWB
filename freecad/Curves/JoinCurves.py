@@ -79,12 +79,13 @@ class join:
     "joins the selected edges into a single BSpline Curve"
     def __init__(self, obj):
         ''' Add the properties '''
-        obj.addProperty("App::PropertyLinkSubList", "Edges", "Join", "List of edges to join")
-        obj.addProperty("App::PropertyLink", "Base", "Join", "Join all the edges of this base object")
+        obj.addProperty("App::PropertyLinkSubList", "Edges", "InputSources", "List of edges to join")
+        obj.addProperty("App::PropertyLink", "Base", "InputSources", "Join all the edges of this base object")
         obj.addProperty("App::PropertyFloat", "Tolerance", "Join", "Tolerance").Tolerance = 0.01
-        obj.addProperty("App::PropertyBool", "CornerBreak", "Join", "Break on corners").CornerBreak = False
+        obj.addProperty("App::PropertyBool", "CornerBreak", "Join", "Break on sharp corners").CornerBreak = False
         obj.addProperty("App::PropertyBool", "ForceContact", "Join", "Force connection of edges").ForceContact = True
         obj.addProperty("App::PropertyBool", "ForceClosed", "Join", "Force closed curve").ForceClosed = False
+        obj.addProperty("App::PropertyBool", "Reverse", "Join", "Reverse the output curve").Reverse = False
         obj.addProperty("App::PropertyInteger", "StartOffset", "Join", "Set the start point of closed curve").StartOffset = 0
         obj.Proxy = self
 
@@ -146,6 +147,9 @@ class join:
         outcurves.append(c0)
         if obj.ForceClosed:
             forceClosed(outcurves)
+        if obj.Reverse:
+            for c in outcurves:
+                c.reverse()
         if len(outcurves) == 1 and outcurves[0].isClosed():
             outcurves[0].setPeriodic()
             outcurves[0].setOrigin(1 + obj.StartOffset % outcurves[0].NbKnots)
