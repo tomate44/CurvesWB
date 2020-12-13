@@ -12,7 +12,7 @@ import FreeCADGui
 import Part
 from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
-from freecad.Curves.nurbs_tools import knotSeqScale
+from freecad.Curves.nurbs_tools import KnotVector
 
 TOOL_ICON = os.path.join(ICONPATH, 'segment_surface.svg')
 # debug = _utils.debug
@@ -123,12 +123,14 @@ class SegmentSurface:
         elif obj.Option == "Custom":
             knots = self.get_normalized_params(obj, 'KnotsUProvider')
             if knots:
-                uknots = knotSeqScale(knots, u1 - u0, u0)
+                knots = KnotVector(knots)
+                uknots = knots.transpose(u0, u1)
             else:
                 uknots = obj.KnotsU
             knots = self.get_normalized_params(obj, 'KnotsVProvider')
             if knots:
-                vknots = knotSeqScale(knots, v1 - v0, v0)
+                knots = KnotVector(knots)
+                vknots = knots.transpose(v0, v1)
             else:
                 vknots = obj.KnotsV
             for k in uknots:

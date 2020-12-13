@@ -13,7 +13,7 @@ from freecad.Curves import _utils
 from FreeCAD import Base
 
 debug = _utils.debug
-#debug = _utils.doNothing
+# debug = _utils.doNothing
 
 # ********************************************************
 # ************** Approximate extension *******************
@@ -46,18 +46,19 @@ In the file where you define your FeaturePython object :
 
 """
 
+
 class ApproximateExtension:
     def __init__(self, obj):
         ''' Add the properties '''
         debug("\nApproximate extension Init\n")
-        obj.addProperty("App::PropertyInteger",        "Samples",        "ShapeApproximation", "Number of samples").Samples = 100
-        obj.addProperty("App::PropertyBool",           "Active",         "ShapeApproximation", "Use approximation")
-        obj.addProperty("App::PropertyInteger",        "DegreeMin",      "ShapeApproximation", "Minimum degree of the curve").DegreeMin = 3
-        obj.addProperty("App::PropertyInteger",        "DegreeMax",      "ShapeApproximation", "Maximum degree of the curve").DegreeMax = 5
-        obj.addProperty("App::PropertyFloat",          "ApproxTolerance","ShapeApproximation", "Approximation tolerance")
-        obj.addProperty("App::PropertyEnumeration",    "Continuity",     "ShapeApproximation", "Desired continuity of the curve").Continuity=["C0","C1","G1","C2","G2","C3","CN"]
-        obj.addProperty("App::PropertyEnumeration",    "Parametrization","ShapeApproximation", "Parametrization type").Parametrization=["ChordLength","Centripetal","Uniform"]
-        obj.addProperty("App::PropertyPythonObject",   "ExtensionProxy", "ShapeApproximation", "Proxy object of the approximation extension").ExtensionProxy = self
+        obj.addProperty("App::PropertyInteger", "Samples", "ShapeApproximation", "Number of samples").Samples = 100
+        obj.addProperty("App::PropertyBool", "Active", "ShapeApproximation", "Use approximation")
+        obj.addProperty("App::PropertyInteger", "DegreeMin", "ShapeApproximation", "Minimum degree of the curve").DegreeMin = 3
+        obj.addProperty("App::PropertyInteger", "DegreeMax", "ShapeApproximation", "Maximum degree of the curve").DegreeMax = 5
+        obj.addProperty("App::PropertyFloat", "ApproxTolerance", "ShapeApproximation", "Approximation tolerance")
+        obj.addProperty("App::PropertyEnumeration", "Continuity", "ShapeApproximation", "Desired continuity of the curve").Continuity = ["C0", "C1", "G1", "C2", "G2", "C3", "CN"]
+        obj.addProperty("App::PropertyEnumeration", "Parametrization", "ShapeApproximation", "Parametrization type").Parametrization = ["ChordLength", "Centripetal", "Uniform"]
+        obj.addProperty("App::PropertyPythonObject", "ExtensionProxy", "ShapeApproximation", "Proxy object of the approximation extension").ExtensionProxy = self
         obj.Parametrization = "ChordLength"
         obj.Continuity = 'C3'
         self.setTolerance(obj)
@@ -65,19 +66,19 @@ class ApproximateExtension:
 
     def setTolerance(self, obj):
         try:
-            l = obj.Shape.BoundBox.DiagonalLength
-            obj.ApproxTolerance = l / 10000.0
+            dl = obj.Shape.BoundBox.DiagonalLength
+            obj.ApproxTolerance = dl / 10000.0
         except:
             obj.ApproxTolerance = 0.001
 
     def approximate(self, obj, input_shape):
         pts = False
         input_edges = None
-        if isinstance(input_shape,(list, tuple)):
-            #debug(isinstance(input_shape[0],Base.Vector))
-            if isinstance(input_shape[0],Base.Vector):
+        if isinstance(input_shape, (list, tuple)):
+            # debug(isinstance(input_shape[0],Base.Vector))
+            if isinstance(input_shape[0], Base.Vector):
                 pts = input_shape
-            elif isinstance(input_shape[0],Part.Edge):
+            elif isinstance(input_shape[0], Part.Edge):
                 input_edges = input_shape
         else:
             input_edges = input_shape.Edges
@@ -88,7 +89,12 @@ class ApproximateExtension:
             for e in input_edges:
                 pts = e.discretize(obj.Samples)
                 bs = Part.BSplineCurve()
-                bs.approximate(Points = pts, DegMin = obj.DegreeMin, DegMax = obj.DegreeMax, Tolerance = obj.ApproxTolerance, Continuity = obj.Continuity, ParamType = obj.Parametrization)
+                bs.approximate(Points=pts,
+                               DegMin=obj.DegreeMin,
+                               DegMax=obj.DegreeMax,
+                               Tolerance=obj.ApproxTolerance,
+                               Continuity=obj.Continuity,
+                               ParamType=obj.Parametrization)
                 edges.append(bs.toShape())
             se = Part.sortEdges(edges)
             wires = []
@@ -103,15 +109,20 @@ class ApproximateExtension:
                 return wires[0]
         elif pts:
             bs = Part.BSplineCurve()
-            bs.approximate(Points = pts, DegMin = obj.DegreeMin, DegMax = obj.DegreeMax, Tolerance = obj.ApproxTolerance, Continuity = obj.Continuity, ParamType = obj.Parametrization)
+            bs.approximate(Points=pts,
+                           DegMin=obj.DegreeMin,
+                           DegMax=obj.DegreeMax,
+                           Tolerance=obj.ApproxTolerance,
+                           Continuity=obj.Continuity,
+                           ParamType=obj.Parametrization)
             return bs.toShape()
 
     def onChanged(self, fp, prop):
         if prop == "Active":
             debug("Approximate : Active changed\n")
-            props = ["Samples","DegreeMin","DegreeMax","ApproxTolerance","Continuity","Parametrization"]
+            props = ["Samples", "DegreeMin", "DegreeMax", "ApproxTolerance", "Continuity", "Parametrization"]
             mode = 2
-            if fp.Active == True:
+            if fp.Active is True:
                 mode = 0
             for p in props:
                 fp.setEditorMode(p, mode)
@@ -120,49 +131,49 @@ class ApproximateExtension:
                 fp.DegreeMin = 1
             elif fp.DegreeMin > fp.DegreeMax:
                 fp.DegreeMin = fp.DegreeMax
-            debug("Approximate : DegreeMin changed to "+str(fp.DegreeMin))
+            debug("Approximate : DegreeMin changed to " + str(fp.DegreeMin))
         if prop == "DegreeMax":
             if fp.DegreeMax < fp.DegreeMin:
                 fp.DegreeMax = fp.DegreeMin
             elif fp.DegreeMax > 14:
                 fp.DegreeMax = 14
-            debug("Approximate : DegreeMax changed to "+str(fp.DegreeMax))
+            debug("Approximate : DegreeMax changed to " + str(fp.DegreeMax))
         if prop == "ApproxTolerance":
             if fp.ApproxTolerance < 1e-6:
                 fp.ApproxTolerance = 1e-6
             elif fp.ApproxTolerance > 1000.0:
                 fp.ApproxTolerance = 1000.0
-            debug("Approximate : ApproxTolerance changed to "+str(fp.ApproxTolerance))
+            debug("Approximate : ApproxTolerance changed to " + str(fp.ApproxTolerance))
 
 # ********************************************************
 # **** Part.BSplineCurve.approximate() documentation *****
 # ********************************************************
 
-#Replaces this B-Spline curve by approximating a set of points.
-#The function accepts keywords as arguments.
+# Replaces this B-Spline curve by approximating a set of points.
+# The function accepts keywords as arguments.
 
-#approximate2(Points = list_of_points)
+# approximate2(Points = list_of_points)
 
-#Optional arguments :
+# Optional arguments :
 
-#DegMin = integer (3) : Minimum degree of the curve.
-#DegMax = integer (8) : Maximum degree of the curve.
-#Tolerance = float (1e-3) : approximating tolerance.
-#Continuity = string ('C2') : Desired continuity of the curve.
-#Possible values : 'C0','G1','C1','G2','C2','C3','CN'
+# DegMin = integer (3) : Minimum degree of the curve.
+# DegMax = integer (8) : Maximum degree of the curve.
+# Tolerance = float (1e-3) : approximating tolerance.
+# Continuity = string ('C2') : Desired continuity of the curve.
+# Possible values : 'C0','G1','C1','G2','C2','C3','CN'
 
-#LengthWeight = float, CurvatureWeight = float, TorsionWeight = float
-#If one of these arguments is not null, the functions approximates the
-#points using variational smoothing algorithm, which tries to minimize
-#additional criterium:
-#LengthWeight*CurveLength + CurvatureWeight*Curvature + TorsionWeight*Torsion
-#Continuity must be C0, C1 or C2, else defaults to C2.
+# LengthWeight = float, CurvatureWeight = float, TorsionWeight = float
+# If one of these arguments is not null, the functions approximates the
+# points using variational smoothing algorithm, which tries to minimize
+# additional criterium:
+# LengthWeight*CurveLength + CurvatureWeight*Curvature + TorsionWeight*Torsion
+# Continuity must be C0, C1 or C2, else defaults to C2.
 
-#Parameters = list of floats : knot sequence of the approximated points.
-#This argument is only used if the weights above are all null.
+# Parameters = list of floats : knot sequence of the approximated points.
+# This argument is only used if the weights above are all null.
 
-#ParamType = string ('Uniform','Centripetal' or 'ChordLength')
-#Parameterization type. Only used if weights and Parameters above aren't specified.
+# ParamType = string ('Uniform','Centripetal' or 'ChordLength')
+# Parameterization type. Only used if weights and Parameters above aren't specified.
 
-#Note : Continuity of the spline defaults to C2. However, it may not be applied if
-#it conflicts with other parameters ( especially DegMax ).    parametrization
+# Note : Continuity of the spline defaults to C2. However, it may not be applied if
+# it conflicts with other parameters ( especially DegMax ).    parametrization

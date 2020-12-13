@@ -207,7 +207,7 @@ class BsplineBasis(object):
         Nurbs Book Algo A2.3 p.72
         """
         ders = [[0.0 for x in range(self.degree + 1)] for y in range(n + 1)]
-        ndu = [[1.0 for x in range(self.degree + 1)] for y in range(self.degree + 1)] 
+        ndu = [[1.0 for x in range(self.degree + 1)] for y in range(self.degree + 1)]
         ndu[0][0] = 1.0
         left = [0.0]
         right = [0.0]
@@ -274,15 +274,14 @@ class BsplineBasis(object):
             f[span - self.degree + i] = val
         return f
 
-# This KnotVector class is equivalent to the following knotSeq* functions
-# I am not sure what is best: a class or a set of independent functions ?
-
 
 class KnotVector(object):
     """Knot vector object to use in Bsplines"""
     def __init__(self, v=[0.0, 1.0]):
-        self._vector = v
-        self._min_max()
+        if isinstance(v, Part.BSplineCurve):
+            self.vector = v.getKnots()
+        else:
+            self.vector = v
 
     def __repr__(self):
         return "KnotVector({})".format(str(self._vector))
@@ -297,6 +296,47 @@ class KnotVector(object):
         self._vector.sort()
         self._min_max()
 
+    @property
+    def knots(self):
+        """Get the list of unique knots, without duplicates"""
+        return list(set(self._vector))
+
+    @property
+    def mults(self):
+        """Get the list of multiplicities of the knot vector"""
+        no_duplicates = self.knots
+        return [self._vector.count(k) for k in no_duplicates]
+
+    @classmethod
+    def create_uniform(cls, degree, nb_poles):
+        """Create a uniform knotVector from given degree and Nb of poles"""
+        if degree >= nb_poles:
+            error("create_uniform : degree >= nb_poles")
+            return None
+        nb_int_knots = nb_poles - degree - 1
+        start = [0.0 for k in range(degree + 1)]
+        mid = [float(k) for k in range(1, nb_int_knots + 1)]
+        end = [float(nb_int_knots + 1) for k in range(degree + 1)]
+        return cls(start + mid + end)
+
+    @classmethod
+    def create_from_points(cls, pts, fac=1.0, force_closed=False):
+        # Computes a knot Sequence for a set of points
+        # fac (0.0 - 1.0) : parameterization factor
+        # fac=0 -> Uniform / fac=0.5 -> Centripetal / fac=1.0 -> Chord-Length
+        if force_closed and pts[0].distanceToPoint(pts[-1]) > 1e-7:  # we need to add the first point as the end point
+            pts.append(pts[0])
+        params = [0.0]
+        for i in range(1, len(pts)):
+            p = pts[i] - pts[i - 1]
+            if isinstance(p, FreeCAD.Vector):
+                le = p.Length
+            else:
+                le = p.length()
+            pl = pow(le, fac)
+            params.append(params[-1] + pl)
+        return cls(params)
+
     def _min_max(self):
         """Compute the min and max values of the knot vector"""
         self.maxi = max(self._vector)
@@ -307,13 +347,14 @@ class KnotVector(object):
         newknots = [(self.maxi + self.mini - k) for k in self._vector]
         newknots.reverse()
         self._vector = newknots
+        return self._vector
 
     def normalize(self):
-        """Normalize the knot vector"""
-        self.scale()
+        """Normalize the knot vector to [0.0, 1.0]"""
+        return self.scale()
 
     def scale(self, length=1.0):
-        """Scales the knot vector to a given length"""
+        """Scales the knot vector to a [0.0, length]"""
         if length <= 0.0:
             error("scale error : bad value")
         else:
@@ -321,6 +362,18 @@ class KnotVector(object):
             newknots = [length * (k - self.mini) / ran for k in self._vector]
             self._vector = newknots
             self._min_max()
+            return self._vector
+
+    def transpose(self, u0, u1):
+        """Transpose the knot vector to [u0, u1]"""
+        if u0 > u1:
+            error("transpose error : u0 > u1")
+        else:
+            ran = self.maxi - self.mini
+            newknots = [u0 + ((u1 - u0) * (k - self.mini) / ran) for k in self._vector]
+            self._vector = newknots
+            self._min_max()
+            return self._vector
 
     def reversed_param(self, pa):
         """Returns the image of the parameter when the knot vector is reversed"""
@@ -328,94 +381,6 @@ class KnotVector(object):
         newvec.vector = [self._vector[0], pa, self._vector[-1]]
         newvec.reverse()
         return newvec.vector[1]
-
-    def create_uniform(self, degree, nb_poles):
-        """Create a uniform knotVector from given degree and Nb of poles"""
-        if degree >= nb_poles:
-            error("create_uniform : degree >= nb_poles")
-        else:
-            nb_int_knots = nb_poles - degree - 1
-            start = [0.0 for k in range(degree + 1)]
-            mid = [float(k) for k in range(1, nb_int_knots + 1)]
-            end = [float(nb_int_knots + 1) for k in range(degree + 1)]
-            self._vector = start + mid + end
-            self._min_max()
-
-    def get_mults(self):
-        """Get the list of multiplicities of the knot vector"""
-        no_duplicates = list(set(self._vector))
-        return [self._vector.count(k) for k in no_duplicates]
-
-    def get_knots(self):
-        """Get the list of unique knots, without duplicates"""
-        return list(set(self._vector))
-
-# ---------------------------------------------------
-
-
-def knotSeqReverse(knots):
-    """Reverse a knot vector
-    revKnots = knotSeqReverse(knots)"""
-    ma = max(knots)
-    mi = min(knots)
-    newknots = [ma + mi - k for k in knots]
-    newknots.reverse()
-    return newknots
-
-
-def knotSeqNormalize(knots):
-    """Normalize a knot vector
-    normKnots = knotSeqNormalize(knots)"""
-    ma = max(knots)
-    mi = min(knots)
-    ran = ma - mi
-    newknots = [(k - mi) / ran for k in knots]
-    return newknots
-
-
-def knotSeqScale(knots, length=1.0, start=0.0):
-    """Scales a knot vector to a given length
-    newknots = knotSeqScale(knots, length = 1.0)"""
-    if length <= 0.0:
-        error("knotSeqScale : length <= 0.0")
-    else:
-        ma = max(knots)
-        mi = min(knots)
-        ran = ma - mi
-        newknots = [start + (length * (k - mi) / ran) for k in knots]
-        return newknots
-
-
-def paramReverse(pa, fp, lp):
-    """Returns the image of parameter param when knot sequence [fp,lp] is reversed.
-    newparam = paramReverse(param,fp,lp)"""
-    seq = [fp, pa, lp]
-    return knotSeqReverse(seq)[1]
-
-
-def createKnots(degree, nbPoles):
-    """Create a uniform knotVector from given degree and Nb of poles
-    knotVector = createKnots(degree, nbPoles)"""
-    if degree >= nbPoles:
-        error("createKnots : degree >= nbPoles")
-    else:
-        nbIntKnots = nbPoles - degree - 1
-        start = [0.0 for k in range(degree + 1)]
-        mid = [float(k) for k in range(1, nbIntKnots + 1)]
-        end = [float(nbIntKnots + 1) for k in range(degree + 1)]
-        return start + mid + end
-
-
-def createKnotsMults(degree, nbPoles):
-    """Create a uniform knotVector and a multiplicities list from given degree and Nb of poles
-    knots, mults = createKnotsMults(degree, nbPoles)"""
-    if degree >= nbPoles:
-        error("createKnotsMults : degree >= nbPoles")
-    else:
-        nbIntKnots = nbPoles - degree - 1
-        knots = [0.0] + [float(k) for k in range(1, nbIntKnots + 1)] + [float(nbIntKnots + 1)]
-        mults = [degree + 1] + [1 for k in range(nbIntKnots)] + [degree + 1]
-        return knots, mults
 
 
 def parameterization(pts, fac, force_closed=False):
@@ -481,18 +446,18 @@ def bspline_copy(bs, reverse=False, scale=1.0):
     mults = bs.getMultiplicities()
     weights = bs.getWeights()
     poles = bs.getPoles()
-    knots = bs.getKnots()
+    knots = KnotVector(bs)
     perio = bs.isPeriodic()
     ratio = bs.isRational()
     if scale:
-        knots = knotSeqScale(knots, scale)
+        knots.scale(scale)
     if reverse:
         mults.reverse()
         weights.reverse()
         poles.reverse()
-        knots = knotSeqReverse(knots)
+        knots.reverse()
     bspline = Part.BSplineCurve()
-    bspline.buildFromPolesMultsKnots(poles, mults, knots, perio, bs.Degree, weights, ratio)
+    bspline.buildFromPolesMultsKnots(poles, mults, knots.vector, perio, bs.Degree, weights, ratio)
     return bspline
 
 
@@ -507,7 +472,7 @@ def curvematch(c1, c2, par1, level=0, scale=1.0):
     # len2 = c2.length()
     len2 = c2.EndPoint.distanceToPoint(c2.StartPoint)
     # scale the knot vector of C2
-    seq2 = knotSeqScale(c2.KnotSequence, 1.0 * abs(scale) * len2)
+    seq2 = KnotVector(c2.KnotSequence).scale(1.0 * abs(scale) * len2)
     # get a scaled / reversed copy of C1
     if scale < 0:
         bs1 = bspline_copy(c1, True, len1)  # reversed
@@ -616,10 +581,10 @@ class blendCurve(object):
         degree = nbPoles - 1
         if degree > self.maxDegree:
             degree = self.maxDegree
-        knots, mults = createKnotsMults(degree, nbPoles)
+        kv = KnotVector.create_uniform(degree, nbPoles)
         weights = [1.0 for k in range(nbPoles)]
         be = Part.BSplineCurve()
-        be.buildFromPolesMultsKnots(poles, mults, knots, False, degree, weights, False)
+        be.buildFromPolesMultsKnots(poles, kv.mults, kv.knots, False, degree, weights, False)
         nc = curvematch(self.edge1, be, self.param1, self.cont1, self.scale1)
         rev = bspline_copy(nc, True, False)
         self.Curve = curvematch(self.edge2, rev, self.param2, self.cont2, self.scale2)
@@ -684,8 +649,8 @@ def move_param(c, p1, p2):
     c2.segment(float(p2), c.LastParameter)
     # print("\nSegment 1 -> %r"%c1.getKnots())
     # print("Segment 2 -> %r"%c2.getKnots())
-    knots1 = knotSeqScale(c1.getKnots(), p1 - c.FirstParameter)
-    knots2 = knotSeqScale(c2.getKnots(), c.LastParameter - p1)
+    knots1 = KnotVector(c1).scale(p1 - c.FirstParameter)
+    knots2 = KnotVector(c2).scale(c.LastParameter - p1)
     c1.setKnots(knots1)
     c2.setKnots(knots2)
     # print("New 1 -> %r"%c1.getKnots())
@@ -702,7 +667,7 @@ def move_params(c, p1, p2):
     for i in range(len(p1) - 1):
         c1 = c.copy()
         c1.segment(p2[i], p2[i + 1])
-        knots1 = knotSeqScale(c1.getKnots(), p1[i + 1] - p1[i], p1[i])
+        knots1 = KnotVector(c1).scale(p1[i + 1] - p1[i], p1[i])
         print("{} -> {}".format(c1.getKnots(), knots1))
         c1.setKnots(knots1)
         curves.append(c1)

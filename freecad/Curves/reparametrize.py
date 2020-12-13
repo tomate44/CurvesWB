@@ -42,8 +42,8 @@ def normalized_bspline(e1, reverse=False):
         _utils.error("{} not supported".format(type(e1)))
     if reverse:
         bs.reverse()
-    knots = nurbs_tools.knotSeqNormalize(bs.getKnots())
-    bs.setKnots(knots)
+    knots = nurbs_tools.KnotVector(bs)
+    bs.setKnots(knots.normalize())
     return bs
 
 def get_ortho_params(e1,e2,n):
