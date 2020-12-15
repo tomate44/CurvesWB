@@ -14,6 +14,7 @@ from freecad.Curves import ICONPATH
 
 from pivy import coin
 from freecad.Curves import nurbs_tools
+from freecad.Curves.blend_curve import BlendCurve
 from freecad.Curves import CoinNodes
 from freecad.Curves import graphics
 from freecad.Curves import manipulators
@@ -28,86 +29,85 @@ class BlendCurveFP:
         debug("BlendCurve class Init")
         obj.addProperty("App::PropertyLinkSub", "Edge1", "Edge1", "Edge 1").Edge1 = edges[0]
         obj.addProperty("App::PropertyLinkSub", "Edge2", "Edge2", "Edge 2").Edge2 = edges[1]
-        obj.addProperty("App::PropertyInteger", "DegreeMax", "BlendCurve", "Max degree of the Blend curve").DegreeMax = 9
-        obj.addProperty("App::PropertyFloatConstraint", "Parameter1", "Edge1", "Location of blend curve")
+        # obj.addProperty("App::PropertyInteger", "DegreeMax", "BlendCurve", "Max degree of the Blend curve").DegreeMax = 9
+        obj.addProperty("App::PropertyDistance", "Parameter1", "Edge1", "Location on first edge")
         obj.addProperty("App::PropertyFloatConstraint", "Scale1", "Edge1", "Scale of blend curve")
         obj.addProperty("App::PropertyEnumeration", "Continuity1", "Edge1", "Continuity").Continuity1 = ["C0", "G1", "G2", "G3", "G4"]
-        obj.addProperty("App::PropertyFloatConstraint", "Parameter2", "Edge2", "Location of blend curve")
+        obj.addProperty("App::PropertyDistance", "Parameter2", "Edge2", "Location on second edge")
         obj.addProperty("App::PropertyFloatConstraint", "Scale2", "Edge2", "Scale of blend curve")
         obj.addProperty("App::PropertyEnumeration", "Continuity2", "Edge2", "Continuity").Continuity2 = ["C0", "G1", "G2", "G3", "G4"]
         obj.addProperty("App::PropertyVectorList", "CurvePts", "BlendCurve", "CurvePts")
         obj.addProperty("App::PropertyEnumeration", "Output", "BlendCurve", "Output type").Output = ["Wire", "Joined", "Single"]
         obj.Scale1 = (1., -5.0, 5.0, 0.05)
         obj.Scale2 = (1., -5.0, 5.0, 0.05)
-        obj.Parameter1 = (1.0, 0.0, 1.0, 0.05)
-        obj.Parameter2 = (1.0, 0.0, 1.0, 0.05)
         obj.Proxy = self
 
     def compute(self, fp):
         e1 = _utils.getShape(fp, "Edge1", "Edge")
         e2 = _utils.getShape(fp, "Edge2", "Edge")
         if e1 and e2:
-            bc = nurbs_tools.blendCurve(e1, e2)
-            bc.param1 = e1.FirstParameter + fp.Parameter1 * (e1.LastParameter - e1.FirstParameter)
-            bc.param2 = e2.FirstParameter + fp.Parameter2 * (e2.LastParameter - e2.FirstParameter)
-            bc.cont1 = self.getContinuity(fp.Continuity1)
-            bc.cont2 = self.getContinuity(fp.Continuity2)
-            bc.scale1 = fp.Scale1
-            bc.scale2 = fp.Scale2
-            bc.maxDegree = fp.DegreeMax
-            bc.compute()
+            p1 = e1.getParameterByLength(fp.Parameter1)
+            p2 = e2.getParameterByLength(fp.Parameter2)
+            c1 = (e1, p1, self.getContinuity(fp.Continuity1))
+            c2 = (e2, p2, self.getContinuity(fp.Continuity2))
+            bc = BlendCurve.from_edge_constraints((c1, c2))
+            bc.scales = [fp.Scale1, fp.Scale2]
+            bc.perform()
             return bc
         return None
 
     def execute(self, fp):
         bc = self.compute(fp)
-        if (bc is None) or (bc.Curve is None):
+        if (bc is None) or (bc.curve is None):
             fp.CurvePts = []
             fp.Shape = Part.Shape()
         else:
-            fp.CurvePts = bc.Curve.getPoles()
-            if fp.Output == "Wire":
-                fp.Shape = bc.getWire()
-            elif fp.Output == "Joined":
-                fp.Shape = bc.getJoinedCurve().toShape()
-            else:
-                fp.Shape = bc.Curve.toShape()
+            fp.CurvePts = bc.curve.getPoles()
+            #if fp.Output == "Wire":
+                #fp.Shape = bc.getWire()
+            #elif fp.Output == "Joined":
+                #fp.Shape = bc.getJoinedCurve().toShape()
+            #else:
+                #fp.Shape = bc.curve.toShape()
+            fp.Shape = bc.curve.toShape()
 
     def onChanged(self, fp, prop):
         if prop == "Scale1":
             if fp.Scale1 == 0:
                 fp.Scale1 = 0.0001
-            self.execute(fp)
         elif prop == "Scale2":
             if fp.Scale2 == 0:
                 fp.Scale2 = 0.0001
-            self.execute(fp)
-        elif prop in ("Parameter1", "Parameter2"):
-            self.execute(fp)
-        elif prop == "DegreeMax":
-            if fp.DegreeMax < 1:
-                fp.DegreeMax = 1
-            elif fp.DegreeMax > 9:
-                fp.DegreeMax = 9
+        elif prop == "Parameter1":
+            e1 = _utils.getShape(fp, "Edge1", "Edge")
+            if fp.Parameter1 > e1.Length:
+                fp.Parameter1 = e1.Length
+            elif fp.Parameter1 < -e1.Length:
+                fp.Parameter1 = -e1.Length
+        elif prop == "Parameter2":
+            e2 = _utils.getShape(fp, "Edge2", "Edge")
+            if fp.Parameter2 > e2.Length:
+                fp.Parameter2 = e2.Length
+            elif fp.Parameter2 < -e2.Length:
+                fp.Parameter2 = -e2.Length
+        self.execute(fp)
 
-    def onDocumentRestored(self, fp):
-        debug("{} restored !".format(fp.Label))
-        fp.Scale1 = (fp.Scale1, -5.0, 5.0, 0.05)
-        fp.Scale2 = (fp.Scale2, -5.0, 5.0, 0.05)
-        fp.Parameter1 = (fp.Parameter1, 0.0, 1.0, 0.05)
-        fp.Parameter2 = (fp.Parameter2, 0.0, 1.0, 0.05)
+    # def onDocumentRestored(self, fp):
+        # debug("{} restored !".format(fp.Label))
+        # fp.Scale1 = (fp.Scale1, -5.0, 5.0, 0.05)
+        # fp.Scale2 = (fp.Scale2, -5.0, 5.0, 0.05)
 
     def getContinuity(self, cont):
         if cont == "C0":
-            return(0)
+            return 0
         elif cont == "G1":
-            return(1)
+            return 1
         elif cont == "G2":
-            return(2)
+            return 2
         elif cont == "G3":
-            return(3)
+            return 3
         else:
-            return(4)
+            return 4
 
 
 class pointEditor(object):

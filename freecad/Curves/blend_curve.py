@@ -59,7 +59,10 @@ class BlendCurve:
         self.scales.append(1.0)
 
     def scale_constraint(self, constraint, scale):
-        return [constraint[i] * pow(scale, i) for i in range(len(constraint))]
+        res = []
+        for i in range(len(constraint)):
+            res.append(constraint[i] * pow(scale, i))
+        return res
 
     def scale_constraints(self):
         scaled_constraints = []
