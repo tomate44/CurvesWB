@@ -90,7 +90,11 @@ class BlendCurveFP:
                 fp.Parameter2 = e2.Length
             elif fp.Parameter2 < -e2.Length:
                 fp.Parameter2 = -e2.Length
-        self.execute(fp)
+        if prop in ("Scale1", "Scale2",
+                    "Parameter1", "Parameter2",
+                    "Continuity1", "Continuity2"
+                    "Output"):
+            self.execute(fp)
 
     # def onDocumentRestored(self, fp):
         # debug("{} restored !".format(fp.Label))
@@ -256,28 +260,36 @@ class BlendCurveVP:
         self.select_state = vobj.Selectable
         self.ip = None
 
+    def get_length(self, edge, point):
+        try:
+            return edge.Curve.toShape(edge.FirstParameter, edge.Curve.parameter(point)).Length
+        except Part.OCCError:
+            return 0.0
+
     def update_shape(self):
         e1 = _utils.getShape(self.Object, "Edge1", "Edge")
         e2 = _utils.getShape(self.Object, "Edge2", "Edge")
-        if e1 and e2:
-            bc = nurbs_tools.blendCurve(e1, e2)
+        if self.bc:
+            self.bc.constraints = []
+            # bc = nurbs_tools.blendCurve(e1, e2)
             v = Part.Vertex(self.m1.point)
             proj = v.distToShape(self.m1.snap_shape)[1][0][1]
-            bc.param1 = e1.Curve.parameter(proj)
+            param1 = self.get_length(e1, proj)  # e1.Curve.toShape(e1.FirstParameter, e1.Curve.parameter(proj)).Length
             # bc.param1 = (pa1 - self.m1.snap_shape.FirstParameter) / (self.m1.snap_shape.LastParameter - self.m1.snap_shape.FirstParameter)
-            bc.scale1 = self.t1.parameter
-            bc.cont1 = self.Object.Proxy.getContinuity(self.c1.text[0])
+            cont1 = self.Object.Proxy.getContinuity(self.c1.text[0])
+            self.bc.add_constraint(e1, param1, cont1)
 
             v = Part.Vertex(self.m2.point)
             proj = v.distToShape(self.m2.snap_shape)[1][0][1]
-            bc.param2 = e2.Curve.parameter(proj)
+            param2 = self.get_length(e2, proj)
             # bc.param2 = (pa2 - self.m2.snap_shape.FirstParameter) / (self.m2.snap_shape.LastParameter - self.m2.snap_shape.FirstParameter)
-            bc.scale2 = self.t2.parameter
-            bc.cont2 = self.Object.Proxy.getContinuity(self.c2.text[0])
-            bc.maxDegree = self.Object.DegreeMax
-            bc.compute()
-            self.Object.Shape = bc.Curve.toShape()
-            return bc
+            cont2 = self.Object.Proxy.getContinuity(self.c2.text[0])
+            self.bc.add_constraint(e2, param2, cont2)
+
+            self.bc.scales = [self.t1.parameter, self.t2.parameter]
+            self.bc.perform()
+            self.Object.Shape = self.bc.curve.toShape()
+            return self.bc
 
     def setEdit(self, vobj, mode=0):
         debug("BlendCurve Edit mode = {}".format(mode))
@@ -288,11 +300,12 @@ class BlendCurveVP:
                 self.ps = vobj.PointSize
                 vobj.PointSize = 0.0
             pts = list()
+            self.bc = self.Object.Proxy.compute(self.Object)
             e1 = _utils.getShape(self.Object, "Edge1", "Edge")
             e2 = _utils.getShape(self.Object, "Edge2", "Edge")
 
-            pa1 = e1.FirstParameter + (e1.LastParameter - e1.FirstParameter) * self.Object.Parameter1
-            pa2 = e2.FirstParameter + (e2.LastParameter - e2.FirstParameter) * self.Object.Parameter2
+            pa1 = e1.getParameterByLength(self.Object.Parameter1)
+            pa2 = e2.getParameterByLength(self.Object.Parameter2)
 
             d = e1.valueAt(pa1).distanceToPoint(e2.valueAt(pa2))
 
@@ -345,15 +358,16 @@ class BlendCurveVP:
         if isinstance(self.ip, pointEditor):
             v = Part.Vertex(self.m1.point)
             proj = v.distToShape(self.m1.snap_shape)[1][0][1]
-            pa1 = e1.Curve.parameter(proj)
-            self.Object.Parameter1 = (pa1 - self.m1.snap_shape.FirstParameter) / (self.m1.snap_shape.LastParameter - self.m1.snap_shape.FirstParameter)
+            # pa1 = e1.Curve.parameter(proj)
+            self.Object.Parameter1 = self.get_length(e1, proj)  # e1.Curve.toShape(e1.FirstParameter, pa1).Length
             self.Object.Scale1 = self.t1.parameter
             self.Object.Continuity1 = self.c1.text[0]
 
             v = Part.Vertex(self.m2.point)
             proj = v.distToShape(self.m2.snap_shape)[1][0][1]
-            pa2 = e2.Curve.parameter(proj)
-            self.Object.Parameter2 = (pa2 - self.m2.snap_shape.FirstParameter) / (self.m2.snap_shape.LastParameter - self.m2.snap_shape.FirstParameter)
+            # pa2 = e2.Curve.parameter(proj)
+            # self.Object.Parameter2 = (pa2 - self.m2.snap_shape.FirstParameter) / (self.m2.snap_shape.LastParameter - self.m2.snap_shape.FirstParameter)
+            self.Object.Parameter2 = self.get_length(e2, proj)  # e2.Curve.toShape(e2.FirstParameter, pa2).Length
             self.Object.Scale2 = self.t2.parameter
             self.Object.Continuity2 = self.c2.text[0]
 
