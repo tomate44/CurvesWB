@@ -47,6 +47,8 @@ def getString(weights):
 
 def cleanString(arr):
     strArr = ""
+    if len(arr) > 20:
+        return cleanString(arr[0:10]) + " ... " + cleanString(arr[-10:])
     for w in arr:
         if isinstance(w, float):
             strArr += "%0.2f, " % w
@@ -454,6 +456,8 @@ class GeomInfo:
     def propStr(self, c, att):
         if hasattr(c, att):
             a = c.__getattribute__(att)
+            if callable(a):
+                a = a()
             if not a:
                 return False
             elif hasattr(a, 'x') and hasattr(a, 'y') and hasattr(a, 'z'):
@@ -463,17 +467,17 @@ class GeomInfo:
         else:
             return False
 
-    def propMeth(self, c, att):
-        if hasattr(c, att):
-            a = c.__getattribute__(att)()
-            if not a:
-                return False
-            elif hasattr(a, 'x') and hasattr(a, 'y') and hasattr(a, 'z'):
-                return "%s : (%0.2f, %0.2f, %0.2f)" % (att, a.x, a.y, a.z)
-            else:
-                return "%s : %s"%(att, str(a))
-        else:
-            return False
+    #def propMeth(self, c, att):
+        #if hasattr(c, att):
+            #a = c.__getattribute__(att)()
+            #if not a:
+                #return False
+            #elif hasattr(a, 'x') and hasattr(a, 'y') and hasattr(a, 'z'):
+                #return "%s : (%0.2f, %0.2f, %0.2f)" % (att, a.x, a.y, a.z)
+            #else:
+                #return "%s : %s"%(att, str(a))
+        #else:
+            #return False
 
     def getSurfInfo(self, face):
         surf = face.Surface
@@ -502,7 +506,7 @@ class GeomInfo:
                  'isUClosed',
                  'isVClosed']
         for p in props:
-            s = self.propMeth(surf, p)
+            s = self.propStr(surf, p)
             if s:
                 ret.append(s)
         if isinstance(surf, Part.BSplineSurface):
@@ -539,7 +543,7 @@ class GeomInfo:
                 ret.append(s)
         props = ['isRational', 'isPeriodic', 'isClosed']
         for p in props:
-            s = self.propMeth(curve, p)
+            s = self.propStr(curve, p)
             if s:
                 ret.append(s)
         if hasattr(curve, 'getKnots'):
@@ -555,7 +559,7 @@ class GeomInfo:
             s = "Length : {:3.3f}".format(r)
             if hasattr(curve, 'length'):
                 le = curve.length()
-                if not le == r:
+                if not le == r and le < 1e20:
                     s += " ({:3.3f})".format(le)
                 ret.append(s)
             else:
