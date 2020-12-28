@@ -240,13 +240,15 @@ class sketchOnSurface:
             error("No Sketch attached")
             return
         skedges = []
-        for i in obj.Sketch.Geometry:
-            if i.Construction and obj.ConstructionBounds:
-                skedges.append(i.toShape())
-            elif not i.Construction and not obj.ConstructionBounds:
-                skedges.append(i.toShape())
-            # else:
-                # debug("toShape() error, ignoring geometry")
+        for i in range(len(obj.Sketch.Geometry)):
+            try:
+                cons = i.Construction
+            except AttributeError:
+                cons = obj.Sketch.getConstruction(i)
+            if cons and obj.ConstructionBounds:
+                skedges.append(obj.Sketch.Geometry[i].toShape())
+            elif not cons and not obj.ConstructionBounds:
+                skedges.append(obj.Sketch.Geometry[i].toShape())
         comp = Part.Compound(skedges)
 
         bb = comp.BoundBox
