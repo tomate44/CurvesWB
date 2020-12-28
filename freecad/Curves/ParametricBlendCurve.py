@@ -14,7 +14,7 @@ from freecad.Curves import ICONPATH
 
 from pivy import coin
 from freecad.Curves import nurbs_tools
-from freecad.Curves.blend_curve import BlendCurve
+from freecad.Curves import blend_curve
 from freecad.Curves import CoinNodes
 from freecad.Curves import graphics
 from freecad.Curves import manipulators
@@ -46,15 +46,19 @@ class BlendCurveFP:
         e1 = _utils.getShape(fp, "Edge1", "Edge")
         e2 = _utils.getShape(fp, "Edge2", "Edge")
         if e1 and e2:
-            p1 = e1.getParameterByLength(fp.Parameter1)
-            p2 = e2.getParameterByLength(fp.Parameter2)
-            c1 = (e1, p1, self.getContinuity(fp.Continuity1))
-            c2 = (e2, p2, self.getContinuity(fp.Continuity2))
-            bc = BlendCurve.from_edge_constraints((c1, c2))
-            bc.scales = [fp.Scale1, fp.Scale2]
+            # p1 = e1.getParameterByLength(fp.Parameter1)
+            # p2 = e2.getParameterByLength(fp.Parameter2)
+            c1 = blend_curve.PointOnEdge(e1)
+            c1.distance = fp.Parameter1
+            c1.continuity = self.getContinuity(fp.Continuity1)
+            c1.scale = fp.Scale1
+            c2 = blend_curve.PointOnEdge(e2)
+            c2.distance = fp.Parameter2
+            c2.continuity = self.getContinuity(fp.Continuity2)
+            c2.scale = fp.Scale2
+            bc = blend_curve.Fillet3D(c1, c2)
             bc.perform()
             return bc
-        return None
 
     def execute(self, fp):
         bc = self.compute(fp)
@@ -69,7 +73,7 @@ class BlendCurveFP:
                 #fp.Shape = bc.getJoinedCurve().toShape()
             #else:
                 #fp.Shape = bc.curve.toShape()
-            fp.Shape = bc.curve.toShape()
+            fp.Shape = bc.shape
 
     def onChanged(self, fp, prop):
         if prop == "Scale1":
@@ -266,29 +270,36 @@ class BlendCurveVP:
         except Part.OCCError:
             return 0.0
 
+    def get_param(self, edge, point):
+        try:
+            return edge.Curve.parameter(point)
+        except Part.OCCError:
+            return 0.0
+
     def update_shape(self):
         e1 = _utils.getShape(self.Object, "Edge1", "Edge")
         e2 = _utils.getShape(self.Object, "Edge2", "Edge")
         if self.bc:
-            self.bc.constraints = []
+            # self.bc.constraints = []
             # bc = nurbs_tools.blendCurve(e1, e2)
             v = Part.Vertex(self.m1.point)
             proj = v.distToShape(self.m1.snap_shape)[1][0][1]
-            param1 = self.get_length(e1, proj)  # e1.Curve.toShape(e1.FirstParameter, e1.Curve.parameter(proj)).Length
+            param1 = self.get_param(e1, proj)  # self.get_length(e1, proj)
             # bc.param1 = (pa1 - self.m1.snap_shape.FirstParameter) / (self.m1.snap_shape.LastParameter - self.m1.snap_shape.FirstParameter)
             cont1 = self.Object.Proxy.getContinuity(self.c1.text[0])
-            self.bc.add_constraint(e1, param1, cont1)
+            self.bc.point1 = blend_curve.PointOnEdge(e1, param1, cont1)
+            self.bc.point1.scale = self.t1.parameter
 
             v = Part.Vertex(self.m2.point)
             proj = v.distToShape(self.m2.snap_shape)[1][0][1]
-            param2 = self.get_length(e2, proj)
+            param2 = self.get_param(e2, proj)  # self.get_length(e2, proj)
             # bc.param2 = (pa2 - self.m2.snap_shape.FirstParameter) / (self.m2.snap_shape.LastParameter - self.m2.snap_shape.FirstParameter)
             cont2 = self.Object.Proxy.getContinuity(self.c2.text[0])
-            self.bc.add_constraint(e2, param2, cont2)
+            self.bc.point2 = blend_curve.PointOnEdge(e2, param2, cont2)
+            self.bc.point2.scale = self.t2.parameter
 
-            self.bc.scales = [self.t1.parameter, self.t2.parameter]
             self.bc.perform()
-            self.Object.Shape = self.bc.curve.toShape()
+            self.Object.Shape = self.bc.shape
             return self.bc
 
     def setEdit(self, vobj, mode=0):
@@ -301,15 +312,15 @@ class BlendCurveVP:
                 vobj.PointSize = 0.0
             pts = list()
             self.bc = self.Object.Proxy.compute(self.Object)
-            e1 = _utils.getShape(self.Object, "Edge1", "Edge")
-            e2 = _utils.getShape(self.Object, "Edge2", "Edge")
 
-            pa1 = e1.getParameterByLength(self.Object.Parameter1)
-            pa2 = e2.getParameterByLength(self.Object.Parameter2)
+            # e1 = _utils.getShape(self.Object, "Edge1", "Edge")
+            # e2 = _utils.getShape(self.Object, "Edge2", "Edge")
+            # pa1 = e1.getParameterByLength(self.Object.Parameter1)
+            # pa2 = e2.getParameterByLength(self.Object.Parameter2)
 
-            d = e1.valueAt(pa1).distanceToPoint(e2.valueAt(pa2))
+            d = self.bc.point1.point.distanceToPoint(self.bc.point2.point)
 
-            self.m1 = manipulators.EdgeSnapAndTangent(e1.valueAt(pa1), e1)
+            self.m1 = manipulators.EdgeSnapAndTangent(self.bc.point1.point, self.bc.point1.edge)
             self.m1.set_color("cyan")
             self.m1.marker.markerIndex = coin.SoMarkerSet.CIRCLE_LINE_9_9
             pts.append(self.m1)
@@ -320,14 +331,14 @@ class BlendCurveVP:
             pts.append(self.c1)
 
             self.t1 = manipulators.TangentSnap(self.m1)
-            self.t1._scale = d / 3.0
+            self.t1._scale = d / 1.0
             self.t1.parameter = self.Object.Scale1
             pts.append(self.t1)
             self.tt1 = manipulators.ParameterText(self.t1)
             self.tt1.show()
             pts.append(self.tt1)
 
-            self.m2 = manipulators.EdgeSnapAndTangent(e2.valueAt(pa2), e2)
+            self.m2 = manipulators.EdgeSnapAndTangent(self.bc.point2.point, self.bc.point2.edge)
             self.m2.set_color("red")
             self.m2.marker.markerIndex = coin.SoMarkerSet.CIRCLE_LINE_9_9
             pts.append(self.m2)
@@ -338,7 +349,7 @@ class BlendCurveVP:
             pts.append(self.c2)
 
             self.t2 = manipulators.TangentSnap(self.m2)
-            self.t2._scale = d / 3.0
+            self.t2._scale = d / 1.0
             self.t2.parameter = self.Object.Scale2
             pts.append(self.t2)
             self.tt2 = manipulators.ParameterText(self.t2)
@@ -389,6 +400,7 @@ class BlendCurveVP:
         else:
             vobj.Document.resetEdit()
             self.active = False
+            FreeCAD.ActiveDocument.recompute()
         return True
 
     def __getstate__(self):
@@ -528,11 +540,22 @@ class ParametricBlendCurve:
         e = self.getEdge(edge)
         goodpar = (par - e.FirstParameter) * 1.0 / (e.LastParameter - e.FirstParameter)
         if endClamp:
-            if goodpar < 0.5:
+            if goodpar < 0.1:
                 goodpar = 0.0
-            else:
+            elif goodpar > 0.9:
                 goodpar = 1.0
-        return(goodpar)
+        return goodpar
+
+    def get_distance(self, edge, par, endClamp=False):
+        e = self.getEdge(edge)
+        ne = e.Curve.toShape(e.FirstParameter, par)
+        dist = ne.Length
+        if endClamp:
+            if dist / e.Length < 0.05:
+                dist = 0.0
+            elif dist / e.Length > 0.95:
+                dist = e.Length
+        return dist
 
     def parseSel(self, selectionObject):
         res = []
@@ -557,7 +580,7 @@ class ParametricBlendCurve:
 
     def getOrientation(self, e1, p1, e2, p2):
         r1 = -1.0
-        r2 = -1.0
+        r2 = 1.0
         l1 = self.line(e1, p1)
         l2 = self.line(e2, p2)
         dts = l1.distToShape(l2)
@@ -566,7 +589,7 @@ class ParametricBlendCurve:
         if par1:
             r1 = 1.0
         if par2:
-            r2 = 1.0
+            r2 = -1.0
         return r1, r2
 
     def Activated(self):
@@ -581,14 +604,19 @@ class ParametricBlendCurve:
                 obj = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "Blend Curve")
                 BlendCurveFP(obj, edges[i: i + 2])
                 BlendCurveVP(obj.ViewObject)
-                obj.Parameter1 = self.normalizedParam(edges[i], param[i], False)
-                obj.Parameter2 = self.normalizedParam(edges[i + 1], param[i + 1], False)
+                obj.Parameter1 = self.get_distance(edges[i], param[i], True)
+                obj.Parameter2 = self.get_distance(edges[i + 1], param[i + 1], True)
                 obj.Continuity1 = "G1"
                 obj.Continuity2 = "G1"
                 obj.Output = "Single"
                 ori1, ori2 = self.getOrientation(edges[i], param[i], edges[i + 1], param[i + 1])
                 obj.Scale1 = ori1
                 obj.Scale2 = ori2
+                bc = obj.Proxy.compute(obj)
+                bc.auto_scale()
+                bc.minimize_curvature()
+                obj.Scale1 = bc.point1.scale
+                obj.Scale2 = bc.point2.scale
         FreeCAD.ActiveDocument.recompute()
 
     def GetResources(self):
