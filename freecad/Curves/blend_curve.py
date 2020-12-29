@@ -191,6 +191,19 @@ class PointOnEdge:
         if self._continuity > 0:
             return Part.makeLine(self.point, self.point + self.tangent)
 
+    def front_segment(self):
+        "Returns to edge segment that is in front of the tangent"
+        if self._scale > 0:
+            return self._edge.Curve.toShape(self._parameter, self._edge.LastParameter)
+        else:
+            return self._edge.Curve.toShape(self._edge.FirstParameter, self._parameter).reversed()
+
+    def rear_segment(self):
+        "Returns to edge segment that is behind the tangent"
+        if self._scale < 0:
+            return self._edge.Curve.toShape(self._parameter, self._edge.LastParameter)
+        else:
+            return self._edge.Curve.toShape(self._edge.FirstParameter, self._parameter).reversed()
 
 class Fillet3D:
     """Fillet3D generates a bezier curve that

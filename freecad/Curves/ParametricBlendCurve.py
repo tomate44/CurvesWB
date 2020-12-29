@@ -65,15 +65,16 @@ class BlendCurveFP:
         if (bc is None) or (bc.curve is None):
             fp.CurvePts = []
             fp.Shape = Part.Shape()
+            return None
+
+        fp.CurvePts = bc.curve.getPoles()
+        if fp.Output in ["Wire", "Joined"]:
+            w = Part.Wire([bc.point1.rear_segment(), bc.shape, bc.point2.front_segment()])
+            if fp.Output == "Joined":
+                w = w.approximate(1e-7, 1e-7, 99, 9).toShape()
         else:
-            fp.CurvePts = bc.curve.getPoles()
-            #if fp.Output == "Wire":
-                #fp.Shape = bc.getWire()
-            #elif fp.Output == "Joined":
-                #fp.Shape = bc.getJoinedCurve().toShape()
-            #else:
-                #fp.Shape = bc.curve.toShape()
-            fp.Shape = bc.shape
+            w = bc.shape
+        fp.Shape = w
 
     def onChanged(self, fp, prop):
         if prop == "Scale1":
@@ -296,7 +297,7 @@ class BlendCurveVP:
             # bc.param2 = (pa2 - self.m2.snap_shape.FirstParameter) / (self.m2.snap_shape.LastParameter - self.m2.snap_shape.FirstParameter)
             cont2 = self.Object.Proxy.getContinuity(self.c2.text[0])
             self.bc.point2 = blend_curve.PointOnEdge(e2, param2, cont2)
-            self.bc.point2.scale = self.t2.parameter
+            self.bc.point2.scale = -self.t2.parameter
 
             self.bc.perform()
             self.Object.Shape = self.bc.shape
@@ -331,7 +332,7 @@ class BlendCurveVP:
             pts.append(self.c1)
 
             self.t1 = manipulators.TangentSnap(self.m1)
-            self.t1._scale = d / 1.0
+            self.t1._scale = d / 3.0
             self.t1.parameter = self.Object.Scale1
             pts.append(self.t1)
             self.tt1 = manipulators.ParameterText(self.t1)
@@ -349,8 +350,8 @@ class BlendCurveVP:
             pts.append(self.c2)
 
             self.t2 = manipulators.TangentSnap(self.m2)
-            self.t2._scale = d / 1.0
-            self.t2.parameter = self.Object.Scale2
+            self.t2._scale = d / 3.0
+            self.t2.parameter = -self.Object.Scale2
             pts.append(self.t2)
             self.tt2 = manipulators.ParameterText(self.t2)
             self.tt2.show()
@@ -379,7 +380,7 @@ class BlendCurveVP:
             # pa2 = e2.Curve.parameter(proj)
             # self.Object.Parameter2 = (pa2 - self.m2.snap_shape.FirstParameter) / (self.m2.snap_shape.LastParameter - self.m2.snap_shape.FirstParameter)
             self.Object.Parameter2 = self.get_length(e2, proj)  # e2.Curve.toShape(e2.FirstParameter, pa2).Length
-            self.Object.Scale2 = self.t2.parameter
+            self.Object.Scale2 = -self.t2.parameter
             self.Object.Continuity2 = self.c2.text[0]
 
             vobj.Selectable = self.select_state
