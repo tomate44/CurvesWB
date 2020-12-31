@@ -69,7 +69,7 @@ class BlendCurveFP:
 
         fp.CurvePts = bc.curve.getPoles()
         if fp.Output in ["Wire", "Joined"]:
-            w = Part.Wire([bc.point1.rear_segment(), bc.shape, bc.point2.front_segment()])
+            w = Part.Wire(bc.point1.rear_segment() + [bc.shape] + bc.point2.front_segment())
             if fp.Output == "Joined":
                 w = w.approximate(1e-7, 1e-7, 99, 9).toShape()
         else:

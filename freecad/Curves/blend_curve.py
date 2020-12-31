@@ -191,19 +191,31 @@ class PointOnEdge:
         if self._continuity > 0:
             return Part.makeLine(self.point, self.point + self.tangent)
 
+    def split_edge(self, first=True):
+        "Cut the support edge at parameter, and return a wire"
+        if (self._parameter > self._edge.FirstParameter) and (self._parameter < self._edge.LastParameter):
+            return self._edge.split(self._parameter)
+
     def front_segment(self):
         "Returns to edge segment that is in front of the tangent"
         if self._scale > 0:
-            return self._edge.Curve.toShape(self._parameter, self._edge.LastParameter)
+            if self._parameter < self._edge.LastParameter:
+                return [self._edge.Curve.toShape(self._parameter, self._edge.LastParameter)]
         else:
-            return self._edge.Curve.toShape(self._edge.FirstParameter, self._parameter).reversed()
+            if self._parameter > self._edge.FirstParameter:
+                return [self._edge.Curve.toShape(self._edge.FirstParameter, self._parameter).reversed()]
+        return []
 
     def rear_segment(self):
         "Returns to edge segment that is behind the tangent"
         if self._scale < 0:
-            return self._edge.Curve.toShape(self._parameter, self._edge.LastParameter)
+            if self._parameter < self._edge.LastParameter:
+                return [self._edge.Curve.toShape(self._parameter, self._edge.LastParameter)]
         else:
-            return self._edge.Curve.toShape(self._edge.FirstParameter, self._parameter).reversed()
+            if self._parameter > self._edge.FirstParameter:
+                return [self._edge.Curve.toShape(self._edge.FirstParameter, self._parameter).reversed()]
+        return []
+
 
 class Fillet3D:
     """Fillet3D generates a bezier curve that
