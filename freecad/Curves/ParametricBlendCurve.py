@@ -38,9 +38,33 @@ class BlendCurveFP:
         obj.addProperty("App::PropertyEnumeration", "Continuity2", "Edge2", "Continuity").Continuity2 = ["C0", "G1", "G2", "G3", "G4"]
         obj.addProperty("App::PropertyVectorList", "CurvePts", "BlendCurve", "CurvePts")
         obj.addProperty("App::PropertyEnumeration", "Output", "BlendCurve", "Output type").Output = ["Wire", "Joined", "Single"]
+        obj.addProperty("App::PropertyBool", "AutoScale", "BlendCurve", "Compute scales to get minimal curvature along curve").AutoScale = False
         obj.Scale1 = (1., -5.0, 5.0, 0.05)
         obj.Scale2 = (1., -5.0, 5.0, 0.05)
         obj.Proxy = self
+
+    def check_minimize(self, fp):
+        if blend_curve.CAN_MINIMIZE:
+            fp.setEditorMode("AutoScale", 0)
+        else:
+            FreeCAD.Console.PrintWarning("BlendCurve: Install 'scipy' python package for AutoScale feature\n")
+            fp.setEditorMode("AutoScale", 2)
+
+    def migrate(self, fp):
+        if hasattr(fp, "DegreeMax"):
+            fp.removeProperty("DegreeMax")
+        if fp.getTypeIdOfProperty("Parameter1") == "App::PropertyFloatConstraint":
+            e1 = _utils.getShape(fp, "Edge1", "Edge")
+            val = fp.Parameter1 * e1.Length
+            fp.removeProperty("Parameter1")
+            fp.addProperty("App::PropertyDistance", "Parameter1", "Edge1", "Location on first edge")
+            fp.Parameter1 = val
+        if fp.getTypeIdOfProperty("Parameter2") == "App::PropertyFloatConstraint":
+            e2 = _utils.getShape(fp, "Edge2", "Edge")
+            val = fp.Parameter2 * e2.Length
+            fp.removeProperty("Parameter2")
+            fp.addProperty("App::PropertyDistance", "Parameter2", "Edge1", "Location on second edge")
+            fp.Parameter2 = val
 
     def compute(self, fp):
         e1 = _utils.getShape(fp, "Edge1", "Edge")
@@ -56,7 +80,7 @@ class BlendCurveFP:
             c2.distance = fp.Parameter2
             c2.continuity = self.getContinuity(fp.Continuity2)
             c2.scale = fp.Scale2
-            bc = blend_curve.Fillet3D(c1, c2)
+            bc = blend_curve.BlendCurve(c1, c2)
             bc.perform()
             return bc
 
@@ -77,7 +101,16 @@ class BlendCurveFP:
         fp.Shape = w
 
     def onChanged(self, fp, prop):
-        if prop == "Scale1":
+        if prop == "AutoScale" and fp.AutoScale:
+            bc = self.compute(fp)
+            bc.point1.scale = .01
+            bc.point2.scale = .01
+            bc.auto_orient()
+            bc.minimize_curvature()
+            fp.Scale1 = bc.point1.scale
+            fp.Scale2 = bc.point2.scale
+            fp.AutoScale = False
+        elif prop == "Scale1":
             if fp.Scale1 == 0:
                 fp.Scale1 = 0.0001
         elif prop == "Scale2":
@@ -101,10 +134,10 @@ class BlendCurveFP:
                     "Output"):
             self.execute(fp)
 
-    # def onDocumentRestored(self, fp):
-        # debug("{} restored !".format(fp.Label))
-        # fp.Scale1 = (fp.Scale1, -5.0, 5.0, 0.05)
-        # fp.Scale2 = (fp.Scale2, -5.0, 5.0, 0.05)
+    def onDocumentRestored(self, fp):
+        debug("{} restored !".format(fp.Label))
+        self.check_minimize(fp)
+        self.migrate(fp)
 
     def getContinuity(self, cont):
         if cont == "C0":

@@ -217,8 +217,8 @@ class PointOnEdge:
         return []
 
 
-class Fillet3D:
-    """Fillet3D generates a bezier curve that
+class BlendCurve:
+    """BlendCurve generates a bezier curve that
     smoothly interpolates two PointOnEdge objects"""
     def __init__(self, point1, point2):
         self.min_method = 'Nelder-Mead'
@@ -245,7 +245,7 @@ class Fillet3D:
 
     @property
     def point1(self):
-        "The PointOnEdge object that defines the start of the Fillet3D"
+        "The PointOnEdge object that defines the start of the BlendCurve"
         return self._point1
 
     @point1.setter
@@ -254,7 +254,7 @@ class Fillet3D:
 
     @property
     def point2(self):
-        "The PointOnEdge object that defines the end of the Fillet3D"
+        "The PointOnEdge object that defines the end of the BlendCurve"
         return self._point2
 
     @point2.setter
@@ -263,12 +263,12 @@ class Fillet3D:
 
     @property
     def curve(self):
-        "Returns the Bezier curve that represent the Fillet3D"
+        "Returns the Bezier curve that represent the BlendCurve"
         return self._curve
 
     @property
     def shape(self):
-        "Returns the edge that represent the Fillet3D"
+        "Returns the edge that represent the BlendCurve"
         return self._curve.toShape()
 
     def perform(self, vecs=None):
@@ -279,25 +279,33 @@ class Fillet3D:
             self._curve.interpolate(vecs)
         return self._curve
 
-    def auto_orient(self):
-        """Orient the 2 point tangents toward their intersection"""
+    def auto_orient(self, tol=1e-3):
+        """Automatically orient the 2 point tangents
+        blend_curve.auto_orient(tol=1e-3)
+        Tolerance is used to detect parallel tangents"""
         if self.point1.continuity < 1 or self.point2.continuity < 1:
             return False
         line1 = self.point1.get_tangent_edge()
         line2 = self.point2.get_tangent_edge()
-        long_line1 = line1.Curve.toShape(-1e20, 1e20)
-        long_line2 = line2.Curve.toShape(-1e20, 1e20)
-        dist, pts, info = long_line1.distToShape(long_line2)
-        if info[0][0] == "Edge" and info[0][3] == "Edge":
-            if info[0][2] < 0.0:
-                self.point1.reverse()
-            if info[0][5] > 0.0:
-                self.point2.reverse()
-            return True
-        return False
+        cross = self.point1.tangent.cross(self.point2.tangent)
+        if cross.Length < tol:  # tangent lines
+            p1 = line1.Curve.parameter(self.point2.point)
+            p2 = line2.Curve.parameter(self.point1.point)
+        else:
+            long_line1 = line1.Curve.toShape(-1e20, 1e20)
+            long_line2 = line2.Curve.toShape(-1e20, 1e20)
+            dist, pts, info = long_line1.distToShape(long_line2)
+            p1 = info[0][2]
+            p2 = info[0][5]
+        if p1 < 0:
+            self.point1.reverse()
+        if p2 > 0:
+            self.point2.reverse()
 
     def auto_scale(self, auto_orient=True):
-        """Sets the scale the 2 points proportional to chord length"""
+        """Sets the scale of the 2 points proportional to chord length
+        blend_curve.auto_scale(auto_orient=True)
+        Can optionaly start with an auto_orientation"""
         if auto_orient:
             self.auto_orient()
         # nb = self.point1.continuity + self.point2.continuity + 1
@@ -378,7 +386,7 @@ def main():
     poe2 = PointOnEdge(e1, p1, 3)
     poe1.size_tangent(0.1)
     poe2.size_tangent(0.1)
-    fillet = Fillet3D(poe1, poe2)
+    fillet = BlendCurve(poe1, poe2)
     fillet.nb_samples = 200
     fillet.auto_orient()
     # fillet.auto_scale()
