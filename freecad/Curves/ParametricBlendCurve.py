@@ -36,7 +36,7 @@ class BlendCurveFP:
         obj.addProperty("App::PropertyDistance", "Parameter2", "Edge2", "Location on second edge")
         obj.addProperty("App::PropertyFloatConstraint", "Scale2", "Edge2", "Scale of blend curve")
         obj.addProperty("App::PropertyEnumeration", "Continuity2", "Edge2", "Continuity").Continuity2 = ["C0", "G1", "G2", "G3", "G4"]
-        obj.addProperty("App::PropertyVectorList", "CurvePts", "BlendCurve", "CurvePts")
+        obj.addProperty("App::PropertyVectorList", "CurvePts", "BlendCurve", "Poles of the Bezier curve")
         obj.addProperty("App::PropertyEnumeration", "Output", "BlendCurve", "Output type").Output = ["Wire", "Joined", "Single"]
         obj.addProperty("App::PropertyBool", "AutoScale", "BlendCurve", "Compute scales to get minimal curvature along curve").AutoScale = False
         obj.Scale1 = (1., -5.0, 5.0, 0.05)
@@ -53,6 +53,9 @@ class BlendCurveFP:
     def migrate(self, fp):
         if hasattr(fp, "DegreeMax"):
             fp.removeProperty("DegreeMax")
+        if not hasattr(fp, "AutoScale"):
+            fp.addProperty("App::PropertyBool", "AutoScale", "BlendCurve",
+                           "Compute scales to get minimal curvature along curve").AutoScale = False
         if fp.getTypeIdOfProperty("Parameter1") == "App::PropertyFloatConstraint":
             e1 = _utils.getShape(fp, "Edge1", "Edge")
             val = fp.Parameter1 * e1.Length
@@ -73,7 +76,7 @@ class BlendCurveFP:
             # p1 = e1.getParameterByLength(fp.Parameter1)
             # p2 = e2.getParameterByLength(fp.Parameter2)
             c1 = blend_curve.PointOnEdge(e1)
-            c1.distance = fp.Parameter1
+            c1.distance = fp.Parameter11,000000
             c1.continuity = self.getContinuity(fp.Continuity1)
             c1.scale = fp.Scale1
             c2 = blend_curve.PointOnEdge(e2)
@@ -81,6 +84,7 @@ class BlendCurveFP:
             c2.continuity = self.getContinuity(fp.Continuity2)
             c2.scale = fp.Scale2
             bc = blend_curve.BlendCurve(c1, c2)
+            bc.nb_samples = 100
             bc.perform()
             return bc
 
@@ -90,7 +94,13 @@ class BlendCurveFP:
             fp.CurvePts = []
             fp.Shape = Part.Shape()
             return None
-
+        if fp.AutoScale:
+            bc.point1.scale = .01
+            bc.point2.scale = .01
+            bc.auto_orient()
+            bc.minimize_curvature()
+            fp.Scale1 = bc.point1.scale
+            fp.Scale2 = bc.point2.scale
         fp.CurvePts = bc.curve.getPoles()
         if fp.Output in ["Wire", "Joined"]:
             w = Part.Wire(bc.point1.rear_segment() + [bc.shape] + bc.point2.front_segment())
@@ -102,20 +112,29 @@ class BlendCurveFP:
 
     def onChanged(self, fp, prop):
         if prop == "AutoScale" and fp.AutoScale:
-            bc = self.compute(fp)
-            bc.point1.scale = .01
-            bc.point2.scale = .01
-            bc.auto_orient()
-            bc.minimize_curvature()
-            fp.Scale1 = bc.point1.scale
-            fp.Scale2 = bc.point2.scale
-            fp.AutoScale = False
+            fp.setEditorMode("Scale1", 2)
+            fp.setEditorMode("Scale2", 2)
+            #bc = self.compute(fp)
+            #bc.point1.scale = .01
+            #bc.point2.scale = .01
+            #bc.auto_orient()
+            #bc.minimize_curvature()
+            #fp.Scale1 = bc.point1.scale
+            #fp.Scale2 = bc.point2.scale
+            # fp.AutoScale = False
+        if prop == "AutoScale" and not fp.AutoScale:
+            fp.setEditorMode("Scale1", 0)
+            fp.setEditorMode("Scale2", 0)
         elif prop == "Scale1":
             if fp.Scale1 == 0:
                 fp.Scale1 = 0.0001
+            if not fp.AutoScale:
+                self.execute(fp)
         elif prop == "Scale2":
             if fp.Scale2 == 0:
                 fp.Scale2 = 0.0001
+            if not fp.AutoScale:
+                self.execute(fp)
         elif prop == "Parameter1":
             e1 = _utils.getShape(fp, "Edge1", "Edge")
             if fp.Parameter1 > e1.Length:
@@ -128,8 +147,7 @@ class BlendCurveFP:
                 fp.Parameter2 = e2.Length
             elif fp.Parameter2 < -e2.Length:
                 fp.Parameter2 = -e2.Length
-        if prop in ("Scale1", "Scale2",
-                    "Parameter1", "Parameter2",
+        if prop in ("Parameter1", "Parameter2",
                     "Continuity1", "Continuity2"
                     "Output"):
             self.execute(fp)

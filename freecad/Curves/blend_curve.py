@@ -222,7 +222,7 @@ class BlendCurve:
     smoothly interpolates two PointOnEdge objects"""
     def __init__(self, point1, point2):
         self.min_method = 'Nelder-Mead'
-        self.min_options = {"maxiter": 2000, "disp": True}
+        self.min_options = {"maxiter": 2000, "disp": False}
         self.point1 = point1
         self.point2 = point2
         self._curve = Part.BezierCurve()
