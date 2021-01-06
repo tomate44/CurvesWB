@@ -41,6 +41,7 @@ class BlendCurveFP:
         obj.addProperty("App::PropertyBool", "AutoScale", "BlendCurve", "Compute scales to get minimal curvature along curve").AutoScale = False
         obj.Scale1 = (1., -5.0, 5.0, 0.05)
         obj.Scale2 = (1., -5.0, 5.0, 0.05)
+        obj.setEditorMode("CurvePts", 2)
         obj.Proxy = self
 
     def check_minimize(self, fp):
@@ -76,7 +77,7 @@ class BlendCurveFP:
             # p1 = e1.getParameterByLength(fp.Parameter1)
             # p2 = e2.getParameterByLength(fp.Parameter2)
             c1 = blend_curve.PointOnEdge(e1)
-            c1.distance = fp.Parameter11,000000
+            c1.distance = fp.Parameter1
             c1.continuity = self.getContinuity(fp.Continuity1)
             c1.scale = fp.Scale1
             c2 = blend_curve.PointOnEdge(e2)
@@ -114,14 +115,6 @@ class BlendCurveFP:
         if prop == "AutoScale" and fp.AutoScale:
             fp.setEditorMode("Scale1", 2)
             fp.setEditorMode("Scale2", 2)
-            #bc = self.compute(fp)
-            #bc.point1.scale = .01
-            #bc.point2.scale = .01
-            #bc.auto_orient()
-            #bc.minimize_curvature()
-            #fp.Scale1 = bc.point1.scale
-            #fp.Scale2 = bc.point2.scale
-            # fp.AutoScale = False
         if prop == "AutoScale" and not fp.AutoScale:
             fp.setEditorMode("Scale1", 0)
             fp.setEditorMode("Scale2", 0)
@@ -154,6 +147,7 @@ class BlendCurveFP:
 
     def onDocumentRestored(self, fp):
         debug("{} restored !".format(fp.Label))
+        fp.setEditorMode("CurvePts", 2)
         self.check_minimize(fp)
         self.migrate(fp)
 
