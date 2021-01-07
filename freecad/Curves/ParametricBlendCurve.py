@@ -85,7 +85,7 @@ class BlendCurveFP:
             c2.continuity = self.getContinuity(fp.Continuity2)
             c2.scale = fp.Scale2
             bc = blend_curve.BlendCurve(c1, c2)
-            bc.nb_samples = 100
+            bc.nb_samples = 200
             bc.perform()
             return bc
 

@@ -95,7 +95,12 @@ class PointOnEdge:
 
     @distance.setter
     def distance(self, dist):
-        self.parameter = self._edge.getParameterByLength(dist)
+        if dist > self._edge.Length:
+            self.parameter = self._edge.LastParameter
+        elif dist < -self._edge.Length:
+            self.parameter = self._edge.FirstParameter
+        else:
+            self.parameter = self._edge.getParameterByLength(dist)
 
     @property
     def continuity(self):
