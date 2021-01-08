@@ -23,6 +23,9 @@ TOOL_ICON = os.path.join(ICONPATH, 'blend1.svg')
 # debug = _utils.debug
 debug = _utils.doNothing
 
+if not blend_curve.CAN_MINIMIZE:
+    __doc__ += "\nInstall 'scipy' python package for AutoScale feature"
+
 
 class BlendCurveFP:
     def __init__(self, obj, edges):
