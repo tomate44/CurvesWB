@@ -66,8 +66,9 @@ def getShape(obj, prop, shape_type):
                 # return prop_link[0].getSubObject(prop_link[1][0])
                 # except AttributeError:  # FC 0.18 (stable)
                 n = eval(obj.getPropertyByName(prop)[1][0].lstrip(shape_type))
-                sh = obj.getPropertyByName(prop)[0].Shape.copy()
-                if sh and hasattr(obj.getPropertyByName(prop)[0], "getGlobalPlacement"):
+                osh = obj.getPropertyByName(prop)[0].Shape
+                sh = osh.copy()
+                if sh and (not shape_type == "Vertex") and hasattr(obj.getPropertyByName(prop)[0], "getGlobalPlacement"):
                     pl = obj.getPropertyByName(prop)[0].getGlobalPlacement()
                     sh.Placement = pl
                 return getSubShape(sh, shape_type, n)
@@ -82,7 +83,7 @@ def getShape(obj, prop, shape_type):
                         # except AttributeError:  # FC 0.18 (stable)
                         n = eval(ss.lstrip(shape_type))
                         sh = tup[0].Shape.copy()
-                        if sh and hasattr(tup[0], "getGlobalPlacement"):
+                        if sh and (not shape_type == "Vertex") and hasattr(tup[0], "getGlobalPlacement"):
                             pl = tup[0].getGlobalPlacement()
                             sh.Placement = pl
                         res.append(getSubShape(sh, shape_type, n))
