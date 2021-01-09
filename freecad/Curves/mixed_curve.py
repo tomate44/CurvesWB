@@ -56,8 +56,10 @@ class MixedCurveFP:
     def __init__(self, obj, s1, s2, d1, d2):
         obj.addProperty("App::PropertyLink", "Shape1", "Mixed Curve", "First shape").Shape1 = s1
         obj.addProperty("App::PropertyLink", "Shape2", "Mixed Curve", "Second shape").Shape2 = s2
-        obj.addProperty("App::PropertyVector", "Direction1", "Mixed Curve", "Projection direction of the first shape.\nIf vector is null, shape's placement is used.").Direction1 = d1
-        obj.addProperty("App::PropertyVector", "Direction2", "Mixed Curve", "Projection direction of the second shape.\nIf vector is null, shape's placement is used.").Direction2 = d2
+        obj.addProperty("App::PropertyVector", "Direction1", "Mixed Curve",
+                        "Projection direction of the first shape.\nIf vector is null, shape's placement is used.").Direction1 = d1
+        obj.addProperty("App::PropertyVector", "Direction2", "Mixed Curve",
+                        "Projection direction of the second shape.\nIf vector is null, shape's placement is used.").Direction2 = d2
         obj.Proxy = self
 
     def execute(self, obj):
