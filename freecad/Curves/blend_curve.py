@@ -32,19 +32,18 @@ class PointOnEdge:
     will return the point and the 2 derivatives located at parameter 0.0
     on myEdge.
     """
-    def __init__(self, edge, parameter=None, continuity=1, normalize=True):
+    def __init__(self, edge, parameter=None, continuity=1, size=1.0):
         self._parameter = 0.0
         self._continuity = 1
         self._vectors = []
         self._scale = 1.0
+        self._size = size
         self.edge = edge
         if parameter is None:
             self.to_start()
         else:
             self.parameter = parameter
         self.continuity = continuity
-        if normalize:
-            self.normalize()
 
     def __repr__(self):
         return "{}(Edge({}),{},{})".format(self.__class__.__name__,
@@ -63,7 +62,7 @@ class PointOnEdge:
         if self._continuity > 0:
             res.extend([self._edge.Curve.getDN(self._parameter, i) for i in range(1, self._continuity + 1)])
         self._vectors = res
-        self._scale = 1.0
+        self.size = self._size
 
     def recompute_vectors(func):
         """Decorator that recomputes the point and derivative vectors"""
@@ -119,7 +118,7 @@ class PointOnEdge:
 
     @property
     def edge(self):
-        "Defines the number of derivative vectors of this PointOnEdge"
+        "The support edge of this PointOnEdge"
         return self._edge
 
     @edge.setter
@@ -152,13 +151,27 @@ class PointOnEdge:
     # ########################
 
     @property
-    def scale(self):
-        "The internal scale factor applied to the original vectors"
-        return self._scale
+    def size(self):
+        "The size of the tangent vector"
+        return self._size
 
-    @scale.setter
-    def scale(self, val):
-        self._scale = val
+    @size.setter
+    def size(self, val):
+        """Scale the vectors so that tangent has the given length"""
+        if abs(val) < 1e-7:
+            raise ValueError("Size too small")
+        self._size = val
+        if len(self._vectors) > 1:
+            self._scale = val / self._vectors[1].Length
+
+    # @property
+    # def scale(self):
+        # "The internal scale factor applied to the original vectors"
+        # return self._scale
+
+    # @scale.setter
+    # def scale(self, val):
+        # self._scale = val
 
     @property
     def bounds(self):
@@ -174,23 +187,23 @@ class PointOnEdge:
 
     def reverse(self):
         """Reverse the odd derivative vectors by inverting the scale"""
-        self._scale = -self._scale
+        self.size = -self._size
 
-    def normalize(self):
-        """Scale the vectors so that tangent length is 1.0"""
-        self.size_tangent(1.0)
+    # def normalize(self):
+        # """Scale the vectors so that tangent length is 1.0"""
+        # self.size_tangent(1.0)
 
-    def multiply(self, val):
-        """Multiply the scale of the vectors by given factor"""
-        self._scale *= val
+    # def multiply(self, val):
+        # """Multiply the scale of the vectors by given factor"""
+        # self.size *= val
 
-    def size_tangent(self, val):
-        """Scale the vectors so that tangent has the given length"""
-        if len(self._vectors) > 1:
-            self._scale = val * abs(self._scale) / (self._scale * self._vectors[1].Length)
+    # def size_tangent(self, val):
+        # """Scale the vectors so that tangent has the given length"""
+        # if len(self._vectors) > 1:
+            # self._scale = val * abs(self._scale) / (self._scale * self._vectors[1].Length)
 
-    def length_list(self):
-        return [v.Length for v in self.vectors]
+    # def length_list(self):
+        # return [v.Length for v in self.vectors]
 
     def get_tangent_edge(self):
         if self._continuity > 0:
@@ -201,24 +214,28 @@ class PointOnEdge:
         if (self._parameter > self._edge.FirstParameter) and (self._parameter < self._edge.LastParameter):
             return self._edge.split(self._parameter)
 
+    def first_segment(self):
+        if self._parameter > self._edge.FirstParameter:
+            return self._edge.Curve.toShape(self._edge.FirstParameter, self._parameter)
+
+    def last_segment(self):
+        if self._parameter < self._edge.LastParameter:
+            return self._edge.Curve.toShape(self._parameter, self._edge.LastParameter)
+
     def front_segment(self):
         "Returns to edge segment that is in front of the tangent"
         if self._scale > 0:
-            if self._parameter < self._edge.LastParameter:
-                return [self._edge.Curve.toShape(self._parameter, self._edge.LastParameter)]
+            return [self.last_segment()]
         else:
-            if self._parameter > self._edge.FirstParameter:
-                return [self._edge.Curve.toShape(self._edge.FirstParameter, self._parameter).reversed()]
+            return [self.first_segment().reversed()]
         return []
 
     def rear_segment(self):
         "Returns to edge segment that is behind the tangent"
         if self._scale < 0:
-            if self._parameter < self._edge.LastParameter:
-                return [self._edge.Curve.toShape(self._parameter, self._edge.LastParameter)]
+            return [self.last_segment()]
         else:
-            if self._parameter > self._edge.FirstParameter:
-                return [self._edge.Curve.toShape(self._edge.FirstParameter, self._parameter).reversed()]
+            return [self.first_segment().reversed()]
         return []
 
 
@@ -267,6 +284,28 @@ class BlendCurve:
         self._point2 = p
 
     @property
+    def scale1(self):
+        "The scale of the first PointOnEdge object"
+        return self.point1.size / self.chord_length
+
+    @scale1.setter
+    def scale1(self, s):
+        self.point1.size = s * self.chord_length
+
+    @property
+    def scale2(self):
+        "The scale of the second PointOnEdge object"
+        return self.point2.size / self.chord_length
+
+    @scale2.setter
+    def scale2(self, s):
+        self.point2.size = s * self.chord_length
+
+    @property
+    def chord_length(self):
+        return max(1e-6, self.point1.point.distanceToPoint(self.point2.point))
+
+    @property
     def curve(self):
         "Returns the Bezier curve that represent the BlendCurve"
         return self._curve
@@ -303,34 +342,35 @@ class BlendCurve:
             p1 = info[0][2]
             p2 = info[0][5]
         if p1 < 0:
-            self.point1.reverse()
+            self.scale1 = -self.scale1
         if p2 > 0:
-            self.point2.reverse()
+            self.scale2 = -self.scale2
 
     def auto_scale(self, auto_orient=True):
         """Sets the scale of the 2 points proportional to chord length
         blend_curve.auto_scale(auto_orient=True)
         Can optionaly start with an auto_orientation"""
+
+        # nb = self.point1.continuity + self.point2.continuity + 1
+        # chord_length = self.point1.point.distanceToPoint(self.point2.point)
+        # print("Tan1 : {:3.3f}, Tan2 : {:3.3f}".format(self.point1.tangent.Length, self.point2.tangent.Length))
+        self.scale1 = 0.5 / (1 + self.point1.continuity)
+        self.scale2 = 0.5 / (1 + self.point2.continuity)
         if auto_orient:
             self.auto_orient()
-        # nb = self.point1.continuity + self.point2.continuity + 1
-        chord_length = self.point1.point.distanceToPoint(self.point2.point)
-        # print("Tan1 : {:3.3f}, Tan2 : {:3.3f}".format(self.point1.tangent.Length, self.point2.tangent.Length))
-        self.point1.size_tangent(chord_length)
-        self.point2.size_tangent(chord_length)
         # print("Tan1 : {:3.3f}, Tan2 : {:3.3f}".format(self.point1.tangent.Length, self.point2.tangent.Length))
 
     # Curve evaluation methods
     def _curvature_regularity_score(self, scales):
         "Returns difference between max and min curvature along curve"
-        self.point1.scale, self.point2.scale = scales
+        self.scale1, self.scale2 = scales
         self.perform()
         curva_list = [self.curve.curvature(p / self.nb_samples) for p in range(self.nb_samples + 1)]
         return max(curva_list) - min(curva_list)
 
     def _cp_regularity_score(self, scales):
         "Returns difference between max and min distance between consecutive poles"
-        self.point1.scale, self.point2.scale = scales
+        self.scale1, self.scale2 = scales
         self.perform()
         poly = Part.makePolygon(self.curve.getPoles())
         lenghts = [e.Length for e in poly.Edges]
@@ -338,7 +378,7 @@ class BlendCurve:
 
     def _total_cp_angular(self, scales):
         "Returns difference between max and min angle between consecutive poles"
-        self.point1.scale, self.point2.scale = scales
+        self.scale1, self.scale2 = scales
         self.perform()
         poly = Part.makePolygon(self.curve.getPoles())
         angles = []
@@ -350,7 +390,7 @@ class BlendCurve:
         """Iterative function that sets
         a regular distance between control points"""
         minimize(self._cp_regularity_score,
-                 [self.point1.scale, self.point2.scale],
+                 [self.scale1, self.scale2],
                  method=self.min_method,
                  options=self.min_options)
 
@@ -359,7 +399,7 @@ class BlendCurve:
         the curvature along the curve
         nb_samples controls the number of curvature samples"""
         minimize(self._curvature_regularity_score,
-                 [self.point1.scale, self.point2.scale],
+                 [self.scale1, self.scale2],
                  method=self.min_method,
                  options=self.min_options)
 
@@ -367,7 +407,7 @@ class BlendCurve:
         """Iterative function that tries to minimize
         the angular deviation between consecutive control points"""
         minimize(self._total_cp_angular,
-                 [self.point1.scale, self.point2.scale],
+                 [self.scale1, self.scale2],
                  method=self.min_method,
                  options=self.min_options)
 
@@ -389,8 +429,8 @@ def main():
     start = time()
     poe1 = PointOnEdge(e0, p0, 3)
     poe2 = PointOnEdge(e1, p1, 3)
-    poe1.size_tangent(0.1)
-    poe2.size_tangent(0.1)
+    poe1.scale1 = 0.1
+    poe2.scale2 = 0.1
     fillet = BlendCurve(poe1, poe2)
     fillet.nb_samples = 200
     fillet.auto_orient()

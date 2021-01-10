@@ -82,13 +82,16 @@ class BlendCurveFP:
             c1 = blend_curve.PointOnEdge(e1)
             c1.distance = fp.Parameter1
             c1.continuity = self.getContinuity(fp.Continuity1)
-            c1.scale = fp.Scale1
+            # c1.scale = fp.Scale1
             c2 = blend_curve.PointOnEdge(e2)
             c2.distance = fp.Parameter2
             c2.continuity = self.getContinuity(fp.Continuity2)
-            c2.scale = fp.Scale2
+            # c2.scale = fp.Scale2
             bc = blend_curve.BlendCurve(c1, c2)
             bc.nb_samples = 200
+            # bc.auto_scale()
+            bc.scale1 = fp.Scale1
+            bc.scale2 = fp.Scale2
             bc.perform()
             return bc
 
@@ -99,12 +102,12 @@ class BlendCurveFP:
             fp.Shape = Part.Shape()
             return None
         if fp.AutoScale:
-            bc.point1.scale = .01
-            bc.point2.scale = .01
+            bc.scale1 = .01
+            bc.scale2 = .01
             bc.auto_orient()
             bc.minimize_curvature()
-            fp.Scale1 = bc.point1.scale
-            fp.Scale2 = bc.point2.scale
+            fp.Scale1 = bc.scale1
+            fp.Scale2 = bc.scale2
         fp.CurvePts = bc.curve.getPoles()
         if fp.Output in ["Wire", "Joined"]:
             w = Part.Wire(bc.point1.rear_segment() + [bc.shape] + bc.point2.front_segment())
@@ -337,7 +340,7 @@ class BlendCurveVP:
             # bc.param1 = (pa1 - self.m1.snap_shape.FirstParameter) / (self.m1.snap_shape.LastParameter - self.m1.snap_shape.FirstParameter)
             cont1 = self.Object.Proxy.getContinuity(self.c1.text[0])
             self.bc.point1 = blend_curve.PointOnEdge(e1, param1, cont1)
-            self.bc.point1.scale = self.t1.parameter
+            self.bc.scale1 = self.t1.parameter
 
             v = Part.Vertex(self.m2.point)
             proj = v.distToShape(self.m2.snap_shape)[1][0][1]
@@ -345,7 +348,7 @@ class BlendCurveVP:
             # bc.param2 = (pa2 - self.m2.snap_shape.FirstParameter) / (self.m2.snap_shape.LastParameter - self.m2.snap_shape.FirstParameter)
             cont2 = self.Object.Proxy.getContinuity(self.c2.text[0])
             self.bc.point2 = blend_curve.PointOnEdge(e2, param2, cont2)
-            self.bc.point2.scale = -self.t2.parameter
+            self.bc.scale2 = -self.t2.parameter
 
             self.bc.perform()
             self.Object.Shape = self.bc.shape
@@ -627,19 +630,19 @@ class ParametricBlendCurve:
         line = Part.LineSegment(pt, pt.add(t)).toShape()
         return line
 
-    def getOrientation(self, e1, p1, e2, p2):
-        r1 = -1.0
-        r2 = 1.0
-        l1 = self.line(e1, p1)
-        l2 = self.line(e2, p2)
-        dts = l1.distToShape(l2)
-        par1 = dts[2][0][2]
-        par2 = dts[2][0][5]
-        if par1:
-            r1 = 1.0
-        if par2:
-            r2 = -1.0
-        return r1, r2
+    #def getOrientation(self, e1, p1, e2, p2):
+        #r1 = -1.0
+        #r2 = 1.0
+        #l1 = self.line(e1, p1)
+        #l2 = self.line(e2, p2)
+        #dts = l1.distToShape(l2)
+        #par1 = dts[2][0][2]
+        #par2 = dts[2][0][5]
+        #if par1:
+            #r1 = 1.0
+        #if par2:
+            #r2 = -1.0
+        #return r1, r2
 
     def Activated(self):
         s = FreeCADGui.Selection.getSelectionEx()
@@ -655,14 +658,14 @@ class ParametricBlendCurve:
                 obj.Continuity1 = "G1"
                 obj.Continuity2 = "G1"
                 obj.Output = "Single"
-                ori1, ori2 = self.getOrientation(edges[i], param[i], edges[i + 1], param[i + 1])
-                obj.Scale1 = ori1
-                obj.Scale2 = ori2
+                #ori1, ori2 = self.getOrientation(edges[i], param[i], edges[i + 1], param[i + 1])
+                #obj.Scale1 = ori1
+                #obj.Scale2 = ori2
                 bc = obj.Proxy.compute(obj)
                 bc.auto_scale()
                 bc.minimize_curvature()
-                obj.Scale1 = bc.point1.scale
-                obj.Scale2 = bc.point2.scale
+                obj.Scale1 = bc.point1.size
+                obj.Scale2 = bc.point2.size
         FreeCAD.ActiveDocument.recompute()
 
     def GetResources(self):
