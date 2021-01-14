@@ -213,6 +213,8 @@ class PointOnEdge:
         "Cut the support edge at parameter, and return a wire"
         if (self._parameter > self._edge.FirstParameter) and (self._parameter < self._edge.LastParameter):
             return self._edge.split(self._parameter)
+        else:
+            return Part.Wire([self._edge])
 
     def first_segment(self):
         if self._parameter > self._edge.FirstParameter:
@@ -227,7 +229,9 @@ class PointOnEdge:
         if self._scale > 0:
             return [self.last_segment()]
         else:
-            return [self.first_segment().reversed()]
+            fs = self.first_segment()
+            if fs:
+                return [fs.reversed()]
         return []
 
     def rear_segment(self):
@@ -235,7 +239,9 @@ class PointOnEdge:
         if self._scale < 0:
             return [self.last_segment()]
         else:
-            return [self.first_segment().reversed()]
+            fs = self.first_segment()
+            if fs:
+                return [fs.reversed()]
         return []
 
 

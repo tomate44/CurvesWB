@@ -34,9 +34,11 @@ class BlendCurveFP:
         obj.addProperty("App::PropertyLinkSub", "Edge2", "Edge2", "Edge 2").Edge2 = edges[1]
         # obj.addProperty("App::PropertyInteger", "DegreeMax", "BlendCurve", "Max degree of the Blend curve").DegreeMax = 9
         obj.addProperty("App::PropertyDistance", "Parameter1", "Edge1", "Location on first edge")
+        obj.addProperty("App::PropertyBool", "Reverse1", "Edge1", "Reverse Edge").Reverse1 = False
         obj.addProperty("App::PropertyFloatConstraint", "Scale1", "Edge1", "Scale of blend curve")
         obj.addProperty("App::PropertyEnumeration", "Continuity1", "Edge1", "Continuity").Continuity1 = ["C0", "G1", "G2", "G3", "G4"]
         obj.addProperty("App::PropertyDistance", "Parameter2", "Edge2", "Location on second edge")
+        obj.addProperty("App::PropertyBool", "Reverse2", "Edge2", "Reverse Edge").Reverse2 = False
         obj.addProperty("App::PropertyFloatConstraint", "Scale2", "Edge2", "Scale of blend curve")
         obj.addProperty("App::PropertyEnumeration", "Continuity2", "Edge2", "Continuity").Continuity2 = ["C0", "G1", "G2", "G3", "G4"]
         obj.addProperty("App::PropertyVectorList", "CurvePts", "BlendCurve", "Poles of the Bezier curve")
@@ -60,6 +62,10 @@ class BlendCurveFP:
         if not hasattr(fp, "AutoScale"):
             fp.addProperty("App::PropertyBool", "AutoScale", "BlendCurve",
                            "Compute scales to get minimal curvature along curve").AutoScale = False
+        if not hasattr(fp, "Reverse1"):
+            fp.addProperty("App::PropertyBool", "Reverse1", "Edge1", "Reverse Edge").Reverse1 = False
+        if not hasattr(fp, "Reverse2"):
+            fp.addProperty("App::PropertyBool", "Reverse2", "Edge2", "Reverse Edge").Reverse2 = False
         if fp.getTypeIdOfProperty("Parameter1") == "App::PropertyFloatConstraint":
             e1 = _utils.getShape(fp, "Edge1", "Edge")
             val = fp.Parameter1 * e1.Length
@@ -76,15 +82,20 @@ class BlendCurveFP:
     def compute(self, fp):
         e1 = _utils.getShape(fp, "Edge1", "Edge")
         e2 = _utils.getShape(fp, "Edge2", "Edge")
+        r1 = r2 = 1.0
+        if fp.Reverse1:
+            r1 = -1.0
+        if fp.Reverse2:
+            r2 = -1.0
         if e1 and e2:
             # p1 = e1.getParameterByLength(fp.Parameter1)
             # p2 = e2.getParameterByLength(fp.Parameter2)
             c1 = blend_curve.PointOnEdge(e1)
-            c1.distance = fp.Parameter1
+            c1.distance = r1 * fp.Parameter1
             c1.continuity = self.getContinuity(fp.Continuity1)
             # c1.scale = fp.Scale1
             c2 = blend_curve.PointOnEdge(e2)
-            c2.distance = fp.Parameter2
+            c2.distance = r2 * fp.Parameter2
             c2.continuity = self.getContinuity(fp.Continuity2)
             # c2.scale = fp.Scale2
             bc = blend_curve.BlendCurve(c1, c2)
@@ -138,14 +149,14 @@ class BlendCurveFP:
             e1 = _utils.getShape(fp, "Edge1", "Edge")
             if fp.Parameter1 > e1.Length:
                 fp.Parameter1 = e1.Length
-            elif fp.Parameter1 < -e1.Length:
-                fp.Parameter1 = -e1.Length
+            elif fp.Parameter1 < 0.0:
+                fp.Parameter1 = 0.0
         elif prop == "Parameter2":
             e2 = _utils.getShape(fp, "Edge2", "Edge")
             if fp.Parameter2 > e2.Length:
                 fp.Parameter2 = e2.Length
-            elif fp.Parameter2 < -e2.Length:
-                fp.Parameter2 = -e2.Length
+            elif fp.Parameter2 < 0.0:
+                fp.Parameter2 = 0.0
         if prop in ("Parameter1", "Parameter2",
                     "Continuity1", "Continuity2"
                     "Output"):
