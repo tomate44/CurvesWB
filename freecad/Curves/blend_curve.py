@@ -6,6 +6,7 @@ __license__ = "LGPL 2.1"
 __doc__ = """"""
 
 from time import time
+from math import pi
 
 import FreeCAD
 import FreeCADGui
@@ -164,15 +165,6 @@ class PointOnEdge:
         if len(self._vectors) > 1:
             self._scale = val / self._vectors[1].Length
 
-    # @property
-    # def scale(self):
-        # "The internal scale factor applied to the original vectors"
-        # return self._scale
-
-    # @scale.setter
-    # def scale(self, val):
-        # self._scale = val
-
     @property
     def bounds(self):
         return self._edge.ParameterRange
@@ -188,22 +180,6 @@ class PointOnEdge:
     def reverse(self):
         """Reverse the odd derivative vectors by inverting the scale"""
         self.size = -self._size
-
-    # def normalize(self):
-        # """Scale the vectors so that tangent length is 1.0"""
-        # self.size_tangent(1.0)
-
-    # def multiply(self, val):
-        # """Multiply the scale of the vectors by given factor"""
-        # self.size *= val
-
-    # def size_tangent(self, val):
-        # """Scale the vectors so that tangent has the given length"""
-        # if len(self._vectors) > 1:
-            # self._scale = val * abs(self._scale) / (self._scale * self._vectors[1].Length)
-
-    # def length_list(self):
-        # return [v.Length for v in self.vectors]
 
     def get_tangent_edge(self):
         if self._continuity > 0:
@@ -243,6 +219,80 @@ class PointOnEdge:
             if fs:
                 return [fs.reversed()]
         return []
+
+
+class PointOnFaceEdge(PointOnEdge):
+    """Defines a point and some derivative vectors
+    located at a given 'parameter' on the 'edge' of a 'face'.
+    The property 'continuity' defines the number of derivative vectors.
+    Example :
+    pofe = PointOnFaceEdge(myEdge, myFace, 0.0, 2)
+    print(pofe.vectors)
+    will return the point and the 2 derivatives located at parameter 0.0
+    on the edge myEdge of face myFace.
+    """
+    def __init__(self, edge, face, parameter=None, continuity=1, size=1.0):
+        self._face = face
+        self._angle = pi / 2.0
+        super(PointOnFaceEdge, self).__init__(edge, parameter, continuity, size)
+
+    def __repr__(self):
+        return "{}(Edge({})(Face({}),{},{})".format(self.__class__.__name__,
+                                                    hex(id(self.edge)),
+                                                    hex(id(self._face)),
+                                                    self.parameter,
+                                                    self.continuity)
+
+    def __str__(self):
+        return "{} (Edge({})(Face({}), {:3.3f}, G{})".format(self.__class__.__name__,
+                                                             hex(id(self.edge)),
+                                                             hex(id(self._face)),
+                                                             self.parameter,
+                                                             self.continuity)
+
+    def recompute_vectors(func):
+        """Decorator that recomputes the point and derivative vectors"""
+        def wrapper(self, arg):
+            func(self, arg)
+            self.set_vectors()
+        return wrapper
+
+    def set_vectors(self):
+        point, tangent = self._edge.Curve.getD1(self._parameter)
+        u, v = self._face.Surface.parameter(point)
+        normal = self._face.Surface.normal(u, v)
+        binormal = normal.cross(tangent)
+        tan_plane = Part.Plane(point, point + tangent, point + binormal)
+        line = Part.Geom2d.Line2dSegment(FreeCAD.Base.Vector2d(-1, 0), FreeCAD.Base.Vector2d(1, 0))
+        line.rotate(FreeCAD.Base.Vector2d(0, 0), self._angle)
+        line3d = line.toShape(tan_plane)
+        cross_edge = self._face.project([line3d]).Edge1
+        param = cross_edge.Curve.parameter(point)
+        res = [cross_edge.Curve.getD0(param)]
+        if self._continuity > 0:
+            res.extend([cross_edge.Curve.getDN(param, i) for i in range(1, self._continuity + 1)])
+        self._vectors = res
+        self.size = self._size
+
+    @property
+    def face(self):
+        "The support face of this PointOnFaceEdge"
+        return self._face
+
+    @face.setter
+    @recompute_vectors
+    def face(self, face):
+        self._face = face
+
+    @property
+    def angle(self):
+        "The support face of this PointOnFaceEdge"
+        return self._angle
+
+    @angle.setter
+    @recompute_vectors
+    def angle(self, angle):
+        self._angle = angle
 
 
 class BlendCurve:
