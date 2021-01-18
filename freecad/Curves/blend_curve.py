@@ -11,6 +11,7 @@ from math import pi
 import FreeCAD
 import FreeCADGui
 import Part
+import numpy as np
 
 CAN_MINIMIZE = True
 
@@ -220,79 +221,136 @@ class PointOnEdge:
                 return [fs.reversed()]
         return []
 
+    def shape(self):
+        vecs = [FreeCAD.Vector()] + self.vectors[1:]
+        pts = [p + self.point for p in vecs]
+        return Part.makePolygon(pts)
 
-class PointOnFaceEdge(PointOnEdge):
-    """Defines a point and some derivative vectors
-    located at a given 'parameter' on the 'edge' of a 'face'.
+
+class EdgeOnFace:
+    """Defines an edge located on a face.
+    Provides derivative data to create smooth surface from this edge.
     The property 'continuity' defines the number of derivative vectors.
-    Example :
-    pofe = PointOnFaceEdge(myEdge, myFace, 0.0, 2)
-    print(pofe.vectors)
-    will return the point and the 2 derivatives located at parameter 0.0
-    on the edge myEdge of face myFace.
     """
-    def __init__(self, edge, face, parameter=None, continuity=1, size=1.0):
+    def __init__(self, edge, face, continuity=1):
         self._face = face
-        self._angle = pi / 2.0
-        super(PointOnFaceEdge, self).__init__(edge, parameter, continuity, size)
+        self._edge = edge
+        self.set_angle(90.0)
+        self.set_parameter(0.0)
+        self.set_size(1.0)
+        self.continuity = continuity
 
     def __repr__(self):
-        return "{}(Edge({})(Face({}),{},{})".format(self.__class__.__name__,
-                                                    hex(id(self.edge)),
-                                                    hex(id(self._face)),
-                                                    self.parameter,
-                                                    self.continuity)
+        return "{} (Edge {}, Face {}, G{})".format(self.__class__.__name__,
+                                                   hex(id(self._edge)),
+                                                   hex(id(self._face)),
+                                                   self.continuity)
 
-    def __str__(self):
-        return "{} (Edge({})(Face({}), {:3.3f}, G{})".format(self.__class__.__name__,
-                                                             hex(id(self.edge)),
-                                                             hex(id(self._face)),
-                                                             self.parameter,
-                                                             self.continuity)
-
-    def recompute_vectors(func):
-        """Decorator that recomputes the point and derivative vectors"""
+    def set_curve(func):
+        """Decorator that creates an interpolating curve of values"""
         def wrapper(self, arg):
-            func(self, arg)
-            self.set_vectors()
+            periodic = False
+            if hasattr(arg, "value"):
+                func(self, arg)
+            else:
+                if isinstance(arg, (list, tuple)):
+                    pts = []
+                    par = []
+                    for i, pair in enumerate(arg):
+                        if isinstance(pair, (list, tuple)):
+                            p, v = pair
+                        elif isinstance(pair, (int, float)):
+                            p = i / (len(arg) - 1)
+                            v = pair
+                        pts.append(FreeCAD.Vector(p, v, 0.0))
+                        par.append(p)
+                elif isinstance(arg, (int, float)):
+                    pts = [FreeCAD.Vector(0, arg, 0.0),
+                           FreeCAD.Vector(1, arg, 0.0)]
+                    par = [0.0, 1.0]
+                if len(pts) > 2 and self._edge.Curve.isPeriodic():
+                    periodic = True
+                    pts = pts[:-1]
+                bs = Part.BSplineCurve()
+                bs.interpolate(Points=pts, Parameters=par, PeriodicFlag=periodic)
+                func(self, bs)
         return wrapper
 
-    def set_vectors(self):
-        point, tangent = self._edge.Curve.getD1(self._parameter)
-        u, v = self._face.Surface.parameter(point)
-        normal = self._face.Surface.normal(u, v)
-        binormal = normal.cross(tangent)
-        tan_plane = Part.Plane(point, point + tangent, point + binormal)
-        line = Part.Geom2d.Line2dSegment(FreeCAD.Base.Vector2d(-1, 0), FreeCAD.Base.Vector2d(1, 0))
-        line.rotate(FreeCAD.Base.Vector2d(0, 0), self._angle)
-        line3d = line.toShape(tan_plane)
-        cross_edge = self._face.project([line3d]).Edge1
-        param = cross_edge.Curve.parameter(point)
-        res = [cross_edge.Curve.getD0(param)]
-        if self._continuity > 0:
-            res.extend([cross_edge.Curve.getDN(param, i) for i in range(1, self._continuity + 1)])
-        self._vectors = res
-        self.size = self._size
-
     @property
-    def face(self):
-        "The support face of this PointOnFaceEdge"
-        return self._face
+    def continuity(self):
+        "Defines the number of derivative vectors of this EdgeOnFace"
+        return self._continuity
 
-    @face.setter
-    @recompute_vectors
-    def face(self, face):
-        self._face = face
+    @continuity.setter
+    def continuity(self, val):
+        if val < 0:
+            self._continuity = 0
+        elif val > 5:
+            self._continuity = 5
+        else:
+            self._continuity = val
 
-    @property
-    def angle(self):
-        "The support face of this PointOnFaceEdge"
-        return self._angle
+    def get_real_param(self, param):
+        if param < 0.0:
+            param = 0.0
+        elif param > 1.0:
+            param = 1.0
+        return self._edge.FirstParameter + param * (self._edge.LastParameter - self._edge.FirstParameter)
 
-    @angle.setter
-    @recompute_vectors
-    def angle(self, angle):
+    def cross_curve(self, param):
+        bounds = self._face.ParameterRange
+        cos, fp, lp = self._face.curveOnSurface(self._edge)
+        point = cos.value(self.get_real_param(param))
+        tangent = cos.tangent(self.get_real_param(param))
+        line = Part.Geom2d.Line2d(point, FreeCAD.Base.Vector2d(point.x + tangent.x, point.y + tangent.y))
+        line.rotate(point, self.get_angle(param) * pi / 180)
+        line3d = line.toShape(self._face.Surface, min(bounds), max(bounds))
+        line3d.reverse()
+        return line3d
+
+    def get_angle(self, par):
+        "Returns the angle of the cross curve at given parameter"
+        return self._angle.value(par).y
+
+    @set_curve
+    def set_angle(self, angle=90.0):
+        "Sets the angle of the cross curves"
         self._angle = angle
+
+    def get_size(self, par):
+        "Returns the size of the cross curve at given parameter"
+        return self._size.value(par).y
+
+    @set_curve
+    def set_size(self, size=1.0):
+        "Sets the size of the cross curves"
+        self._size = size
+
+    def get_parameter(self, par):
+        "Returns the parameter on the cross curve at given parameter on base edge"
+        return self._parameter.value(par).y
+
+    @set_curve
+    def set_parameter(self, parameter=0.0):
+        "Sets the parameter on the cross curve"
+        self._parameter = parameter
+
+    def value(self, param):
+        if isinstance(param, FreeCAD.Vector):
+            param = self._edge.Curve.parameter(param)
+        cc = self.cross_curve(param)
+        par = self.get_parameter(param)
+        size = self.get_size(param)
+        return PointOnEdge(cc, par, self.continuity, size)
+
+    def discretize(self, num=10):
+        poe = []
+        for i in range(num + 1):
+            poe.append(self.value(i / num))
+        return poe
+
+    def shape(self, num=10):
+        return Part.Compound([poe.shape() for poe in self.discretize(num)])
 
 
 class BlendCurve:
@@ -468,8 +526,102 @@ class BlendCurve:
                  options=self.min_options)
 
 
-def main():
+class BlendSurface:
+    """BSpline surface that smoothly interpolates two EdgeOnFace objects"""
+    def __init__(self, edge1, edge2):
+        self.edge1 = edge1
+        self.edge2 = edge2
+        self._surface = Part.BSplineSurface()
 
+    def __repr__(self):
+        return "{}(Edge1({}, G{}), Edge2({}, G{}))".format(self.__class__.__name__,
+                                                           hex(id(self.edge1)),
+                                                           self.edge1.continuity,
+                                                           hex(id(self.edge2)),
+                                                           self.edge2.continuity)
+
+    @property
+    def surface(self):
+        "Returns the BSpline surface that represent the BlendSurface"
+        return self._surface
+
+    @property
+    def shape(self):
+        "Returns the face that represent the BlendSurface"
+        return self._surface.toShape()
+
+    def ruled_surface(self):
+        return Part.makeRuledSurface(self.edge1._edge, self.edge2._edge).Surface
+
+    def perform(self, num=None):
+        ruled = self.ruled_surface()
+        if num is None:
+            num = ruled.NbUPoles
+        u0, u1, v0, v1 = ruled.bounds()
+        pts = []
+        bc = BlendCurve(self.edge1.value(0.0), self.edge2.value(0.0))
+        params = np.linspace(u0, u1, num)
+        for p in params:
+            bc.point1 = self.edge1.value(ruled.value(p, v0))
+            bc.point2 = self.edge2.value(ruled.value(p, v1))
+            # bc.auto_scale()
+            bc.minimize_curvature()
+            pts.append(bc.perform().getPoles())
+        npts = []
+        for j in range(len(pts[0])):
+            row = []
+            for i in range(len(pts)):
+                row.append(pts[i][j])
+            npts.append(row)
+        poles = []
+        bs = Part.BSplineCurve()
+        for po in npts:
+            print(po)
+            print(params)
+            poles.append(bs.interpolate(Points=po, Parameters=params))
+        print(bs.getKnots())
+        print(bs.getMultiplicities())
+        print(bs.Degree)
+        print(bs.KnotSequence)
+        self._surface.buildFromPolesMultsKnots(poles,
+                                               ruled.getUMultiplicities(),
+                                               [bc._curve.NbPoles, bc._curve.NbPoles],
+                                               params,
+                                               [0.0, 1.0],
+                                               ruled.isUPeriodic(),
+                                               False,
+                                               ruled.UDegree,
+                                               bc._curve.Degree)
+        return self._surface
+
+
+def test_blend_surface():
+    doc1 = FreeCAD.getDocument('test_BlendSurface_1')
+    o1 = doc1.getObject('Ruled_Surface001')
+    e1 = o1.Shape.Edge1
+    f1 = o1.Shape.Face1
+    o2 = doc1.getObject('Ruled_Surface')
+    e2 = o2.Shape.Edge3
+    f2 = o2.Shape.Face1
+
+    from freecad.Curves import blend_curve as bc
+
+    eof1 = bc.EdgeOnFace(e1, f1, 3)
+    eof1.set_angle((90, 80, 100, 90))
+    eof1.set_size((1.0, 0.5, 1.5, 1.0))
+    Part.show(eof1.shape(100))
+
+    eof2 = bc.EdgeOnFace(e2, f2, 3)
+    eof2.set_angle((90, 90, 90, 70))
+    eof2.set_size((1.0, 1.5, 1.5, 1.0))
+    Part.show(eof2.shape(100))
+
+    bs = bc.BlendSurface(eof1, eof2)
+    bs.perform()
+    Part.show(bs.shape)
+
+
+def main():
     # selection
     sel = FreeCADGui.Selection.getSelectionEx()
     edges = []
