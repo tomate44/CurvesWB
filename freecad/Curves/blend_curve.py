@@ -13,6 +13,9 @@ import FreeCADGui
 import Part
 import numpy as np
 
+from .gordon import InterpolateCurveNetwork
+from . import _utils
+
 CAN_MINIMIZE = True
 
 try:
@@ -297,9 +300,16 @@ class EdgeOnFace:
             param = 1.0
         return self._edge.FirstParameter + param * (self._edge.LastParameter - self._edge.FirstParameter)
 
+    def curve_on_surface(self):
+        cos = self._face.curveOnSurface(self._edge)
+        if cos is None:
+            proj = self._face.project([self._edge])
+            cos = self._face.curveOnSurface(proj.Edge1)
+        return cos
+
     def cross_curve(self, param):
         bounds = self._face.ParameterRange
-        cos, fp, lp = self._face.curveOnSurface(self._edge)
+        cos, fp, lp = self.curve_on_surface()
         point = cos.value(self.get_real_param(param))
         tangent = cos.tangent(self.get_real_param(param))
         line = Part.Geom2d.Line2d(point, FreeCAD.Base.Vector2d(point.x + tangent.x, point.y + tangent.y))
@@ -345,8 +355,8 @@ class EdgeOnFace:
 
     def discretize(self, num=10):
         poe = []
-        for i in range(num + 1):
-            poe.append(self.value(i / num))
+        for i in np.linspace(0.0, 1.0, num):
+            poe.append(self.value(i))
         return poe
 
     def shape(self, num=10):
@@ -503,6 +513,9 @@ class BlendCurve:
     def set_regular_poles(self):
         """Iterative function that sets
         a regular distance between control points"""
+        self.scale1 = 0.01
+        self.scale2 = 0.01
+        self.auto_orient()
         minimize(self._cp_regularity_score,
                  [self.scale1, self.scale2],
                  method=self.min_method,
@@ -512,6 +525,9 @@ class BlendCurve:
         """Iterative function that tries to minimize
         the curvature along the curve
         nb_samples controls the number of curvature samples"""
+        self.scale1 = 0.01
+        self.scale2 = 0.01
+        self.auto_orient()
         minimize(self._curvature_regularity_score,
                  [self.scale1, self.scale2],
                  method=self.min_method,
@@ -520,6 +536,9 @@ class BlendCurve:
     def minimize_angular_variation(self):
         """Iterative function that tries to minimize
         the angular deviation between consecutive control points"""
+        self.scale1 = 0.01
+        self.scale2 = 0.01
+        self.auto_orient()
         minimize(self._total_cp_angular,
                  [self.scale1, self.scale2],
                  method=self.min_method,
@@ -532,6 +551,7 @@ class BlendSurface:
         self.edge1 = edge1
         self.edge2 = edge2
         self._surface = Part.BSplineSurface()
+        self._curves = []
 
     def __repr__(self):
         return "{}(Edge1({}, G{}), Edge2({}, G{}))".format(self.__class__.__name__,
@@ -541,58 +561,59 @@ class BlendSurface:
                                                            self.edge2.continuity)
 
     @property
+    def curves(self):
+        "Returns the Blend curves that represent the BlendSurface"
+        return self._curves
+
+    @property
+    def edges(self):
+        "Returns the compound of edges that represent the BlendSurface"
+        el = [c.toShape() for c in self._curves]
+        return Part.Compound(el)
+
+    @property
     def surface(self):
         "Returns the BSpline surface that represent the BlendSurface"
         return self._surface
 
     @property
-    def shape(self):
+    def face(self):
         "Returns the face that represent the BlendSurface"
         return self._surface.toShape()
 
     def ruled_surface(self):
-        return Part.makeRuledSurface(self.edge1._edge, self.edge2._edge).Surface
+        return _utils.ruled_surface(self.edge1._edge, self.edge2._edge).Surface
 
-    def perform(self, num=None):
-        ruled = self.ruled_surface()
-        if num is None:
-            num = ruled.NbUPoles
-        u0, u1, v0, v1 = ruled.bounds()
-        pts = []
-        bc = BlendCurve(self.edge1.value(0.0), self.edge2.value(0.0))
-        params = np.linspace(u0, u1, num)
+    def minimize_curvature(self, arg=3):
+        if isinstance(arg, int):
+            params = np.linspace(0.0, 1.0, arg)
+        s1 = []
+        s2 = []
         for p in params:
-            bc.point1 = self.edge1.value(ruled.value(p, v0))
-            bc.point2 = self.edge2.value(ruled.value(p, v1))
-            # bc.auto_scale()
+            bc = BlendCurve(self.edge1.value(p), self.edge2.value(p))
+            # bc.point1 = self.edge1.value(p)
+            # bc.point2 = self.edge2.value(p)
+            print("Computing BlendCurve u={} from {} to {}".format(p, bc.point1.point, bc.point2.point))
             bc.minimize_curvature()
-            pts.append(bc.perform().getPoles())
-        npts = []
-        for j in range(len(pts[0])):
-            row = []
-            for i in range(len(pts)):
-                row.append(pts[i][j])
-            npts.append(row)
-        poles = []
-        bs = Part.BSplineCurve()
-        for po in npts:
-            print(po)
-            print(params)
-            poles.append(bs.interpolate(Points=po, Parameters=params))
-        print(bs.getKnots())
-        print(bs.getMultiplicities())
-        print(bs.Degree)
-        print(bs.KnotSequence)
-        self._surface.buildFromPolesMultsKnots(poles,
-                                               ruled.getUMultiplicities(),
-                                               [bc._curve.NbPoles, bc._curve.NbPoles],
-                                               params,
-                                               [0.0, 1.0],
-                                               ruled.isUPeriodic(),
-                                               False,
-                                               ruled.UDegree,
-                                               bc._curve.Degree)
-        return self._surface
+            s1.append(bc.point1.size)
+            s2.append(bc.point2.size)
+        self.edge1.set_size(s1)
+        self.edge2.set_size(s2)
+
+    def perform(self, arg=20):
+        if isinstance(arg, int):
+            params = np.linspace(0.0, 1.0, arg)
+
+        bc_list = []
+        # bc = BlendCurve(self.edge1.value(0.0), self.edge2.value(0.0))
+        for p in params:
+            bc = BlendCurve(self.edge1.value(p), self.edge2.value(p))
+            # bc.point1 = self.edge1.value(p)
+            # bc.point2 = self.edge2.value(p)
+            print("Computing BlendCurve u={} from {} to {}".format(p, bc.point1.point, bc.point2.point))
+            # bc.minimize_curvature()
+            bc_list.append(bc.perform())
+        self._curves = bc_list
 
 
 def test_blend_surface():
@@ -606,19 +627,22 @@ def test_blend_surface():
 
     from freecad.Curves import blend_curve as bc
 
+    num = 21
+
     eof1 = bc.EdgeOnFace(e1, f1, 3)
     eof1.set_angle((90, 80, 100, 90))
     eof1.set_size((1.0, 0.5, 1.5, 1.0))
-    Part.show(eof1.shape(100))
+    Part.show(eof1.shape(num))
 
     eof2 = bc.EdgeOnFace(e2, f2, 3)
     eof2.set_angle((90, 90, 90, 70))
     eof2.set_size((1.0, 1.5, 1.5, 1.0))
-    Part.show(eof2.shape(100))
+    Part.show(eof2.shape(num))
 
     bs = bc.BlendSurface(eof1, eof2)
-    bs.perform()
-    Part.show(bs.shape)
+    bs.minimize_curvature()
+    bs.perform(num)
+    Part.show(bs.edges)
 
 
 def main():
