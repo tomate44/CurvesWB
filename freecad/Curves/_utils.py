@@ -174,12 +174,14 @@ def rootNode(shape, mode=2, deviation=0.3, angle=0.4):
 
 def ruled_surface(e1, e2):
     """creates a ruled surface between 2 edges, with automatic orientation."""
-    if not same_direction(e1, e2):
-        e = e2.copy()
-        e.reverse()
-        return Part.makeRuledSurface(e1, e)
-    else:
-        return Part.makeRuledSurface(e1, e2)
+    ruled = Part.makeRuledSurface(e1, e2)
+    try:
+        ruled.check(True)
+    except ValueError:
+        e3 = e2.copy()
+        e3.reverse()
+        ruled = Part.makeRuledSurface(e1, e3)
+    return ruled
 
 
 def nb_pcurves(edge):
