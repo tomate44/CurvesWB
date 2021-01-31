@@ -51,12 +51,12 @@ def debug(o):
     elif isinstance(o, Part.BSplineSurface):
         warn("\n************    BSplineSurface\n")
         try:
-            u = o.uIso(o.UKnotSequence[0])
+            u = o.uIso(o.getUKnot(1))
             debug(u)
         except Part.OCCError:
             FreeCAD.Console.PrintError("Failed to compute uIso curve\n")
         try:
-            v = o.vIso(o.VKnotSequence[0])
+            v = o.vIso(o.getVKnot(1))
             debug(v)
         except Part.OCCError:
             FreeCAD.Console.PrintError("Failed to compute vIso curve\n")
@@ -76,7 +76,7 @@ class GordonSurfaceBuilder(object):
     """Build a Gordon surface from a network of curves"""
     def __init__(self, profiles, guides,
                  params_u, params_v,
-                 tol=1e-5, par_tol=1e-7):
+                 tol=1e-7, par_tol=1e-12):
         debug("-- GordonSurfaceBuilder initialisation")
         debug("{} profiles and {} guides".format(len(profiles),
                                                  len(guides)))
@@ -198,6 +198,9 @@ class GordonSurfaceBuilder(object):
 
         #  Open CASCADE doesn't have a B-spline surface interpolation method
         # where one can give the u- and v-directional parameters as arguments
+        debug("-   Skinning intersection points")
+        debug("UClosed = {}".format(makeUClosed))
+        debug("VClosed = {}".format(makeVClosed))
         tensorProdSurf = bsa.pointsToSurface(intersection_pnts,
                                              self.intersectionParamsU,
                                              self.intersectionParamsV,
@@ -233,6 +236,10 @@ class GordonSurfaceBuilder(object):
 
         debug("After createCommonKnotsVectorSurface L1234")
         debug("skinningSurfGuides : {} x {}".format(self.skinningSurfGuides.NbUPoles, self.skinningSurfGuides.NbVPoles))
+        debug("skinningSurfGuides : {} {} x {} {}".format(self.skinningSurfGuides.isUClosed(),
+                                                          self.skinningSurfGuides.isUPeriodic(),
+                                                          self.skinningSurfGuides.isVClosed(),
+                                                          self.skinningSurfGuides.isVPeriodic()))
         debug("skinningSurfProfiles : {} x {}".format(self.skinningSurfProfiles.NbUPoles, self.skinningSurfProfiles.NbVPoles))
         debug("tensorProdSurf : {} x {}".format(self.tensorProdSurf.NbUPoles, self.tensorProdSurf.NbVPoles))
 

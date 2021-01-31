@@ -11,7 +11,7 @@ from math import pi
 from freecad.Curves.BSplineApproxInterp import BSplineApproxInterp
 
 vec2d = Base.Vector2d
-DEBUG = False
+DEBUG = True
 
 
 def debug(o):
@@ -27,12 +27,12 @@ def debug(o):
     elif isinstance(o, Part.BSplineSurface):
         FreeCAD.Console.PrintWarning("\nBSplineSurface\n************\n")
         try:
-            u = o.uIso(o.UKnotSequence[0])
+            u = o.uIso(o.getUKnot(1))
             debug(u)
         except Part.OCCError:
             FreeCAD.Console.PrintError("Failed to compute uIso curve\n")
         try:
-            v = o.vIso(o.VKnotSequence[0])
+            v = o.vIso(o.getVKnot(1))
             debug(v)
         except Part.OCCError:
             FreeCAD.Console.PrintError("Failed to compute vIso curve\n")
@@ -96,9 +96,9 @@ class SurfAdapterView(object):
     def insertKnot(self, knot, mult, tolerance=1e-15):
         try:
             if self.d == 0:
-                self.s.insertUKnot(abs(knot), mult, tolerance)
+                self.s.insertUKnot(knot, mult, tolerance)
             else:
-                self.s.insertVKnot(abs(knot), mult, tolerance)
+                self.s.insertVKnot(knot, mult, tolerance)
         except Part.OCCError:
             debug("failed to insert knot : %f - %d - %f" % (knot, mult, tolerance))
             raise RuntimeError
@@ -129,9 +129,9 @@ class SurfAdapterView(object):
 
     def getMult(self, idx):
         if self.d == 0:
-            return(self.s.getUMultiplicity(idx))
+            return self.s.getUMultiplicity(idx)
         else:
-            return(self.s.getVMultiplicity(idx))
+            return self.s.getVMultiplicity(idx)
 
     def getMultiplicity(self, idx):
         return(self.getMult(idx))
@@ -153,6 +153,12 @@ class SurfAdapterView(object):
             return(int(self.s.UDegree))
         else:
             return(int(self.s.VDegree))
+
+    def isPeriodic(self):
+        if self.d == 0:
+            return(self.s.isUPeriodic())
+        else:
+            return(self.s.isVPeriodic())
 
 
 class BSplineAlgorithms(object):
@@ -265,6 +271,30 @@ class BSplineAlgorithms(object):
         # all B-spline splines must have the same degree in the chosen direction
         if not self.haveSameDegree(splines_vector):
             self.error("B-splines don't have the same degree at least in one direction (u / v) in method createCommonKnotsVectorImpl!")
+
+        ## The parametric tolerance must be smaller than half of the minimum knot distance
+        #for spline in splines_vector:
+            #for idx in range(spline.NbKnots - 1):
+                #knot_dist = spline.getKnot(idx + 2) - spline.getKnot(idx + 1)
+                #par_tolerance = min(par_tolerance, knot_dist / 2.0)
+
+        ## insert all knots in first spline
+        #firstSpline = splines_vector[0]
+        #for spline in splines_vector[1:]:
+            #for knot_idx in range(1, spline.NbKnots + 1):
+                #knot = spline.getKnot(knot_idx)
+                #mult = spline.getMultiplicity(knot_idx)
+                #firstSpline.insertKnot(knot, mult, par_tolerance)
+
+        ## now insert knots from first into all others
+        #for spline in splines_vector[1:]:
+            #for knot_idx in range(1, firstSpline.NbKnots + 1):
+                #knot = firstSpline.getKnot(knot_idx)
+                #mult = firstSpline.getMultiplicity(knot_idx)
+                #spline.insertKnot(knot, mult, par_tolerance)
+            #if not (spline.NbKnots == firstSpline.NbKnots):
+                #self.error("Unexpected error in Algorithm makeGeometryCompatibleImpl.\nPlease contact the developers.")
+
         # create a vector of all knots in chosen direction (u or v) of all splines
         resultKnots = list()
         for spline in splines_vector:
@@ -296,9 +326,10 @@ class BSplineAlgorithms(object):
                 # get multiplicity of current knot in surface
                 splKnotIdx = self.findKnot(spline, resultKnots[knotIdx], par_tolerance)
                 if (splKnotIdx > -1):
-                    if int(spline.getMultiplicity(knotIdx + 1)) < resultMults[knotIdx]:
+                    # print("getting mult {} / {}, periodic = {}".format(splKnotIdx + 1, len(spline.getMultiplicities()), spline.isPeriodic()))
+                    if int(spline.getMultiplicity(splKnotIdx + 1)) < resultMults[knotIdx]:
                         # debug("increasing mult %f / %d"%(resultKnots[knotIdx], resultMults[knotIdx]))
-                        spline.increaseMultiplicity(knotIdx + 1, resultMults[knotIdx])
+                        spline.increaseMultiplicity(splKnotIdx + 1, resultMults[knotIdx])
                 else:
                     # debug("inserting knot %f / %d"%(resultKnots[knotIdx], resultMults[knotIdx]))
                     spline.insertKnot(resultKnots[knotIdx], resultMults[knotIdx], par_tolerance)

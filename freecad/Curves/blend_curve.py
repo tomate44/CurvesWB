@@ -360,8 +360,8 @@ class BlendCurve:
         # nb = self.point1.continuity + self.point2.continuity + 1
         # chord_length = self.point1.point.distanceToPoint(self.point2.point)
         # print("Tan1 : {:3.3f}, Tan2 : {:3.3f}".format(self.point1.tangent.Length, self.point2.tangent.Length))
-        self.scale1 = 0.5 / (1 + self.point1.continuity)
-        self.scale2 = 0.5 / (1 + self.point2.continuity)
+        self.scale1 = 1.0  # 0.5 / (1 + self.point1.continuity)
+        self.scale2 = 1.0  # 0.5 / (1 + self.point2.continuity)
         if auto_orient:
             self.auto_orient()
         # print("Tan1 : {:3.3f}, Tan2 : {:3.3f}".format(self.point1.tangent.Length, self.point2.tangent.Length))
@@ -459,14 +459,14 @@ class ValueOnEdge:
         - the normalized parameter in [0.0, 1.0]
         - the distance from start (if positive) or end (if negative)"""
         if abs_par is not None:
-            if abs_par >= self._edge.FirstParameter and abs_par <= self._edge.LastParameter:
-                return abs_par
+            # if abs_par >= self._edge.FirstParameter and abs_par <= self._edge.LastParameter:
+            return abs_par
         elif rel_par is not None:
-            if rel_par >= 0.0 and rel_par <= 1.0:
-                return self._edge.FirstParameter + rel_par * (self._edge.LastParameter - self._edge.FirstParameter)
+            # if rel_par >= 0.0 and rel_par <= 1.0:
+            return self._edge.FirstParameter + rel_par * (self._edge.LastParameter - self._edge.FirstParameter)
         elif dist_par is not None:
-            if abs(dist_par) <= self._edge.Length:
-                return self._edge.getParameterByLength(dist_par)
+            # if abs(dist_par) <= self._edge.Length:
+            return self._edge.getParameterByLength(dist_par)
         else:
             raise ValueError("No parameter")
 
@@ -486,7 +486,7 @@ class ValueOnEdge:
 
     def _compute(self):
         par = [p.x for p in self._pts]
-        if self._edge.isClosed() and self._edge.Curve.isPeriodic():
+        if self._edge.isClosed() and self._edge.Curve.isPeriodic() and len(self._pts) > 2:
             self._curve.interpolate(Points=self._pts[:-1], Parameters=par, PeriodicFlag=True)
         else:
             self._curve.interpolate(Points=self._pts, Parameters=par, PeriodicFlag=False)
@@ -501,6 +501,81 @@ class ValueOnEdge:
         return self._curve.value(par).y
 
 
+def add2d(p1, p2):
+    return vec2(p1.x + p2.x, p1.y + p2.y)
+
+
+def mul2d(vec, fac):
+    return vec2(vec.x * fac, vec.y * fac)
+
+
+def curve2d_extend(curve, start=0.5, end=0.5):
+    """Extends a Geom2d curve at each extremity, by a linear tangent
+    "start" and "end" parameters are factors of curve length.
+    Returns a BSplineCurve."""
+    bs = curve.toBSpline(curve.FirstParameter, curve.LastParameter)
+    t1 = mul2d(bs.tangent(bs.FirstParameter), -1.0)
+    t2 = bs.tangent(bs.LastParameter)
+    poles = bs.getPoles()
+    mults = bs.getMultiplicities()
+    knots = bs.getKnots()
+
+    pre = list()
+    post = list()
+    for i in range(bs.Degree):
+        le = bs.length() * (bs.Degree - i) / bs.Degree
+        pre.append(add2d(bs.value(bs.FirstParameter), mul2d(t1, start * le)))
+        post.append(add2d(bs.value(bs.LastParameter), mul2d(t2, end * le)))
+    newpoles = pre + poles + post
+
+    mults.insert(1, bs.Degree)
+    mults.insert(len(mults) - 2, bs.Degree)
+    prange = bs.LastParameter - bs.FirstParameter
+    knots.insert(0, bs.FirstParameter - prange * start)
+    knots.append(bs.LastParameter + prange * end)
+    try:
+        bs.buildFromPolesMultsKnots(newpoles, mults, knots, bs.isPeriodic(), bs.Degree)
+    except Part.OCCError:
+        print(bs.Degree)
+        print(len(newpoles))
+        print(sum(mults))
+        print(len(knots))
+    return bs
+
+
+def intersection2d(curve, c1, c2):
+    inter11 = curve.intersectCC(c1)
+    inter12 = curve.intersectCC(c2)
+    if len(inter11) > 0 and len(inter12) > 0:
+        return (curve, inter11[0], inter12[0])
+    else:
+        return False
+
+
+def get_offset_curve(bc, c1, c2, dist=0.1):
+    """computes the offsetcurve2d that is at distance dist from curve bc, that intersect c1 and c2.
+    Returns the offset curve and the intersection points"""
+    off1 = Part.Geom2d.OffsetCurve2d(bc, dist)
+    intersec = intersection2d(off1, c1, c2)
+    if intersec:
+        return intersec
+
+    off2 = Part.Geom2d.OffsetCurve2d(bc, -dist)
+    intersec = intersection2d(off1, c1, c2)
+    if intersec:
+        return intersec
+
+    ext1 = curve2d_extend(off1, 0.2, 0.2)
+    intersec = intersection2d(ext1, c1, c2)
+    if intersec:
+        return intersec
+
+    ext2 = curve2d_extend(off2, 0.2, 0.2)
+    intersec = intersection2d(ext2, c1, c2)
+    if intersec:
+        return intersec
+
+
 class EdgeOnFace:
     """Defines an edge located on a face.
     Provides derivative data to create smooth surface from this edge.
@@ -509,8 +584,9 @@ class EdgeOnFace:
     def __init__(self, edge, face, continuity=1):
         self._face = face
         self._edge = edge
+        self._offset = None
         self._angle = ValueOnEdge(edge, 90.0)
-        self._scale = ValueOnEdge(edge, 1.0)
+        self._size = ValueOnEdge(edge, 1.0)
         self.continuity = continuity
 
     def __repr__(self):
@@ -525,25 +601,29 @@ class EdgeOnFace:
         - the normalized parameter in [0.0, 1.0]
         - the distance from start (if positive) or end (if negative)"""
         if abs_par is not None:
-            if abs_par < self._edge.FirstParameter:
-                abs_par = self._edge.FirstParameter
-            elif abs_par > self._edge.LastParameter:
-                abs_par = self._edge.LastParameter
+            # if abs_par < self._edge.FirstParameter:
+            #    abs_par = self._edge.FirstParameter
+            # elif abs_par > self._edge.LastParameter:
+            #    abs_par = self._edge.LastParameter
             return abs_par
         elif rel_par is not None:
-            if rel_par < 0.0:
-                rel_par = 0.0
-            elif rel_par > 1.0:
-                rel_par = 1.0
+            # if rel_par < 0.0:
+            #   rel_par = 0.0
+            # elif rel_par > 1.0:
+            #   rel_par = 1.0
             return self._edge.FirstParameter + rel_par * (self._edge.LastParameter - self._edge.FirstParameter)
         elif dist_par is not None:
-            if dist_par < -self._edge.Length:
-                dist_par = -self._edge.Length
-            elif dist_par > self._edge.Length:
-                dist_par = self._edge.Length
+            # if dist_par < -self._edge.Length:
+            #   dist_par = -self._edge.Length
+            # elif dist_par > self._edge.Length:
+            #   dist_par = self._edge.Length
             return self._edge.getParameterByLength(dist_par)
         else:
             raise ValueError("No parameter")
+
+    def _relative_param(self, par):
+        "returns relative parameter corresponding to given real parameter"
+        return (par - self._edge.FirstParameter) / (self._edge.LastParameter - self._edge.FirstParameter)
 
     @property
     def continuity(self):
@@ -569,49 +649,107 @@ class EdgeOnFace:
         self._angle.set(angle)
 
     @property
-    def scale(self):
-        "Returns the object that defines scale along the edge"
-        return self._scale
+    def size(self):
+        "Returns the object that defines size along the edge"
+        return self._size
 
-    @scale.setter
-    def scale(self, scale):
-        self._scale.set(scale)
+    @size.setter
+    def size(self, size):
+        self._size.set(size)
 
-    def find_near_edges(self, par):
-        edges = []
-        s = Part.makeSphere(.01, self._edge.valueAt(par))
-        d, pts, info = self._face.distToShape(s.Face1)
-        for i in info:
-            if i[0] == 'Edge':
-                e = self._face.Edges[i[1]]
-                if abs(i[2] - e.FirstParameter) > abs(i[2] - e.LastParameter):
-                    e.reverse()
-                edges.append((i[1], e))
-        return edges
+    def get_offset_curve2d(self, dist=0.1):
+        cos = list()
+        idx = -1
+        nbe = len(self._face.OuterWire.OrderedEdges)
+        for n, e in enumerate(self._face.OuterWire.OrderedEdges):
+            c = self._face.curveOnSurface(e)
+            if len(c) == 3:
+                cos.append(c[0].toBSpline(c[1], c[2]))
+            else:
+                FreeCAD.Console.PrintError("failed to extract 2D geometry")
+            if e.isPartner(self._edge):
+                idx = n
 
-    def auto_angles(self):
-        fp, lp = self._edge.ParameterRange
-        sol1 = self.find_near_edges(fp)
-        sol2 = self.find_near_edges(lp)
-        if sol1[0][0] == sol2[0][0]:
-            first = sol1[1]
-            last = sol2[1]
-        elif sol1[1][0] == sol2[0][0]:
-            first = sol1[0]
-            last = sol2[1]
-        elif sol1[0][0] == sol2[1][0]:
-            first = sol1[1]
-            last = sol2[0]
-        else:
-            first = sol1[0]
-            last = sol2[0]
-        t1 = first[1].tangentAt(first[1].FirstParameter)
-        t2 = last[1].tangentAt(first[1].FirstParameter)
-        a1 = self._edge.tangentAt(fp).getAngle(t1)
-        a2 = self._edge.tangentAt(lp).getAngle(t2)
-        angles = [a1 * 180 / pi, a2 * 180 / pi]
-        print("Setting angles : {}".format(angles))
-        self.angle = angles
+        # idx is the index of the curve to offset
+        # get the index of the 2 neighbour curves
+        id1 = idx - 1 if idx > 0 else nbe - 1
+        id2 = idx + 1 if idx < nbe - 1 else 0
+
+        # get offset curve
+        off = get_offset_curve(cos[idx], cos[id1], cos[id2], dist)
+        bs = None
+        if off:
+            p1 = off[0].parameter(off[1])
+            p2 = off[0].parameter(off[2])
+            if p1 < p2:
+                bs = off[0].toBSpline(p1, p2)
+            else:
+                bs = off[0].toBSpline(p2, p1)
+        return bs
+
+    #def find_near_edges(self, par):
+        #edges = []
+        #s = Part.makeSphere(.01, self._edge.valueAt(par))
+        #d, pts, info = self._face.distToShape(s.Face1)
+        #for i in info:
+            #if i[0] == 'Edge':
+                #e = self._face.Edges[i[1]]
+                #if abs(i[2] - e.FirstParameter) > abs(i[2] - e.LastParameter):
+                    #e.reverse()
+                #edges.append((i[1], e))
+        #return edges
+
+    #def auto_angles(self):
+        #fp, lp = self._edge.ParameterRange
+        #sol1 = self.find_near_edges(fp)
+        #sol2 = self.find_near_edges(lp)
+        #if sol1[0][0] == sol2[0][0]:
+            #first = sol1[1]
+            #last = sol2[1]
+        #elif sol1[1][0] == sol2[0][0]:
+            #first = sol1[0]
+            #last = sol2[1]
+        #elif sol1[0][0] == sol2[1][0]:
+            #first = sol1[1]
+            #last = sol2[0]
+        #else:
+            #first = sol1[0]
+            #last = sol2[0]
+        #t1 = first[1].tangentAt(first[1].FirstParameter)
+        #t2 = last[1].tangentAt(first[1].FirstParameter)
+        #a1 = self._edge.tangentAt(fp).getAngle(t1)
+        #a2 = self._edge.tangentAt(lp).getAngle(t2)
+        #angles = [a1 * 180 / pi, a2 * 180 / pi]
+        #print("Setting angles : {}".format(angles))
+        #self.angle = angles
+
+    #def cross_curve(self, abs_par=None, rel_par=None, dist_par=None):
+        #par = self._get_real_param(abs_par, rel_par, dist_par)
+        #point = self._edge.valueAt(par)
+        #tangent = self._edge.tangentAt(par)  # * 1e20
+        #u, v = self._face.Surface.parameter(point)
+        #normal = self._face.Surface.normal(u, v)
+        #segment = Part.makeLine(point - tangent, point + tangent)
+        #segment.rotate(point, normal, self.angle.value(abs_par=par))
+        #proj = self._face.project([segment])
+        #if proj.Edges:
+            #e = proj.Edge1
+            #p = e.Curve.parameter(point)
+            #if (e.LastParameter - p) > (p - e.FirstParameter):
+                #e.reverse()
+            #return e
+        #else:
+            #FreeCAD.Console.PrintError("3D method failed ({}), 2D fallback.\n".format(proj.Vertexes))
+            #bounds = self._face.ParameterRange
+            #cos, fp, lp = self.curve_on_surface()
+            #par2 = cos.parameter(FreeCAD.vec2(u, v))
+            #point = cos.value(par2)
+            #tangent = cos.tangent(par2)
+            #line = Part.Geom2d.Line2d(point, FreeCAD.vec2(point.x + tangent.x, point.y + tangent.y))
+            #line.rotate(point, self.angle.value(abs_par=par) * pi / 180)
+            #line3d = line.toShape(self._face.Surface, min(bounds), max(bounds))
+            #line3d.reverse()
+            #return line3d
 
     def curve_on_surface(self):
         cos = self._face.curveOnSurface(self._edge)
@@ -622,31 +760,14 @@ class EdgeOnFace:
 
     def cross_curve(self, abs_par=None, rel_par=None, dist_par=None):
         par = self._get_real_param(abs_par, rel_par, dist_par)
-        point = self._edge.valueAt(par)
-        tangent = self._edge.tangentAt(par)  # * 1e20
-        u, v = self._face.Surface.parameter(point)
-        normal = self._face.Surface.normal(u, v)
-        segment = Part.makeLine(point - tangent, point + tangent)
-        segment.rotate(point, normal, self.angle.value(abs_par=par))
-        proj = self._face.project([segment])
-        if proj.Edges:
-            e = proj.Edge1
-            p = e.Curve.parameter(point)
-            if (e.LastParameter - p) > (p - e.FirstParameter):
-                e.reverse()
-            return e
-        else:
-            FreeCAD.Console.PrintError("3D method failed ({}), 2D fallback.\n".format(proj.Vertexes))
-            bounds = self._face.ParameterRange
-            cos, fp, lp = self.curve_on_surface()
-            par2 = cos.parameter(FreeCAD.Base.Vector2d(u, v))
-            point = cos.value(par2)
-            tangent = cos.tangent(par2)
-            line = Part.Geom2d.Line2d(point, FreeCAD.Base.Vector2d(point.x + tangent.x, point.y + tangent.y))
-            line.rotate(point, self.angle.value(abs_par=par) * pi / 180)
-            line3d = line.toShape(self._face.Surface, min(bounds), max(bounds))
-            line3d.reverse()
-            return line3d
+        if self._offset is None:
+            self._offset = self.get_offset_curve2d()
+        cos, fp, lp = self.curve_on_surface()
+        off_par = self._offset.FirstParameter + self._relative_param(par) * (self._offset.LastParameter - self._offset.FirstParameter)
+        line = Part.Geom2d.Line2dSegment(self._offset.value(off_par), cos.value(par))
+        line3d = line.toShape(self._face.Surface)
+        # line3d.reverse()
+        return line3d
 
     def valueAtPoint(self, pt):
         "Returns PointOnEdge object at given point"
@@ -662,10 +783,9 @@ class EdgeOnFace:
         cc = self.cross_curve(par)
         d, pts, info = cc.distToShape(self._edge)
         new_par = cc.Curve.parameter(pts[0][0])
-        size = self.scale.value(par)
+        size = self.size.value(par)
         if cc:
             poe = PointOnEdge(cc, new_par, self.continuity, size)
-            print(poe)
             return poe
 
     def discretize(self, num=10):
@@ -683,14 +803,10 @@ class EdgeOnFace:
 class BlendSurface:
     """BSpline surface that smoothly interpolates two EdgeOnFace objects"""
     def __init__(self, edge1, face1, edge2, face2):
-        ruled = _utils.ruled_surface(edge1, edge2)
-        e1 = ruled.Surface.vIso(0.0).toShape()
-        e2 = ruled.Surface.vIso(1.0).toShape()
-        self.edge1 = EdgeOnFace(e1, face1)
-        self.edge2 = EdgeOnFace(e2, face2)
-        # self.edge1 = EdgeOnFace(edge1, face1)
-        # self.edge2 = EdgeOnFace(edge2, face2)
-        self._surface = Part.BSplineSurface()
+        self.edge1 = EdgeOnFace(edge1, face1)
+        self.edge2 = EdgeOnFace(edge2, face2)
+        self._ruled_surface = None
+        self._surface = None
         self._curves = []
 
     def __repr__(self):
@@ -727,27 +843,39 @@ class BlendSurface:
     @property
     def surface(self):
         "Returns the BSpline surface that represent the BlendSurface"
-        if self._params:
-            profiles = [self.edge1._edge.Curve, self.edge2._edge.Curve]
-            guides = [bezier.toBSpline() for bezier in self._curves]
-            builder = GordonSurfaceBuilder(guides, profiles,
-                                           [0.0, 1.0], self._params)
-            self._surface = builder.surface_gordon()
+        self.perform()
+        guides = [bezier.toBSpline() for bezier in self._curves]
+        builder = GordonSurfaceBuilder(guides, self.rails, [0.0, 1.0], self._params)
+        self._surface = builder.surface_gordon()
         return self._surface
 
     @property
     def face(self):
         "Returns the face that represent the BlendSurface"
-        return self._surface.toShape()
+        return self.surface.toShape()
 
+    @property
+    def rails(self):
+        u0, u1, v0, v1 = self.ruled_surface.bounds()
+        return self.ruled_surface.vIso(v0), self.ruled_surface.vIso(v1)
+
+    @property
     def ruled_surface(self):
-        return _utils.ruled_surface(self.edge1._edge, self.edge2._edge).Surface
+        if self._ruled_surface is None:
+            self._ruled_surface = _utils.ruled_surface(self.edge1._edge, self.edge2._edge).Surface
+            u0, u1, v0, v1 = self._ruled_surface.bounds()
+            normalized_knots = [(k - u0) / (u1 - u0) for k in self._ruled_surface.getUKnots()]
+            self._ruled_surface.setUKnots(normalized_knots)
+        return self._ruled_surface
 
     def iterate(self, num=3):
+        ruled = self.ruled_surface
+        u0, u1, v0, v1 = ruled.bounds()
+        e1, e2 = self.rails
         if isinstance(num, int):
-            params = np.linspace(self.edge1._edge.FirstParameter, self.edge1._edge.LastParameter, num)
+            params = np.linspace(u0, u1, num)
         for p in params:
-            bc = BlendCurve(self.edge1.value(abs_par=p), self.edge2.value(abs_par=p))
+            bc = BlendCurve(self.edge1.valueAtPoint(e1.value(p)), self.edge2.valueAtPoint(e2.value(p)))
             yield p, bc
 
     def minimize_curvature(self, arg=3):
@@ -757,9 +885,20 @@ class BlendSurface:
             bc.minimize_curvature()
             s1.append(bc.point1.size)
             s2.append(bc.point2.size)
-            print("Auto_scaling BlendCurve @ {} = ({}, {})".format(p, bc.point1.size, bc.point2.size))
-        self.edge1.scale = s1
-        self.edge2.scale = s2
+            print("Minimizing curvature @ {:3.3f} = ({:3.3f}, {:3.3f})".format(p, bc.point1.size, bc.point2.size))
+        self.edge1.size = s1
+        self.edge2.size = s2
+
+    def auto_scale(self, arg=3):
+        s1 = []
+        s2 = []
+        for p, bc in self.iterate(arg):
+            bc.auto_scale()
+            s1.append(bc.point1.size)
+            s2.append(bc.point2.size)
+            print("Auto scaling @ {:3.3f} = ({:3.3f}, {:3.3f})".format(p, bc.point1.size, bc.point2.size))
+        self.edge1.size = s1
+        self.edge2.size = s2
 
     def perform(self, arg=20):
         bc_list = []
@@ -788,11 +927,16 @@ def test_blend_surface():
     bs = bc.BlendSurface(e1, f1, e2, f2)
     # bs.edge1.angle = (90, 80, 100, 90)
     # bs.edge2.angle = (90, 90, 90, 70)
-    bs.edge1.auto_angles()
-    bs.edge2.auto_angles()
-    bs.minimize_curvature()
+    bs.continuity = 3
+    # bs.minimize_curvature()
+    bs.auto_scale()
     bs.perform(num)
     Part.show(bs.edges)
+    bsface = bs.face
+    Part.show(bsface)
+    shell = Part.Shell([f1, bsface, f2])
+    print("Valid shell : {}".format(shell.isValid()))
+    shell.check(True)
 
 
 def main():
@@ -803,6 +947,7 @@ def main():
     for s in sel:
         edges.extend(s.SubObjects)
         pp.extend(s.PickedPoints)
+
     e0 = edges[0]
     p0 = e0.Curve.parameter(pp[0])
     e1 = edges[1]
