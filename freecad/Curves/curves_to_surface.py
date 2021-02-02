@@ -136,11 +136,23 @@ class CurvesToSurface:
         print("Average parameters : {}".format(params))
         return params
 
+    def interpolate_poles(self, params=None, force_closed=False):
+        if params is None:
+            params = self.parameters_at_poleidx(1.0, 1, force_closed)
+        poles_array = []
+        bs = Part.BSplineCurve()
+        for pole_idx in range(1, self.curves[0].NbPoles + 1):
+            pts = [c.getPole[pole_idx] for c in self.curves]
+            bs.interpolate(Points=pts, Parameters=params, PeriodicFlag=force_closed)
+            poles_array.append(bs.getPoles())
+        return bs, poles_array
+
     def build_surface(self):
         self.match_degrees()
         self.auto_orient()
         self.normalize_knots()
         self.match_knots()
-        # self.print_curves()
+        self.interpolate_poles()
+
 
 
