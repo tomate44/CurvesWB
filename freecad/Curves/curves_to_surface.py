@@ -11,9 +11,51 @@ import Part
 
 class CurvesToSurface:
     def __init__(self, curves):
-        self.curves = self.convert_to_bsplines(curves)
+        self.curves = self._convert_to_bsplines(curves)
+        self._periodic = False
+        self._params = None
+        self.force_periodic_if_closed = True
 
-    def convert_to_bsplines(self, curves):
+    @property
+    def Periodic(self):
+        "Periodicity in the lofting direction"
+        return self._periodic
+
+    @Periodic.setter
+    def Periodic(self, p):
+        if self._periodic is not bool(p):
+            self._periodic = bool(p)
+            if self._params is not None:
+                print("Periodicity changed. You must recompute parameters.")
+
+    @property
+    def Parameters(self):
+        "List of interpolating parameters of the curves"
+        return self._params
+
+    @Parameters.setter
+    def Parameters(self, par):
+        if isinstance(par, (list, tuple)):
+            pf = 0
+            if self._periodic:
+                pf = 1
+            if len(par) == len(self.curves) + pf:
+                self._params = par
+            else:
+                print("Wrong number of parameters")
+
+    @property
+    def Surface(self):
+        "Builds and returns the loft surface"
+        self.build_surface()
+        return self._surface
+
+    @property
+    def Face(self):
+        "Builds and returns the loft face"
+        return self.Surface.toShape()
+
+    def _convert_to_bsplines(self, curves):
         nc = []
         for c in curves:
             if isinstance(c, Part.Edge):
@@ -24,7 +66,7 @@ class CurvesToSurface:
                 nc.append(c.toBSpline())
         return nc
 
-    def print_curves(self):
+    def _print_curves(self):
         print([c.Degree for c in self.curves])
         for c in self.curves:
             print(c.getKnots())
@@ -32,15 +74,24 @@ class CurvesToSurface:
             print(c.getMultiplicities())
 
     def __repr__(self):
-        self.print_curves()
-        return ""
+        return "{}({})".format(self.__class__.__name__, len(self.curves))
 
     def match_degrees(self):
+        "Match all curve degrees to the highest one"
         max_degree = 0
+        all_closed = True
         for c in self.curves:
             max_degree = max(max_degree, c.Degree)
+            if not c.isClosed():
+                all_closed = False
         for c in self.curves:
             c.increaseDegree(max_degree)
+            if all_closed and self.force_periodic_if_closed:
+                if not c.isPeriodic():
+                    c.setPeriodic()
+                    print("Forcing periodic : {}".format(c.isPeriodic()))
+                else:
+                    print("Already periodic")
 
     def orient_curves(self, c1, c2):
         """orient_curves(c1, c2)
@@ -68,11 +119,13 @@ class CurvesToSurface:
             return True
 
     def auto_orient(self):
+        "Automatically match curves orientation"
         for i in range(1, len(self.curves)):
             if self.orient_curves(self.curves[i - 1], self.curves[i]):
                 print("Reversed curve #{}".format(i))
 
     def normalize_knots(self):
+        "Set all curves knots to the [0,1] interval"
         for c in self.curves:
             fp = c.FirstParameter
             lp = c.LastParameter
@@ -80,19 +133,20 @@ class CurvesToSurface:
                 normalized_knots = [(k - fp) / (lp - fp) for k in c.getKnots()]
                 c.setKnots(normalized_knots)
 
-    def find_knot(self, curve, knot, tolerance=1e-15):
+    def _find_knot(self, curve, knot, tolerance=1e-15):
         for i in range(1, curve.NbKnots + 1):
             if abs(knot - curve.getKnot(i)) < tolerance:
                 return i
         return -1
 
     def match_knots(self, tolerance=1e-15):
+        "Set the knot sequence of each curve to a common one"
         first = self.curves[0]
         for cur_idx in range(1, len(self.curves)):
             for kno_idx in range(1, self.curves[cur_idx].NbKnots + 1):
                 k = self.curves[cur_idx].getKnot(kno_idx)
                 mult = self.curves[cur_idx].getMultiplicity(kno_idx)
-                fk = self.find_knot(first, k, tolerance)
+                fk = self._find_knot(first, k, tolerance)
                 if fk > -1:
                     om = first.getMultiplicity(fk)
                     first.increaseMultiplicity(fk, mult)
@@ -104,19 +158,19 @@ class CurvesToSurface:
             for kno_idx in range(1, first.NbKnots + 1):
                 k = first.getKnot(kno_idx)
                 mult = first.getMultiplicity(kno_idx)
-                fk = self.find_knot(self.curves[cur_idx], k, tolerance)
+                fk = self._find_knot(self.curves[cur_idx], k, tolerance)
                 if fk > -1:
                     self.curves[cur_idx].increaseMultiplicity(fk, mult)
                 else:
                     self.curves[cur_idx].insertKnot(k, mult)
 
-    def parameters_at_poleidx(self, fac=1.0, idx=1, force_closed=False):
+    def _parameters_at_poleidx(self, fac=1.0, idx=1):
         if idx < 1:
             idx = 1
         elif idx > self.curves[0].NbPoles:
             idx = self.curves[0].NbPoles
         pts = [c.getPole(idx) for c in self.curves]
-        if force_closed and pts[0].distanceToPoint(pts[-1]) > 1e-7:  # we need to add the first point as the end point
+        if self.Periodic and pts[0].distanceToPoint(pts[-1]) > 1e-7:  # we need to add the first point as the end point
             pts.append(pts[0])
         params = [0.0]
         for i in range(1, len(pts)):
@@ -125,34 +179,43 @@ class CurvesToSurface:
             params.append(params[-1] + pl)
         return [p / params[-1] for p in params]
 
-    def average_parameters(self, fac=1.0, force_closed=False):
+    def set_parameters(self, fac=1.0):
+        "Compute an average parameters list from parametrization factor in [0.0, 1.0]"
         params_array = []
         for pole_idx in range(1, self.curves[0].NbPoles + 1):
-            params_array.append(self.parameters_at_poleidx(fac, pole_idx, force_closed))
+            params_array.append(self._parameters_at_poleidx(fac, pole_idx))
         params = []
         for idx in range(len(params_array[0])):
             pl = [params_array[i][idx] for i in range(len(params_array))]
             params.append(sum(pl) / len(pl))
         print("Average parameters : {}".format(params))
-        return params
+        self.Parameters = params
 
-    def interpolate_poles(self, params=None, force_closed=False):
-        if params is None:
-            params = self.parameters_at_poleidx(1.0, 1, force_closed)
+    def interpolate(self):
+        "interpolate the poles of the curves and build the surface"
+        if self.Parameters is None:
+            self.set_parameters(1.0)
         poles_array = []
         bs = Part.BSplineCurve()
         for pole_idx in range(1, self.curves[0].NbPoles + 1):
-            pts = [c.getPole[pole_idx] for c in self.curves]
-            bs.interpolate(Points=pts, Parameters=params, PeriodicFlag=force_closed)
+            pts = [c.getPole(pole_idx) for c in self.curves]
+            bs.interpolate(Points=pts, Parameters=self.Parameters, PeriodicFlag=self.Periodic)
             poles_array.append(bs.getPoles())
-        return bs, poles_array
+        self._surface = Part.BSplineSurface()
+        self._surface.buildFromPolesMultsKnots(poles_array,
+                                               self.curves[0].getMultiplicities(), bs.getMultiplicities(),
+                                               self.curves[0].getKnots(), bs.getKnots(),
+                                               self.curves[0].isPeriodic(), bs.isPeriodic(),
+                                               self.curves[0].Degree, bs.Degree)
 
     def build_surface(self):
+        "Make curves compatible and build surface"
         self.match_degrees()
         self.auto_orient()
         self.normalize_knots()
         self.match_knots()
-        self.interpolate_poles()
+        self.interpolate()
+
 
 
 
