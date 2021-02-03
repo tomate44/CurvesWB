@@ -14,6 +14,7 @@ class CurvesToSurface:
         self.curves = self._convert_to_bsplines(curves)
         self._periodic = False
         self._params = None
+        self.all_closed = None
         self.force_periodic_if_closed = True
 
     @property
@@ -76,22 +77,53 @@ class CurvesToSurface:
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__, len(self.curves))
 
-    def match_degrees(self):
-        "Match all curve degrees to the highest one"
-        max_degree = 0
-        all_closed = True
+    def check_all_closed(self):
+        self.all_closed = True
         for c in self.curves:
-            max_degree = max(max_degree, c.Degree)
             if not c.isClosed():
-                all_closed = False
-        for c in self.curves:
-            c.increaseDegree(max_degree)
-            if all_closed and self.force_periodic_if_closed:
+                self.all_closed = False
+        if self.all_closed and self.force_periodic_if_closed:
+            for c in self.curves:
                 if not c.isPeriodic():
                     c.setPeriodic()
                     print("Forcing periodic : {}".format(c.isPeriodic()))
                 else:
                     print("Already periodic")
+
+    def auto_twist(self, num=36):
+        if self.all_closed is None:
+            self.check_all_closed()
+        if self.all_closed is False:
+            return
+        for cur_idx in range(1, len(self.curves)):
+            pts1 = self.curves[cur_idx - 1].discretize(num)
+            pts2 = self.curves[cur_idx].discretize(num)
+            pts2 *= 2
+            min_dist = 1e50
+            good_offset = 0
+            for offset_idx in range(num):
+                total_length = 0
+                for pt_idx in range(num):
+                    ls = Part.makeLine(pts1[pt_idx], pts2[pt_idx + offset_idx])
+                    total_length += ls.Length
+                if total_length < min_dist:
+                    min_dist = total_length
+                    good_offset = offset_idx
+            knot = self.curves[cur_idx].parameter(pts2[good_offset])
+            self.curves[cur_idx].insertKnot(knot, 1)
+            fk = self._find_knot(self.curves[cur_idx], knot, 1e-15)
+            if fk > -1:
+                self.curves[cur_idx].setOrigin(fk)
+            else:
+                print("Something went wrong")
+
+    def match_degrees(self):
+        "Match all curve degrees to the highest one"
+        max_degree = 0
+        for c in self.curves:
+            max_degree = max(max_degree, c.Degree)
+        for c in self.curves:
+            c.increaseDegree(max_degree)
 
     def orient_curves(self, c1, c2):
         """orient_curves(c1, c2)
@@ -211,6 +243,8 @@ class CurvesToSurface:
     def build_surface(self):
         "Make curves compatible and build surface"
         self.match_degrees()
+        # self.auto_orient()
+        self.auto_twist()
         self.auto_orient()
         self.normalize_knots()
         self.match_knots()
