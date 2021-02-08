@@ -70,7 +70,9 @@ class split:
     def parse_value(self, edge, v):
         num_val = None
         par = None
-        if "%" in v:
+        if v == '':
+            return None, None
+        elif "%" in v:
             num_val = float(v.split("%")[0]) * edge.Length / 100
             t = '%'
         else:
@@ -162,6 +164,7 @@ class split:
                         w = Part.Wire(se[0])
         else:
             edges = []
+            print(params)
             for i in range(len(params) - 1):
                 c = e.Curve.trim(params[i], params[i + 1])
                 edges.append(c.toShape())
