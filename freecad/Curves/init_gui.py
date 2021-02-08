@@ -68,8 +68,12 @@ class CurvesWorkbench(Gui.Workbench):
                            "cos", "blendSurface", "pasteSVG", "profile", "pipeshell", "gordon", "segment_surface",
                            "to_console", "SublinkEditor", "comp_spring", "ReflectLines",
                            "MultiLoft"])  # "hq_ruled_surface", "HelicalSweep"])
+        
+        from . import blendSurfaceFP_new
+        devlist = ["Curves_BlendSurf2"]
 
         self.appendToolbar("Curves", stablelist)
+        self.appendToolbar("Curves", devlist)
         self.appendMenu("Curves", stablelist)
         self.appendMenu("Curves", ["bspline_to_console"])
 

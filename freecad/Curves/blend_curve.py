@@ -439,13 +439,18 @@ class ValueOnEdge:
             self.set(value)
 
     def __repr__(self):
-        values = [v.y for v in self._pts]
-        return "{}({})".format(self.__class__.__name__, values)
+        return "{}({})".format(self.__class__.__name__, self.values)
+
+    @property
+    def values(self):
+        return [v.y for v in self._pts]
 
     def set(self, val):
         "Set a constant value, or a list of regularly spaced values"
         self._pts = []
         if isinstance(val, (list, tuple)):
+            if len(val) == 1:
+                val *= 2
             params = np.linspace(self._edge.FirstParameter, self._edge.LastParameter, len(val))
             for i in range(len(val)):
                 self.add(val[i], abs_par=params[i], recompute=False)
@@ -453,7 +458,7 @@ class ValueOnEdge:
             self.set([val, val])
         self._compute()
 
-    def _get_real_param(self, abs_par=None, rel_par=None, dist_par=None):
+    def _get_real_param(self, abs_par=None, rel_par=None, dist_par=None, point=None):
         """Check range and return the real edge parameter from:
         - the real parameter
         - the normalized parameter in [0.0, 1.0]
@@ -467,10 +472,12 @@ class ValueOnEdge:
         elif dist_par is not None:
             # if abs(dist_par) <= self._edge.Length:
             return self._edge.getParameterByLength(dist_par)
+        elif point is not None:
+            return self._edge.Curve.parameter(point)
         else:
             raise ValueError("No parameter")
 
-    def add(self, val, abs_par=None, rel_par=None, dist_par=None, recompute=True):
+    def add(self, val, abs_par=None, rel_par=None, dist_par=None, point=None, recompute=True):
         """Add a value on the edge at the given parameter.
         Input:
         - val : float value
@@ -478,13 +485,18 @@ class ValueOnEdge:
         - rel_par : the normalized parameter in [0.0, 1.0]
         - dist_par : the distance from start (if positive) or end (if negative)
         - recompute : if True(default), recompute the interpolating curve"""
-        par = self._get_real_param(abs_par, rel_par, dist_par)
+        par = self._get_real_param(abs_par, rel_par, dist_par, point)
         self._pts.append(FreeCAD.Vector(par, val, 0.0))
         self._pts = sorted(self._pts, key=itemgetter(0))
         if recompute:
             self._compute()
 
+    def reset(self):
+        self._pts = []
+
     def _compute(self):
+        if len(self._pts) < 2:
+            return
         par = [p.x for p in self._pts]
         if self._edge.isClosed() and self._edge.Curve.isPeriodic() and len(self._pts) > 2:
             self._curve.interpolate(Points=self._pts[:-1], Parameters=par, PeriodicFlag=True)
@@ -497,6 +509,8 @@ class ValueOnEdge:
         - abs_par : the real parameter
         - rel_par : the normalized parameter in [0.0, 1.0]
         - dist_par : the distance from start (if positive) or end (if negative)"""
+        if len(self._pts) == 1:
+            return self._pts[0].y
         par = self._get_real_param(abs_par, rel_par, dist_par)
         return self._curve.value(par).y
 
@@ -780,10 +794,10 @@ class EdgeOnFace:
         - rel_par : the normalized parameter in [0.0, 1.0]
         - dist_par : the distance from start (if positive) or end (if negative)"""
         par = self._get_real_param(abs_par, rel_par, dist_par)
-        cc = self.cross_curve(par)
+        cc = self.cross_curve(abs_par=par)
         d, pts, info = cc.distToShape(self._edge)
         new_par = cc.Curve.parameter(pts[0][0])
-        size = self.size.value(par)
+        size = self.size.value(abs_par=par)
         if cc:
             poe = PointOnEdge(cc, new_par, self.continuity, size)
             return poe
@@ -843,7 +857,7 @@ class BlendSurface:
     @property
     def surface(self):
         "Returns the BSpline surface that represent the BlendSurface"
-        self.perform()
+        # self.perform()
         guides = [bezier.toBSpline() for bezier in self._curves]
         builder = GordonSurfaceBuilder(guides, self.rails, [0.0, 1.0], self._params)
         self._surface = builder.surface_gordon()
@@ -868,47 +882,49 @@ class BlendSurface:
             self._ruled_surface.setUKnots(normalized_knots)
         return self._ruled_surface
 
-    def iterate(self, num=3):
+    def sample(self, num=3):
         ruled = self.ruled_surface
         u0, u1, v0, v1 = ruled.bounds()
         e1, e2 = self.rails
         if isinstance(num, int):
             params = np.linspace(u0, u1, num)
-        for p in params:
-            bc = BlendCurve(self.edge1.valueAtPoint(e1.value(p)), self.edge2.valueAtPoint(e2.value(p)))
-            yield p, bc
+        return params
+
+    def blendcurve_at(self, par):
+        e1, e2 = self.rails
+        return BlendCurve(self.edge1.valueAtPoint(e1.value(par)), self.edge2.valueAtPoint(e2.value(par)))
 
     def minimize_curvature(self, arg=3):
-        s1 = []
-        s2 = []
-        for p, bc in self.iterate(arg):
+        self.edge1.size.reset()
+        self.edge2.size.reset()
+        e1, e2 = self.rails
+        for p in self.sample(arg):
+            bc = self.blendcurve_at(p)
+            _utils.debug("Minimizing curvature @ {:3.3f} = ({:3.3f}, {:3.3f})".format(p, bc.point1.size, bc.point2.size))
             bc.minimize_curvature()
-            s1.append(bc.point1.size)
-            s2.append(bc.point2.size)
-            print("Minimizing curvature @ {:3.3f} = ({:3.3f}, {:3.3f})".format(p, bc.point1.size, bc.point2.size))
-        self.edge1.size = s1
-        self.edge2.size = s2
+            self.edge1.size.add(val=bc.point1.size, point=e1.value(p))
+            self.edge2.size.add(val=bc.point2.size, point=e2.value(p))
+            _utils.debug("Minimized curvature @ {:3.3f} = ({:3.3f}, {:3.3f})".format(p, bc.point1.size, bc.point2.size))
 
     def auto_scale(self, arg=3):
-        s1 = []
-        s2 = []
-        for p, bc in self.iterate(arg):
+        self.edge1.size.reset()
+        self.edge2.size.reset()
+        e1, e2 = self.rails
+        for p in self.sample(arg):
+            bc = self.blendcurve_at(p)
             bc.auto_scale()
-            s1.append(bc.point1.size)
-            s2.append(bc.point2.size)
-            print("Auto scaling @ {:3.3f} = ({:3.3f}, {:3.3f})".format(p, bc.point1.size, bc.point2.size))
-        self.edge1.size = s1
-        self.edge2.size = s2
+            self.edge1.size.add(val=bc.point1.size, point=e1.value(p))
+            self.edge2.size.add(val=bc.point2.size, point=e2.value(p))
+            _utils.debug("Auto scaling @ {:3.3f} = ({:3.3f}, {:3.3f})".format(p, bc.point1.size, bc.point2.size))
 
     def perform(self, arg=20):
         bc_list = []
-        params = []
-        for p, bc in self.iterate(arg):
+        for p in self.sample(arg):
+            bc = self.blendcurve_at(p)
             # print("Computing BlendCurve @ {} from {} to {}".format(p, bc.point1.point, bc.point2.point))
             bc_list.append(bc.perform())
-            params.append(p)
         self._curves = bc_list
-        self._params = params
+        self._params = self.sample(arg)
 
 
 def test_blend_surface():
@@ -928,8 +944,8 @@ def test_blend_surface():
     # bs.edge1.angle = (90, 80, 100, 90)
     # bs.edge2.angle = (90, 90, 90, 70)
     bs.continuity = 3
-    # bs.minimize_curvature()
-    bs.auto_scale()
+    bs.minimize_curvature()
+    # bs.auto_scale()
     bs.perform(num)
     Part.show(bs.edges)
     bsface = bs.face
