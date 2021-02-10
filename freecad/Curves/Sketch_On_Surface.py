@@ -233,9 +233,6 @@ class sketchOnSurface:
             return wirelist
 
     def execute(self, obj):
-        def error(msg):
-            func_name = "{} (Sketch_On_Surface)  : ".format(obj.Label)
-            error(func_name + msg + "\n")
         if not obj.Sketch:
             error("No Sketch attached")
             return
