@@ -172,7 +172,7 @@ def rootNode(shape, mode=2, deviation=0.3, angle=0.4):
     return node
 
 
-def ruled_surface(e1, e2):
+def ruled_surface(e1, e2, normalize=False):
     """creates a ruled surface between 2 edges, with automatic orientation."""
     ruled = Part.makeRuledSurface(e1, e2)
     try:
@@ -181,6 +181,12 @@ def ruled_surface(e1, e2):
         e3 = e2.copy()
         e3.reverse()
         ruled = Part.makeRuledSurface(e1, e3)
+    if normalize:
+        s = ruled.Surface
+        u0, u1, v0, v1 = s.bounds()
+        normalized_knots = [(k - u0) / (u1 - u0) for k in s.getUKnots()]
+        s.setUKnots(normalized_knots)
+        ruled = s.toShape()
     return ruled
 
 

@@ -876,10 +876,7 @@ class BlendSurface:
     @property
     def ruled_surface(self):
         if self._ruled_surface is None:
-            self._ruled_surface = _utils.ruled_surface(self.edge1._edge, self.edge2._edge).Surface
-            u0, u1, v0, v1 = self._ruled_surface.bounds()
-            normalized_knots = [(k - u0) / (u1 - u0) for k in self._ruled_surface.getUKnots()]
-            self._ruled_surface.setUKnots(normalized_knots)
+            self._ruled_surface = _utils.ruled_surface(self.edge1._edge, self.edge2._edge, True).Surface
         return self._ruled_surface
 
     def sample(self, num=3):

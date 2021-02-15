@@ -5,8 +5,62 @@ __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = "Interpolate curves to surface"
 
-import FreeCAD
+# import FreeCAD
 import Part
+from . import _utils
+from .BSplineAlgorithms import SurfAdapterView
+
+def _find_knot(curve, knot, tolerance=1e-15):
+    for i in range(1, curve.NbKnots + 1):
+        if abs(knot - curve.getKnot(i)) < tolerance:
+            return i
+    return -1
+
+
+def match_knots(curves, tolerance=1e-15):
+    "Set the knot sequence of each curve to a common one"
+    first = curves[0]
+    for cur_idx in range(1, len(curves)):
+        for kno_idx in range(1, curves[cur_idx].NbKnots + 1):
+            k = curves[cur_idx].getKnot(kno_idx)
+            mult = curves[cur_idx].getMultiplicity(kno_idx)
+            fk = _find_knot(first, k, tolerance)
+            if fk > -1:
+                om = first.getMultiplicity(fk)
+                if om < mult:
+                    first.increaseMultiplicity(fk, mult)
+                    print("Increased mult of knot # {} from {} to {}".format(fk, om, mult))
+            else:
+                first.insertKnot(k, mult)
+                print("Inserting knot {} mult {}".format(k, mult))
+    for cur_idx in range(1, len(curves)):
+        for kno_idx in range(1, first.NbKnots + 1):
+            k = first.getKnot(kno_idx)
+            mult = first.getMultiplicity(kno_idx)
+            fk = _find_knot(curves[cur_idx], k, tolerance)
+            if fk > -1:
+                curves[cur_idx].increaseMultiplicity(fk, mult)
+            else:
+                curves[cur_idx].insertKnot(k, mult)
+
+
+def U_linear_surface(surf):
+    "Returns a copy of surf that is linear in the U direction"
+    poles = [surf.getPoles()[0], surf.getPoles()[-1]]
+    bs = Part.BSplineSurface()
+    bs.buildFromPolesMultsKnots(poles,
+                                [2, 2], surf.getVMultiplicities(),
+                                [0, 1], surf.getVKnots(),
+                                False, surf.isVPeriodic(),
+                                1, surf.VDegree)
+    return bs
+
+
+def print_main_poles(surf):
+    pts = surf.getPoles()
+    print("O: {}\nU: {}\nV: {}".format(pts[0][0],
+                                       pts[-1][0],
+                                       pts[0][-1]))
 
 
 class CurvesToSurface:
@@ -111,7 +165,7 @@ class CurvesToSurface:
                     good_offset = offset_idx
             knot = self.curves[cur_idx].parameter(pts2[good_offset])
             self.curves[cur_idx].insertKnot(knot, 1)
-            fk = self._find_knot(self.curves[cur_idx], knot, 1e-15)
+            fk = _find_knot(self.curves[cur_idx], knot, 1e-15)
             if fk > -1:
                 self.curves[cur_idx].setOrigin(fk)
             else:
@@ -165,37 +219,6 @@ class CurvesToSurface:
                 normalized_knots = [(k - fp) / (lp - fp) for k in c.getKnots()]
                 c.setKnots(normalized_knots)
 
-    def _find_knot(self, curve, knot, tolerance=1e-15):
-        for i in range(1, curve.NbKnots + 1):
-            if abs(knot - curve.getKnot(i)) < tolerance:
-                return i
-        return -1
-
-    def match_knots(self, tolerance=1e-15):
-        "Set the knot sequence of each curve to a common one"
-        first = self.curves[0]
-        for cur_idx in range(1, len(self.curves)):
-            for kno_idx in range(1, self.curves[cur_idx].NbKnots + 1):
-                k = self.curves[cur_idx].getKnot(kno_idx)
-                mult = self.curves[cur_idx].getMultiplicity(kno_idx)
-                fk = self._find_knot(first, k, tolerance)
-                if fk > -1:
-                    om = first.getMultiplicity(fk)
-                    first.increaseMultiplicity(fk, mult)
-                    print("Increased mult of knot # {} from {} to {}".format(fk, om, mult))
-                else:
-                    first.insertKnot(k, mult)
-                    print("Inserting knot {} mult {}".format(k, mult))
-        for cur_idx in range(1, len(self.curves)):
-            for kno_idx in range(1, first.NbKnots + 1):
-                k = first.getKnot(kno_idx)
-                mult = first.getMultiplicity(kno_idx)
-                fk = self._find_knot(self.curves[cur_idx], k, tolerance)
-                if fk > -1:
-                    self.curves[cur_idx].increaseMultiplicity(fk, mult)
-                else:
-                    self.curves[cur_idx].insertKnot(k, mult)
-
     def _parameters_at_poleidx(self, fac=1.0, idx=1):
         if idx < 1:
             idx = 1
@@ -247,9 +270,50 @@ class CurvesToSurface:
         self.auto_twist()
         self.auto_orient()
         self.normalize_knots()
-        self.match_knots()
+        match_knots(self.curves)
         self.interpolate()
 
 
+class CurvesOn2Rails:
+    """Surface defined by a series of curves on 2 rails"""
+    def __init__(self, curves, rails):
+        self.curves = curves
+        self.rails = rails
+
+    def gordon(self):
+        cts = CurvesToSurface(self.curves)
+        s1 = cts.Surface
+        s2 = _utils.ruled_surface(self.rails[0].toShape(), self.rails[1].toShape(), True).Surface
+        s2.exchangeUV()
+        s3 = U_linear_surface(s1)
+        print_main_poles(s1)
+        print_main_poles(s2)
+        print_main_poles(s3)
+
+        max_Udegree = 0
+        max_Vdegree = 0
+        for c in [s1, s2, s3]:
+            max_Udegree = max(max_Udegree, c.UDegree)
+            max_Vdegree = max(max_Vdegree, c.VDegree)
+        for c in [s1, s2, s3]:
+            c.increaseDegree(max_Udegree, max_Vdegree)
+
+        ad1 = SurfAdapterView(s1, 0)
+        ad2 = SurfAdapterView(s2, 0)
+        ad3 = SurfAdapterView(s3, 0)
+        match_knots([ad1, ad2, ad3])
+        ad1.d = 1
+        ad2.d = 1
+        ad3.d = 1
+        match_knots([ad1, ad2, ad3])
+        s1 = ad1.s
+        s2 = ad2.s
+        s3 = ad3.s
+
+        ns = s1.copy()
+        for i in range(1, len(s1.getPoles()) + 1):
+            for j in range(1, len(s1.getPoles()[0]) + 1):
+                ns.setPole(i, j, s1.getPole(i, j) + s2.getPole(i, j) - s3.getPole(i, j))
+        return ns, s1, s2, s3
 
 
