@@ -237,7 +237,7 @@ class curveOnSurface(object):
 
     def validate(self):
         c2d = None
-        if (not self.edge == None) and (not self.face == None):
+        if (not self.edge is None) and (not self.face is None):
             c2d = self.face.curveOnSurface(self.edge)
             if not isinstance(c2d,tuple):
                 # print("curveOnSurface failed")
@@ -325,7 +325,7 @@ class curveOnSurface(object):
     def binormalAt(self, t):
         ta = self.tangentAt(t)
         n = self.normalAt(t)
-        if (not ta == None) and (not n == None):
+        if (not ta is None) and (not n is None):
             if self.reverseBinormal:
                 return(ta.cross(n).negative().normalize())
             else:
