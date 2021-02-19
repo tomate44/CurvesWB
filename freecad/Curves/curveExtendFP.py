@@ -103,7 +103,7 @@ class extendVP:
 class extendCommand:
     """Extends the selected edge"""
     def makeExtendFeature(self,source):
-        if source is not []:
+        if source != []:
             for o in source:
                 extCurve = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","ExtendedCurve")
                 extend(extCurve)
