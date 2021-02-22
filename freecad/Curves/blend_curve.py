@@ -16,6 +16,7 @@ import numpy as np
 
 from .gordon import GordonSurfaceBuilder
 from . import _utils
+from . import curves_to_surface
 
 CAN_MINIMIZE = True
 
@@ -240,7 +241,7 @@ class BlendCurve:
     smoothly interpolates two PointOnEdge objects"""
     def __init__(self, point1, point2):
         self.min_method = 'Nelder-Mead'
-        self.min_options = {"maxiter": 2000, "disp": True}
+        self.min_options = {"maxiter": 2000, "disp": False}
         self.point1 = point1
         self.point2 = point2
         self._curve = Part.BezierCurve()
@@ -859,8 +860,9 @@ class BlendSurface:
         "Returns the BSpline surface that represent the BlendSurface"
         # self.perform()
         guides = [bezier.toBSpline() for bezier in self._curves]
-        builder = GordonSurfaceBuilder(guides, self.rails, [0.0, 1.0], self._params)
-        self._surface = builder.surface_gordon()
+        # builder = GordonSurfaceBuilder(guides, self.rails, [0.0, 1.0], self._params)
+        s2r = curves_to_surface.CurvesOn2Rails(guides, self.rails)
+        self._surface = s2r.build_surface()
         return self._surface
 
     @property

@@ -274,46 +274,94 @@ class CurvesToSurface:
         self.interpolate()
 
 
+class Gordon:
+    """Gordon Surface algorithm on 3 surfaces : S1 + S2 - S3"""
+    def __init__(self, s1, s2, s3):
+        self.s1 = s1
+        self.s2 = s2
+        self.s3 = s3
+
+    def check_bounds(self):
+        u0, u1, v0, v1 = self.s1.bounds()
+        if not self.s2.bounds() == (u0, u1, v0, v1):
+            print("S1 and S2 bounds don't match")
+            return False
+        if not self.s3.bounds() == (u0, u1, v0, v1):
+            print("S1 and S3 bounds don't match")
+            return False
+        return True
+
+    def check_corner(self, uv, tol=1e-7):
+        u, v = uv
+        p1 = self.s1.value(u, v)
+        if self.s2.value(u, v).distanceToPoint(p1) > tol:
+            print("S1 and S2 points @({}, {}) don't match".format(u, v))
+            return False
+        if self.s3.value(u, v).distanceToPoint(p1) > tol:
+            print("S1 and S3 points @({}, {}) don't match".format(u, v))
+            return False
+        return True
+
+    def check_corners(self, tolerance=1e-7):
+        u0, u1, v0, v1 = self.s1.bounds()
+        check = True
+        for p in [(u0, v0), (u0, v1), (u1, v0), (u1, v1)]:
+            check = check and self.check_corner(p, tol=tolerance)
+        return check
+
+    def input_surfaces_match(self, tol=1e-7):
+        return self.check_bounds() and self.check_corners(tol)
+
+    def match_degrees_and_knots(self):
+        max_Udegree = 0
+        max_Vdegree = 0
+        for c in [self.s1, self.s2, self.s3]:
+            max_Udegree = max(max_Udegree, c.UDegree)
+            max_Vdegree = max(max_Vdegree, c.VDegree)
+        for c in [self.s1, self.s2, self.s3]:
+            c.increaseDegree(max_Udegree, max_Vdegree)
+
+        ad1 = SurfAdapterView(self.s1, 0)
+        ad2 = SurfAdapterView(self.s2, 0)
+        ad3 = SurfAdapterView(self.s3, 0)
+        match_knots([ad1, ad2, ad3])
+        ad1.d = 1
+        ad2.d = 1
+        ad3.d = 1
+        match_knots([ad1, ad2, ad3])
+        self.s1 = ad1.s
+        self.s2 = ad2.s
+        self.s3 = ad3.s
+
+    def gordon(self):
+        ns = self.s1.copy()
+        for i in range(1, len(self.s1.getPoles()) + 1):
+            for j in range(1, len(self.s1.getPoles()[0]) + 1):
+                ns.setPole(i, j, self.s1.getPole(i, j) + self.s2.getPole(i, j) - self.s3.getPole(i, j))
+        return ns
+
+    @property
+    def Surface(self):
+        # self.input_surfaces_match()
+        self.match_degrees_and_knots()
+        return self.gordon()
+
+
 class CurvesOn2Rails:
     """Surface defined by a series of curves on 2 rails"""
     def __init__(self, curves, rails):
         self.curves = curves
         self.rails = rails
 
-    def gordon(self):
+    def build_surface(self):
         cts = CurvesToSurface(self.curves)
         s1 = cts.Surface
         s2 = _utils.ruled_surface(self.rails[0].toShape(), self.rails[1].toShape(), True).Surface
         s2.exchangeUV()
         s3 = U_linear_surface(s1)
-        print_main_poles(s1)
-        print_main_poles(s2)
-        print_main_poles(s3)
+        gordon = Gordon(s1, s2, s3)
+        if gordon.input_surfaces_match():
+            return gordon.Surface
 
-        max_Udegree = 0
-        max_Vdegree = 0
-        for c in [s1, s2, s3]:
-            max_Udegree = max(max_Udegree, c.UDegree)
-            max_Vdegree = max(max_Vdegree, c.VDegree)
-        for c in [s1, s2, s3]:
-            c.increaseDegree(max_Udegree, max_Vdegree)
-
-        ad1 = SurfAdapterView(s1, 0)
-        ad2 = SurfAdapterView(s2, 0)
-        ad3 = SurfAdapterView(s3, 0)
-        match_knots([ad1, ad2, ad3])
-        ad1.d = 1
-        ad2.d = 1
-        ad3.d = 1
-        match_knots([ad1, ad2, ad3])
-        s1 = ad1.s
-        s2 = ad2.s
-        s3 = ad3.s
-
-        ns = s1.copy()
-        for i in range(1, len(s1.getPoles()) + 1):
-            for j in range(1, len(s1.getPoles()[0]) + 1):
-                ns.setPole(i, j, s1.getPole(i, j) + s2.getPole(i, j) - s3.getPole(i, j))
-        return ns, s1, s2, s3
 
 
