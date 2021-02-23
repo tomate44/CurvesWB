@@ -165,9 +165,10 @@ class PointOnEdge:
     @size.setter
     def size(self, val):
         """Scale the vectors so that tangent has the given length"""
-        if abs(val) < 1e-7:
-            raise ValueError("Size too small")
-        self._size = val
+        if val < 0:
+            self._size = min(-1e-7, val)
+        else:
+            self._size = max(1e-7, val)
         if len(self._vectors) > 1:
             self._scale = val / self._vectors[1].Length
 
@@ -373,7 +374,7 @@ class BlendCurve:
         self.scale1, self.scale2 = scales
         self.perform()
         curva_list = [self.curve.curvature(p / self.nb_samples) for p in range(self.nb_samples + 1)]
-        return (max(curva_list) - min(curva_list))**2
+        return (max(curva_list) - min(curva_list))
 
     def _cp_regularity_score(self, scales):
         "Returns difference between max and min distance between consecutive poles"
@@ -385,7 +386,7 @@ class BlendCurve:
             vecs.append(pts[i] - pts[i - 1])
         poly = Part.makePolygon(pts)
         llist = [v.Length for v in vecs]
-        return poly.Length + (max(llist) - min(llist))**1
+        return poly.Length + (max(llist) - min(llist))
 
     def _total_cp_angular(self, scales):
         "Returns difference between max and min angle between consecutive poles"
@@ -395,12 +396,12 @@ class BlendCurve:
         angles = []
         for i in range(1, len(poly.Edges)):
             angles.append(poly.Edges[i - 1].Curve.Direction.getAngle(poly.Edges[i].Curve.Direction))
-        return (max(angles) - min(angles))**2
+        return (max(angles) - min(angles))
 
     def set_regular_poles(self):
         """Iterative function that sets
         a regular distance between control points"""
-        self.scales = 0.01
+        self.scales = 1.0
         self.auto_orient()
         minimize(self._cp_regularity_score,
                  [self.scale1, self.scale2],
@@ -411,7 +412,7 @@ class BlendCurve:
         """Iterative function that tries to minimize
         the curvature along the curve
         nb_samples controls the number of curvature samples"""
-        self.scales = 0.01
+        self.scales = 1.0
         self.auto_orient()
         minimize(self._curvature_regularity_score,
                  [self.scale1, self.scale2],
@@ -421,7 +422,7 @@ class BlendCurve:
     def minimize_angular_variation(self):
         """Iterative function that tries to minimize
         the angular deviation between consecutive control points"""
-        self.scales = 0.01
+        self.scales = 1.0
         self.auto_orient()
         minimize(self._total_cp_angular,
                  [self.scale1, self.scale2],
