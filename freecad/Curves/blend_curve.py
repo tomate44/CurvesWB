@@ -335,20 +335,10 @@ class BlendCurve:
         """Automatically orient the 2 point tangents
         blend_curve.auto_orient(tol=1e-3)
         Tolerance is used to detect parallel tangents"""
-        if self.point1.continuity < 1 or self.point2.continuity < 1:
-            return False
         line1 = self.point1.get_tangent_edge()
         line2 = self.point2.get_tangent_edge()
-        cross = self.point1.tangent.cross(self.point2.tangent)
-        if cross.Length < tol:  # tangent lines
-            p1 = line1.Curve.parameter(self.point2.point)
-            p2 = line2.Curve.parameter(self.point1.point)
-        else:
-            long_line1 = line1.Curve.toShape(-1e20, 1e20)
-            long_line2 = line2.Curve.toShape(-1e20, 1e20)
-            dist, pts, info = long_line1.distToShape(long_line2)
-            p1 = info[0][2]
-            p2 = info[0][5]
+        p1 = line1.Curve.parameter(self.point2.point)
+        p2 = line2.Curve.parameter(self.point1.point)
         if p1 < 0:
             self.scale1 = -self.scale1
         if p2 > 0:

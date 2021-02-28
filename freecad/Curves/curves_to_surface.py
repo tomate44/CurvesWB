@@ -10,6 +10,7 @@ import Part
 from . import _utils
 from .BSplineAlgorithms import SurfAdapterView
 
+
 def _find_knot(curve, knot, tolerance=1e-15):
     for i in range(1, curve.NbKnots + 1):
         if abs(knot - curve.getKnot(i)) < tolerance:
@@ -362,6 +363,7 @@ class CurvesOn2Rails:
         gordon = Gordon(s1, s2, s3)
         if gordon.input_surfaces_match():
             return gordon.Surface
+        return gordon.Surface
 
 
 
