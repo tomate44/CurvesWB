@@ -20,6 +20,7 @@ debug = _utils.doNothing
 vec = FreeCAD.Vector
 error = FreeCAD.Console.PrintError
 
+
 def stretched_plane(poles, param_range=[0, 2, 0, 2], extend_factor=1.0):
     s0, s1, t0, t1 = param_range
     bs = Part.BSplineSurface()
@@ -117,8 +118,8 @@ class BoundarySorter:
 
 def tolerance_msg(shape, ty):
     a = shape.getTolerance(-1, ty)
-    b = shape.getTolerance(0,  ty)
-    c = shape.getTolerance(1,  ty)
+    b = shape.getTolerance(0, ty)
+    c = shape.getTolerance(1, ty)
     print("{0} : {1:.2e} / {2:.2e} / {3:.2e}".format(ty, a, b, c))
 
 
@@ -194,7 +195,7 @@ class sketchOnSurface:
     def map_shapelist(self, shapes, quad, face, fillfaces=False):
         shapelist = []
         for i, shape in enumerate(shapes):
-            debug("mapping shape #  {}".format(i+1))
+            debug("mapping shape #  {}".format(i + 1))
             shapelist.extend(self.map_shape(shape, quad, face, fillfaces))
             debug("Total : {} shapes".format(len(shapelist)))
         return shapelist
@@ -239,7 +240,7 @@ class sketchOnSurface:
         skedges = []
         for i in range(len(obj.Sketch.Geometry)):
             try:
-                cons = i.Construction
+                cons = obj.Sketch.Geometry[i].Construction
             except AttributeError:
                 cons = obj.Sketch.getConstruction(i)
             if cons and obj.ConstructionBounds:
@@ -253,7 +254,7 @@ class sketchOnSurface:
         debug("Sketch bounds = {}".format((u0, u1, v0, v1)))
         try:
             n = eval(obj.Sketch.Support[0][1][0].lstrip('Face'))
-            face = obj.Sketch.Support[0][0].Shape.Faces[n-1]
+            face = obj.Sketch.Support[0][0].Shape.Faces[n - 1]
             # face.Placement = obj.Sketch.Support[0][0].getGlobalPlacement()
         except (IndexError, AttributeError, SyntaxError) as e:
             error("{}\n".format(e))
