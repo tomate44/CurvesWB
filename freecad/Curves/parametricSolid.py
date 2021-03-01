@@ -30,10 +30,13 @@ class solid:
         solid = Part.Solid(shell)
         if solid.isValid():
             obj.Shape = solid
+            obj.Label2 = "Solid"
         elif shell.isValid():
             obj.Shape = shell
+            obj.Label2 = "Shell"
         else:
             obj.Shape = Part.Compound(faces)
+            obj.Label2 = "Compound"
 
 
 class solidVP:
