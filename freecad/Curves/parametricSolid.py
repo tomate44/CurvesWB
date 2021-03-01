@@ -9,10 +9,39 @@ import os
 import FreeCAD
 import FreeCADGui
 import Part
+
+from PySide import QtGui
+
 from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
 
 TOOL_ICON = os.path.join(ICONPATH, 'solid.svg')
+
+
+def get_svg(shape_type):
+    colors = {"Compound": ("ff0000", "aa0000", "800000"),
+              "Shell": ("ff7b00", "aa5200", "803e00"),
+              "Solid": ("00ff00", "00aa00", "008000")}
+    return '''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   version="1.1"
+   height="51.200001"
+   width="51.200001">
+   <path
+     style="fill:#{};fill-rule:evenodd;stroke:#000000;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1"
+     d="M 5.3848898,16.525959 L 27.726533,3.5439198 L 46.832491,14.73057 L 24.490847,27.712609 Z"
+     id="path4132" />
+  <path
+     style="fill:#{};fill-rule:evenodd;stroke:#000000;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1"
+     d="M 5.3848898,16.525959 V 36.689551 L 24.490848,47.876201 L 24.490847,27.712609 Z"
+     id="path4128" />
+  <path
+     style="fill:#{};fill-rule:evenodd;stroke:#000000;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1"
+     d="M 46.832491,14.73057 L 24.490847,27.712609 L 24.490848,47.876201 L 46.832492,34.894162 L 46.832491,14.73057"
+     id="path4130" />
+</svg>'''.format(*colors[shape_type])
 
 
 class solid:
@@ -26,17 +55,27 @@ class solid:
 
     def execute(self, obj):
         faces = _utils.getShape(obj, "Faces", "Face")
-        shell = Part.Shell(faces)
-        solid = Part.Solid(shell)
-        if solid.isValid():
-            obj.Shape = solid
+        shape = Part.Compound(faces)
+        try:
+            shell = Part.Shell(shape.Faces)
+            if shell.isValid():
+                shape = shell
+        except Part.OCCError:
+            pass
+        try:
+            solid = Part.Solid(shape)
+            if solid.isValid():
+                shape = solid
+        except Part.OCCError:
+            pass
+        
+        if isinstance(shape, Part.Solid):  # and shape.isValid():
             obj.Label2 = "Solid"
-        elif shell.isValid():
-            obj.Shape = shell
+        elif isinstance(shape, Part.Shell):  # and shape.isValid():
             obj.Label2 = "Shell"
         else:
-            obj.Shape = Part.Compound(faces)
             obj.Label2 = "Compound"
+        obj.Shape = shape
 
 
 class solidVP:
@@ -44,10 +83,23 @@ class solidVP:
         vobj.Proxy = self
 
     def getIcon(self):
-        return TOOL_ICON
+        if not hasattr(self, "icons"):
+            import tempfile
+            self.icons = dict()
+            for sht in ["Compound", "Shell", "Solid"]:
+                iconFile = tempfile.NamedTemporaryFile(suffix=".svg", delete=False)
+                iconFile.write(bytes(get_svg(sht), "utf8"))
+                iconFile.close()
+                self.icons[sht] = QtGui.QIcon(iconFile.name)
+        return self.icons[self.Object.Label2]
 
     def attach(self, vobj):
         self.Object = vobj.Object
+
+    def updateData(self, fp, prop):
+        if prop == "Label2":
+            # FreeCAD.Console.PrintWarning("Label2 changed\n")
+            fp.ViewObject.signalChangeIcon()
 
     def __getstate__(self):
         return {"name": self.Object.Name}
