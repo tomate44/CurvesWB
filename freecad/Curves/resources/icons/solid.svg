@@ -5,10 +5,34 @@
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    version="1.1"
    id="svg2"
    height="51.200001"
-   width="51.200001">
+   width="51.200001"
+   sodipodi:docname="solid.svg"
+   inkscape:version="1.0.2 (e86c870879, 2021-01-15)">
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="3840"
+     inkscape:window-height="2033"
+     id="namedview17"
+     showgrid="false"
+     inkscape:zoom="15.546875"
+     inkscape:cx="25.6"
+     inkscape:cy="25.6"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg2" />
   <metadata
      id="metadata33">
     <rdf:RDF>
@@ -17,7 +41,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -73,15 +97,19 @@
     </linearGradient>
   </defs>
   <path
-     style="fill:#00aa00;fill-rule:evenodd;stroke:#005500;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1"
+     id="ColorBackground"
+     style="fill:#0eff12;fill-rule:evenodd;stroke:none;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1;fill-opacity:1"
+     d="M 27.726562 3.5429688 L 5.3847656 16.525391 L 5.3847656 36.689453 L 24.490234 47.876953 L 46.832031 34.894531 L 46.832031 14.730469 L 27.726562 3.5429688 z " />
+  <path
+     style="fill:#000000;fill-rule:evenodd;stroke:#000000;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1;fill-opacity:0.5"
      d="M 5.3848898,16.525959 V 36.689551 L 24.490848,47.876201 L 24.490847,27.712609 Z"
-     id="path4128" />
+     id="Face1" />
   <path
-     style="fill:#008000;fill-rule:evenodd;stroke:#005500;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1"
+     style="fill:#000000;fill-rule:evenodd;stroke:#000000;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1;fill-opacity:0.63999999"
      d="M 46.832491,14.73057 L 24.490847,27.712609 L 24.490848,47.876201 L 46.832492,34.894162 L 46.832491,14.73057"
-     id="path4130" />
+     id="Face2" />
   <path
-     style="fill:#00ff00;fill-rule:evenodd;stroke:#008000;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1"
+     style="fill:#000000;fill-rule:evenodd;stroke:#000000;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1;fill-opacity:0.26000005"
      d="M 5.3848898,16.525959 L 27.726533,3.5439198 L 46.832491,14.73057 L 24.490847,27.712609 Z"
-     id="path4132" />
+     id="Face3" />
 </svg>

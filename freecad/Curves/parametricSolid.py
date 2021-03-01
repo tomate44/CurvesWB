@@ -3,12 +3,14 @@
 __title__ = "Parametric solid"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Make a parametric solid from selected faces."
+__doc__ = """Make a parametric solid from selected faces.
+If not possible, falls back to shell, then to compound."""
 
 import os
 import FreeCAD
 import FreeCADGui
 import Part
+import tempfile
 
 from PySide import QtGui
 
@@ -19,9 +21,9 @@ TOOL_ICON = os.path.join(ICONPATH, 'solid.svg')
 
 
 def get_svg(shape_type):
-    colors = {"Compound": ("ff0000", "aa0000", "800000"),
-              "Shell": ("ff7b00", "aa5200", "803e00"),
-              "Solid": ("00ff00", "00aa00", "008000")}
+    colors = {"Compound": "ff0000",
+              "Shell": "ff7b00",
+              "Solid": "00ff00"}
     return '''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
    xmlns:svg="http://www.w3.org/2000/svg"
@@ -29,19 +31,23 @@ def get_svg(shape_type):
    version="1.1"
    height="51.200001"
    width="51.200001">
-   <path
-     style="fill:#{};fill-rule:evenodd;stroke:#000000;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1"
-     d="M 5.3848898,16.525959 L 27.726533,3.5439198 L 46.832491,14.73057 L 24.490847,27.712609 Z"
-     id="path4132" />
   <path
-     style="fill:#{};fill-rule:evenodd;stroke:#000000;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1"
-     d="M 5.3848898,16.525959 V 36.689551 L 24.490848,47.876201 L 24.490847,27.712609 Z"
-     id="path4128" />
+     id="ColorBackground"
+     style="fill:#{};fill-rule:evenodd;stroke:none;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1;fill-opacity:1"
+     d="M 27.7265 3.543 L 5.3847656 16.525391 L 5.3847656 36.689453 L 24.490234 47.876953 L 46.832031 34.894531 L 46.832031 14.730469 L 27.726562 3.543 z " />
   <path
-     style="fill:#{};fill-rule:evenodd;stroke:#000000;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1"
-     d="M 46.832491,14.73057 L 24.490847,27.712609 L 24.490848,47.876201 L 46.832492,34.894162 L 46.832491,14.73057"
-     id="path4130" />
-</svg>'''.format(*colors[shape_type])
+     style="fill:#000000;fill-rule:evenodd;stroke:#000000;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1;fill-opacity:0.50"
+     d="M 5.3848898,16.525959 V 36.689551 L 24.490848,47.876201 L 24.490847,27.7126 Z"
+     id="Face1" />
+  <path
+     style="fill:#000000;fill-rule:evenodd;stroke:#000000;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1;fill-opacity:0.64"
+     d="M 46.832491,14.73057 L 24.490847,27.7126 L 24.490848,47.876201 L 46.832492,34.894162 L 46.832491,14.73057"
+     id="Face2" />
+  <path
+     style="fill:#000000;fill-rule:evenodd;stroke:#000000;stroke-width:1.05624831px;stroke-linecap:butt;stroke-linejoin:bevel;stroke-opacity:1;fill-opacity:0.26"
+     d="M 5.3848898,16.525959 L 27.7265,3.5439198 L 46.832491,14.73057 L 24.490847,27.7126 Z"
+     id="Face3" />
+</svg>'''.format(colors[shape_type])
 
 
 class solid:
@@ -68,7 +74,6 @@ class solid:
                 shape = solid
         except Part.OCCError:
             pass
-        
         if isinstance(shape, Part.Solid):  # and shape.isValid():
             obj.Label2 = "Solid"
         elif isinstance(shape, Part.Shell):  # and shape.isValid():
@@ -84,7 +89,6 @@ class solidVP:
 
     def getIcon(self):
         if not hasattr(self, "icons"):
-            import tempfile
             self.icons = dict()
             for sht in ["Compound", "Shell", "Solid"]:
                 iconFile = tempfile.NamedTemporaryFile(suffix=".svg", delete=False)
@@ -108,9 +112,6 @@ class solidVP:
         self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
         return None
 
-    # def claimChildren(self):
-        # return None #[self.Object.Base, self.Object.Tool]
-
 
 class solidCommand:
     """Make a parametric solid from selected faces"""
@@ -121,8 +122,6 @@ class solidCommand:
         solidVP(solidFP.ViewObject)
         solidFP.Faces = source
         FreeCAD.ActiveDocument.recompute()
-        # solidFP.ViewObject.LineWidth = 2.0
-        # solidFP.ViewObject.LineColor = (0.3,0.5,0.5)
 
     def Activated(self):
         faces = []
@@ -137,7 +136,7 @@ class solidCommand:
                                       selobj.SubElementNames[i]))
             elif selobj.Object.Shape.Faces:
                 for i in range(len(selobj.Object.Shape.Faces)):
-                    faces.append((selobj.Object, "Face{}".format(i+1)))
+                    faces.append((selobj.Object, "Face{}".format(i + 1)))
                 selobj.Object.ViewObject.Visibility = False
         if faces:
             self.makeSolidFeature(faces)
@@ -150,8 +149,8 @@ class solidCommand:
 
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
-                'MenuText': 'Make Solid',
-                'ToolTip': 'Make a parametric solid from selected faces'}
+                'MenuText': __title__,
+                'ToolTip': __doc__}
 
 
 FreeCADGui.addCommand('solid', solidCommand())
