@@ -21,7 +21,8 @@ TOOL_ICON = os.path.join(ICONPATH, 'solid.svg')
 
 
 def get_svg(shape_type):
-    colors = {"Compound": "ff0000",
+    colors = {"": "ffffff",
+              "Compound": "ff0000",
               "Shell": "ff7b00",
               "Solid": "00ff00"}
     return '''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
@@ -57,6 +58,12 @@ class solid:
                         "Faces",
                         "Solid",
                         "List of faces to build the solid")
+        obj.addProperty("App::PropertyString",
+                        "ShapeStatus",
+                        "Solid",
+                        "Status of the created shape")
+        obj.ShapeStatus = ""
+        obj.setEditorMode("ShapeStatus", 1)
         obj.Proxy = self
 
     def execute(self, obj):
@@ -75,12 +82,15 @@ class solid:
         except Part.OCCError:
             pass
         if isinstance(shape, Part.Solid):  # and shape.isValid():
-            obj.Label2 = "Solid"
+            obj.ShapeStatus = "Solid"
         elif isinstance(shape, Part.Shell):  # and shape.isValid():
-            obj.Label2 = "Shell"
+            obj.ShapeStatus = "Shell"
         else:
-            obj.Label2 = "Compound"
+            obj.ShapeStatus = "Compound"
         obj.Shape = shape
+
+    def onDocumentRestored(self, fp):
+        fp.setEditorMode("ShapeStatus", 1)
 
 
 class solidVP:
@@ -90,19 +100,18 @@ class solidVP:
     def getIcon(self):
         if not hasattr(self, "icons"):
             self.icons = dict()
-            for sht in ["Compound", "Shell", "Solid"]:
+            for sht in ["", "Compound", "Shell", "Solid"]:
                 iconFile = tempfile.NamedTemporaryFile(suffix=".svg", delete=False)
                 iconFile.write(bytes(get_svg(sht), "utf8"))
                 iconFile.close()
                 self.icons[sht] = QtGui.QIcon(iconFile.name)
-        return self.icons[self.Object.Label2]
+        return self.icons[self.Object.ShapeStatus]
 
     def attach(self, vobj):
         self.Object = vobj.Object
 
     def updateData(self, fp, prop):
-        if prop == "Label2":
-            # FreeCAD.Console.PrintWarning("Label2 changed\n")
+        if prop == "ShapeStatus":
             fp.ViewObject.signalChangeIcon()
 
     def __getstate__(self):
