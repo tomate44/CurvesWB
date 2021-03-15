@@ -290,7 +290,7 @@ def geom_equal(geom1, geom2, tol=1e-7):
     by comparing their defining properties
     bool = geom_equal(geom1, geom2, tol=1e-7)
     geom1 and geom2 must be of type Part.Curve or Part.Surface"""
-    if not geom1.TypeId == geom2.TypeId:
+    if not geom1.__class__ == geom2.__class__:
         return False
     curve_properties = ["FirstParameter", "LastParameter"]
     conic_properties = curve_properties + ["Location", "AngleXU", "Axis", "XAxis", "YAxis"]
@@ -315,6 +315,8 @@ def geom_equal(geom1, geom2, tol=1e-7):
 #    test_properties[Part.TrimmedCurve] = ["BasisCurve", "OffsetDirection", "OffsetValue"]
     test_properties[Part.BezierCurve] = curve_properties + ["Degree", "NbPoles", "getPoles", "getWeights"]
     test_properties[Part.BSplineCurve] = test_properties[Part.BezierCurve] + ["NbKnots", "KnotSequence"]
+    # Geom2d
+    test_properties[Part.Geom2d.Line2d] = test_properties[Part.Line]
     # Surfaces
     test_properties[Part.Plane] = ["Axis", "Position"]
     test_properties[Part.Cone] = ["Apex", "Axis", "Center", "Radius", "SemiAngle"]
