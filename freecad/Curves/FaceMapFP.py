@@ -19,17 +19,17 @@ TOOL_ICON = os.path.join(ICONPATH, 'face_map.svg')
 # debug = _utils.doNothing
 
 
-def get_dual_curveOnSurface(face, e):
-    cos_list = []
-    for c2d in _utils.get_pcurves(e):
-        s = c2d[1]
-        s.transform(c2d[2].toMatrix())
-        surf_test = _utils.geom_equal(face.Surface, s)
-        if surf_test:
-            cos_list.append((c2d[0], c2d[3], c2d[4]))
-    if len(cos_list) < 2:
-        FreeCAD.Console.PrintError("Failed to extract pcurves of seam edge\n")
-    return cos_list
+#def get_dual_curveOnSurface(face, e):
+    #cos_list = []
+    #for c2d in _utils.get_pcurves(e):
+        #s = c2d[1]
+        #s.transform(c2d[2].toMatrix())
+        #surf_test = _utils.geom_equal(face.Surface, s)
+        #if surf_test:
+            #cos_list.append((c2d[0], c2d[3], c2d[4]))
+    #if len(cos_list) < 2:
+        #FreeCAD.Console.PrintError("Failed to extract pcurves of seam edge\n")
+    #return cos_list
 
 
 def face_bounding_box_2d(face):
@@ -42,12 +42,7 @@ def face_bounding_box_2d(face):
 
 
 def face_bounding_box_3d(face):
-    bot, top, lef, rig = face_bounding_box_2d(face)
-    bot3d = bot.toShape(face.Surface)
-    top3d = top.toShape(face.Surface)
-    lef3d = lef.toShape(face.Surface)
-    rig3d = rig.toShape(face.Surface)
-    return bot3d, top3d, lef3d, rig3d
+    return [e.toShape(face.Surface) for e in face_bounding_box_2d(face)]
 
 
 class FaceMapFP:
@@ -62,11 +57,13 @@ class FaceMapFP:
                         "Dimensions", "Size of the map in the V direction")
         obj.addProperty("App::PropertyBool", "AddBounds",
                         "Settings", "Add the bounding box of the face")
+        obj.addProperty("App::PropertyBool", "FillFace",
+                        "Settings", "Generate a face, or simply wires").FillFace = True
         obj.addProperty("App::PropertyEnumeration", "SizeMode",
-                        "Settings", "The method used to set the size of the face map")
+                        "Dimensions", "The method used to set the size of the face map")
         obj.addProperty("App::PropertyFloat", "ExtendFactor",
                         "Settings", "Set the size factor of the underlying surface")
-        obj.SizeMode = ["Average3D", "Average2D", "Manual"]
+        obj.SizeMode = ["Average3D", "Bounds2D", "Manual"]
         obj.SizeMode = "Manual"
         obj.SizeU = 1.0
         obj.SizeV = 1.0
@@ -84,6 +81,7 @@ class FaceMapFP:
                 return obj.Source[0].Shape.Face1
 
     def execute(self, obj):
+        save_placement = obj.Placement
         face = self.get_face(obj)
         if not isinstance(face, Part.Face):
             obj.Shape = None
@@ -96,11 +94,10 @@ class FaceMapFP:
         for w in face.Wires:
             el = []
             for e in w.Edges:
+                cos, fp, lp = face.curveOnSurface(e)
+                el.append(cos.toShape(quad, fp, lp))
                 if e.isSeam(face):
-                    cos_list = get_dual_curveOnSurface(face, e)
-                    el.append(cos_list[0][0].toShape(quad, cos_list[0][1], cos_list[0][2]))
-                    el.append(cos_list[1][0].toShape(quad, cos_list[1][1], cos_list[1][2]))
-                else:
+                    e.reverse()
                     cos, fp, lp = face.curveOnSurface(e)
                     el.append(cos.toShape(quad, fp, lp))
             flat_wire = Part.Wire(Part.sortEdges(el)[0])
@@ -108,12 +105,23 @@ class FaceMapFP:
                 outer_wire = flat_wire
             else:
                 inner_wires.append(flat_wire)
-        mapface = Part.Face(quad, outer_wire)
-        if inner_wires:
+        # build a face, or a compound of wires
+        if obj.FillFace:
+            mapface = Part.Face(quad, outer_wire)
+            if inner_wires:
+                mapface.validate()
+                mapface.cutHoles(inner_wires)
             mapface.validate()
-            mapface.cutHoles(inner_wires)
-        mapface.validate()
-        obj.Shape = mapface
+        else:
+            mapface = Part.Compound([outer_wire] + inner_wires)
+
+        if obj.AddBounds:
+            edges = [e.toShape(quad) for e in face_bounding_box_2d(face)]
+            w = Part.Wire(Part.sortEdges(edges)[0])
+            obj.Shape = Part.Compound([mapface, w])
+        else:
+            obj.Shape = mapface
+        obj.Placement = save_placement
 
     def onChanged(self, obj, prop):
         if 'Restore' in obj.State:
@@ -126,7 +134,7 @@ class FaceMapFP:
                 obj.SizeV = 0.5 * (bb[2].Length + bb[3].Length)
                 obj.setEditorMode("SizeU", 1)
                 obj.setEditorMode("SizeV", 1)
-            elif obj.SizeMode == "Average2D":
+            elif obj.SizeMode == "Bounds2D":
                 face = self.get_face(obj)
                 bb = face_bounding_box_2d(face)
                 obj.SizeU = 0.5 * (bb[0].length() + bb[1].length())
