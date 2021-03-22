@@ -148,7 +148,10 @@ class SegmentSurface:
                 s = bs.copy()
                 s.segment(cutKnotsU[i], cutKnotsU[i + 1], cutKnotsV[j], cutKnotsV[j + 1])
                 surfs.append(s)
-        obj.Shape = Part.Shell([s.toShape() for s in surfs])
+        print(surfs[0].toShape())
+        face_list = [s.toShape() for s in surfs]
+        print(face_list)
+        obj.Shape = Part.Shell(face_list)
 
     def setOption(self, obj, prop):
         for p in obj.PropertiesList:

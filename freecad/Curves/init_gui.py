@@ -58,6 +58,7 @@ class CurvesWorkbench(Gui.Workbench):
         from freecad.Curves import segmentSurfaceFP
         from freecad.Curves import multiLoftFP
         from freecad.Curves import FaceMapFP
+        from freecad.Curves import WrapOnFaceFP
         # from freecad.Curves import HQRuledSurfaceFP
         # from freecad.Curves import HelicalSweepFP
         # import sectionSketch
@@ -67,7 +68,7 @@ class CurvesWorkbench(Gui.Workbench):
                            "Trim", "GeomInfo", "extract", "solid", "IsoCurve", "SoS", "sw2r", "profileSupportCmd",
                            "cos", "blendSurface", "pasteSVG", "profile", "pipeshell", "gordon", "segment_surface",
                            "to_console", "SublinkEditor", "comp_spring", "ReflectLines",
-                           "MultiLoft", "CurvesCmd_FlatMap"])  # "hq_ruled_surface", "HelicalSweep"])
+                           "MultiLoft", "CurvesCmd_FlatMap", "CurvesCmd_WrapOnFace"])  # "hq_ruled_surface", "HelicalSweep"])
 
         self.appendToolbar("Curves", stablelist)
         self.appendMenu("Curves", stablelist)

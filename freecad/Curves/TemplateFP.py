@@ -66,8 +66,8 @@ Sketcher::PropertyConstraintList
 """
 
 
-class FaceMapFP:
-    """Creates a ..."""
+class FP:
+    """Create a ..."""
     def __init__(self, obj):
         """Add the properties"""
         obj.addProperty("App::PropertyLinkList", "Sources",
@@ -83,7 +83,7 @@ class FaceMapFP:
         return False
 
 
-class FaceMapVP:
+class VP:
     def __init__(self, viewobj):
         viewobj.Proxy = self
 
@@ -101,12 +101,12 @@ class FaceMapVP:
         return None
 
 
-class ToolCommand:
+class CurvesCmd_:
     """Create a ... feature"""
     def makeFeature(self, sel=None):
         fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "")
-        FaceMapFP(fp)
-        FaceMapVP(fp.ViewObject)
+        FP(fp)
+        VP(fp.ViewObject)
         FreeCAD.ActiveDocument.recompute()
 
     def Activated(self):
@@ -128,4 +128,4 @@ class ToolCommand:
                 'ToolTip': __doc__}
 
 
-FreeCADGui.addCommand('tool_name', ToolCommand())
+FreeCADGui.addCommand('CurvesCmd_', CurvesCmd_())
