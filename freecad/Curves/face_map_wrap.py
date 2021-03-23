@@ -15,11 +15,12 @@ vec2 = FreeCAD.Base.Vector2d
 
 
 class BoundarySorter:
-    def __init__(self, wires, surface=None, only_closed=False):
+    """Sorts a list of nested wires.
+    The output of sort() is a list of lists of wires"""
+    def __init__(self, wires, only_closed=False):
         self.wires = []
         self.parents = []
         self.sorted_wires = []
-        self.surface = surface
         for w in wires:
             if only_closed and not w.isClosed():
                 print("Skipping open wire")
@@ -30,10 +31,7 @@ class BoundarySorter:
         self.done = False
 
     def fine_check_inside(self, w1, w2):
-        if self.surface is not None:
-            f = Part.Face(self.surface, w2)
-        else:
-            f = Part.Face(w2)
+        f = Part.Face(w2)
         if not f.isValid():
             f.validate()
         if f.isValid():
@@ -83,6 +81,31 @@ class BoundarySorter:
             if w:
                 result.append(w)
         return result
+
+    def faces(self):
+        faces = []
+        for i, wl in enumerate(self.sort()):
+            # print(wl)
+            f = Part.Face(wl[0])
+            try:
+                f.check()
+            except Exception as e:
+                print(str(e))
+            if not f.isValid():
+                f.validate()
+                if not f.isValid():
+                    print("Validating plain face{:3} failed".format(i))
+            if len(wl) > 1:
+                try:
+                    f.cutHoles(wl[1:])
+                    f.validate()
+                except AttributeError:
+                    print("Faces with holes require FC 0.19 or higher\nIgnoring holes\n")
+            f.sewShape()
+            if not f.isValid():
+                print("Invalid final face{:3}".format(i))
+            faces.append(f)
+        return faces
 
 
 class FaceMapper:
@@ -150,53 +173,56 @@ class FaceMapper:
         return mapface
 
 
-class FaceWrapper:
+def wrap_on_face(shape, face, quad):
+    if isinstance(shape, Part.Face):
+        ow = wrap_on_face(shape.OuterWire, face, quad)
+        iw = [wrap_on_face(w, face, quad) for w in shape.Wires if not w.isSame(shape.OuterWire)]
+        f = Part.Face(face.Surface, ow)
+        f.validate()
+        if not hasattr(f, "cutHoles"):
+            print("Faces with holes require FC 0.19 or higher\nIgnoring holes\n")
+        if not f.isValid():
+            print("Validating plain face failed")
+        if len(iw) > 0:
+            f.cutHoles(iw)
+            f.validate()
+        f.sewShape()
+        if not f.isValid():
+            print("Invalid final face")
+        return f
+    elif isinstance(shape, Part.Wire):
+        edges = []
+        for e in shape.OrderedEdges:
+            edges.extend(wrap_on_face(e, face, quad).Edges)
+        # print(edges)
+        return Part.Wire(Part.sortEdges(edges)[0])
+    elif isinstance(shape, Part.Edge):
+        new_edges = []
+        for e in quad.project([shape]).Edges:
+            c2d, fp, lp = quad.curveOnSurface(e)
+            if shape.isClosed() and not c2d.isClosed():
+                c2d.setPole(c2d.NbPoles, c2d.getPole(1))
+            new_edges += c2d.toShape(face.Surface, fp, lp).Edges
+        if len(new_edges) == 1:
+            return new_edges[0]
+        elif len(new_edges) > 1:
+            return Part.Wire(Part.sortEdges(new_edges)[0])
+        return Part.Wire()
+    elif hasattr(shape, "Faces"):
+        return Part.Compound([wrap_on_face(f, face, quad) for f in shape.Faces])
+
+
+class ShapeWrapper:
     """Wrap shapes on a face"""
     def __init__(self, face, quad):
         self.face = face
         self.quad = quad
-        self.faces = []
-        self.wires = []
-        self.edges = []
         self.offset = 0.0
         self.extrusion = 0.0
         self.fill_faces = True
         self.fill_extrusion = True
 
-    def force_closed_bspline2d(self, c2d):
-        """Force close a 2D Bspline curve by moving last pole to first"""
-        c2d.setPole(c2d.NbPoles, c2d.getPole(1))
-        print("Force closing 2D curve")
-
-    def build_faces(self, wl, face):
-        faces = []
-        for w in wl:
-            w.fixWire(face, 1e-7)
-        bs = BoundarySorter(wl, face.Surface, True)
-        for i, wirelist in enumerate(bs.sort()):
-            # print(wirelist)
-            f = Part.Face(face.Surface, wirelist[0])
-            try:
-                f.check()
-            except Exception as e:
-                print(str(e))
-            if not f.isValid():
-                f.validate()
-                if not f.isValid():
-                    print("Validating plain face{:3} failed".format(i))
-            if len(wirelist) > 1:
-                try:
-                    f.cutHoles(wirelist[1:])
-                    f.validate()
-                except AttributeError:
-                    print("Faces with holes require FC 0.19 or higher\nIgnoring holes\n")
-            f.sewShape()
-            if not f.isValid():
-                print("Invalid final face{:3}".format(i))
-            faces.append(f)
-        return faces
-
-    def wrap_shapes(self, shapes):
+    def wrap(self, shapes):
         for sh in shapes:
             for face in sh.Faces:
                 if self.fill_faces:
@@ -209,39 +235,6 @@ class FaceWrapper:
             for edge in sh.Edges:
                 if sh.ancestorsOfType(edge, Part.Wire) == []:
                     self.map_shape(edge)
-
-    def wrap_shape(self, shape):
-        if not isinstance(shape, Part.Shape):
-            return []
-        proj_edges = []
-        for oe in shape.Edges:
-            # debug("original edge has : {} Pcurves : {}".format(_utils.nb_pcurves(oe), oe.curveOnSurface(0)))
-            proj_edges.extend(self.quad.project(oe).Edges)
-        
-            for e in proj.Edges:
-                # debug("edge on quad has : {} Pcurves : {}".format(_utils.nb_pcurves(e), e.curveOnSurface(0)))
-                c2d, fp, lp = self.quad.curveOnSurface(e)
-                if oe.isClosed() and not c2d.isClosed():
-                    self.force_closed_bspline2d(c2d)
-                ne = c2d.toShape(self.face.Surface, fp, lp)
-                # debug("edge on face has : {} Pcurves : {}".format(_utils.nb_pcurves(ne), ne.curveOnSurface(0)))
-                # debug(ne.Placement)
-                # debug(face.Placement)
-                # ne.Placement = face.Placement
-                vt = ne.getTolerance(1, Part.Vertex)
-                et = ne.getTolerance(1, Part.Edge)
-                if vt < et:
-                    ne.fixTolerance(et, Part.Vertex)
-                    print("fixing Vertex tolerance : {0:e} -> {1:e}".format(vt, et))
-                new_edges.append(ne)
-            # else: # except TypeError:
-                # error("Failed to get 2D curve")
-        sorted_edges = Part.sortEdges(new_edges)
-        wirelist = [Part.Wire(el) for el in sorted_edges]
-        if self.fill_faces:
-            return self.build_faces(wirelist, self.face)
-        else:
-            return wirelist
 
     def execute(self, fp):
         quad = fp.FaceMap.Shape.Face1.Surface.toShape()
