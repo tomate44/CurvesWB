@@ -9,7 +9,7 @@ import os
 import FreeCAD
 import FreeCADGui
 import Part
-# from freecad.Curves import _utils
+from .face_map_wrap import ShapeWrapper
 from freecad.Curves import ICONPATH
 
 TOOL_ICON = os.path.join(ICONPATH, 'wrap_on_face.svg')
@@ -71,9 +71,9 @@ class WrapOnFaceFP:
     def __init__(self, fp):
         """Add the properties"""
         fp.addProperty("App::PropertyLinkList", "Sources",
-                       "Group", "List of objects to be wrapped on target face")
+                       "Input", "List of objects to be wrapped on target face")
         fp.addProperty("App::PropertyLink", "FaceMap",
-                       "Group", "Flat representation of a face")
+                       "Input", "Flat representation of a face")
         fp.addProperty("App::PropertyBool", "FillFaces", "Settings",
                        "Make faces from closed wires").FillFaces = False
         fp.addProperty("App::PropertyBool", "FillExtrusion", "Settings",
@@ -82,17 +82,18 @@ class WrapOnFaceFP:
                        "Offset distance of mapped sketch").Offset = 0.0
         fp.addProperty("App::PropertyFloat", "Thickness", "Settings",
                        "Extrusion thickness").Thickness = 0.0
-        fp.addProperty("App::PropertyBool", "ReverseU", "Touchup",
-                       "Reverse U direction").ReverseU = False
-        fp.addProperty("App::PropertyBool", "ReverseV", "Touchup",
-                       "Reverse V direction").ReverseV = False
-        fp.addProperty("App::PropertyBool", "SwapUV", "Touchup",
-                       "Swap U and V directions").ReverseV = False
         fp.Proxy = self
 
     def execute(self, fp):
         quad = fp.FaceMap.Shape.Face1.Surface.toShape()
         face = fp.FaceMap.Proxy.get_face(fp.FaceMap)
+        fw = ShapeWrapper(face, quad)
+        fw.offset = fp.Offset
+        fw.extrusion = fp.Thickness
+        fw.fill_faces = fp.FillFaces
+        fw.fill_extrusion = fp.FillExtrusion
+        sh = fw.wrap([o.Shape for o in fp.Sources])
+        fp.Shape = sh
 
     def onChanged(self, fp, prop):
         return False
@@ -116,7 +117,7 @@ class WrapOnFaceVP:
         return None
 
     def claimChildren(self):
-        objs = [o[0] for o in self.Object.Sources]
+        objs = [o for o in self.Object.Sources]
         return [self.Object.FaceMap] + objs
 
 

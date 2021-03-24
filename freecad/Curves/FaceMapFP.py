@@ -38,6 +38,12 @@ class FaceMapFP:
                         "Dimensions", "The method used to set the size of the face map")
         obj.addProperty("App::PropertyFloat", "ExtendFactor",
                         "Settings", "Set the size factor of the underlying surface")
+        obj.addProperty("App::PropertyBool", "ReverseU", "Touchup",
+                        "Reverse U direction").ReverseU = False
+        obj.addProperty("App::PropertyBool", "ReverseV", "Touchup",
+                        "Reverse V direction").ReverseV = False
+        obj.addProperty("App::PropertyBool", "SwapUV", "Touchup",
+                        "Swap U and V directions").ReverseV = False
         obj.SizeMode = ["Average3D", "Bounds2D", "Manual"]
         obj.SizeMode = "Manual"
         obj.SizeU = 1.0
@@ -64,6 +70,9 @@ class FaceMapFP:
             return
         mapper = face_map_wrap.FaceMapper(face)
         mapper.set_quad(obj.SizeU, obj.SizeV, obj.ExtendFactor)
+        mapper.reverseU(obj.ReverseU)
+        mapper.reverseV(obj.ReverseV)
+        mapper.swapUV(obj.SwapUV)
         mapface = mapper.face_flatmap(obj.FillFace)
 
         if obj.AddBounds:

@@ -725,8 +725,9 @@ def param_samples(edge, samples=10):
 def nurbs_quad(poles, param_range=[0.0, 1.0, 0.0, 1.0], extend_factor=1.0):
     """Create a Nurbs Quad surface between the four supplied poles.
     The parameter range is given by param_range
+    Poles are in the form [[SW, NW], [SE, NE]]
     The surface can be extended multiple times with extend_factor
-    This is used as a projection surface for face mapping.
+    This is used as a projection surface for face mapping / wrapping.
     """
     s0, s1, t0, t1 = param_range
     bs = Part.BSplineSurface()

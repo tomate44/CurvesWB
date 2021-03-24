@@ -144,6 +144,24 @@ class FaceMapper:
         self._quad = nurbs_quad(poles, self.face.ParameterRange, extend_factor)
         return self._quad
 
+    def reverseU(self, b=False):
+        if b:
+            pts = self.quad.getPoles()
+            self.quad.setPoleRow(1, pts[1])
+            self.quad.setPoleRow(2, pts[0])
+
+    def reverseV(self, b=False):
+        if b:
+            pts = list(zip(*self.quad.getPoles()))
+            self.quad.setPoleCol(1, pts[1])
+            self.quad.setPoleCol(2, pts[0])
+
+    def swapUV(self, b=False):
+        if b:
+            pts = list(zip(*self.quad.getPoles()))
+            self.quad.setPoleRow(1, pts[0])
+            self.quad.setPoleRow(2, pts[1])
+
     def face_flatmap(self, fill_face=False):
         outer_wire = None
         inner_wires = []
@@ -177,8 +195,11 @@ def wrap_on_face(shape, face, quad):
     if isinstance(shape, Part.Face):
         ow = wrap_on_face(shape.OuterWire, face, quad)
         iw = [wrap_on_face(w, face, quad) for w in shape.Wires if not w.isSame(shape.OuterWire)]
-        f = Part.Face(face.Surface, ow)
-        f.validate()
+        try:
+            f = Part.Face(face.Surface, ow)
+            f.validate()
+        except Part.OCCError:
+            return Part.Wire()
         if not hasattr(f, "cutHoles"):
             print("Faces with holes require FC 0.19 or higher\nIgnoring holes\n")
         if not f.isValid():
@@ -195,7 +216,9 @@ def wrap_on_face(shape, face, quad):
         for e in shape.OrderedEdges:
             edges.extend(wrap_on_face(e, face, quad).Edges)
         # print(edges)
-        return Part.Wire(Part.sortEdges(edges)[0])
+        se = Part.sortEdges(edges)
+        if se:
+            return Part.Wire(Part.sortEdges(edges)[0])
     elif isinstance(shape, Part.Edge):
         new_edges = []
         for e in quad.project([shape]).Edges:
@@ -203,13 +226,9 @@ def wrap_on_face(shape, face, quad):
             if shape.isClosed() and not c2d.isClosed():
                 c2d.setPole(c2d.NbPoles, c2d.getPole(1))
             new_edges += c2d.toShape(face.Surface, fp, lp).Edges
-        if len(new_edges) == 1:
-            return new_edges[0]
-        elif len(new_edges) > 1:
+        if len(new_edges) >= 1:
             return Part.Wire(Part.sortEdges(new_edges)[0])
-        return Part.Wire()
-    elif hasattr(shape, "Faces"):
-        return Part.Compound([wrap_on_face(f, face, quad) for f in shape.Faces])
+    return Part.Wire()
 
 
 class ShapeWrapper:
@@ -222,71 +241,75 @@ class ShapeWrapper:
         self.fill_faces = True
         self.fill_extrusion = True
 
-    def wrap(self, shapes):
-        for sh in shapes:
-            for face in sh.Faces:
-                if self.fill_faces:
-                    self.map_shape(face)
-                else:
-                    self.map_shapes(face.Wires)
-            for wire in sh.Wires:
-                if sh.ancestorsOfType(wire, Part.Face) == []:
-                    self.map_shape(wire)
-            for edge in sh.Edges:
-                if sh.ancestorsOfType(edge, Part.Wire) == []:
-                    self.map_shape(edge)
+    @property
+    def extrude(self):
+        return not (self.extrusion == 0.0)
 
-    def execute(self, fp):
-        quad = fp.FaceMap.Shape.Face1.Surface.toShape()
-        face = fp.FaceMap.Proxy.get_face(fp.FaceMap)
-        imput_shapes = [o.Shape for o in fp.Sources]
+    def decompose(self, in_shapes):
+        if not isinstance(in_shapes, (list, tuple)):
+            in_shapes = [in_shapes, ]
+        shapelist = []
+        for shape in in_shapes:
+            if not isinstance(shape, (Part.Face, Part.Wire, Part.Edge)):
+                for f in shape.Faces:
+                    shapelist.append(f)
+                for wire in shape.Wires:
+                    if shape.ancestorsOfType(wire, Part.Face) == []:
+                        shapelist.append(wire)
+                for edge in shape.Edges:
+                    if shape.ancestorsOfType(edge, Part.Wire) == []:
+                        shapelist.append(edge)
+            else:
+                shapelist.append(shape)
+        return shapelist
+
+    def wrap(self, in_shapes):
+        shapelist = self.decompose(in_shapes)
         shapes_1 = []
         shapes_2 = []
-        if (fp.Offset == 0):
-            shapes_1 = self.map_shapelist(imput_shapes, quad, face, fp.FillFaces)
+        if self.offset == 0.0:
+            self.face1 = self.face
         else:
-            f1 = face.makeOffsetShape(fp.Offset, 1e-7)
-            shapes_1 = self.map_shapelist(imput_shapes, quad, f1.Face1, fp.FillFaces)
-        if (fp.Thickness == 0):
-            if shapes_1:
-                fp.Shape = Part.Compound(shapes_1)
-            return
-        else:
-            f2 = face.makeOffsetShape(fp.Offset + fp.Thickness, 1e-7)
-            shapes_2 = self.map_shapelist(imput_shapes, quad, f2.Face1, fp.FillFaces)
-            if not fp.FillExtrusion:
-                if shapes_1 or shapes_2:
-                    fp.Shape = Part.Compound(shapes_1 + shapes_2)
-                    return
+            self.face1 = self.face.makeOffsetShape(self.offset, 1e-7).Face1
+        shapes_1 = [wrap_on_face(sh, self.face1, self.quad) for sh in shapelist]
+        if not self.extrude:
+            return Part.Compound(shapes_1)
+
+        self.face2 = self.face.makeOffsetShape(self.offset + self.extrusion, 1e-7).Face1
+        shapes_2 = [wrap_on_face(sh, self.face2, self.quad) for sh in shapelist]
+        if not self.fill_extrusion:
+            return Part.Compound(shapes_1 + shapes_2)
+
+        shapes = []
+        for i in range(len(shapes_1)):
+            if isinstance(shapes_1[i], Part.Face):
+                faces = []
+                if self.fill_faces:
+                    faces = shapes_1[i].Faces + shapes_2[i].Faces
+                    # error_wires = []
+                for j in range(len(shapes_1[i].Edges)):
+                    if self.fill_faces and shapes_1[i].Edges[j].isSeam(shapes_1[i]):
+                        continue
+                    ruled = Part.makeRuledSurface(shapes_1[i].Edges[j], shapes_2[i].Edges[j])
+                    # ruled.check(True)
+                    faces.append(ruled)
+                try:
+                    shell = Part.makeShell(faces)
+                    shell.sewShape()
+                    # print_tolerance(shell)
+                    solid = Part.makeSolid(shell)
+                    # solid.fixTolerance(1e-5)
+                    shapes.append(solid)
+                except Exception:
+                    FreeCAD.Console.PrintWarning("Sketch on surface : failed to create solid # {}.\n".format(i + 1))
+                    shapes.extend(faces)
             else:
-                shapes = []
-                for i in range(len(shapes_1)):
-                    if isinstance(shapes_1[i], Part.Face):
-                        faces = shapes_1[i].Faces + shapes_2[i].Faces
-                        # error_wires = []
-                        for j in range(len(shapes_1[i].Edges)):
-                            if fp.FillFaces and shapes_1[i].Edges[j].isSeam(shapes_1[i]):
-                                continue
-                            ruled = Part.makeRuledSurface(shapes_1[i].Edges[j], shapes_2[i].Edges[j])
-                            ruled.check(True)
-                            faces.append(ruled)
-                        try:
-                            shell = Part.Shell(faces)
-                            shell.sewShape()
-                            # print_tolerance(shell)
-                            solid = Part.Solid(shell)
-                            solid.fixTolerance(1e-5)
-                            shapes.append(solid)
-                        except Exception:
-                            FreeCAD.Console.PrintWarning("Sketch on surface : failed to create solid # {}.\n".format(i + 1))
-                            shapes.extend(faces)
-                    else:
-                        ruled = Part.makeRuledSurface(shapes_1[i].Wires[0], shapes_2[i].Wires[0])
-                        ruled.check(True)
-                        shapes.append(ruled)
-                # shapes.append(quad)
-                if shapes:
-                    if len(shapes) == 1:
-                        fp.Shape = shapes[0]
-                    elif len(shapes) > 1:
-                        fp.Shape = Part.Compound(shapes)
+                if shapes_1[i].Wires and shapes_2[i].Wires:
+                    ruled = Part.makeRuledSurface(shapes_1[i].Wires[0], shapes_2[i].Wires[0])
+                    # ruled.check(True)
+                    shapes.append(ruled)
+        if len(shapes) == 1:
+            return shapes[0]
+        elif len(shapes) > 1:
+            return Part.Compound(shapes)
+        return Part.Shape()
