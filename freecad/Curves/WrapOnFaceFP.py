@@ -153,9 +153,15 @@ class CurvesCmd_WrapOnFace:
                     if "Face" in subname and facemap is None:
                         from .FaceMapFP import CurvesCmd_FlatMap
                         facemap = CurvesCmd_FlatMap.makeFeature((selobj.Object, (subname, )))
+                        FreeCAD.ActiveDocument.recompute()
             elif hasattr(selobj.Object, "Shape"):
                 not_facemap.append(selobj.Object)
         if facemap is not None:
+            comp = Part.Compound([o.Shape for o in not_facemap])
+            origin = FreeCAD.Vector(comp.BoundBox.XMin, comp.BoundBox.YMin, 0)
+            facemap.Placement.Base = origin
+            facemap.SizeU = comp.BoundBox.XLength
+            facemap.SizeV = comp.BoundBox.YLength
             self.makeFeature(facemap, not_facemap)
             return
         FreeCAD.Console.PrintError("Select a target face in 3D view, or a FaceMap object.\n")

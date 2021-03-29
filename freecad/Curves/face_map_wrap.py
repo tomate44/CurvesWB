@@ -191,26 +191,30 @@ class FaceMapper:
         return mapface
 
 
+def build_face_with_holes(surface, outer_wire, inner_wires):
+    try:
+        f = Part.Face(surface, outer_wire)
+        f.validate()
+    except Part.OCCError:
+        return Part.Wire()
+    if not hasattr(f, "cutHoles"):
+        print("Faces with holes require FC 0.19 or higher\nIgnoring holes\n")
+    if not f.isValid():
+        print("Validating plain face failed")
+    if len(inner_wires) > 0:
+        f.cutHoles(inner_wires)
+        f.validate()
+    f.sewShape()
+    if not f.isValid():
+        print("Invalid final face")
+    return f
+
+
 def wrap_on_face(shape, face, quad):
     if isinstance(shape, Part.Face):
         ow = wrap_on_face(shape.OuterWire, face, quad)
         iw = [wrap_on_face(w, face, quad) for w in shape.Wires if not w.isSame(shape.OuterWire)]
-        try:
-            f = Part.Face(face.Surface, ow)
-            f.validate()
-        except Part.OCCError:
-            return Part.Wire()
-        if not hasattr(f, "cutHoles"):
-            print("Faces with holes require FC 0.19 or higher\nIgnoring holes\n")
-        if not f.isValid():
-            print("Validating plain face failed")
-        if len(iw) > 0:
-            f.cutHoles(iw)
-            f.validate()
-        f.sewShape()
-        if not f.isValid():
-            print("Invalid final face")
-        return f
+        return build_face_with_holes(face.Surface, ow, iw)
     elif isinstance(shape, Part.Wire):
         edges = []
         for e in shape.OrderedEdges:
