@@ -73,7 +73,13 @@ class WrapOnFaceFP:
         fp.addProperty("App::PropertyLinkList", "Sources",
                        "Input", "List of objects to be wrapped on target face")
         fp.addProperty("App::PropertyLink", "FaceMap",
-                       "Input", "Flat representation of a face")
+                       "Mapper", "Flat representation of a face")
+        fp.addProperty("App::PropertyPlacement", "MapperPlacement",
+                       "Mapper", "Mapper placement")
+        fp.addProperty("App::PropertyFloat", "SizeU",
+                       "Mapper", "Size of the mapper in the U direction").SizeU = 1.0
+        fp.addProperty("App::PropertyFloat", "SizeV",
+                       "Mapper", "Size of the mapper in the V direction").SizeV = 1.0
         fp.addProperty("App::PropertyBool", "FillFaces", "Settings",
                        "Make faces from closed wires").FillFaces = False
         fp.addProperty("App::PropertyBool", "FillExtrusion", "Settings",
@@ -96,7 +102,15 @@ class WrapOnFaceFP:
         fp.Shape = sh
 
     def onChanged(self, fp, prop):
-        return False
+        if prop == "FaceMap":
+            if fp.FaceMap is None:
+                fp.setEditorMode("MapperPlacement", 0)
+                fp.setEditorMode("SizeU", 0)
+                fp.setEditorMode("SizeV", 0)
+            else:
+                fp.setEditorMode("MapperPlacement", 2)
+                fp.setEditorMode("SizeU", 2)
+                fp.setEditorMode("SizeV", 2)
 
 
 class WrapOnFaceVP:

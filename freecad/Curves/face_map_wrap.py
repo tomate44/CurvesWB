@@ -14,10 +14,37 @@ from freecad.Curves.nurbs_tools import nurbs_quad
 vec2 = FreeCAD.Base.Vector2d
 
 
+def build_face_with_holes(outer_wire, inner_wires=[], surface=None):
+    """Build a face on a surface, from an outer wire(boundary),
+    and a list of inner wires(holes)"""
+    try:
+        if surface is not None:
+            f = Part.Face(surface, outer_wire)
+        else:
+            f = Part.Face(outer_wire)
+        f.validate()
+    except Part.OCCError:
+        return Part.Wire()
+    if not hasattr(f, "cutHoles"):
+        print("Faces with holes require FC 0.19 or higher\nIgnoring holes\n")
+    if not f.isValid():
+        print("Validating plain face failed")
+    if len(inner_wires) > 0:
+        f.cutHoles(inner_wires)
+        f.validate()
+    f.sewShape()
+    if not f.isValid():
+        print("Invalid final face")
+    return f
+
+
 class BoundarySorter:
     """Sorts a list of nested wires.
-    The output of sort() is a list of lists of wires"""
-    def __init__(self, wires, only_closed=False):
+    b_sorter = BoundarySorter(wires, only_closed=True)
+    If only_closed is True, open wires will be ignored.
+    b_sorter.sort() returns a list of lists of wires
+    b_sorter.faces() returns a list of faces"""
+    def __init__(self, wires, only_closed=True):
         self.wires = []
         self.parents = []
         self.sorted_wires = []
@@ -86,25 +113,11 @@ class BoundarySorter:
         faces = []
         for i, wl in enumerate(self.sort()):
             # print(wl)
-            f = Part.Face(wl[0])
-            try:
-                f.check()
-            except Exception as e:
-                print(str(e))
-            if not f.isValid():
-                f.validate()
-                if not f.isValid():
-                    print("Validating plain face{:3} failed".format(i))
-            if len(wl) > 1:
-                try:
-                    f.cutHoles(wl[1:])
-                    f.validate()
-                except AttributeError:
-                    print("Faces with holes require FC 0.19 or higher\nIgnoring holes\n")
-            f.sewShape()
-            if not f.isValid():
+            f = build_face_with_holes(wl[0], wl[1:])
+            if f.isValid():
+                faces.append(f)
+            else:
                 print("Invalid final face{:3}".format(i))
-            faces.append(f)
         return faces
 
 
@@ -158,9 +171,10 @@ class FaceMapper:
 
     def swapUV(self, b=False):
         if b:
-            pts = list(zip(*self.quad.getPoles()))
-            self.quad.setPoleRow(1, pts[0])
-            self.quad.setPoleRow(2, pts[1])
+            self.quad.exchangeUV()
+            # pts = list(zip(*self.quad.getPoles()))
+            # self.quad.setPoleRow(1, pts[0])
+            # self.quad.setPoleRow(2, pts[1])
 
     def face_flatmap(self, fill_face=False):
         outer_wire = None
@@ -191,30 +205,15 @@ class FaceMapper:
         return mapface
 
 
-def build_face_with_holes(surface, outer_wire, inner_wires):
-    try:
-        f = Part.Face(surface, outer_wire)
-        f.validate()
-    except Part.OCCError:
-        return Part.Wire()
-    if not hasattr(f, "cutHoles"):
-        print("Faces with holes require FC 0.19 or higher\nIgnoring holes\n")
-    if not f.isValid():
-        print("Validating plain face failed")
-    if len(inner_wires) > 0:
-        f.cutHoles(inner_wires)
-        f.validate()
-    f.sewShape()
-    if not f.isValid():
-        print("Invalid final face")
-    return f
-
-
 def wrap_on_face(shape, face, quad):
+    """Wrap a shape(face, wire, or edge) on a face,
+    using quad as the flat transfer face.
+    Returns a face or a wire
+    wrapped_shape = wrap_on_face(shape, face, quad)"""
     if isinstance(shape, Part.Face):
         ow = wrap_on_face(shape.OuterWire, face, quad)
         iw = [wrap_on_face(w, face, quad) for w in shape.Wires if not w.isSame(shape.OuterWire)]
-        return build_face_with_holes(face.Surface, ow, iw)
+        return build_face_with_holes(ow, iw, face.Surface)
     elif isinstance(shape, Part.Wire):
         edges = []
         for e in shape.OrderedEdges:

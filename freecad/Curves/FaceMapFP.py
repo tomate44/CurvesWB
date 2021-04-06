@@ -38,12 +38,12 @@ class FaceMapFP:
                         "Dimensions", "The method used to set the size of the face map")
         obj.addProperty("App::PropertyFloat", "ExtendFactor",
                         "Settings", "Set the size factor of the underlying surface")
-        obj.addProperty("App::PropertyBool", "ReverseU", "Touchup",
-                        "Reverse U direction").ReverseU = False
-        obj.addProperty("App::PropertyBool", "ReverseV", "Touchup",
-                        "Reverse V direction").ReverseV = False
+        # obj.addProperty("App::PropertyBool", "ReverseU", "Touchup",
+                        # "Reverse U direction").ReverseU = False
+        # obj.addProperty("App::PropertyBool", "ReverseV", "Touchup",
+                        # "Reverse V direction").ReverseV = False
         obj.addProperty("App::PropertyBool", "SwapUV", "Touchup",
-                        "Swap U and V directions").ReverseV = False
+                        "Swap U and V directions").SwapUV = False
         obj.SizeMode = ["Average3D", "Bounds2D", "Manual"]
         obj.SizeMode = "Manual"
         obj.SizeU = 1.0
@@ -69,9 +69,12 @@ class FaceMapFP:
             obj.Shape = None
             return
         mapper = face_map_wrap.FaceMapper(face)
-        mapper.set_quad(obj.SizeU, obj.SizeV, obj.ExtendFactor)
-        mapper.reverseU(obj.ReverseU)
-        mapper.reverseV(obj.ReverseV)
+        if obj.SwapUV:
+            mapper.set_quad(obj.SizeV, obj.SizeU, obj.ExtendFactor)
+        else:
+            mapper.set_quad(obj.SizeU, obj.SizeV, obj.ExtendFactor)
+        # mapper.reverseU(obj.ReverseU)
+        # mapper.reverseV(obj.ReverseV)
         mapper.swapUV(obj.SwapUV)
         mapface = mapper.face_flatmap(obj.FillFace)
 
@@ -104,11 +107,13 @@ class FaceMapFP:
             elif obj.SizeMode == "Manual":
                 obj.setEditorMode("SizeU", 0)
                 obj.setEditorMode("SizeV", 0)
-        if prop in ["SizeU", "SizeV"]:
-            if obj.SizeU <= 0.0:
-                obj.SizeU = 1.0
-            if obj.SizeV <= 0.0:
-                obj.SizeV = 1.0
+        if prop == "SizeU":
+            if abs(obj.SizeU) < 1e-5:
+                obj.SizeU = 1e-5
+        if prop == "SizeV":
+            if abs(obj.SizeV) < 1e-5:
+                obj.SizeV = 1e-5
+        if prop in ["SizeU", "SizeV", "AddBounds", "FillFace", "ExtendFactor", "SwapUV"]:
             self.execute(obj)
 
 
