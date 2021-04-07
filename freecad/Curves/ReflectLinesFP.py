@@ -38,6 +38,20 @@ class ReflectLinesFP:
                         "CleaningOptions", "Number of edge samples").Samples = 10
         obj.addProperty("App::PropertyQuantity", "Tolerance",
                         "CleaningOptions", "Tolerance for duplicate detection").Tolerance = 1e-3
+        obj.addProperty("App::PropertyBool", "IsoLine",
+                        "EdgeType", "Isoparametric lines").IsoLine = True
+        obj.addProperty("App::PropertyBool", "OutLine",
+                        "EdgeType", "Outline silouhette lines").OutLine = True
+        obj.addProperty("App::PropertyBool", "Rg1Line",
+                        "EdgeType", "smooth edge of G1-continuity between two surfaces").Rg1Line = True
+        obj.addProperty("App::PropertyBool", "RgNLine",
+                        "EdgeType", "sewn edge of CN-continuity on one surface").RgNLine = True
+        obj.addProperty("App::PropertyBool", "Sharp",
+                        "EdgeType", "sharp edge (of C0-continuity)").Sharp = True
+        obj.addProperty("App::PropertyBool", "Visible",
+                        "ReflectLines", "Visible lines").Visible = True
+        obj.addProperty("App::PropertyBool", "OnShape",
+                        "ReflectLines", "Output on-shape 3D lines").OnShape = True
         # obj.Samples = [10,3,999,1]
         obj.ViewPos = FreeCAD.Vector(0, 0, 0)
         obj.ViewDir = FreeCAD.Vector(0, 0, 1)
@@ -59,7 +73,12 @@ class ReflectLinesFP:
         elif hasattr(obj.Source, "Shape"):
             sh = obj.Source.Shape
         try:
-            rl = sh.reflectLines(obj.ViewDir, obj.ViewPos, obj.UpDir)
+            shapes = []
+            for prop in ["IsoLine", "OutLine", "Rg1Line", "RgNLine", "Sharp"]:
+                if getattr(obj, prop):
+                    rl = sh.reflectLines(ViewDir=obj.ViewDir, ViewPos=obj.ViewPos, UpDir=obj.UpDir, EdgeType=prop, Visible=obj.Visible, OnShape=obj.OnShape)
+                    shapes.append(rl)
+            rl = Part.Compound(shapes)
         except AttributeError:
             pass
         if rl and obj.ShapeCleaning:
@@ -69,8 +88,8 @@ class ReflectLinesFP:
             obj.Shape = rl
 
     def onChanged(self, obj, prop):
-        if prop in ("Source", "ViewPos", "ViewDir", "UpDir"):
-            self.execute(obj)
+        if 'Restore' in obj.State:
+            return
         if prop == "ShapeCleaning":
             if obj.ShapeCleaning:
                 obj.setEditorMode("Samples", 0)
@@ -78,6 +97,16 @@ class ReflectLinesFP:
             else:
                 obj.setEditorMode("Samples", 2)
                 obj.setEditorMode("Tolerance", 2)
+        if prop == "OnShape":
+            if obj.OnShape:
+                obj.setEditorMode("ViewPos", 2)
+                obj.setEditorMode("UpDir", 2)
+            else:
+                obj.setEditorMode("ViewPos", 0)
+                obj.setEditorMode("UpDir", 0)
+        if prop in ("Source", "ViewPos", "ViewDir", "UpDir", "visible", "OnShape",
+                    "IsoLine", "OutLine", "Rg1Line", "RgNLine", "Sharp"):
+            self.execute(obj)
 
 
 class ReflectLinesVP:
@@ -113,7 +142,7 @@ class ReflectLinesCommand:
             FreeCAD.Console.PrintError("Select an object first !\n")
         else:
             rot = FreeCADGui.ActiveDocument.ActiveView.getCameraOrientation()
-            vdir = FreeCAD.Vector(0, 0, -1)
+            vdir = FreeCAD.Vector(0, 0, 1)
             vdir = rot.multVec(vdir)
             udir = FreeCAD.Vector(0, 1, 0)
             udir = rot.multVec(udir)
