@@ -67,6 +67,7 @@ class ReflectLinesFP:
     def execute(self, obj):
         sh = None
         rl = False
+        plm = obj.Placement
         if len(obj.IndivFaces) > 0:
             faces = _utils.getShape(obj, "IndivFaces", "Face")
             sh = Part.Compound(faces)
@@ -86,6 +87,7 @@ class ReflectLinesFP:
             rl = Part.Compound(nurbs_tools.remove_subsegments(edges, num=obj.Samples, tol=obj.Tolerance))
         if rl:
             obj.Shape = rl
+            obj.Placement = plm
 
     def onChanged(self, obj, prop):
         if 'Restore' in obj.State:
