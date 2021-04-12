@@ -98,10 +98,13 @@ class WrapOnFaceFP:
         if fp.FaceMap:
             quad = fp.FaceMap.Shape.Face1.Surface.toShape()
             face = fp.FaceMap.Proxy.get_face(fp.FaceMap)
+        elif not fp.Target:
+            return
         else:
             face = fp.Target[0].getSubObject(fp.Target[1])[0]
             mapper = face_map_wrap.FaceMapper(face)
-            mapper.set_quad(fp.SizeU, fp.SizeV, 10.0)
+            o = fp.Origin
+            mapper.set_quad([o.x, o.x + fp.SizeU, o.y, o.y + fp.SizeV], 10.0)
             quad = mapper.quad.toShape()
         fw = ShapeWrapper(face, quad)
         fw.offset = fp.Offset
@@ -112,6 +115,8 @@ class WrapOnFaceFP:
         fp.Shape = sh
 
     def onChanged(self, fp, prop):
+        if 'Restore' in fp.State:
+            return
         if prop == "FaceMap":
             if fp.FaceMap is None:
                 fp.setEditorMode("Origin", 0)
@@ -138,27 +143,40 @@ class WrapOnFaceVP:
         # self.select_state = vobj.Selectable
         self.ip = None
 
+    def update_shape(self):
+        fp = self.Object
+        face = fp.Target[0].getSubObject(fp.Target[1])[0]
+        mapper = face_map_wrap.FaceMapper(face)
+        mapper.set_quad(self.ip.bounds(), 10.0)
+        u0, u1, v0, v1 = self.ip.bounds()
+        #self.Object.Origin = FreeCAD.Vector(u0, v0, 0)
+        #self.Object.SizeU = u1 - u0
+        #self.Object.SizeV = v1 - v0
+        fp.Shape = mapper.face_flatmap()
+
     def setEdit(self, vobj, mode=0):
         if mode == 0:
-            # if vobj.Selectable:
-            #     self.select_state = True
-            #     vobj.Selectable = False
-            self.ip = RectangleEditor([0, self.Object.SizeU, 0, self.Object.SizeV], self.Object)
+            if vobj.Selectable:
+                self.select_state = True
+                vobj.Selectable = False
+            FreeCADGui.activeDocument().activeView().viewTop()
+            o = self.Object.Origin
+            self.ip = RectangleEditor([o.x, o.x + self.Object.SizeU, o.y, o.y + self.Object.SizeV], self.Object)
+            self.ip.update_func = self.update_shape
+            self.update_shape()
             self.active = True
             return True
         return False
 
     def unsetEdit(self, vobj, mode=0):
         if isinstance(self.ip, RectangleEditor):
-            b = "{:0.3f}, {:0.3f}, {:0.3f}, {:0.3f}\n".format(self.ip.points[0].points[0][0],
-                                                              self.ip.points[0].points[0][1],
-                                                              self.ip.points[2].points[0][0],
-                                                              self.ip.points[2].points[0][1])
-            FreeCAD.Console.PrintMessage(b)
-            self.Object.Origin = FreeCAD.Vector(self.ip.points[0].points[0][0], self.ip.points[2].points[0][0], 0)
-            self.Object.SizeU = self.ip.points[0].points[0][1] - self.ip.points[0].points[0][0]
-            self.Object.SizeV = self.ip.points[2].points[0][1] - self.ip.points[2].points[0][0]
-            # vobj.Selectable = self.select_state
+            bs = "{:0.3f}, {:0.3f}, {:0.3f}, {:0.3f}\n".format(*self.ip.bounds())
+            FreeCAD.Console.PrintMessage(bs)
+            u0, u1, v0, v1 = self.ip.bounds()
+            self.Object.Origin = FreeCAD.Vector(u0, v0, 0)
+            self.Object.SizeU = u1 - u0
+            self.Object.SizeV = v1 - v0
+            vobj.Selectable = self.select_state
             self.ip.quit()
         self.ip = None
         self.active = False

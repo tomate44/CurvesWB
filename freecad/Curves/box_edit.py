@@ -8,7 +8,6 @@ from freecad.Curves import graphics
 class ConnectionMarker(graphics.Marker):
     def __init__(self, points):
         super(ConnectionMarker, self).__init__(points, True)
-        print(self.data.point)
         self.output = coin.SoDecomposeVec3f()
         self.output.vector.connectFrom(self.data.point)
         self.input = coin.SoComposeVec3f()
@@ -50,21 +49,22 @@ class RectangleEditor:
     """Rectangle free-hand editor
     my_editor = RectangleEditor(bounds, fp)"""
     def __init__(self, bounds=[0, 20, 0, 10], fp=None):
-        self.points = list()
+        self.points = []
         self.fp = fp
         self.root_inserted = False
         self.update_func = None
 
-        self.points = [ConnectionMarker([FreeCAD.Vector(0, 0, 0)]) for i in range(4)]
-
-        self.points[0].connect_x(self.points[1])
-        self.points[0].connect_y(self.points[3])
-        self.points[2].connect_x(self.points[3])
-        self.points[2].connect_y(self.points[1])
-
         u0, u1, v0, v1 = bounds
-        self.points[0].points = [(u0, v0, 0)]
-        self.points[2].points = [(u1, v1, 0)]
+        self.points.append(ConnectionMarker([(u0, v0, 0)]))
+        self.points.append(ConnectionMarker([(u0, v1, 0)]))
+        self.points.append(ConnectionMarker([(u1, v1, 0)]))
+        self.points.append(ConnectionMarker([(u1, v0, 0)]))
+
+        self.points[1].connect_x(self.points[0])
+        self.points[3].connect_y(self.points[0])
+        self.points[3].connect_x(self.points[2])
+        self.points[1].connect_y(self.points[2])
+
         # Setup coin objects
         if self.fp:
             self.guidoc = self.fp.ViewObject.Document
@@ -111,14 +111,17 @@ class RectangleEditor:
         self.lines[0].set_color("green")
 
     def update(self):
-        # b = "{:0.3f}, {:0.3f}, {:0.3f}, {:0.3f}\n".format(self.points[0].points[0][0],
-                                                            # self.points[0].points[0][1],
-                                                            # self.points[2].points[0][0],
-                                                            # self.points[2].points[0][1])
+        # b = "{:0.3f}, {:0.3f}, {:0.3f}, {:0.3f}\n".format( *self.bounds())
         # FreeCAD.Console.PrintMessage(b)
         if callable(self.update_func):
             self.update_func()
         return
+
+    def bounds(self):
+        return [self.points[0].points[0][0],
+                self.points[3].points[0][0],
+                self.points[0].points[0][1],
+                self.points[1].points[0][1]]
 
     def controlCB(self, attr, event_callback):
         event = event_callback.getEvent()

@@ -151,9 +151,9 @@ class FaceMapper:
     def boundbox_flat(self):
         return self.boundbox_3d(self.quad)
 
-    def set_quad(self, sizeU=1.0, sizeV=1.0, extend_factor=1.0):
-        poles = [[FreeCAD.Vector(0, 0, 0), FreeCAD.Vector(0, sizeV, 0)],
-                 [FreeCAD.Vector(sizeU, 0, 0), FreeCAD.Vector(sizeU, sizeV, 0)]]
+    def set_quad(self, bounds=[0, 1, 0, 1], extend_factor=1.0):
+        poles = [[FreeCAD.Vector(bounds[0], bounds[2], 0), FreeCAD.Vector(bounds[0], bounds[3], 0)],
+                 [FreeCAD.Vector(bounds[1], bounds[2], 0), FreeCAD.Vector(bounds[1], bounds[3], 0)]]
         self._quad = nurbs_quad(poles, self.face.ParameterRange, extend_factor)
         return self._quad
 
