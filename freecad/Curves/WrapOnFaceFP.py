@@ -10,6 +10,8 @@ import FreeCAD
 import FreeCADGui
 import Part
 from .face_map_wrap import ShapeWrapper
+from .box_edit import RectangleEditor
+from . import face_map_wrap
 from freecad.Curves import ICONPATH
 
 TOOL_ICON = os.path.join(ICONPATH, 'wrap_on_face.svg')
@@ -72,10 +74,12 @@ class WrapOnFaceFP:
         """Add the properties"""
         fp.addProperty("App::PropertyLinkList", "Sources",
                        "Input", "List of objects to be wrapped on target face")
+        fp.addProperty("App::PropertyLinkSub", "Target",
+                       "Input", "Target face")
         fp.addProperty("App::PropertyLink", "FaceMap",
                        "Mapper", "Flat representation of a face")
-        fp.addProperty("App::PropertyPlacement", "MapperPlacement",
-                       "Mapper", "Mapper placement")
+        fp.addProperty("App::PropertyVector", "Origin",
+                       "Mapper", "Mapper origin")
         fp.addProperty("App::PropertyFloat", "SizeU",
                        "Mapper", "Size of the mapper in the U direction").SizeU = 1.0
         fp.addProperty("App::PropertyFloat", "SizeV",
@@ -91,8 +95,14 @@ class WrapOnFaceFP:
         fp.Proxy = self
 
     def execute(self, fp):
-        quad = fp.FaceMap.Shape.Face1.Surface.toShape()
-        face = fp.FaceMap.Proxy.get_face(fp.FaceMap)
+        if fp.FaceMap:
+            quad = fp.FaceMap.Shape.Face1.Surface.toShape()
+            face = fp.FaceMap.Proxy.get_face(fp.FaceMap)
+        else:
+            face = fp.Target[0].getSubObject(fp.Target[1])[0]
+            mapper = face_map_wrap.FaceMapper(face)
+            mapper.set_quad(fp.SizeU, fp.SizeV, 10.0)
+            quad = mapper.quad.toShape()
         fw = ShapeWrapper(face, quad)
         fw.offset = fp.Offset
         fw.extrusion = fp.Thickness
@@ -104,11 +114,11 @@ class WrapOnFaceFP:
     def onChanged(self, fp, prop):
         if prop == "FaceMap":
             if fp.FaceMap is None:
-                fp.setEditorMode("MapperPlacement", 0)
+                fp.setEditorMode("Origin", 0)
                 fp.setEditorMode("SizeU", 0)
                 fp.setEditorMode("SizeV", 0)
             else:
-                fp.setEditorMode("MapperPlacement", 2)
+                fp.setEditorMode("Origin", 2)
                 fp.setEditorMode("SizeU", 2)
                 fp.setEditorMode("SizeV", 2)
 
@@ -116,12 +126,55 @@ class WrapOnFaceFP:
 class WrapOnFaceVP:
     def __init__(self, viewobj):
         viewobj.Proxy = self
+        # self.select_state = True
+        self.active = False
 
     def getIcon(self):
         return TOOL_ICON
 
-    def attach(self, viewobj):
-        self.Object = viewobj.Object
+    def attach(self, vobj):
+        self.Object = vobj.Object
+        self.active = False
+        # self.select_state = vobj.Selectable
+        self.ip = None
+
+    def setEdit(self, vobj, mode=0):
+        if mode == 0:
+            # if vobj.Selectable:
+            #     self.select_state = True
+            #     vobj.Selectable = False
+            self.ip = RectangleEditor([0, self.Object.SizeU, 0, self.Object.SizeV], self.Object)
+            self.active = True
+            return True
+        return False
+
+    def unsetEdit(self, vobj, mode=0):
+        if isinstance(self.ip, RectangleEditor):
+            b = "{:0.3f}, {:0.3f}, {:0.3f}, {:0.3f}\n".format(self.ip.points[0].points[0][0],
+                                                              self.ip.points[0].points[0][1],
+                                                              self.ip.points[2].points[0][0],
+                                                              self.ip.points[2].points[0][1])
+            FreeCAD.Console.PrintMessage(b)
+            self.Object.Origin = FreeCAD.Vector(self.ip.points[0].points[0][0], self.ip.points[2].points[0][0], 0)
+            self.Object.SizeU = self.ip.points[0].points[0][1] - self.ip.points[0].points[0][0]
+            self.Object.SizeV = self.ip.points[2].points[0][1] - self.ip.points[2].points[0][0]
+            # vobj.Selectable = self.select_state
+            self.ip.quit()
+        self.ip = None
+        self.active = False
+        self.Object.Document.recompute()
+        return True
+
+    def doubleClicked(self, vobj):
+        if not hasattr(self, 'active'):
+            self.active = False
+        if not self.active:
+            self.active = True
+            vobj.Document.setEdit(vobj)
+        else:
+            vobj.Document.resetEdit()
+            self.active = False
+        return True
 
     def __getstate__(self):
         return {"name": self.Object.Name}
