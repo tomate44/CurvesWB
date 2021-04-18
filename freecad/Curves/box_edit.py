@@ -33,49 +33,62 @@ class ConstrainedMarker(graphics.Marker):
         self.x_drag_objects = []
         self.y_drag_objects = []
         self.z_drag_objects = []
-        self.on_drag_start.append(self.init_constraints)
-        self.on_drag_start.append(self.release)
-        self.on_drag_release.append(self.release_constraints)
-
-    @property
-    def drag_objects(self):
-        if self.enabled:
-            return [self] + self.x_drag_objects + self.y_drag_objects + self.z_drag_objects
+        # self.on_drag_start.append(self.init_constraints)
+        # self.on_drag_start.append(self.release)
+        # self.on_drag_release.append(self.release_constraints)
 
     def drag(self, mouse_coords, fact=1.):
         if self.enabled:
             pts = self.points
             for i, pt in enumerate(pts):
-                pt[0] = mouse_coords[0] * fact * self.constraint[0] + self._tmp_points[i][0]
-                pt[1] = mouse_coords[1] * fact * self.constraint[1] + self._tmp_points[i][1]
-                pt[2] = mouse_coords[2] * fact * self.constraint[2] + self._tmp_points[i][2]
+                pt[0] = mouse_coords[0] * fact + self._tmp_points[i][0]
+                pt[1] = mouse_coords[1] * fact + self._tmp_points[i][1]
+                pt[2] = mouse_coords[2] * fact + self._tmp_points[i][2]
             self.points = pts
+            for o in self.x_drag_objects:
+                o.drag([mouse_coords[0], 0, 0], fact)
+            for o in self.y_drag_objects:
+                o.drag([0, mouse_coords[1], 0], fact)
+            for o in self.z_drag_objects:
+                o.drag([0, 0, mouse_coords[0]], fact)
             for foo in self.on_drag:
                 foo()
 
-    def init_constraints(self):
+    def drag_start(self):
+        self._tmp_points = self.points
         for o in self.x_drag_objects:
-            o.x_drag()
+            o.drag_start()
         for o in self.y_drag_objects:
-            o.y_drag()
+            o.drag_start()
         for o in self.z_drag_objects:
-            o.z_drag()
+            o.drag_start()
+        if self.enabled:
+            for foo in self.on_drag_start:
+                foo()
 
-    def release_constraints(self):
-        for o in self.x_drag_objects + self.y_drag_objects + self.z_drag_objects:
-            o.release()
+    #def init_constraints(self):
+        #for o in self.x_drag_objects:
+            #o.x_drag()
+        #for o in self.y_drag_objects:
+            #o.y_drag()
+        #for o in self.z_drag_objects:
+            #o.z_drag()
 
-    def x_drag(self):
-        self.constraint = (1.0, 0.0, 0.0)
+    #def release_constraints(self):
+        #for o in self.x_drag_objects + self.y_drag_objects + self.z_drag_objects:
+            #o.release()
 
-    def y_drag(self):
-        self.constraint = (0.0, 1.0, 0.0)
+    #def x_drag(self):
+        #self.constraint = (1.0, 0.0, 0.0)
 
-    def z_drag(self):
-        self.constraint = (0.0, 0.0, 1.0)
+    #def y_drag(self):
+        #self.constraint = (0.0, 1.0, 0.0)
 
-    def release(self):
-        self.constraint = (1.0, 1.0, 1.0)
+    #def z_drag(self):
+        #self.constraint = (0.0, 0.0, 1.0)
+
+    #def release(self):
+        #self.constraint = (1.0, 1.0, 1.0)
 
 
 class ConnectionLine(graphics.Line):
