@@ -5,106 +5,106 @@ from pivy import coin
 from freecad.Curves import graphics
 
 
-# class ConnectionMarker(graphics.Marker):
-    # def __init__(self, points):
-        # super(ConnectionMarker, self).__init__(points, True)
-        # self.output = coin.SoDecomposeVec3f()
-        # self.output.vector.connectFrom(self.data.point)
-        # self.input = coin.SoComposeVec3f()
-        # self.data.point.connectFrom(self.input.vector)
-
-    # def connect_x(self, other):
-        # self.input.x.connectFrom(other.output.x)
-        # other.input.x.connectFrom(self.output.x)
-
-    # def connect_y(self, other):
-        # self.input.y.connectFrom(other.output.y)
-        # other.input.y.connectFrom(self.output.y)
-
-    # def connect_z(self, other):
-        # self.input.z.connectFrom(other.output.z)
-        # other.input.z.connectFrom(self.output.z)
-
-
-class ConstrainedMarker(graphics.Marker):
-    def __init__(self, points):
-        super(ConstrainedMarker, self).__init__(points, True)
+class ConstrainedObject3D(graphics.Object3D):
+    def __init__(self, points, dynamic=True):
+        super(ConstrainedObject3D, self).__init__(points, dynamic)
         self.constraint = (1.0, 1.0, 1.0)
         self.x_drag_objects = []
         self.y_drag_objects = []
         self.z_drag_objects = []
-        # self.on_drag_start.append(self.init_constraints)
-        # self.on_drag_start.append(self.release)
-        # self.on_drag_release.append(self.release_constraints)
+        self.free_drag_objects = []
+        self.on_drag_start.append(self.init_constraints)
+        self.on_drag_release.append(self.release_constraints)
+
+    @property
+    def drag_objects(self):
+        return self.free_drag_objects + self.x_drag_objects + self.y_drag_objects + self.z_drag_objects
 
     def drag(self, mouse_coords, fact=1.):
         if self.enabled:
             pts = self.points
             for i, pt in enumerate(pts):
-                pt[0] = mouse_coords[0] * fact + self._tmp_points[i][0]
-                pt[1] = mouse_coords[1] * fact + self._tmp_points[i][1]
-                pt[2] = mouse_coords[2] * fact + self._tmp_points[i][2]
+                pt[0] = mouse_coords[0] * fact * self.constraint[0] + self._tmp_points[i][0]
+                pt[1] = mouse_coords[1] * fact * self.constraint[1] + self._tmp_points[i][1]
+                pt[2] = mouse_coords[2] * fact * self.constraint[2] + self._tmp_points[i][2]
             self.points = pts
-            for o in self.x_drag_objects:
-                o.drag([mouse_coords[0], 0, 0], fact)
-            for o in self.y_drag_objects:
-                o.drag([0, mouse_coords[1], 0], fact)
-            for o in self.z_drag_objects:
-                o.drag([0, 0, mouse_coords[0]], fact)
             for foo in self.on_drag:
                 foo()
 
-    def drag_start(self):
-        self._tmp_points = self.points
+    def init_constraints(self):
         for o in self.x_drag_objects:
-            o.drag_start()
+            o.x_drag()
         for o in self.y_drag_objects:
-            o.drag_start()
+            o.y_drag()
         for o in self.z_drag_objects:
-            o.drag_start()
-        if self.enabled:
-            for foo in self.on_drag_start:
-                foo()
+            o.z_drag()
 
-    #def init_constraints(self):
-        #for o in self.x_drag_objects:
-            #o.x_drag()
-        #for o in self.y_drag_objects:
-            #o.y_drag()
-        #for o in self.z_drag_objects:
-            #o.z_drag()
+    def release_constraints(self):
+        for o in self.free_drag_objects + self.x_drag_objects + self.y_drag_objects + self.z_drag_objects:
+            o.release()
 
-    #def release_constraints(self):
-        #for o in self.x_drag_objects + self.y_drag_objects + self.z_drag_objects:
-            #o.release()
+    def x_drag(self):
+        self.constraint = (1.0, 0.0, 0.0)
 
-    #def x_drag(self):
-        #self.constraint = (1.0, 0.0, 0.0)
+    def y_drag(self):
+        self.constraint = (0.0, 1.0, 0.0)
 
-    #def y_drag(self):
-        #self.constraint = (0.0, 1.0, 0.0)
+    def z_drag(self):
+        self.constraint = (0.0, 0.0, 1.0)
 
-    #def z_drag(self):
-        #self.constraint = (0.0, 0.0, 1.0)
-
-    #def release(self):
-        #self.constraint = (1.0, 1.0, 1.0)
+    def release(self):
+        self.constraint = (1.0, 1.0, 1.0)
 
 
-class ConnectionLine(graphics.Line):
+class ConstrainedMarker(ConstrainedObject3D):
+    def __init__(self, points):
+        super(ConstrainedMarker, self).__init__(points, True)
+        self.marker = coin.SoMarkerSet()
+        self.marker.markerIndex = coin.SoMarkerSet.CIRCLE_FILLED_9_9
+        self.addChild(self.marker)
+
+
+class ConnectionLine(ConstrainedObject3D):
     def __init__(self, markers):
         super(ConnectionLine, self).__init__(
             sum([m.points for m in markers], []), True)
         self.markers = markers
+        self.constraint = None
+        #self.on_drag_start.append(self.release)
+        #self.on_drag_release.append(self.release)
         for m in self.markers:
             m.on_drag.append(self.updateLine)
 
     def updateLine(self):
         self.points = sum([m.points for m in self.markers], [])
 
-    @property
-    def drag_objects(self):
-        return self.markers
+    #@property
+    #def drag_objects(self):
+        #if callable(self.constraint):
+            #self.constraint()
+        #return self.markers
+
+    def x_drag(self):
+        print(f"{self} x_drag")
+        self.x_drag_objects = self.markers
+        self.free_drag_objects = []
+
+    def y_drag(self):
+        print(f"{self} y_drag")
+        self.y_drag_objects = self.markers
+        self.free_drag_objects = []
+
+    def z_drag(self):
+        print(f"{self} z_drag")
+        self.z_drag_objects = self.markers
+        self.free_drag_objects = []
+
+    def release(self):
+        print(f"{self} release")
+        self.x_drag_objects = []
+        self.y_drag_objects = []
+        self.z_drag_objects = []
+        self.free_drag_objects = self.markers
 
     def check_dependency(self):
         if any([m._delete for m in self.markers]):
@@ -120,24 +120,19 @@ class RectangleEditor:
         self.root_inserted = False
         self.update_func = None
 
-        self.points = [ConstrainedMarker([FreeCAD.Vector(0, 0, 0)]) for i in range(4)]
+        self.points = [ConstrainedMarker([FreeCAD.Vector(0, 0, 0)]) for i in range(3)]
         u0, u1, v0, v1 = bounds
         self.points[0].points = [(u0, v0, 0)]
         self.points[1].points = [(u0, v1, 0)]
-        self.points[2].points = [(u1, v1, 0)]
-        self.points[3].points = [(u1, v0, 0)]
+        self.points[2].points = [(u1, v0, 0)]
 
-        self.points[0].x_drag_objects.append(self.points[1])
-        self.points[0].y_drag_objects.append(self.points[3])
-
-        self.points[1].x_drag_objects.append(self.points[0])
-        self.points[1].y_drag_objects.append(self.points[2])
-
-        self.points[2].x_drag_objects.append(self.points[3])
-        self.points[2].y_drag_objects.append(self.points[1])
-
-        self.points[3].x_drag_objects.append(self.points[2])
-        self.points[3].y_drag_objects.append(self.points[0])
+        #self.points[1].on_drag_start.append(self.points[1].y_drag)
+        #self.points[2].on_drag_start.append(self.points[2].x_drag)
+        self.points[0].free_drag_objects = [self.points[0]]
+        self.points[0].x_drag_objects = [self.points[1]]
+        self.points[0].y_drag_objects = [self.points[2]]
+        self.points[1].x_drag_objects = [self.points[0]]
+        self.points[2].y_drag_objects = [self.points[0]]
 
         # Setup coin objects
         if self.fp:
@@ -165,9 +160,9 @@ class RectangleEditor:
         self._controlCB = self.root.events.addEventCallback(coin.SoKeyboardEvent.getClassTypeId(), self.controlCB)
         self.root += self.points
         self.build_lines()
-        funcs = [line.updateLine for line in self.lines]
-        for m in self.points:
-            m.on_drag.extend(funcs)
+        #funcs = [line.updateLine for line in self.lines]
+        #for m in self.points:
+            #m.on_drag.extend(funcs)
         self.root += self.lines
         for o in self.points + self.lines:
             o.ovr_col = "yellow"
@@ -178,14 +173,14 @@ class RectangleEditor:
         self.root.selected_objects = list()
 
     def build_lines(self):
-        tmp_pts = self.points
-        tmp_pts.append(self.points[0])
-        self.lines = list()
-        for i in range(len(tmp_pts) - 1):
-            line = ConnectionLine([tmp_pts[i], tmp_pts[i + 1]])
-            self.lines.append(line)
-        self.lines[3].set_color("red")
+        self.lines = []
+        self.lines.append(ConnectionLine([self.points[0], self.points[1]]))
+        self.lines.append(ConnectionLine([self.points[0], self.points[2]]))
         self.lines[0].set_color("green")
+        self.lines[1].set_color("red")
+        self.lines[0].x_drag()
+        self.lines[1].y_drag()
+
 
     def update(self):
         # b = "{:0.3f}, {:0.3f}, {:0.3f}, {:0.3f}\n".format( *self.bounds())
@@ -196,7 +191,7 @@ class RectangleEditor:
 
     def bounds(self):
         return [self.points[0].points[0][0],
-                self.points[3].points[0][0],
+                self.points[2].points[0][0],
                 self.points[0].points[0][1],
                 self.points[1].points[0][1]]
 
