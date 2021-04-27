@@ -29,6 +29,10 @@ For FreeCAD version 0.17 or higher it's preferred to install this workbench with
 
 "Curves" workbench should now show up in the workbench dropdown list.
 
+## Documentation
+
+The Curves workbench documentation can be found on the FreeCAD wiki: https://wiki.freecadweb.org/Curves_Workbench
+
 ## Feedback  
 Feedback, suggestions, and patches (via Pull Request) are all appreciated. If you find a problem with this workbench please open an issue in the issue queue, or join the following discussion of FreeCAD's forum : [Curves workbench](https://forum.freecadweb.org/viewtopic.php?f=8&t=22675)
  
