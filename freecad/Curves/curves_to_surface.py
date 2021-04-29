@@ -7,8 +7,45 @@ __doc__ = "Interpolate curves to surface"
 
 # import FreeCAD
 import Part
-from . import _utils
-from .BSplineAlgorithms import SurfAdapterView
+
+
+class SurfaceAdapter:
+    """Adapter to work on one direction of a BSpline surface
+    with BSpline curve tools"""
+    def __init__(self, surf, direction=0):
+        self.surface = surf
+        self.direction = direction
+
+    @property
+    def NbKnots(self):
+        if self.direction == 0:
+            return self.surface.NbUKnots
+        elif self.direction == 1:
+            return self.surface.NbVKnots
+
+    def getKnot(self, idx):
+        if self.direction == 0:
+            return self.surface.getUKnot(idx)
+        elif self.direction == 1:
+            return self.surface.getVKnot(idx)
+
+    def getMultiplicity(self, idx):
+        if self.direction == 0:
+            return self.surface.getUMultiplicity(idx)
+        elif self.direction == 1:
+            return self.surface.getVMultiplicity(idx)
+
+    def increaseMultiplicity(self, idx, mult):
+        if self.direction == 0:
+            return self.surface.increaseUMultiplicity(idx, mult)
+        elif self.direction == 1:
+            return self.surface.increaseVMultiplicity(idx, mult)
+
+    def insertKnot(self, k, mult, tol=0.0):
+        if self.direction == 0:
+            return self.surface.insertUKnot(k, mult, tol)
+        elif self.direction == 1:
+            return self.surface.insertVKnot(k, mult, tol)
 
 
 def _find_knot(curve, knot, tolerance=1e-15):
@@ -62,6 +99,83 @@ def print_main_poles(surf):
     print("O: {}\nU: {}\nV: {}".format(pts[0][0],
                                        pts[-1][0],
                                        pts[0][-1]))
+
+
+def orient_curves(c1, c2):
+    """orient_curves(c1, c2)
+    Orient c2 in same direction as c1 """
+    def value(c, p):
+        if isinstance(c, Part.Edge):
+            return c.valueAt(p)
+        else:
+            return c.value(p)
+
+    if c1.isClosed():
+        fp1 = 0.75 * c1.FirstParameter + 0.25 * c1.LastParameter
+        lp1 = 0.25 * c1.FirstParameter + 0.75 * c1.LastParameter
+    else:
+        fp1 = c1.FirstParameter
+        lp1 = c1.LastParameter
+    if c2.isClosed():
+        fp2 = 0.75 * c2.FirstParameter + 0.25 * c2.LastParameter
+        lp2 = 0.25 * c2.FirstParameter + 0.75 * c2.LastParameter
+    else:
+        fp2 = c2.FirstParameter
+        lp2 = c2.LastParameter
+    ls1 = Part.makeLine(value(c1, fp1), value(c2, fp2))
+    ls2 = Part.makeLine(value(c1, lp1), value(c2, lp2))
+    d1 = ls1.distToShape(ls2)[0]
+    ls1 = Part.makeLine(value(c1, fp1), value(c2, lp2))
+    ls2 = Part.makeLine(value(c1, lp1), value(c2, fp2))
+    d2 = ls1.distToShape(ls2)[0]
+    if d1 < d2:
+        c2.reverse()
+        return True
+
+
+def shift_origin(c1, c2, num=36):
+    """if c1 and c2 are two periodic BSpline curves
+    c2 origin will be moved to minimize twist"""
+    pts1 = c1.discretize(num)
+    pts2 = c2.discretize(num)
+    pts2 *= 2
+    min_dist = 1e50
+    good_offset = 0
+    for offset_idx in range(num):
+        total_length = 0
+        for pt_idx in range(num):
+            ls = Part.makeLine(pts1[pt_idx], pts2[pt_idx + offset_idx])
+            total_length += ls.Length
+        if total_length < min_dist:
+            min_dist = total_length
+            good_offset = offset_idx
+    knot = c2.parameter(pts2[good_offset])
+    c2.insertKnot(knot, 1)
+    fk = _find_knot(c2, knot, 1e-15)
+    if fk > -1:
+        c2.setOrigin(fk)
+    else:
+        print("shift_origin: failed to insert knot")
+
+
+def ruled_surface(e1, e2, normalize=False, autotwist=0):
+    """creates a ruled surface between 2 edges, with automatic orientation.
+    If normalize is True, the surface will be normalized in U direction
+    If curves are closed and autotwist is True,
+    origin of edge e2 will be moved to minimize twist"""
+    c1 = e1.Curve.toBSpline()
+    c2 = e2.Curve.toBSpline()
+    orient_curves(c1, c2)
+    if c1.isClosed and c2.isClosed and autotwist:
+        shift_origin(c1, c2, autotwist)
+    if normalize:
+        kl = c1.getKnots()
+        normalized_knots = [(k - kl[0]) / (kl[-1] - kl[0]) for k in kl]
+        c1.setKnots(normalized_knots)
+        kl = c2.getKnots()
+        normalized_knots = [(k - kl[0]) / (kl[-1] - kl[0]) for k in kl]
+        c2.setKnots(normalized_knots)
+    return Part.makeRuledSurface(c1.toShape(), c2.toShape())
 
 
 class CurvesToSurface:
@@ -145,32 +259,22 @@ class CurvesToSurface:
                 else:
                     print("Already periodic")
 
+    def auto_orient(self):
+        "Automatically match curves orientation"
+        for i in range(1, len(self.curves)):
+            if orient_curves(self.curves[i - 1], self.curves[i]):
+                print("Reversed curve #{}".format(i))
+
     def auto_twist(self, num=36):
+        """When all the curves are closed, auto_twist will eventually
+        move the origin of the curves[1:] to minimize twist.
+        num is the number of test points on each curve"""
         if self.all_closed is None:
             self.check_all_closed()
         if self.all_closed is False:
             return
         for cur_idx in range(1, len(self.curves)):
-            pts1 = self.curves[cur_idx - 1].discretize(num)
-            pts2 = self.curves[cur_idx].discretize(num)
-            pts2 *= 2
-            min_dist = 1e50
-            good_offset = 0
-            for offset_idx in range(num):
-                total_length = 0
-                for pt_idx in range(num):
-                    ls = Part.makeLine(pts1[pt_idx], pts2[pt_idx + offset_idx])
-                    total_length += ls.Length
-                if total_length < min_dist:
-                    min_dist = total_length
-                    good_offset = offset_idx
-            knot = self.curves[cur_idx].parameter(pts2[good_offset])
-            self.curves[cur_idx].insertKnot(knot, 1)
-            fk = _find_knot(self.curves[cur_idx], knot, 1e-15)
-            if fk > -1:
-                self.curves[cur_idx].setOrigin(fk)
-            else:
-                print("Something went wrong")
+            shift_origin(self.curves[cur_idx - 1], self.curves[cur_idx], num)
 
     def match_degrees(self):
         "Match all curve degrees to the highest one"
@@ -179,37 +283,6 @@ class CurvesToSurface:
             max_degree = max(max_degree, c.Degree)
         for c in self.curves:
             c.increaseDegree(max_degree)
-
-    def orient_curves(self, c1, c2):
-        """orient_curves(c1, c2)
-        Orient c2 in same direction as c1 """
-        if c1.isClosed():
-            fp1 = 0.75 * c1.FirstParameter + 0.25 * c1.LastParameter
-            lp1 = 0.25 * c1.FirstParameter + 0.75 * c1.LastParameter
-        else:
-            fp1 = c1.FirstParameter
-            lp1 = c1.LastParameter
-        if c2.isClosed():
-            fp2 = 0.75 * c2.FirstParameter + 0.25 * c2.LastParameter
-            lp2 = 0.25 * c2.FirstParameter + 0.75 * c2.LastParameter
-        else:
-            fp2 = c2.FirstParameter
-            lp2 = c2.LastParameter
-        ls1 = Part.makeLine(c1.value(fp1), c2.value(fp2))
-        ls2 = Part.makeLine(c1.value(lp1), c2.value(lp2))
-        d1 = ls1.distToShape(ls2)[0]
-        ls1 = Part.makeLine(c1.value(fp1), c2.value(lp2))
-        ls2 = Part.makeLine(c1.value(lp1), c2.value(fp2))
-        d2 = ls1.distToShape(ls2)[0]
-        if d1 < d2:
-            c2.reverse()
-            return True
-
-    def auto_orient(self):
-        "Automatically match curves orientation"
-        for i in range(1, len(self.curves)):
-            if self.orient_curves(self.curves[i - 1], self.curves[i]):
-                print("Reversed curve #{}".format(i))
 
     def normalize_knots(self):
         "Set all curves knots to the [0,1] interval"
@@ -221,6 +294,8 @@ class CurvesToSurface:
                 c.setKnots(normalized_knots)
 
     def _parameters_at_poleidx(self, fac=1.0, idx=1):
+        """Compute the parameters list from parametrization factor fac (in [0.0, 1.0])
+        with pole #idx of each curve"""
         if idx < 1:
             idx = 1
         elif idx > self.curves[0].NbPoles:
@@ -267,9 +342,9 @@ class CurvesToSurface:
     def build_surface(self):
         "Make curves compatible and build surface"
         self.match_degrees()
-        # self.auto_orient()
-        self.auto_twist()
         self.auto_orient()
+        self.auto_twist()
+        # self.auto_orient()
         self.normalize_knots()
         match_knots(self.curves)
         self.interpolate()
@@ -322,17 +397,17 @@ class Gordon:
         for c in [self.s1, self.s2, self.s3]:
             c.increaseDegree(max_Udegree, max_Vdegree)
 
-        ad1 = SurfAdapterView(self.s1, 0)
-        ad2 = SurfAdapterView(self.s2, 0)
-        ad3 = SurfAdapterView(self.s3, 0)
+        ad1 = SurfaceAdapter(self.s1, 0)
+        ad2 = SurfaceAdapter(self.s2, 0)
+        ad3 = SurfaceAdapter(self.s3, 0)
         match_knots([ad1, ad2, ad3])
-        ad1.d = 1
-        ad2.d = 1
-        ad3.d = 1
+        ad1.direction = 1
+        ad2.direction = 1
+        ad3.direction = 1
         match_knots([ad1, ad2, ad3])
-        self.s1 = ad1.s
-        self.s2 = ad2.s
-        self.s3 = ad3.s
+        self.s1 = ad1.surface
+        self.s2 = ad2.surface
+        self.s3 = ad3.surface
 
     def gordon(self):
         ns = self.s1.copy()
@@ -357,7 +432,7 @@ class CurvesOn2Rails:
     def build_surface(self):
         cts = CurvesToSurface(self.curves)
         s1 = cts.Surface
-        s2 = _utils.ruled_surface(self.rails[0].toShape(), self.rails[1].toShape(), True).Surface
+        s2 = ruled_surface(self.rails[0].toShape(), self.rails[1].toShape(), True).Surface
         s2.exchangeUV()
         s3 = U_linear_surface(s1)
         gordon = Gordon(s1, s2, s3)
