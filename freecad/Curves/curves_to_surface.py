@@ -5,8 +5,11 @@ __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = "Interpolate curves to surface"
 
-# import FreeCAD
+import FreeCAD
 import Part
+
+
+PrintError = FreeCAD.Console.PrintError
 
 
 class SurfaceAdapter:
@@ -183,6 +186,7 @@ class CurvesToSurface:
         self.curves = self._convert_to_bsplines(curves)
         self._periodic = False
         self._params = None
+        self._surface = None
         self.all_closed = None
         self.force_periodic_if_closed = True
 
@@ -338,6 +342,7 @@ class CurvesToSurface:
                                                self.curves[0].getKnots(), bs.getKnots(),
                                                self.curves[0].isPeriodic(), bs.isPeriodic(),
                                                self.curves[0].Degree, bs.Degree)
+        return self._surface
 
     def build_surface(self):
         "Make curves compatible and build surface"
@@ -347,6 +352,7 @@ class CurvesToSurface:
         # self.auto_orient()
         self.normalize_knots()
         match_knots(self.curves)
+        self.set_parameters(1.0)
         self.interpolate()
 
 
@@ -426,8 +432,19 @@ class Gordon:
 class CurvesOn2Rails:
     """Surface defined by a series of curves on 2 rails"""
     def __init__(self, curves, rails):
+        self.tol2d = 1e-15
+        self.tol3d = 1e-7
         self.curves = curves
         self.rails = rails
+
+    def check_isocurves(self):
+        "Check if the curves are intersecting both rails at the same parameter"
+        for c in self.curves:
+            par1 = self.rails[0].parameter(c.intersect(self.rails[0], self.tol3d)[0])
+            par2 = self.rails[1].parameter(c.intersect(self.rails[1], self.tol3d)[0])
+            if abs(par2 - par1) > self.tol2d:
+                return False
+        return True
 
     def build_surface(self):
         cts = CurvesToSurface(self.curves)

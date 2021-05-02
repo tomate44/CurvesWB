@@ -3,7 +3,10 @@
 __title__ = "BlendSurface"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = """Create a surface between two edges with some continuity with their support faces"""
+__doc__ = "Create a surface between two edges with some continuity with their support faces"
+__usage__ = """You must select 4 subshapes in the 3D View :
+- EDGE1 on FACE1
+- EDGE2 on FACE2"""
 
 import os
 import FreeCAD
@@ -129,7 +132,7 @@ class BlendSurf2Command:
         if sources:
             self.makeFeature(sources)
         else:
-            FreeCAD.Console.PrintError("Select something first !\n")
+            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:
@@ -140,7 +143,7 @@ class BlendSurf2Command:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': __title__,
-                'ToolTip': __doc__}
+                'ToolTip': "{}\n{}".format(__doc__, __usage__)}
 
 
 FreeCADGui.addCommand('Curves_BlendSurf2', BlendSurf2Command())

@@ -693,70 +693,6 @@ class EdgeOnFace:
                 bs = off[0].toBSpline(p2, p1)
         return bs
 
-    #def find_near_edges(self, par):
-        #edges = []
-        #s = Part.makeSphere(.01, self._edge.valueAt(par))
-        #d, pts, info = self._face.distToShape(s.Face1)
-        #for i in info:
-            #if i[0] == 'Edge':
-                #e = self._face.Edges[i[1]]
-                #if abs(i[2] - e.FirstParameter) > abs(i[2] - e.LastParameter):
-                    #e.reverse()
-                #edges.append((i[1], e))
-        #return edges
-
-    #def auto_angles(self):
-        #fp, lp = self._edge.ParameterRange
-        #sol1 = self.find_near_edges(fp)
-        #sol2 = self.find_near_edges(lp)
-        #if sol1[0][0] == sol2[0][0]:
-            #first = sol1[1]
-            #last = sol2[1]
-        #elif sol1[1][0] == sol2[0][0]:
-            #first = sol1[0]
-            #last = sol2[1]
-        #elif sol1[0][0] == sol2[1][0]:
-            #first = sol1[1]
-            #last = sol2[0]
-        #else:
-            #first = sol1[0]
-            #last = sol2[0]
-        #t1 = first[1].tangentAt(first[1].FirstParameter)
-        #t2 = last[1].tangentAt(first[1].FirstParameter)
-        #a1 = self._edge.tangentAt(fp).getAngle(t1)
-        #a2 = self._edge.tangentAt(lp).getAngle(t2)
-        #angles = [a1 * 180 / pi, a2 * 180 / pi]
-        #print("Setting angles : {}".format(angles))
-        #self.angle = angles
-
-    #def cross_curve(self, abs_par=None, rel_par=None, dist_par=None):
-        #par = self._get_real_param(abs_par, rel_par, dist_par)
-        #point = self._edge.valueAt(par)
-        #tangent = self._edge.tangentAt(par)  # * 1e20
-        #u, v = self._face.Surface.parameter(point)
-        #normal = self._face.Surface.normal(u, v)
-        #segment = Part.makeLine(point - tangent, point + tangent)
-        #segment.rotate(point, normal, self.angle.value(abs_par=par))
-        #proj = self._face.project([segment])
-        #if proj.Edges:
-            #e = proj.Edge1
-            #p = e.Curve.parameter(point)
-            #if (e.LastParameter - p) > (p - e.FirstParameter):
-                #e.reverse()
-            #return e
-        #else:
-            #FreeCAD.Console.PrintError("3D method failed ({}), 2D fallback.\n".format(proj.Vertexes))
-            #bounds = self._face.ParameterRange
-            #cos, fp, lp = self.curve_on_surface()
-            #par2 = cos.parameter(FreeCAD.vec2(u, v))
-            #point = cos.value(par2)
-            #tangent = cos.tangent(par2)
-            #line = Part.Geom2d.Line2d(point, FreeCAD.vec2(point.x + tangent.x, point.y + tangent.y))
-            #line.rotate(point, self.angle.value(abs_par=par) * pi / 180)
-            #line3d = line.toShape(self._face.Surface, min(bounds), max(bounds))
-            #line3d.reverse()
-            #return line3d
-
     def curve_on_surface(self):
         cos = self._face.curveOnSurface(self._edge)
         if cos is None:
@@ -852,8 +788,16 @@ class BlendSurface:
         # self.perform()
         guides = [bezier.toBSpline() for bezier in self._curves]
         # builder = GordonSurfaceBuilder(guides, self.rails, [0.0, 1.0], self._params)
-        s2r = curves_to_surface.CurvesOn2Rails(guides, self.rails)
-        self._surface = s2r.build_surface()
+        # s2r = curves_to_surface.CurvesOn2Rails(guides, self.rails)
+        cts = curves_to_surface.CurvesToSurface(guides)
+        # cts.set_parameters(1.0)
+        cts.Parameters = self._params
+        s1 = cts.interpolate()
+        s2 = curves_to_surface.ruled_surface(self.rails[0].toShape(), self.rails[1].toShape(), True).Surface
+        s2.exchangeUV()
+        s3 = curves_to_surface.U_linear_surface(s1)
+        gordon = curves_to_surface.Gordon(s1, s2, s3)
+        self._surface = gordon.Surface
         return self._surface
 
     @property
