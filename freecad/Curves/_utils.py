@@ -172,14 +172,30 @@ def rootNode(shape, mode=2, deviation=0.3, angle=0.4):
     return node
 
 
-def ruled_surface(e1, e2):
+def ruled_surface(e1, e2, normalize=False):
     """creates a ruled surface between 2 edges, with automatic orientation."""
-    if not same_direction(e1, e2):
-        e = e2.copy()
-        e.reverse()
-        return Part.makeRuledSurface(e1, e)
-    else:
-        return Part.makeRuledSurface(e1, e2)
+    e3 = e2.copy()
+    fp1 = e1.firstVertex(True).Point
+    lp1 = e1.lastVertex(True).Point
+    fp2 = e2.firstVertex(True).Point
+    lp2 = e2.lastVertex(True).Point
+    line11 = Part.makeLine(fp1, fp2)
+    line12 = Part.makeLine(lp1, lp2)
+    line21 = Part.makeLine(fp1, lp2)
+    line22 = Part.makeLine(lp1, fp2)
+    d1 = line11.distToShape(line12)[0]
+    d2 = line21.distToShape(line22)[0]
+    # if (line21.Length + line22.Length) < (line11.Length + line12.Length):
+    if d1 < d2:
+        e3.reverse()
+    ruled = Part.makeRuledSurface(e1, e3)
+    if normalize:
+        s = ruled.Surface
+        u0, u1, v0, v1 = s.bounds()
+        normalized_knots = [(k - u0) / (u1 - u0) for k in s.getUKnots()]
+        s.setUKnots(normalized_knots)
+        ruled = s.toShape()
+    return ruled
 
 
 def nb_pcurves(edge):

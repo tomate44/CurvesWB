@@ -39,13 +39,13 @@ class blendSurface:
         self.untwist = False
         self.curves = []
 
-    def buildCurves(self): # -----------------------DEPRECATED ---------------------
+    def buildCurves(self):  # -----------------------DEPRECATED ---------------------
         for i in range(self.railSamples):
             t1 = self.cos1.firstParameter + (1.0 * i * self.paramRange(self.cos1) / (self.railSamples - 1))
             if not self.untwist:
                 t2 = self.cos2.firstParameter + (1.0 * i * self.paramRange(self.cos2) / (self.railSamples - 1))
             else:
-                t2 = self.cos2.lastParameter  - (1.0 * i * self.paramRange(self.cos2) / (self.railSamples - 1))
+                t2 = self.cos2.lastParameter - (1.0 * i * self.paramRange(self.cos2) / (self.railSamples - 1))
             pt1 = self.cos1.valueAt(t1)
             pt2 = self.cos2.valueAt(t2)
             chord = pt2.sub(pt1).Length
@@ -75,15 +75,15 @@ class blendSurface:
                 res.append(ei.valueAt(p))
             return(res)
         elif isinstance(sc, (float, int)):
-            return([float(sc)]*self.railSamples)
+            return([float(sc)] * self.railSamples)
         else:
-            FreeCAD.Console.PrintError("BlendSurface : failed to compute scale\n%s\n"%str(sc))
+            FreeCAD.Console.PrintError("BlendSurface : failed to compute scale\n{}\n".format(sc))
             return(None)
 
     def cross_curves2(self):
         self.curves = list()
-        params1 = self.cos1.build_param_list(self.railSamples)
-        params2 = self.cos2.build_param_list(self.railSamples)
+        # params1 = self.cos1.build_param_list(self.railSamples)
+        # params2 = self.cos2.build_param_list(self.railSamples)
         if self.untwist:
             self.cos2.param_list.reverse()
         sc1 = self.compute_scale(self.var_scale1, self.cos1.edge)
@@ -197,7 +197,7 @@ class blendSurface:
             ss = obj.InputEdge[1][0]
             n = eval(ss.lstrip('Edge'))
             if len(o.Shape.Edges) >= n:
-                res = o.Shape.Edges[n-1]
+                res = o.Shape.Edges[n - 1]
         return(res)
 
     def getFace(self, obj):
@@ -207,7 +207,7 @@ class blendSurface:
             ss = obj.Face[1][0]
             n = eval(ss.lstrip('Face'))
             if len(o.Shape.Faces) >= n:
-                res = o.Shape.Faces[n-1]
+                res = o.Shape.Faces[n - 1]
         return(res)
 
     def paramRange(self, cos):
