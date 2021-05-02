@@ -1,7 +1,7 @@
 import os
 import FreeCADGui as Gui
 import FreeCAD as App
-from freecad.Curves import ICONPATH
+from . import ICONPATH
 
 
 class CurvesWorkbench(Gui.Workbench):
@@ -15,67 +15,69 @@ class CurvesWorkbench(Gui.Workbench):
         """This function is executed when FreeCAD starts"""
         # TODO changes module names to lower_with_underscore
 
-        stablelist = list()
         try:
-            from freecad.Curves import graphics
+            from . import graphics
             graphics.Marker([App.Vector()])
-            from freecad.Curves import gordon_profile_FP
-            App.Console.PrintMessage("Pivy.graphics interaction library enabled\n")
+            # App.Console.PrintMessage("Pivy.graphics interaction library enabled\n")
         except ImportError:
             App.Console.PrintWarning("Pivy.graphics interaction library is not available on this computer\n")
 
-        from freecad.Curves import lineFP # cleaned
-        from freecad.Curves import curveExtendFP # TODO use basisSpline
-        from freecad.Curves import JoinCurves
-        from freecad.Curves import splitCurves_2 # cleaned
-        from freecad.Curves import Discretize # cleaned
-        from freecad.Curves import approximate
-        from freecad.Curves import ParametricBlendCurve # cleaned
-        from freecad.Curves import ParametricComb
-        from freecad.Curves import ZebraTool
-        from freecad.Curves import TrimFace
-        from freecad.Curves import GeomInfo
-        from freecad.Curves import ExtractShapes # cleaned
-        from freecad.Curves import IsoCurve
-        from freecad.Curves import Sketch_On_Surface
-        from freecad.Curves import Sweep2Rails
-        from freecad.Curves import curveOnSurfaceFP
-        from freecad.Curves import blendSurfaceFP
-        from freecad.Curves import parametricSolid # cleaned
-        from freecad.Curves import ProfileSketch
-        from freecad.Curves import pasteSVG
-        from freecad.Curves import pipeshellProfileFP
-        from freecad.Curves import pipeshellFP
-        from freecad.Curves import gordonFP
-        from freecad.Curves import toConsole
-        from freecad.Curves import mixed_curve
-        from freecad.Curves import curve_to_script
-        from freecad.Curves import sublink_edit
-        from freecad.Curves import adjacent_faces
-        from freecad.Curves import interpolate
-        from freecad.Curves import comp_spring
-        from freecad.Curves import ReflectLinesFP
-        from freecad.Curves import segmentSurfaceFP
-        from freecad.Curves import multiLoftFP
-        # from freecad.Curves import OrientedSketchFP
-        # from freecad.Curves import HQRuledSurfaceFP
-        # from freecad.Curves import HelicalSweepFP
+        from . import lineFP # cleaned
+        from . import gordon_profile_FP
+        from . import curveExtendFP # TODO use basisSpline
+        from . import JoinCurves
+        from . import splitCurves_2 # cleaned
+        from . import Discretize # cleaned
+        from . import approximate
+        from . import ParametricBlendCurve # cleaned
+        from . import ParametricComb
+        from . import ZebraTool
+        from . import TrimFace
+        from . import GeomInfo
+        from . import ExtractShapes # cleaned
+        from . import IsoCurve
+        from . import Sketch_On_Surface
+        from . import Sweep2Rails
+        from . import curveOnSurfaceFP
+        from . import blendSurfaceFP
+        from . import parametricSolid # cleaned
+        from . import ProfileSketch
+        from . import pasteSVG
+        from . import pipeshellProfileFP
+        from . import pipeshellFP
+        from . import gordonFP
+        from . import toConsole
+        from . import mixed_curve
+        from . import curve_to_script
+        from . import sublink_edit
+        from . import adjacent_faces
+        from . import interpolate
+        from . import comp_spring
+        from . import ReflectLinesFP
+        from . import segmentSurfaceFP
+        from . import multiLoftFP
+        from . import blendSurfaceFP_new
+        # from . import OrientedSketchFP
+        # from . import HQRuledSurfaceFP
+        # from . import HelicalSweepFP
         # import sectionSketch
 
-        stablelist.extend(["line", "gordon_profile", "mixed_curve", "extend", "join", "split", "Discretize",
-                           "Approximate", "Interpolate", "ParametricBlendCurve", "ParametricComb", "ZebraTool",
-                           "Trim", "GeomInfo", "extract", "solid", "IsoCurve", "SoS", "sw2r", "profileSupportCmd",
-                           "cos", "blendSurface", "pasteSVG", "profile", "pipeshell", "gordon", "segment_surface",
-                           "to_console", "SublinkEditor", "comp_spring", "ReflectLines",
-                           "MultiLoft"])  # "hq_ruled_surface", "HelicalSweep"])
-        
-        from . import blendSurfaceFP_new
-        devlist = ["Curves_BlendSurf2"]
+        curvelist = ["Curves_line", "gordon_profile", "mixed_curve", "extend", "join", "split",
+                     "Discretize", "Approximate", "Interpolate", "ParametricBlendCurve",
+                     "ParametricComb"]
 
-        self.appendToolbar("Curves", stablelist)
-        self.appendToolbar("Curves", devlist)
-        self.appendMenu("Curves", stablelist)
-        self.appendMenu("Curves", ["bspline_to_console"])
+        surflist = ["ZebraTool", "Trim", "IsoCurve", "SoS", "sw2r", "profileSupportCmd",
+                    "profile", "pipeshell", "gordon", "segment_surface", "comp_spring",
+                    "ReflectLines", "MultiLoft", "Curves_BlendSurf2"]
+        misclist = ["GeomInfo", "extract", "solid", "pasteSVG", "to_console", "Curves_adjacent_faces",
+                    "Curves_bspline_to_console"]
+
+        self.appendToolbar("Curves", curvelist)
+        self.appendToolbar("Surfaces", surflist)
+        self.appendToolbar("Misc.", misclist)
+        self.appendMenu("Curves", curvelist)
+        self.appendMenu("Surfaces", surflist)
+        self.appendMenu("Misc.", misclist)
 
     def Activated(self):
         """This function is executed when the workbench is activated"""
