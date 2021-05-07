@@ -64,7 +64,7 @@ class CurvesWorkbench(Gui.Workbench):
 
         curvelist = ["Curves_line", "gordon_profile", "mixed_curve", "extend", "join", "split",
                      "Discretize", "Approximate", "Interpolate", "ParametricBlendCurve",
-                     "ParametricComb"]
+                     "ParametricComb", "cos"]
 
         surflist = ["ZebraTool", "Trim", "IsoCurve", "SoS", "sw2r", "profileSupportCmd",
                     "profile", "pipeshell", "gordon", "segment_surface", "comp_spring",
