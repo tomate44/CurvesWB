@@ -346,7 +346,7 @@ class BlendCurve:
     def auto_scale(self, auto_orient=True):
         """Sets the scale of the 2 points proportional to chord length
         blend_curve.auto_scale(auto_orient=True)
-        Can optionaly start with an auto_orientation"""
+        Can optionally start with an auto_orientation"""
 
         # nb = self.point1.continuity + self.point2.continuity + 1
         # chord_length = self.point1.point.distanceToPoint(self.point2.point)
