@@ -4,31 +4,34 @@ __title__ = "Curve extend"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = "Extend an edge by a given distance."
+__usage__ = """Select an edge in the 3D View, and activate tool.
+Edge can be extended at each end, by a given distance."""
 
 import os
 import FreeCAD
 import FreeCADGui
 import Part
-from freecad.Curves import _utils
-from freecad.Curves import ICONPATH
-from freecad.Curves import curveExtend
+from . import _utils
+from . import ICONPATH
+from . import curveExtend
 
 TOOL_ICON = os.path.join(ICONPATH, 'extendcurve.svg')
-#debug = _utils.debug
+# debug = _utils.debug
 debug = _utils.doNothing
+
 
 class extend:
     """Extends the selected edge"""
     def __init__(self, obj):
-        obj.addProperty("App::PropertyLinkSub",      "Edge",       "Base", "Input edge to extend")
-        obj.addProperty("App::PropertyEnumeration",  "Output",     "Base", "Output shape").Output = ["SingleEdge","Wire"]
+        obj.addProperty("App::PropertyLinkSub", "Edge", "Base", "Input edge to extend")
+        obj.addProperty("App::PropertyEnumeration", "Output", "Base", "Output shape").Output = ["SingleEdge", "Wire"]
 
-        obj.addProperty("App::PropertyFloat",        "LengthStart","Beginning", "Start Extension Length").LengthStart=10.0
-        obj.addProperty("App::PropertyEnumeration",  "TypeStart",  "Beginning", "Start Extension type").TypeStart = ["Straight","G2 curve"]
+        obj.addProperty("App::PropertyFloat", "LengthStart", "Beginning", "Start Extension Length").LengthStart = 10.0
+        obj.addProperty("App::PropertyEnumeration", "TypeStart", "Beginning", "Start Extension type").TypeStart = ["Straight", "G2 curve"]
 
-        obj.addProperty("App::PropertyFloat",        "LengthEnd",  "End", "End Extension Length").LengthEnd=10.0
-        obj.addProperty("App::PropertyEnumeration",  "TypeEnd",    "End", "End Extension type").TypeEnd = ["Straight","G2 curve"]
-        
+        obj.addProperty("App::PropertyFloat", "LengthEnd", "End", "End Extension Length").LengthEnd = 10.0
+        obj.addProperty("App::PropertyEnumeration", "TypeEnd", "End", "End Extension type").TypeEnd = ["Straight", "G2 curve"]
+
         obj.TypeStart = "Straight"
         obj.TypeEnd = "Straight"
         obj.Output = "SingleEdge"
@@ -57,9 +60,9 @@ class extend:
 
         ext = []
         if obj.LengthStart > 0:
-            ext.append(curveExtend.extendCurve( curve, 0, obj.LengthStart, cont_start))
+            ext.append(curveExtend.extendCurve(curve, 0, obj.LengthStart, cont_start))
         if obj.LengthEnd > 0:
-            ext.append(curveExtend.extendCurve( curve, 1, obj.LengthEnd, cont_end))
+            ext.append(curveExtend.extendCurve(curve, 1, obj.LengthEnd, cont_end))
         if not ext == []:
             if hasattr(obj, "Output"):
                 if obj.Output == "SingleEdge":
@@ -77,11 +80,11 @@ class extend:
 
 
 class extendVP:
-    def __init__(self,vobj):
+    def __init__(self, vobj):
         vobj.Proxy = self
-       
+
     def getIcon(self):
-        return (TOOL_ICON)
+        return TOOL_ICON
 
     def attach(self, vobj):
         self.ViewObject = vobj
@@ -89,30 +92,30 @@ class extendVP:
 
     def claimChildren(self):
         return [self.Object.Edge[0]]
-        
+
     def onDelete(self, feature, subelements):
         return True
 
     def __getstate__(self):
-        return({"name": self.Object.Name})
+        return {"name": self.Object.Name}
 
-    def __setstate__(self,state):
+    def __setstate__(self, state):
         self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
-        return(None)
+        return None
+
 
 class extendCommand:
     """Extends the selected edge"""
-    def makeExtendFeature(self,source):
+    def makeExtendFeature(self, source):
         if source is not []:
             for o in source:
-                extCurve = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","ExtendedCurve")
+                extCurve = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "ExtendedCurve")
                 extend(extCurve)
                 extCurve.Edge = o
                 extendVP(extCurve.ViewObject)
                 extCurve.ViewObject.LineWidth = 2.0
-                extCurve.ViewObject.LineColor = (0.5,0.0,0.3)
+                extCurve.ViewObject.LineColor = (0.5, 0.0, 0.3)
             FreeCAD.ActiveDocument.recompute()
-        
 
     def Activated(self):
         edges = []
@@ -124,19 +127,20 @@ class extendCommand:
                 for i in range(len(selobj.SubObjects)):
                     if isinstance(selobj.SubObjects[i], Part.Edge):
                         edges.append((selobj.Object, selobj.SubElementNames[i]))
-                        selobj.Object.ViewObject.Visibility=False
+                        selobj.Object.ViewObject.Visibility = False
         if edges:
             self.makeExtendFeature(edges)
-        
+
     def IsActive(self):
         if FreeCAD.ActiveDocument:
-            #f = FreeCADGui.Selection.Filter("SELECT Part::Feature SUBELEMENT Edge COUNT 1..1000")
-            #return f.match()
-            return(True)
+            return True
         else:
-            return(False)
+            return False
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Extend Curve', 'ToolTip': 'Extends the selected edge'}
+        return {'Pixmap': TOOL_ICON,
+                'MenuText': __title__,
+                'ToolTip': "{}\n\n{}\n\n{}".format(__title__, __doc__, __usage__)}
+
 
 FreeCADGui.addCommand('extend', extendCommand())

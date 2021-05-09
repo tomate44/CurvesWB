@@ -143,7 +143,7 @@ class BlendSurf2Command:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': __title__,
-                'ToolTip': "{}\n{}".format(__doc__, __usage__)}
+                'ToolTip': "{}\n\n{}\n\n{}".format(__title__, __doc__, __usage__)}
 
 
 FreeCADGui.addCommand('Curves_BlendSurf2', BlendSurf2Command())

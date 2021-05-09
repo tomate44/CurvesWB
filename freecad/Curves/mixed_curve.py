@@ -4,14 +4,17 @@ __title__ = "Mixed curve"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = "Builds a 3D curve as the intersection of 2 projected curves."
+__usage__ = """Select two objects or shapes, and activate tool.
+The camera direction is saved during each shape selection, and will be used as projection direction.
+Set these directions to (0,0,0) to use the placement of each shape as projection direction."""
 
 import os
 import FreeCAD
 import FreeCADGui
 import Part
-from freecad.Curves import approximate_extension
-from freecad.Curves import _utils
-from freecad.Curves import ICONPATH
+from . import approximate_extension
+from . import _utils
+from . import ICONPATH
 
 TOOL_ICON = os.path.join(ICONPATH, 'mixed_curve.svg')
 debug = _utils.debug
@@ -135,15 +138,13 @@ class MixedCurveCmd:
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:
-            sel = FreeCADGui.Selection.getSelection()
-            if len(sel) == 2:
-                return True
+            return True
         return False
 
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': 'Mixed curve',
-                'ToolTip': 'Builds a 3D curve as the intersection of 2 projected curves'}
+                'ToolTip': "{}\n\n{}\n\n{}".format(__title__, __doc__, __usage__)}
 
 
 FreeCADGui.addCommand('mixed_curve', MixedCurveCmd())

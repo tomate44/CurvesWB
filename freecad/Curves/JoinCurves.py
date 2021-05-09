@@ -3,15 +3,19 @@
 __title__ = "joinCurves"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Joins the selected edges into BSpline Curves"
+__doc__ = "Joins the selected edges into a BSpline Curve"
+__usage__ = """Select the edges to join in the 3D View,
+or select an object containing multiple edges in the Tree View.
+Activate the tool.
+The output is a single BSpline curve joining all selected edges."""
 
 import os
 import FreeCAD
 import FreeCADGui
 import Part
-from freecad.Curves import _utils
-from freecad.Curves import ICONPATH
-from freecad.Curves import approximate_extension
+from . import _utils
+from . import ICONPATH
+from . import approximate_extension
 
 TOOL_ICON = os.path.join(ICONPATH, 'joincurve.svg')
 # debug = _utils.debug
@@ -208,7 +212,7 @@ class joinCommand:
         except AttributeError:
             pass
         if sel == []:
-            FreeCAD.Console.PrintError("Select the edges to join first !\n")
+            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
         for selobj in sel:
             if selobj.HasSubObjects:
                 for i in range(len(selobj.SubObjects)):
@@ -230,8 +234,8 @@ class joinCommand:
 
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
-                'MenuText': 'Join Curves',
-                'ToolTip': 'Joins the selected edges into BSpline Curves'}
+                'MenuText': __title__,
+                'ToolTip': "{}\n\n{}\n\n{}".format(__title__, __doc__, __usage__)}
 
 
 FreeCADGui.addCommand('join', joinCommand())

@@ -3,7 +3,14 @@
 __title__ = "Split curve"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Splits the selected edge."
+__doc__ = "Splits the selected edge"
+__usage__ = """Select an edge in the 3D View, or an object containing a wire in the Tree View
+Activate Tool
+The selected edges (or wire) will be cut at the specified location.
+The split locations can be given as real edge parameter, absolute distance(mm) or relative distance (%)
+The split locations can be set by proximity to cutting objects.
+Double-click in Tree-View to toggle Freehand editor in 3D View.
+"""
 
 
 import os
@@ -575,7 +582,7 @@ class splitCommand:
     def Activated(self):
         sel = FreeCADGui.Selection.getSelectionEx()
         if sel == []:
-            FreeCAD.Console.PrintError("Select the edges to split first !\n")
+            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
         for selobj in sel:
             if selobj.HasSubObjects:
                 for i in range(len(selobj.SubObjects)):
@@ -590,13 +597,15 @@ class splitCommand:
                     selobj.Object.ViewObject.Visibility = False
 
     def IsActive(self):
-        if FreeCAD.ActiveDocument and FreeCADGui.Selection.getSelectionEx():
+        if FreeCAD.ActiveDocument:
             return True
         else:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
+        return {'Pixmap': TOOL_ICON,
+                'MenuText': __title__,
+                'ToolTip': "{}\n\n{}\n\n{}".format(__title__, __doc__, __usage__)}
 
 
 FreeCADGui.addCommand('split', splitCommand())

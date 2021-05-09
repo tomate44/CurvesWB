@@ -1,15 +1,21 @@
-import sys
-if sys.version_info.major >= 3:
-    from importlib import reload
+# -*- coding: utf-8 -*-
+
+__title__ = "GeomInfo"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = "Display geometry information about selected shape"
+__usage__ = """While active, this tool displays information about the geometry of an edge or face.
+It displays poles, knots and weights of Bezier and BSpline curves and surfaces in the 3D View."""
+
+
 import os
 import FreeCAD
 import FreeCADGui
 import Part
-from freecad.Curves import _utils
-from freecad.Curves import ICONPATH
+from . import _utils
+from . import ICONPATH
 from pivy import coin
-from freecad.Curves import CoinNodes as coinNodes
-reload(coinNodes)
+from . import CoinNodes as coinNodes
 
 
 TOOL_ICON = os.path.join(ICONPATH, 'info.svg')
@@ -36,7 +42,7 @@ def beautify(shp):
 def getString(weights):
     weightStr = []
     for w in weights:
-        if abs(w-1.0) < 0.001:
+        if abs(w - 1.0) < 0.001:
             weightStr.append("")
         elif w.is_integer():
             weightStr.append(" %d" % int(w))
@@ -605,7 +611,9 @@ class GeomInfo:
 
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
-                'MenuText': 'Geometry Info',
-                'ToolTip': 'Display info about the geometry of the selected topology',
+                'MenuText': __title__,
+                'ToolTip': "{}\n\n{}\n\n{}".format(__title__, __doc__, __usage__),
                 'Checkable': False}
+
+
 FreeCADGui.addCommand('GeomInfo', GeomInfo())

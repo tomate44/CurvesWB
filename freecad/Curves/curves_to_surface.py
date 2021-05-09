@@ -323,7 +323,7 @@ class CurvesToSurface:
         for idx in range(len(params_array[0])):
             pl = [params_array[i][idx] for i in range(len(params_array))]
             params.append(sum(pl) / len(pl))
-        print("Average parameters : {}".format(params))
+        # print("Average parameters : {}".format(params))
         self.Parameters = params
 
     def interpolate(self):

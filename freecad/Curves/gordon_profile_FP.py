@@ -4,14 +4,24 @@ __title__ = "Freehand BSpline"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = "Creates an freehand BSpline curve"
+__usage__ = """*** Interpolation curve control keys :
+
+    a - Select all / Deselect
+    i - Insert point in selected segments
+    t - Set / unset tangent (view direction)
+    p - Align selected objects
+    s - Snap points on shape / Unsnap
+    l - Set/unset a linear interpolation
+    x,y,z - Axis constraints during grab
+    q - Apply changes and quit editing"""
 
 import os
 import FreeCAD
 import FreeCADGui
 import Part
-from freecad.Curves import ICONPATH
-from freecad.Curves import _utils
-from freecad.Curves import profile_editor
+from . import ICONPATH
+from . import _utils
+from . import profile_editor
 
 
 TOOL_ICON = os.path.join(ICONPATH, 'editableSpline.svg')
@@ -267,21 +277,12 @@ class GordonProfileVP:
 
 class GordonProfileCommand:
     """Creates a editable interpolation curve"""
-    docu = """*** Interpolation curve control keys :\n
-    a - Select all / Deselect
-    i - Insert point in selected segments
-    t - Set / unset tangent (view direction)
-    p - Align selected objects
-    s - Snap points on shape / Unsnap
-    l - Set/unset a linear interpolation
-    x,y,z - Axis constraints during grab
-    q - Apply changes and quit editing\n"""
 
     def makeFeature(self, sub, pts, typ):
         fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "Freehand BSpline")
         GordonProfileFP(fp, sub, pts, typ)
         GordonProfileVP(fp.ViewObject)
-        FreeCAD.Console.PrintMessage(GordonProfileCommand.docu)
+        FreeCAD.Console.PrintMessage(__usage__)
         FreeCAD.ActiveDocument.recompute()
         FreeCADGui.SendMsgToActiveView("ViewFit")
         fp.ViewObject.Document.setEdit(fp.ViewObject)
@@ -325,7 +326,7 @@ class GordonProfileCommand:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': __title__,
-                'ToolTip': __doc__ + "\n" + GordonProfileCommand.docu}
+                'ToolTip': "{}\n\n{}\n\n{}".format(__title__, __doc__, __usage__)}
 
 
 FreeCADGui.addCommand('gordon_profile', GordonProfileCommand())

@@ -3,8 +3,12 @@
 __title__ = "Parametric solid"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = """Make a parametric solid from selected faces.
-If not possible, falls back to shell, then to compound."""
+__doc__ = "Make a parametric solid from selected faces."
+__usage__ = """Select some faces in the 3D View, or select objects in the Tree View.
+Activate tool.
+It will try to build a solid from selected faces.
+If not possible, it falls back to a shell, then to a compound.
+The ShapeStatus property (and the color of the icon) give the type of shape."""
 
 import os
 import FreeCAD
@@ -136,7 +140,7 @@ class solidCommand:
         faces = []
         sel = FreeCADGui.Selection.getSelectionEx()
         if sel == []:
-            FreeCAD.Console.PrintError("Select some faces first !\n")
+            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
         for selobj in sel:
             if selobj.HasSubObjects:
                 for i in range(len(selobj.SubObjects)):
@@ -151,7 +155,7 @@ class solidCommand:
             self.makeSolidFeature(faces)
 
     def IsActive(self):
-        if FreeCADGui.Selection.getSelectionEx():
+        if FreeCAD.ActiveDocument:
             return True
         else:
             return False
@@ -159,7 +163,7 @@ class solidCommand:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': __title__,
-                'ToolTip': __doc__}
+                'ToolTip': "{}\n\n{}\n\n{}".format(__title__, __doc__, __usage__)}
 
 
 FreeCADGui.addCommand('solid', solidCommand())

@@ -4,14 +4,17 @@ __title__ = "Discretize"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = "Discretize an edge or a wire."
+__usage__ = """Select an edge in the 3D View
+Activate tool
+It will generate some points along the edge, following various methods"""
 
 import os
 import FreeCAD
 import FreeCADGui
 import Part
-from freecad.Curves import _utils
-from freecad.Curves import ICONPATH
-from freecad.Curves.nurbs_tools import KnotVector
+from . import _utils
+from . import ICONPATH
+from .nurbs_tools import KnotVector
 
 TOOL_ICON = os.path.join(ICONPATH, 'discretize.svg')
 debug = _utils.debug
@@ -270,7 +273,7 @@ class discretize:
         s = FreeCADGui.Selection.getSelectionEx()
         edges = self.parseSel(s)
         if not edges:
-            FreeCAD.Console.PrintError("Select an edge in the 3D view\n")
+            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
         FreeCADGui.doCommand("from freecad.Curves import Discretize")
         for e in edges:
             FreeCADGui.doCommand('obj = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Discretized_Edge")')
@@ -285,14 +288,14 @@ class discretize:
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:
-            # f = FreeCADGui.Selection.Filter("SELECT Part::Feature SUBELEMENT Edge COUNT 1..1000")
-            # return f.match()
             return True
         else:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
+        return {'Pixmap': TOOL_ICON,
+                'MenuText': __title__,
+                'ToolTip': "{}\n\n{}\n\n{}".format(__title__, __doc__, __usage__)}
 
 
 FreeCADGui.addCommand('Discretize', discretize())

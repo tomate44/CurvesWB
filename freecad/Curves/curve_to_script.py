@@ -55,7 +55,7 @@ class NurbsToConsole:
         return {'Pixmap': TOOL_ICON,
                 'MenuText': "BSpline to Console",
                 'Accel': "",
-                'ToolTip': "{}\n{}".format(__doc__, __usage__)}
+                'ToolTip': "{}\n\n{}\n\n{}".format(__title__, __doc__, __usage__)}
 
     def Activated(self):
         s = FreeCADGui.Selection.getSelectionEx()

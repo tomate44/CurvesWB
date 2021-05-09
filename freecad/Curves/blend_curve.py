@@ -65,9 +65,10 @@ class PointOnEdge:
                                                     self.continuity)
 
     def set_vectors(self):
-        res = [self._edge.Curve.getD0(self._parameter)]
-        if self._continuity > 0:
-            res.extend([self._edge.Curve.getDN(self._parameter, i) for i in range(1, self._continuity + 1)])
+        res = [self._edge.Curve.getD0(self._parameter),
+               self._edge.Curve.getDN(self._parameter, 1)]
+        if self._continuity > 1:
+            res.extend([self._edge.Curve.getDN(self._parameter, i) for i in range(2, self._continuity + 1)])
         self._vectors = res
         self.size = self._size
 
@@ -149,12 +150,11 @@ class PointOnEdge:
 
     @property
     def tangent(self):
-        if len(self._vectors) > 1:
-            return self._vectors[1] * self._scale
+        return self._vectors[1] * self._scale
 
     @property
     def vectors(self):
-        return [self._vectors[i] * pow(self._scale, i) for i in range(len(self._vectors))]
+        return [self._vectors[i] * pow(self._scale, i) for i in range(self.continuity + 1)]
     # ########################
 
     @property
@@ -189,8 +189,7 @@ class PointOnEdge:
         self.size = -self._size
 
     def get_tangent_edge(self):
-        if self._continuity > 0:
-            return Part.makeLine(self.point, self.point + self.tangent)
+        return Part.makeLine(self.point, self.point + self.tangent)
 
     def split_edge(self, first=True):
         "Cut the support edge at parameter, and return a wire"
@@ -834,11 +833,11 @@ class BlendSurface:
         e1, e2 = self.rails
         for p in self.sample(arg):
             bc = self.blendcurve_at(p)
-            _utils.debug("Minimizing curvature @ {:3.3f} = ({:3.3f}, {:3.3f})".format(p, bc.point1.size, bc.point2.size))
+            # print("Minimizing curvature @ {:3.3f} = ({:3.3f}, {:3.3f})".format(p, bc.point1.size, bc.point2.size))
             bc.minimize_curvature()
             self.edge1.size.add(val=bc.point1.size, point=e1.value(p))
             self.edge2.size.add(val=bc.point2.size, point=e2.value(p))
-            _utils.debug("Minimized curvature @ {:3.3f} = ({:3.3f}, {:3.3f})".format(p, bc.point1.size, bc.point2.size))
+            # print("Minimized curvature @ {:3.3f} = ({:3.3f}, {:3.3f})".format(p, bc.point1.size, bc.point2.size))
 
     def auto_scale(self, arg=3):
         self.edge1.size.reset()
@@ -849,7 +848,7 @@ class BlendSurface:
             bc.auto_scale()
             self.edge1.size.add(val=bc.point1.size, point=e1.value(p))
             self.edge2.size.add(val=bc.point2.size, point=e2.value(p))
-            _utils.debug("Auto scaling @ {:3.3f} = ({:3.3f}, {:3.3f})".format(p, bc.point1.size, bc.point2.size))
+            # print("Auto scaling @ {:3.3f} = ({:3.3f}, {:3.3f})".format(p, bc.point1.size, bc.point2.size))
 
     def perform(self, arg=20):
         bc_list = []

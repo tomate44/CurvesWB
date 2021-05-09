@@ -275,7 +275,7 @@ class InterpoCurveEditor(object):
             o.ovr_col = "yellow"
             o.sel_col = "green"
         self.root.register()
-        self.sg.addChild(self.root)
+        self.sg.insertChild(self.root, 0)
         self.root_inserted = True
         self.root.selected_objects = list()
 

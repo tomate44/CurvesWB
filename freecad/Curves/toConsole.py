@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
-__title__ = 'to Console'
+__title__ = 'Objects to Console'
 __author__ = 'Christophe Grellier (Chris_G)'
 __license__ = 'LGPL 2.1'
-__doc__ = 'Objects to python console.'
+__doc__ = 'Give access to the selected objects in the python console.'
+__usage__ = """Select some objects in the TreeView, or in the 3D View, and activate tool.
+Some variables will be created in the python console, to access the selection."""
 
 import FreeCAD
 import FreeCADGui
@@ -22,7 +24,7 @@ class ToConsole:
         return {'Pixmap': TOOL_ICON,
                 'MenuText': __title__,
                 'Accel': "",
-                'ToolTip': __doc__}
+                'ToolTip': "{}\n\n{}\n\n{}".format(__title__, __doc__, __usage__)}
 
     def Activated(self):
         doc = ''
@@ -86,9 +88,7 @@ class ToConsole:
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:
-            selection = FreeCADGui.Selection.getSelectionEx()
-            if selection:
-                return True
+            return True
         else:
             return False
 
