@@ -34,7 +34,7 @@ def curve_to_script(i, c):
         com.append("obj{}.Shape = bs{}.toShape()".format(i, i))
     elif isinstance(c, Part.BezierCurve):
         com.append("poles{} = {}".format(i, c.getPoles()))
-        com.append("be{} = Part.BezierCurve()".formati)
+        com.append("be{} = Part.BezierCurve()".format(i))
         com.append("be{}.increase({})".format(i, c.Degree))
         com.append("be{}.setPoles(poles{})".format(i, i))
         if c.isRational():
