@@ -763,11 +763,12 @@ class BlendSurface:
         return self.edge1.continuity, self.edge2.continuity
 
     @continuity.setter
-    def continuity(self, *args):
-        if len(args) > 0:
+    def continuity(self, args):
+        if isinstance(args, (int, float)):
+            self.edge1.continuity = args
+            self.edge2.continuity = args
+        elif isinstance(args, (list, tuple)):
             self.edge1.continuity = args[0]
-            self.edge2.continuity = args[0]
-        if len(args) > 1:
             self.edge2.continuity = args[1]
 
     @property
