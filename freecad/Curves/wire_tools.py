@@ -17,17 +17,20 @@ def angle_at_vertex(wire, vidx):
         return 360
 
 
-def approx_wire(wire, tol3d=1e-7, ang_tol=1, samples=100):
-    bs = wire.approximate(.1 * tol3d, tol3d, 10000, 7)
+def approx_wire(wire, tol3d=1e-7, ang_tol=1, samples=100, forceC1=True):
+    bs = wire.approximate(.01 * tol3d, tol3d, 10000, 5)
     bs.makeC1Continuous(tol3d, ang_tol)
-    if bs.Continuity == "C0":
-        print("Approx fallback")
+    if bs.Continuity == "C0" and forceC1:
+        print("Forcing C1 continuity")
         bs = Part.BSplineCurve()
-        bs.approximate(Points=wire.discretize(samples * len(wire.Edges)), Continuity="C1", Tolerance=tol3d)
+        bs.approximate(Points=wire.discretize(samples * len(wire.Edges)),
+                       DegMax=5,
+                       Continuity="C1",
+                       Tolerance=tol3d)
     return bs
 
 
-def simplify_wire(wire, ang_tol=1, tol3d=1e-3, samples=100):
+def simplify_wire(wire, ang_tol=1, tol3d=1e-3, samples=100, forceC1=True):
     edge_groups = []
     continuous_edges = [wire.OrderedEdges[0]]
     end = len(wire.OrderedVertexes)
@@ -43,14 +46,15 @@ def simplify_wire(wire, ang_tol=1, tol3d=1e-3, samples=100):
             continuous_edges = [wire.OrderedEdges[i]]
             # print("#{} Sharp vertex : {}".format(i, a))
     edge_groups.append(continuous_edges)
-    if angle_at_vertex(wire, 0) < ang_tol:
+    if (angle_at_vertex(wire, 0) < ang_tol) and (len(edge_groups) > 1):
         edge_groups[-1].extend(edge_groups[0])
         edge_groups = edge_groups[1:]
     final_edges = []
+    print([len(g) for g in edge_groups])
     for group in edge_groups:
         if len(group) > 1:
             temp_wire = Part.Wire(group)
-            bs = approx_wire(temp_wire, tol3d, ang_tol, samples)
+            bs = approx_wire(temp_wire, tol3d, ang_tol, samples, forceC1)
             final_edges.append(bs.toShape())
         else:
             final_edges.append(group[0])
@@ -58,7 +62,7 @@ def simplify_wire(wire, ang_tol=1, tol3d=1e-3, samples=100):
     return Part.Wire(final_edges)
 
 
-def _test_simplify_wire(ang_tol=1, tol3d=1e-3, samples=100):
+def _test_simplify_wire(ang_tol=1, tol3d=1e-3, samples=100, forceC1=True):
     o1 = FreeCADGui.Selection.getSelection()[0]
     wires = o1.Shape.Wires
 

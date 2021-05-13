@@ -24,7 +24,8 @@ class DecimateProxy:
     def __init__(self, obj):
         obj.addProperty("App::PropertyLinkSubList", "Source", "Decimate", "Source object")
         obj.addProperty("App::PropertyFloat", "Angle", "Settings", "Angular threshold").Angle = 1
-        obj.addProperty("App::PropertyFloat", "Tolerance", "Settings", "3D Tolerance of approximation").Tolerance = 1e-5
+        obj.addProperty("App::PropertyBool", "ForceC1", "Settings", "Force C1 continuity by approximation").ForceC1 = False
+        obj.addProperty("App::PropertyFloat", "Tolerance", "Settings", "3D Tolerance of approximation").Tolerance = 1e-3
         obj.addProperty("App::PropertyInteger", "Samples", "Settings", "Number of edge samples for approximation").Samples = 100
         obj.Proxy = self
 
@@ -73,11 +74,11 @@ class DecimateProxy:
         new_wires = []
         new_faces = []
         for w in wires:
-            new_wires.append(wire_tools.simplify_wire(w, fp.Angle, fp.Tolerance, fp.Samples))
+            new_wires.append(wire_tools.simplify_wire(w, fp.Angle, fp.Tolerance, fp.Samples, fp.ForceC1))
         for f in faces:
             fwires = []
             for w in f.Wires:
-                fwires.append(wire_tools.simplify_wire(w, fp.Angle, fp.Tolerance, fp.Samples))
+                fwires.append(wire_tools.simplify_wire(w, fp.Angle, fp.Tolerance, fp.Samples, fp.ForceC1))
             new_faces.extend(face_tools.build_faces(fwires, f))
         fp.Shape = Part.Compound(new_wires + new_faces)
 
@@ -107,6 +108,7 @@ class DecimateEdgesCommand:
         DecimateProxy(fp)
         DecimateViewProxy(fp.ViewObject)
         fp.Source = source
+        fp.Tolerance = source[0].Shape.BoundBox.DiagonalLength * 1e-4
         FreeCAD.ActiveDocument.recompute()
 
     def Activated(self):
