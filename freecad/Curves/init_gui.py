@@ -57,6 +57,7 @@ class CurvesWorkbench(Gui.Workbench):
         from . import segmentSurfaceFP
         from . import multiLoftFP
         from . import blendSurfaceFP_new
+        from . import wire_decimate_edges_FP
         # from . import OrientedSketchFP
         # from . import HQRuledSurfaceFP
         # from . import HelicalSweepFP
@@ -64,7 +65,7 @@ class CurvesWorkbench(Gui.Workbench):
 
         curvelist = ["Curves_line", "gordon_profile", "mixed_curve", "extend", "join", "split",
                      "Discretize", "Approximate", "Interpolate", "ParametricBlendCurve",
-                     "ParametricComb", "cos"]
+                     "ParametricComb", "cos", "Curves_decimate_edges"]
 
         surflist = ["ZebraTool", "Trim", "IsoCurve", "SoS", "sw2r", "profileSupportCmd",
                     "profile", "pipeshell", "gordon", "segment_surface", "comp_spring",
