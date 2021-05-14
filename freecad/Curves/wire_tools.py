@@ -18,6 +18,10 @@ def angle_at_vertex(wire, vidx):
 
 
 def approx_wire(wire, tol3d=1e-7, ang_tol=1, samples=100, forceC1=True):
+    el = wire.Edges
+    if el[0].Orientation == "Reversed":
+        el[0].reverse()
+        wire = Part.Wire(el)
     bs = wire.approximate(.01 * tol3d, tol3d, 10000, 5)
     bs.makeC1Continuous(tol3d, ang_tol)
     if bs.Continuity == "C0" and forceC1:
@@ -33,6 +37,7 @@ def approx_wire(wire, tol3d=1e-7, ang_tol=1, samples=100, forceC1=True):
 def simplify_wire(wire, ang_tol=1, tol3d=1e-3, samples=100, forceC1=True):
     edge_groups = []
     continuous_edges = [wire.OrderedEdges[0]]
+    # continuous_edges[0].Orientation = "Forward"
     end = len(wire.OrderedVertexes)
     if not wire.isClosed():
         end -= 1
@@ -40,11 +45,12 @@ def simplify_wire(wire, ang_tol=1, tol3d=1e-3, samples=100, forceC1=True):
         a = angle_at_vertex(wire, i)
         if a < ang_tol:
             continuous_edges.append(wire.OrderedEdges[i])
-            # print("#{} Smooth vertex : {}".format(i, a))
+            print("#{} Smooth vertex : {}".format(i, a))
         else:
             edge_groups.append(continuous_edges)
             continuous_edges = [wire.OrderedEdges[i]]
-            # print("#{} Sharp vertex : {}".format(i, a))
+            # continuous_edges[0].Orientation = "Forward"
+            print("#{} Sharp vertex : {}".format(i, a))
     edge_groups.append(continuous_edges)
     if (angle_at_vertex(wire, 0) < ang_tol) and (len(edge_groups) > 1):
         edge_groups[-1].extend(edge_groups[0])

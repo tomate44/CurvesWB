@@ -16,17 +16,17 @@ from . import wire_tools
 from . import face_tools
 from . import ICONPATH
 
-TOOL_ICON = os.path.join(ICONPATH, "line.svg")
+TOOL_ICON = os.path.join(ICONPATH, "simplify_wire.svg")
 
 
 class DecimateProxy:
     """Reduce the number of edges of wires and faces"""
     def __init__(self, obj):
         obj.addProperty("App::PropertyLinkSubList", "Source", "Decimate", "Source object")
-        obj.addProperty("App::PropertyFloat", "Angle", "Settings", "Angular threshold").Angle = 1
+        obj.addProperty("App::PropertyFloat", "Angle", "Settings", "Angular threshold").Angle = 30
         obj.addProperty("App::PropertyBool", "ForceC1", "Settings", "Force C1 continuity by approximation").ForceC1 = False
         obj.addProperty("App::PropertyFloat", "Tolerance", "Settings", "3D Tolerance of approximation").Tolerance = 1e-3
-        obj.addProperty("App::PropertyInteger", "Samples", "Settings", "Number of edge samples for approximation").Samples = 100
+        obj.addProperty("App::PropertyInteger", "Samples", "Settings", "Number of edge samples for approximation").Samples = 20
         obj.Proxy = self
 
     def get_shapes(self, obj):
@@ -100,6 +100,13 @@ class DecimateViewProxy:
         self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
         return None
 
+    def claimChildren(self):
+        children = []
+        for o in self.Object.Source:
+            if len(o[1][0]) == 0:  # No sub-objects
+                children.append(o[0])
+        return children
+
 
 class DecimateEdgesCommand:
     """Reduce the number of edges of wires and faces"""
@@ -109,6 +116,9 @@ class DecimateEdgesCommand:
         DecimateViewProxy(fp.ViewObject)
         fp.Source = source
         fp.Tolerance = source[0].Shape.BoundBox.DiagonalLength * 1e-4
+        # Hide Tree-View selection
+        if len(source[1]) == 0:  # No sub-objects
+                source[0].ViewObject.Visibility = False
         FreeCAD.ActiveDocument.recompute()
 
     def Activated(self):
