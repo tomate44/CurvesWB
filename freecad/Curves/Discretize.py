@@ -80,42 +80,39 @@ class Discretization:
             return None
 
     def buildPoints(self, obj):
-        if obj.Target == "Wire":
-            target = self.getTarget(obj, True)
-            if not target:
-                debug("Failed to get wire")
-                return False
-            if obj.Algorithm == "Number":
-                obj.Points = target.discretize(Number=obj.Number)
-            elif obj.Algorithm == "QuasiNumber":
-                obj.Points = target.discretize(QuasiNumber=obj.Number)
-            elif obj.Algorithm == "Distance":
-                obj.Points = target.discretize(Distance=obj.Distance)
-            elif obj.Algorithm == "Deflection":
-                obj.Points = target.discretize(Deflection=obj.Deflection)
-            elif obj.Algorithm == "QuasiDeflection":
-                obj.Points = target.discretize(QuasiDeflection=obj.Deflection)
-            elif obj.Algorithm == "Angular-Curvature":
-                obj.Points = target.discretize(Angular=obj.Angular, Curvature=obj.Curvature, Minimum=obj.Minimum)
-        else:
-            target = self.getTarget(obj, False)
-            if not target:
-                debug("Failed to get edge")
-                return False
-            if obj.Algorithm == "Number":
-                obj.Points = target.discretize(Number=obj.Number, First=obj.ParameterFirst, Last=obj.ParameterLast)
-            elif obj.Algorithm == "QuasiNumber":
-                obj.Points = target.discretize(QuasiNumber=obj.Number, First=obj.ParameterFirst, Last=obj.ParameterLast)
-            elif obj.Algorithm == "Distance":
-                obj.Points = target.discretize(Distance=obj.Distance, First=obj.ParameterFirst, Last=obj.ParameterLast)
-            elif obj.Algorithm == "Deflection":
-                obj.Points = target.discretize(Deflection=obj.Deflection, First=obj.ParameterFirst, Last=obj.ParameterLast)
-            elif obj.Algorithm == "QuasiDeflection":
-                obj.Points = target.discretize(QuasiDeflection=obj.Deflection, First=obj.ParameterFirst, Last=obj.ParameterLast)
-            elif obj.Algorithm == "Angular-Curvature":
-                obj.Points = target.discretize(Angular=obj.Angular, Curvature=obj.Curvature, Minimum=obj.Minimum,
-                                               First=obj.ParameterFirst, Last=obj.ParameterLast)
+        target = self.getTarget(obj, obj.Target == "Wire")
+        if not target:
+            debug("Failed to get {}".format(obj.Target))
+            return False
 
+        nb = obj.Number
+        if target.isClosed():
+            nb += 1
+
+        fp = -1e-100
+        lp = 1e100
+        if obj.Target == "Edge":
+            fp = obj.ParameterFirst
+            lp = obj.ParameterLast
+
+        if obj.Algorithm == "Number":
+            pts = target.discretize(Number=nb, First=fp, Last=lp)
+        elif obj.Algorithm == "QuasiNumber":
+            pts = target.discretize(QuasiNumber=nb, First=fp, Last=lp)
+        elif obj.Algorithm == "Distance":
+            pts = target.discretize(Distance=obj.Distance, First=fp, Last=lp)
+        elif obj.Algorithm == "Deflection":
+            pts = target.discretize(Deflection=obj.Deflection, First=fp, Last=lp)
+        elif obj.Algorithm == "QuasiDeflection":
+            pts = target.discretize(QuasiDeflection=obj.Deflection, First=fp, Last=lp)
+        elif obj.Algorithm == "Angular-Curvature":
+            pts = target.discretize(Angular=obj.Angular, Curvature=obj.Curvature, Minimum=obj.Minimum,
+                                    First=fp, Last=lp)
+
+        if pts[0].distanceToPoint(pts[-1]) < 1e-7:
+            obj.Points = pts[:-1]
+        else:
+            obj.Points = pts
         return True
 
     def execute(self, obj):
@@ -211,22 +208,6 @@ class Discretization:
             if fp.ParameterLast > self.edgeBounds(fp)[1]:
                 fp.ParameterLast = self.edgeBounds(fp)[1]
             debug("Discretization : ParameterLast changed to {}".format(str(fp.ParameterLast)))
-
-    def __getstate__(self):
-        out = {"name": self.obj.Name,
-               "algo": self.obj.Algorithm,
-               "target": self.obj.Target}
-        return out
-
-    def __setstate__(self, state):
-        self.obj = FreeCAD.ActiveDocument.getObject(state["name"])
-        if "Algorithm" not in self.obj.PropertiesList:
-            self.obj.addProperty("App::PropertyEnumeration", "Algorithm", "Method", "Discretization Method").Algorithm = ["Number", "QuasiNumber", "Distance", "Deflection", "QuasiDeflection", "Angular-Curvature"]
-        if "Target" not in self.obj.PropertiesList:
-            self.obj.addProperty("App::PropertyEnumeration", "Target", "Discretization", "Tool target").Target = ["Edge", "Wire"]
-        self.obj.Algorithm = state["algo"]
-        self.obj.Target = state["target"]
-        return None
 
 
 class ViewProviderDisc:
