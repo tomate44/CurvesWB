@@ -117,17 +117,20 @@ class Discretization:
 
     def execute(self, obj):
         debug("* Discretization : execute *")
-        if self.buildPoints(obj):
-            obj.Shape = Part.Compound([Part.Vertex(i) for i in obj.Points])
-            if obj.Target == "Wire":
-                w = self.getTarget(obj, True)
-                target = w.approximate(1e-7, 1e-5, len(w.Edges), 7).toShape()
-            else:
-                target = self.getTarget(obj, False)
-            params = []
-            for p in obj.Points:
-                params.append(target.Curve.parameter(p))
-            obj.NormalizedParameters = KnotVector(params).normalize()
+        if not self.buildPoints(obj):
+            return
+        obj.Shape = Part.Compound([Part.Vertex(i) for i in obj.Points])
+        if obj.Target == "Wire":
+            w = self.getTarget(obj, True)
+            target = w.approximate(1e-7, 1e-5, len(w.Edges), 7).toShape()
+        else:
+            target = self.getTarget(obj, False)
+        params = []
+        for p in obj.Points:
+            params.append(target.Curve.parameter(p))
+        if target.isClosed():
+            params.append(target.LastParameter)
+        obj.NormalizedParameters = KnotVector(params).normalize()
 
     def onChanged(self, fp, prop):
         # print fp
