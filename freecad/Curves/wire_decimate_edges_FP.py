@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Decimate Edges"
+__title__ = "Simplify"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = "Reduce the number of edges of wires and faces"
@@ -111,7 +111,7 @@ class DecimateViewProxy:
 class DecimateEdgesCommand:
     """Reduce the number of edges of wires and faces"""
     def makeDecimateFeature(self, source):
-        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "Line")
+        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "Simplify")
         DecimateProxy(fp)
         DecimateViewProxy(fp.ViewObject)
         fp.Source = source
