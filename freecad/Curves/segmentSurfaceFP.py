@@ -111,6 +111,7 @@ class SegmentSurface:
         u0, u1, v0, v1 = bs.bounds()
         cutKnotsU = [u0, u1]
         cutKnotsV = [v0, v1]
+
         if obj.Option == "Auto":
             if obj.Direction in ["U", "Both"]:
                 knots = bs.getUKnots()
@@ -120,6 +121,7 @@ class SegmentSurface:
                 knots = bs.getVKnots()
                 mults = bs.getVMultiplicities()
                 cutKnotsV = self.get_intervals(knots, mults)
+
         elif obj.Option == "Custom":
             knots = self.get_normalized_params(obj, 'KnotsUProvider')
             if knots:
@@ -127,12 +129,14 @@ class SegmentSurface:
                 uknots = knots.transpose(u0, u1)
             else:
                 uknots = obj.KnotsU
+
             knots = self.get_normalized_params(obj, 'KnotsVProvider')
             if knots:
                 knots = KnotVector(knots)
                 vknots = knots.transpose(v0, v1)
             else:
                 vknots = obj.KnotsV
+
             for k in uknots:
                 if (k > u0) and (k < u1):
                     cutKnotsU.append(k)
@@ -148,7 +152,8 @@ class SegmentSurface:
                 s = bs.copy()
                 s.segment(cutKnotsU[i], cutKnotsU[i + 1], cutKnotsV[j], cutKnotsV[j + 1])
                 surfs.append(s)
-        obj.Shape = Part.Shell([s.toShape() for s in surfs])
+        if surfs:
+            obj.Shape = Part.makeShell([s.toShape() for s in surfs])
 
     def setOption(self, obj, prop):
         for p in obj.PropertiesList:
