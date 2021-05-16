@@ -17,27 +17,47 @@ def angle_at_vertex(wire, vidx):
         return 360
 
 
-def approx_wire(wire, tol3d=1e-7, ang_tol=1, samples=100, forceC1=True):
-    el = wire.Edges
-    if el[0].Orientation == "Reversed":
-        el[0].reverse()
-        wire = Part.Wire(el)
+def approx_wire(edges, tol3d=1e-7, ang_tol=1, samples=20, forceC1=True):
+    """create a BSpline Curve from a list of edges
+    if forceC1 is True, an approximation of a list of sample points along edges
+    may be computed if necessary.
+    If the output curve is closed, the seam point is forced on start point of first edge
+    wire = approx_wire(edge_list, tol3d=1e-7, ang_tol=1, samples=20, forceC1=True)"""
+    wire = Part.Wire(edges)
     bs = wire.approximate(.01 * tol3d, tol3d, 10000, 5)
-    bs.makeC1Continuous(tol3d, ang_tol)
+    if bs.isClosed():
+        bs.setPeriodic()
+        if edges[0].Orientation == "Forward":
+            p = bs.parameter(edges[0].Vertex1.Point)
+        else:
+            p = bs.parameter(edges[0].Vertex2.Point)
+        best = 1e50
+        idx = 1
+        for i, k in enumerate(bs.getKnots()):
+            v = abs(k - p)
+            if best > v:
+                best = v
+                idx = i + 1
+        if not bs.FirstUKnotIndex == idx:
+            print(f"Moving BS origin to {idx}")
+            bs.setOrigin(idx)
+    else:
+        bs.makeC1Continuous(tol3d, ang_tol * pi / 180)
+    #except Part.OCCError as err:
+        #print(f"makeC1Continuous: {err}")
     if bs.Continuity == "C0" and forceC1:
-        print("Forcing C1 continuity")
-        bs = Part.BSplineCurve()
-        bs.approximate(Points=wire.discretize(samples * len(wire.Edges)),
+        # print("Forcing C1 continuity")
+        # bs = Part.BSplineCurve()
+        bs.approximate(Points=bs.discretize(samples * len(edges)),
                        DegMax=5,
                        Continuity="C1",
                        Tolerance=tol3d)
     return bs
 
 
-def simplify_wire(wire, ang_tol=1, tol3d=1e-3, samples=100, forceC1=True):
+def break_wire(wire, ang_tol=1):
     edge_groups = []
     continuous_edges = [wire.OrderedEdges[0]]
-    # continuous_edges[0].Orientation = "Forward"
     end = len(wire.OrderedVertexes)
     if not wire.isClosed():
         end -= 1
@@ -45,22 +65,26 @@ def simplify_wire(wire, ang_tol=1, tol3d=1e-3, samples=100, forceC1=True):
         a = angle_at_vertex(wire, i)
         if a < ang_tol:
             continuous_edges.append(wire.OrderedEdges[i])
-            print("#{} Smooth vertex : {}".format(i, a))
+            # print("#{} Smooth vertex : {}".format(i, a))
         else:
             edge_groups.append(continuous_edges)
             continuous_edges = [wire.OrderedEdges[i]]
-            # continuous_edges[0].Orientation = "Forward"
-            print("#{} Sharp vertex : {}".format(i, a))
+            # print("#{} Sharp vertex : {}".format(i, a))
     edge_groups.append(continuous_edges)
     if (angle_at_vertex(wire, 0) < ang_tol) and (len(edge_groups) > 1):
         edge_groups[-1].extend(edge_groups[0])
         edge_groups = edge_groups[1:]
+    return edge_groups
+
+
+def simplify_wire(wire, tol3d=1e-3, ang_tol=1, samples=100, forceC1=True):
+    """Simplify a wire by fusing consecutive edges that """
+    edge_groups = break_wire(wire, ang_tol)
     final_edges = []
-    print([len(g) for g in edge_groups])
+    # print([len(g) for g in edge_groups])
     for group in edge_groups:
         if len(group) > 1:
-            temp_wire = Part.Wire(group)
-            bs = approx_wire(temp_wire, tol3d, ang_tol, samples, forceC1)
+            bs = approx_wire(group, tol3d, ang_tol, samples, forceC1)
             final_edges.append(bs.toShape())
         else:
             final_edges.append(group[0])

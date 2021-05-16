@@ -6,14 +6,14 @@ __license__ = "LGPL 2.1"
 __doc__ = "Reduce the number of edges of wires and faces"
 __usage__ = """Select an object containing wires or faces in the 3D View and activate the tool.
 Edges that are connected with an angle that is under a given angular threshold will be fused together
-into an approximated C1 BSpline curve."""
+into an approximated BSpline curve.
+Initially designed for Shapestring and SVG imports."""
 
 import os
 import FreeCAD
 import FreeCADGui
 import Part
 from . import wire_tools
-from . import face_tools
 from . import ICONPATH
 
 TOOL_ICON = os.path.join(ICONPATH, "simplify_wire.svg")
@@ -74,13 +74,26 @@ class DecimateProxy:
         new_wires = []
         new_faces = []
         for w in wires:
-            new_wires.append(wire_tools.simplify_wire(w, fp.Angle, fp.Tolerance, fp.Samples, fp.ForceC1))
+            new_wires.append(wire_tools.simplify_wire(w, fp.Tolerance, fp.Angle, fp.Samples, fp.ForceC1))
         for f in faces:
-            fwires = []
+            ow = wire_tools.simplify_wire(f.OuterWire, fp.Tolerance, fp.Angle, fp.Samples, fp.ForceC1)
+            ow.fixWire(f, 1e-7)
+            nf = Part.Face(f.Surface, ow)
+            if not nf.isValid():
+                nf.validate()
+            wl = []
             for w in f.Wires:
-                fwires.append(wire_tools.simplify_wire(w, fp.Angle, fp.Tolerance, fp.Samples, fp.ForceC1))
-            new_faces.extend(face_tools.build_faces(fwires, f))
-        fp.Shape = Part.Compound(new_wires + new_faces)
+                if not w.isSame(f.OuterWire):
+                    nw = wire_tools.simplify_wire(w, fp.Tolerance, fp.Angle, fp.Samples, fp.ForceC1)
+                    nw.fixWire(nf, 1e-7)
+                    wl.append(nw)
+            if wl:
+                nf.cutHoles(wl)
+                if not nf.isValid():
+                    nf.validate()
+            new_faces.append(nf)
+        if new_wires or new_faces:
+            fp.Shape = Part.Compound(new_wires + new_faces)
 
 
 class DecimateViewProxy:
@@ -115,10 +128,10 @@ class DecimateEdgesCommand:
         DecimateProxy(fp)
         DecimateViewProxy(fp.ViewObject)
         fp.Source = source
-        fp.Tolerance = source[0].Shape.BoundBox.DiagonalLength * 1e-4
+        fp.Tolerance = source[0].Shape.BoundBox.DiagonalLength * 1e-5
         # Hide Tree-View selection
         if len(source[1]) == 0:  # No sub-objects
-                source[0].ViewObject.Visibility = False
+            source[0].ViewObject.Visibility = False
         FreeCAD.ActiveDocument.recompute()
 
     def Activated(self):
