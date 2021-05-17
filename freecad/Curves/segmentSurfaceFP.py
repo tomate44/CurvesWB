@@ -4,77 +4,30 @@ __title__ = "Segment surface"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = """Segment a surface on isocurves"""
+__usage__ = """Select a face in the 3D view and activate tool.
+The face will be converted to a BSpline surface.
+In Auto mode, the surface will be segmented along isocurves of highest multiplicity.
+In Custom mode, it will be segmented along isocurves of specified parameters.
+These parameters can be provided by an external object that have a NormalizedParameters property,
+like the Discretize, or the SplitCurve tools."""
 
 import os
 
 import FreeCAD
 import FreeCADGui
 import Part
-from freecad.Curves import _utils
-from freecad.Curves import ICONPATH
-from freecad.Curves.nurbs_tools import KnotVector
+from . import ICONPATH
+from .nurbs_tools import KnotVector
 
 TOOL_ICON = os.path.join(ICONPATH, 'segment_surface.svg')
-# debug = _utils.debug
-# debug = _utils.doNothing
-
-props = """
-App::PropertyBool
-App::PropertyBoolList
-App::PropertyFloat
-App::PropertyFloatList
-App::PropertyFloatConstraint
-App::PropertyQuantity
-App::PropertyQuantityConstraint
-App::PropertyAngle
-App::PropertyDistance
-App::PropertyLength
-App::PropertySpeed
-App::PropertyAcceleration
-App::PropertyForce
-App::PropertyPressure
-App::PropertyInteger
-App::PropertyIntegerConstraint
-App::PropertyPercent
-App::PropertyEnumeration
-App::PropertyIntegerList
-App::PropertyIntegerSet
-App::PropertyMap
-App::PropertyString
-App::PropertyUUID
-App::PropertyFont
-App::PropertyStringList
-App::PropertyLink
-App::PropertyLinkSub
-App::PropertyLinkList
-App::PropertyLinkSubList
-App::PropertyMatrix
-App::PropertyVector
-App::PropertyVectorList
-App::PropertyPlacement
-App::PropertyPlacementLink
-App::PropertyColor
-App::PropertyColorList
-App::PropertyMaterial
-App::PropertyPath
-App::PropertyFile
-App::PropertyFileIncluded
-App::PropertyPythonObject
-Part::PropertyPartShape
-Part::PropertyGeometryList
-Part::PropertyShapeHistory
-Part::PropertyFilletEdges
-Sketcher::PropertyConstraintList
-"""
 
 
 class SegmentSurface:
     """Creates a ..."""
     def __init__(self, obj, face):
         """Add the properties"""
-        self.Options = ["Auto", "Custom"]
         obj.addProperty("App::PropertyLinkSub", "Source", "Base", "Initial Face").Source = face
-        obj.addProperty("App::PropertyEnumeration", "Option", "Base", "Option list").Option = self.Options
+        obj.addProperty("App::PropertyEnumeration", "Option", "Base", "Option list").Option = ["Auto", "Custom"]
         obj.addProperty("App::PropertyEnumeration", "Direction", "OptionAuto", "Segmenting direction").Direction = ["U", "V", "Both"]
         obj.addProperty("App::PropertyFloatList", "KnotsU", "OptionCustom", "Splitting parameters in U direction")
         obj.addProperty("App::PropertyFloatList", "KnotsV", "OptionCustom", "Splitting parameters in V direction")
@@ -105,13 +58,15 @@ class SegmentSurface:
         return params
 
     def execute(self, obj):
-        f = _utils.getShape(obj, "Source", "Face")
-        bs = f.toNurbs().Faces[0].Surface
-        surfs = list()
+        f = obj.Source[0].getSubObject(obj.Source[1][0])
+        u0, u1, v0, v1 = f.ParameterRange
+        # print("Face parameters : {}".format(f.ParameterRange))
+        trim = Part.RectangularTrimmedSurface(f.Surface, u0, u1, v0, v1)
+        bs = trim.toBSpline()
         u0, u1, v0, v1 = bs.bounds()
         cutKnotsU = [u0, u1]
         cutKnotsV = [v0, v1]
-
+        # print("bs parameters : {}".format(bs.bounds()))
         if obj.Option == "Auto":
             if obj.Direction in ["U", "Both"]:
                 knots = bs.getUKnots()
@@ -147,13 +102,24 @@ class SegmentSurface:
             cutKnotsV = list(set(cutKnotsV))
             cutKnotsU.sort()
             cutKnotsV.sort()
+
+        # print(cutKnotsU)
+        # print(cutKnotsV)
+        if len(cutKnotsU) < 3 and len(cutKnotsV) < 3:
+            obj.Shape = bs.toShape()
+            return
+
+        faces = list()
         for i in range(len(cutKnotsU) - 1):
             for j in range(len(cutKnotsV) - 1):
                 s = bs.copy()
                 s.segment(cutKnotsU[i], cutKnotsU[i + 1], cutKnotsV[j], cutKnotsV[j + 1])
-                surfs.append(s)
-        if surfs:
-            obj.Shape = Part.makeShell([s.toShape() for s in surfs])
+                nf = s.toShape()
+                if f.Orientation == "Reversed":
+                    nf.reverse()
+                faces.append(nf)
+        if faces:
+            obj.Shape = Part.makeShell(faces)
 
     def setOption(self, obj, prop):
         for p in obj.PropertiesList:
@@ -204,18 +170,20 @@ class SegSurfCommand:
     def Activated(self):
         sel = FreeCADGui.Selection.getSelectionEx()
         if sel == []:
-            FreeCAD.Console.PrintError("Select something first !\n")
+            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
         else:
             self.makeFeature(sel[0])
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:
-            return(True)
+            return True
         else:
-            return(False)
+            return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
+        return {'Pixmap': TOOL_ICON,
+                'MenuText': __title__,
+                'ToolTip': "{}\n\n{}\n\n{}".format(__title__, __doc__, __usage__)}
 
 
 FreeCADGui.addCommand('segment_surface', SegSurfCommand())
