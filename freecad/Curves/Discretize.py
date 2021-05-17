@@ -42,7 +42,6 @@ class Discretization:
                         "Normalized parameters list")
         obj.setEditorMode("NormalizedParameters", 1)
         obj.Proxy = self
-        self.obj = obj
         obj.Algorithm = "Number"
         obj.Target = "Edge"
         edge = self.getTarget(obj, False)
