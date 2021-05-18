@@ -6,10 +6,34 @@
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    version="1.1"
    id="svg4594"
    height="64px"
-   width="64px">
+   width="64px"
+   sodipodi:docname="simplify_wire.svg"
+   inkscape:version="1.0.2 (e86c870879, 2021-01-15, custom)">
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1920"
+     inkscape:window-height="1006"
+     id="namedview32"
+     showgrid="false"
+     inkscape:zoom="1.7346213"
+     inkscape:cx="126.98689"
+     inkscape:cy="31.006451"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg4594" />
   <defs
      id="defs4596">
     <linearGradient
@@ -59,7 +83,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
         <cc:license
            rdf:resource="" />
         <dc:date>Mon Apr 15 13:25:25 2013 -0400</dc:date>
@@ -98,7 +122,8 @@
   <path
      id="rect845"
      style="fill:none;stroke:#323232;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"
-     d="M 6.3981806,56.604148 6.1531256,29.388394 C 6.0280726,15.500038 12.725227,6.1204766 32.347583,6.1204766 l 24.724294,0 m 0.529942,0.044504 0,26.1661224 c 0,18.16572 -13.139374,25.20557 -25.344053,25.146582 L 6.5264911,57.353319" />
+     d="M 6.3981806,56.604148 6.2813147,43.625043 c 0,0 28.8879323,7.391889 32.0993873,0.837333 C 42.091638,36.888383 17.94023,35.439407 16.803767,20.408482 16.03618,10.256315 28.653764,6.2836568 39.041204,6.2240109 L 57.071877,6.1204766 m 0.529942,0.044504 0,12.7645144 c 0,0 -24.753396,-6.847957 -26.9441,1.473028 -3.404818,12.932579 22.4261,8.798946 25.741919,22.801379 C 58.97667,54.086499 43.690437,57.210904 22.509812,57.29207 l -15.9833209,0.06125"
+     sodipodi:nodetypes="ccssscccsssc" />
   <ellipse
      style="fill:#008000;stroke:#323232;stroke-width:0.853638;stroke-linecap:round;stroke-linejoin:round"
      id="circle850"
@@ -116,34 +141,34 @@
   <ellipse
      style="fill:none;stroke:#323232;stroke-width:0.853638;stroke-linecap:round;stroke-linejoin:round"
      id="ellipse862"
-     cx="6.3981805"
-     cy="29.594297"
+     cx="38.059772"
+     cy="42.699474"
      rx="2.7988267"
      ry="2.8004234" />
   <ellipse
      style="fill:none;stroke:#323232;stroke-width:0.853638;stroke-linecap:round;stroke-linejoin:round"
      id="ellipse864"
-     cx="32.490154"
-     cy="6.1204767"
+     cx="16.826832"
+     cy="18.796379"
      rx="2.7988267"
      ry="2.8004234" />
   <ellipse
      style="fill:none;stroke:#323232;stroke-width:0.853638;stroke-linecap:round;stroke-linejoin:round"
      id="ellipse866"
-     cx="31.82349"
-     cy="57.353321"
+     cx="56.068985"
+     cy="44.754364"
      rx="2.7988267"
      ry="2.8004234" />
   <ellipse
      style="fill:none;stroke:#323232;stroke-width:0.853638;stroke-linecap:round;stroke-linejoin:round"
      id="ellipse860"
-     cx="57.601818"
-     cy="32.37373"
+     cx="30.626474"
+     cy="22.056101"
      rx="2.7988267"
      ry="2.8004234" />
   <g
      id="g908"
-     transform="matrix(0.68775916,0,0,0.68547568,46.402233,24.101087)"
+     transform="matrix(0.68775916,0,0,0.68547568,30.738911,36.77699)"
      style="stroke-width:2.91283">
     <path
        style="fill:none;stroke:#ff0000;stroke-width:2.91283;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
@@ -156,7 +181,7 @@
   </g>
   <g
      id="g914"
-     transform="matrix(0.68775916,0,0,0.68547568,20.310258,47.574908)"
+     transform="matrix(0.68775916,0,0,0.68547568,51.971848,60.680085)"
      style="stroke-width:2.91283">
     <path
        style="fill:none;stroke:#ff0000;stroke-width:2.91283;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
@@ -169,7 +194,7 @@
   </g>
   <g
      id="g920"
-     transform="matrix(0.68775916,0,0,0.68547568,45.735566,75.33393)"
+     transform="matrix(0.68775916,0,0,0.68547568,69.981063,62.734974)"
      style="stroke-width:2.91283">
     <path
        style="fill:none;stroke:#ff0000;stroke-width:2.91283;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
@@ -182,7 +207,7 @@
   </g>
   <g
      id="g890"
-     transform="matrix(0.68775916,0,0,0.68547568,71.513896,50.354341)"
+     transform="matrix(0.68775916,0,0,0.68547568,44.538553,40.036713)"
      style="stroke-width:2.91283">
     <path
        style="fill:none;stroke:#ff0000;stroke-width:2.91283;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
@@ -193,4 +218,18 @@
        d="M -26.623067,-19.835908 -13.83318,-32.625796"
        id="path888" />
   </g>
+  <ellipse
+     style="fill:#008000;stroke:#323232;stroke-width:0.853638;stroke-linecap:round;stroke-linejoin:round"
+     id="ellipse859"
+     cx="6.3641191"
+     cy="43.596043"
+     rx="2.7988267"
+     ry="2.8004234" />
+  <ellipse
+     style="fill:#008000;stroke:#323232;stroke-width:0.853638;stroke-linecap:round;stroke-linejoin:round"
+     id="ellipse857"
+     cx="57.10767"
+     cy="18.984476"
+     rx="2.7988267"
+     ry="2.8004234" />
 </svg>
