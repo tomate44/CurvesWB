@@ -63,6 +63,8 @@ class Approximate:
                         "Object containing the points to approximate").PointObject = source
         obj.addProperty("App::PropertyBool", "ClampEnds", "General",
                         "Clamp endpoints").ClampEnds = False
+        obj.addProperty("App::PropertyBool", "Closed", "General",
+                        "Force a closed curve").Closed = False
         obj.addProperty("App::PropertyInteger", "DegreeMin", "General",
                         "Minimum degree of the curve").DegreeMin = 3
         obj.addProperty("App::PropertyInteger", "DegreeMax", "General",
@@ -106,7 +108,7 @@ class Approximate:
         try:
             le = obj.PointObject.Shape.BoundBox.DiagonalLength
             obj.ApproxTolerance = le / 10000.0
-        except:
+        except AttributeError:
             obj.ApproxTolerance = 0.001
 
     def getPoints(self, obj):
@@ -145,6 +147,8 @@ class Approximate:
             self.Points = [v.Point for v in obj.PointObject.Shape.OrderedVertexes]
         else:
             self.Points = [v.Point for v in obj.PointObject.Shape.Vertexes]
+        if obj.Closed and not self.Points[0] == self.Points[-1]:
+            self.Points.append(self.Points[0])
 
     def buildCurve(self, obj):
         pts = self.Points[obj.FirstIndex:obj.LastIndex + 1]
@@ -153,7 +157,7 @@ class Approximate:
             params = []
             try:
                 dis = obj.PointObject.Distance
-            except:
+            except AttributeError:
                 dis = 1.0
             for i in range(len(pts)):
                 params.append(1.0 * i * dis)
