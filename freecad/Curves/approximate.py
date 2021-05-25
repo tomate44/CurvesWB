@@ -87,6 +87,8 @@ class Approximate:
                         "Index of first point").FirstIndex = 0
         obj.addProperty("App::PropertyInteger", "LastIndex", "Range",
                         "Index of last point")
+        obj.addProperty("App::PropertyInteger", "StartOffset", "Range",
+                        "For closed curves, allows to choose the location of the join point").StartOffset = 0
         # obj.addProperty("App::PropertyVectorList",   "Points",    "Approximate",   "Points")
         # obj.addProperty("Part::PropertyPartShape",   "Shape",     "Approximate",   "Shape")
         obj.Proxy = self
@@ -147,8 +149,13 @@ class Approximate:
             self.Points = [v.Point for v in obj.PointObject.Shape.OrderedVertexes]
         else:
             self.Points = [v.Point for v in obj.PointObject.Shape.Vertexes]
-        if obj.Closed and not self.Points[0] == self.Points[-1]:
-            self.Points.append(self.Points[0])
+        if obj.Closed:
+            if not obj.StartOffset == 0:
+                if self.Points[0] == self.Points[-1]:
+                    self.Points = self.Points[:-1]
+                self.Points = self.Points[obj.StartOffset:] + self.Points[:obj.StartOffset]
+            if not self.Points[0] == self.Points[-1]:
+                self.Points.append(self.Points[0])
 
     def buildCurve(self, obj):
         pts = self.Points[obj.FirstIndex:obj.LastIndex + 1]
@@ -206,7 +213,8 @@ class Approximate:
         obj.Shape = self.curve.toShape()
 
     def onChanged(self, fp, prop):
-        # print fp
+        if 'Restore' in fp.State:
+            return
         if not fp.PointObject:
             return
         if prop == "PointObject":
@@ -293,27 +301,33 @@ class Approximate:
             elif fp.LastIndex > len(self.Points) - 1:
                 fp.LastIndex = len(self.Points) - 1
             debug("Approximate : LastIndex changed to " + str(fp.LastIndex))
+        if prop == "Closed":
+            debug("Approximate : Closed changed\n")
+            if fp.Closed:
+                fp.setEditorMode("StartOffset", 0)
+            else:
+                fp.setEditorMode("StartOffset", 2)
 
-    def __getstate__(self):
-        out = {"name": self.obj.Name,
-               "Method": self.obj.Method}
-        return out
+    # def __getstate__(self):
+        # out = {"name": self.obj.Name,
+               # "Method": self.obj.Method}
+        # return out
 
-    def __setstate__(self, state):
-        self.obj = FreeCAD.ActiveDocument.getObject(state["name"])
-        if "Method" not in self.obj.PropertiesList:
-            self.obj.addProperty("App::PropertyEnumeration",
-                                 "Method",
-                                 "General",
-                                 "Approximation method").Method = ["Parametrization", "Smoothing Algorithm"]
-        if "TorsionWeight" not in self.obj.PropertiesList:
-            self.obj.addProperty("App::PropertyFloatConstraint",
-                                 "TorsionWeight",
-                                 "Parameters",
-                                 "Weight of curve torsion for smoothing algorithm")
-        self.obj.Method = state["Method"]
-        self.getPoints(self.obj)
-        return None
+    # def __setstate__(self, state):
+        # self.obj = FreeCAD.ActiveDocument.getObject(state["name"])
+        # if "Method" not in self.obj.PropertiesList:
+            # self.obj.addProperty("App::PropertyEnumeration",
+                                 # "Method",
+                                 # "General",
+                                 # "Approximation method").Method = ["Parametrization", "Smoothing Algorithm"]
+        # if "TorsionWeight" not in self.obj.PropertiesList:
+            # self.obj.addProperty("App::PropertyFloatConstraint",
+                                 # "TorsionWeight",
+                                 # "Parameters",
+                                 # "Weight of curve torsion for smoothing algorithm")
+        # self.obj.Method = state["Method"]
+        # self.getPoints(self.obj)
+        # return None
 
 
 class ViewProviderApp:
