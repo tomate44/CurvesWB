@@ -70,9 +70,9 @@ class FaceMapFP:
             return
         mapper = face_map_wrap.FaceMapper(face)
         if obj.SwapUV:
-            mapper.set_quad(obj.SizeV, obj.SizeU, obj.ExtendFactor)  # TODO change to bounds
+            mapper.set_quad([0, obj.SizeV, 0, obj.SizeU], obj.ExtendFactor)
         else:
-            mapper.set_quad(obj.SizeU, obj.SizeV, obj.ExtendFactor)  # TODO change to bounds
+            mapper.set_quad([0, obj.SizeU, 0, obj.SizeV], obj.ExtendFactor)
         # mapper.reverseU(obj.ReverseU)
         # mapper.reverseV(obj.ReverseV)
         mapper.swapUV(obj.SwapUV)
