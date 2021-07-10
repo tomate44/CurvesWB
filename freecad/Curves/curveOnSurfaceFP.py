@@ -135,6 +135,8 @@ class cosCommand:
 
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'CurveOnSurface', 'ToolTip': 'Create a curve on surface object'}
+        return {'Pixmap': TOOL_ICON,
+                'MenuText': 'CurveOnSurface',
+                'ToolTip': 'Create a curve on surface object'}
 
 FreeCADGui.addCommand('cos', cosCommand())

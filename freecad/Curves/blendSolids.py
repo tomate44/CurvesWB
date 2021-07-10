@@ -4,6 +4,7 @@ import Part
 from . import _utils
 from . import blend_curve as bc
 from .nurbs_tools import nurbs_quad
+from .match_wires import MatchWires
 from math import cos
 
 
@@ -65,8 +66,10 @@ def get_selection_data(sel):
 
 
 def other_face(sh, f, e):
-    print(e)
-    anc = sh.ancestorsOfType(e, Part.Face)
+    try:
+        anc = sh.ancestorsOfType(e, Part.Face)
+    except Part.OCCError:
+        anc = []
     for af in anc:
         if not af.isPartner(f):
             return af
@@ -191,182 +194,6 @@ def midrange_normal(face):
     return face.normalAt(midrange(u0, u1), midrange(v0, v1))
 
 
-class MatchWires:
-    """Find the best vertex connections between two wires"""
-    def __init__(self, w1, w2):
-        self.w1 = w1
-        self.w2 = w2
-        self.el1 = self.w1.OrderedEdges
-        self.el2 = self.w2.OrderedEdges
-        # self.el3 = self.reverse_list(self.w2.OrderedEdges)
-        self.dir1 = None
-        self.dir2 = None
-        self.sh1 = None
-        self.sh2 = None
-        self.nb_edges = min(len(w1.Edges), len(w2.Edges))
-        self.offset = 0
-        self.reverse = False
-
-    def Edges(self):
-        for idx1 in range(self.nb_edges):
-            idx2 = self.offset_index(idx1)
-            # print(f"Edges {idx1}-{idx2}")
-            yield(self.w1.OrderedEdges[idx1], self.w2.OrderedEdges[idx2])
-
-    def offset_index(self, i):
-        if self.reverse:
-            return (self.nb_edges - i + abs(self.offset)) % self.nb_edges
-        else:
-            return (i + abs(self.offset)) % self.nb_edges
-
-    #def ov_idx(self, pair):
-        #i1 = False
-        #i2 = False
-        #v1, v2 = pair
-        #for i, ov1 in enumerate(self.w1.OrderedVertexes):
-            #if ov1.isSame(v1) or ov1.isSame(v2):
-                #i1 = i
-        #for j, ov2 in enumerate(self.w2.OrderedVertexes):
-            #if ov2.isSame(v1) or ov2.isSame(v2):
-                #i2 = j
-        #return i1, i2
-
-    def reverse_list(self, li):
-        nl = li[::-1]
-        return nl[-1:] + nl[:-1]
-
-    def offset_list(self, li, n):
-        return li[n:] + li[:n]
-
-    def find_idx(self, shapes, li):
-        for s in shapes:
-            for i, o in enumerate(li):
-                if o.isSame(s):
-                    return i
-
-    def edge_idx(self, pair):
-        i1 = self.find_idx(pair, self.el1)
-        i2 = self.find_idx(pair, self.el2)
-        # i3 = self.find_idx(pair, self.el3)
-        return i1, i2  # , i3
-
-    def calc_offset(self, i, j):
-        off = j - i
-        if off < 0:
-            off = off + self.nb_edges - 1
-        return off
-
-    def connect_subshapes(self, pairs):
-        for pair in pairs:
-            i1, i2 = self.edge_idx(pair)
-            off = self.calc_offset(i1, i2)
-            if self.offset is False:
-                self.offset = off
-                self.el1 = self.offset_list(self.el1, self.offset)
-                self.el2 = self.offset_list(self.el2, self.offset)
-                print(f"Setting Offset : {self.offset}")
-            else:
-                print(f"Reverse Offset : {off}")
-                if i1 == i2:
-                    print("Forward offset")
-                    return self.offset
-                else:
-                    print("Reverse offset")
-                    return -self.offset
-
-    def connect_subshapes_old(self, pairs):
-        _tmp = 0, 0
-        for pair in pairs:
-            i1, i2, i3 = self.edge_idx(pair)
-            forward, reverse = self.calc_offset(i1, i2), self.calc_offset(i1, i3)
-            if forward == 0:
-                self.reverse = False
-                print(f"Forward offset = {_tmp[0]}")
-            elif reverse == 0:
-                self.reverse = True
-                print(f"Reverse offset = {_tmp[1]}")
-            else:
-                self.el2 = self.offset_list(self.el2, forward)
-                self.el3 = self.offset_list(self.el3, reverse)
-                print(f"Setting Offset : {forward}, {reverse}")
-                _tmp = forward, reverse
-        if self.reverse:
-            self.offset = _tmp[1]
-            return -self.offset
-        else:
-            self.offset = _tmp[0]
-            return self.offset
-
-    @staticmethod
-    def other_edge(sh, fw, v):
-        if sh:
-            sh_anc = sh.ancestorsOfType(v, Part.Edge)
-            fw_anc = fw.ancestorsOfType(v, Part.Edge)
-            for e1 in sh_anc:
-                found = False
-                for e2 in fw_anc:
-                    if e1.isPartner(e2):
-                        found = True
-                if not found:  # e1 doesn't belong to face
-                    return e1
-        return False
-
-    @staticmethod
-    def external_line(sh, fw, v):
-        line = Part.Line()
-        line.Location = v.Point
-        e = other_edge(sh, fw, v)
-        if e:
-            p = e.Curve.parameter(v.Point)
-            fp = e.Curve.FirstParameter
-            lp = e.Curve.LastParameter
-            if abs(p - fp) > abs(p - lp):
-                line.Direction = e.Curve.tangent(p)[0]
-            else:
-                line.Direction = -e.Curve.tangent(p)[0]
-            return line
-        if isinstance(fw, Part.Face):
-            line.Direction = midrange_normal(fw)
-            return line
-
-    def normalized_ptcloud(self, vl, e, xdir):
-        o = e.Curve.Location
-        n = e.Curve.Direction
-        plane = Part.Plane(o, o + xdir, o + xdir.cross(n))
-        pars = [plane.parameter(v.Point) for v in vl]
-        pts = [plane.value(u,v) for u,v in pars]
-        # print(pts)
-        poly = Part.makePolygon(pts)
-        bb = poly.BoundBox
-        norm_pts = []
-        for p in pts:
-            norm_pts.append(FreeCAD.Vector(p.x / bb.XLength, p.y / bb.YLength, 0))
-        Part.show(Part.makePolygon(norm_pts))
-        return norm_pts
-
-    def morphing_score(self, idx, off):
-        idx2 = self.offset_index(idx, off)
-        v1 = self.w1.OrderedVertexes[idx]
-        v2 = self.w2.OrderedVertexes[idx2]
-        e1 = self.external_line(self.sh1, self.w1, v1).toShape(0, 1e20)
-        e2 = self.external_line(self.sh2, self.w2, v2).toShape(0, 1e20)
-        d, pts, info = e1.distToShape(e2)
-        print(pts)
-        pts1 = self.normalized_ptcloud(self.w1.OrderedVertexes, e1, pts[0][1] - pts[0][0])
-        vl = [self.w2.OrderedVertexes[self.offset_index(i, off)] for i in range(self.nb_edges)]
-        pts2 = self.normalized_ptcloud(vl, e2, pts[0][0] - pts[0][1])
-        score = 0
-        for i in range(len(pts1)):
-            score += pts1[i].distanceToPoint(pts2[i])
-        print(f"Morphing score({off}) = {score}")
-        return score
-
-    def find_best_offset(self):
-        offset_list = [self.morphing_score(0, i) for i in range(-self.nb_edges, self.nb_edges)]
-        self.offset = offset_list.index(min(offset_list))
-        return self.offset
-
-
 class BlendSolid:
     """Creates a solid shape that smoothly interpolate the faces of 2 other solids"""
     def __init__(self, f1, f2, sh1=None, sh2=None):
@@ -391,15 +218,11 @@ class BlendSolid:
         for idx, tup in enumerate(self.get_wire_pairs()):
             sorter = MatchWires(*tup)
             if idx < len(self.offset):
-                sorter.offset = abs(self.offset[idx])
-                sorter.reverse = self.offset[idx] < 0
-            for e1, e2 in sorter.Edges():
+                sorter.offset_code = self.offset[idx]
+            for e1, e2 in sorter.edge_pairs:
                 of1 = other_face(self.shape1, self.face1, e1)
                 of2 = other_face(self.shape2, self.face2, e2)
                 bs = bc.BlendSurface(e1, of1, e2, of2)
-                # bs.edge1.angle = (90, 80, 100, 90)
-                # bs.edge2.angle = (90, 90, 90, 70)
-                bs.continuity = self.cont1, self.cont2
                 self.surflist.append(bs)
 
     def surfaces(self):
@@ -451,50 +274,22 @@ class BlendSolid:
             surf.edge1.size = sc1
             surf.edge2.size = sc2
 
+    def set_continuity(self, c):
+        for surf in self.surfaces():
+            surf.continuity = c
+
     def update_surfaces(self, num=20):
         for surf in self.surfaces():
             surf.perform(num)
 
-    def match_shapes(self, pairs):
+    def match_shapes(self, sl1, sl2):
         off = []
         for i, tup in enumerate(self.get_wire_pairs()):
-            print(f"Wire{i + 1}")
+            # print(f"Wire{i + 1}")
             sorter = MatchWires(*tup)
-            off.append(sorter.connect_subshapes(pairs))
+            off.append(sorter.connect_subshapes(sl1, sl2))
         if len(off) == i + 1:
             self.offset = off
-            print(off)
+            # print(off)
         self.build_surfaces()
-
-
-def test():
-    cont1 = 3
-    cont2 = 3
-    num = 21
-
-    edges = []
-    faces = []
-
-    sel = FreeCADGui.Selection.getSelectionEx()
-    s = get_selection_data(sel)
-    sh1, f1, v1 = s[0]
-    sh2, f2, v2 = s[1]
-
-
-    for w1, w2 in zip(f1.Wires, f2.Wires):
-        for e1, e2 in zip(w1.Edges, w2.Edges):
-            of1 = other_face(sh1, f1, e1)
-            of2 = other_face(sh2, f2, e2)
-            bs = bc.BlendSurface(e1, of1, e2, of2)
-            # bs.edge1.angle = (90, 80, 100, 90)
-            # bs.edge2.angle = (90, 90, 90, 70)
-            bs.continuity = 3
-            # bs.minimize_curvature()
-            bs.auto_scale()
-            bs.perform(num)
-            edges.extend(bs.edges.Edges)
-            faces.append(bs.face)
-            Part.show(Part.Compound(bs.edges.Edges + [bs.face]))
-
-    # Part.show(Part.Compound(edges + faces))
 

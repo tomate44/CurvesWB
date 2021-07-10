@@ -199,6 +199,8 @@ class gordonCommand:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': 'Gordon surface', 'ToolTip': 'Creates a surface that skins a network of curves'}
+        return {'Pixmap': TOOL_ICON,
+                'MenuText': 'Gordon surface',
+                'ToolTip': 'Creates a surface that skins a network of curves'}
 
 FreeCADGui.addCommand('gordon', gordonCommand())

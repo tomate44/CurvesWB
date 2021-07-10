@@ -760,7 +760,7 @@ class BlendSurface:
     @property
     def continuity(self):
         "Returns the continuities of the BlendSurface"
-        return self.edge1.continuity, self.edge2.continuity
+        return [self.edge1.continuity, self.edge2.continuity]
 
     @continuity.setter
     def continuity(self, args):

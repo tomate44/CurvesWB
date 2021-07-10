@@ -176,6 +176,8 @@ class HQ_Ruled_Surface_Command:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
+        return {'Pixmap': TOOL_ICON,
+                'MenuText': __title__,
+                'ToolTip': __doc__}
 
 FreeCADGui.addCommand('hq_ruled_surface', HQ_Ruled_Surface_Command())
