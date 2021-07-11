@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__ = "HUD"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = ""
+
 import FreeCAD
 import FreeCADGui
 from pivy import coin
@@ -17,25 +24,25 @@ class textArea(coin.SoSeparator):
     """Creates a text area node for HUD"""
     def __init__(self):
         super(textArea, self).__init__()
-        
+
         self.trans = coin.SoTranslation()
         self.trans.translation = (-0.98,0.95,0)
 
         self.font = coin.SoFont()
         self.font.name = "osiFont,FreeSans,sans"
         self.font.size.setValue(16.0)
-        
+
         self.str  = coin.SoText2()
         self.str.string = ""
 
         self.color = coin.SoBaseColor()
         self.color.rgb = (0,0,0)
-        
+
         self.addChild(self.trans)
         self.addChild(self.color)
         self.addChild(self.font)
         self.addChild(self.str)
-        
+
     @property
     def fontColor(self):
         return( self.color.rgb.getValue())
@@ -43,7 +50,7 @@ class textArea(coin.SoSeparator):
     @fontColor.setter
     def fontColor(self, color):
         self.color.rgb = (color[0], color[1], color[2])
-        
+
     @property
     def fontName(self):
         return( self.font.name.getValue())
@@ -91,7 +98,7 @@ class textArea(coin.SoSeparator):
         if isinstance(s,str):
             t.append(s)
         elif isinstance(s,list):
-            t += s        
+            t += s
         self.text = t
 
 
@@ -102,7 +109,7 @@ class HUD:
         debug("HUD init")
 
         self.HUDNode = coin.SoSeparator()
-        
+
         self.cam = coin.SoOrthographicCamera()
         self.cam.aspectRatio = 1
         self.cam.viewportMapping = coin.SoCamera.LEAVE_ALONE

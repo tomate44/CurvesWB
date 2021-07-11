@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__ = "Blend Surface"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = "Blend surface between two curveOnSurface objects"
+
 import os
 import FreeCAD
 import FreeCADGui
@@ -24,7 +31,7 @@ def downgradeArray(arr):
         pt1 += row
     return pt1
 
-        
+
 def shapeCloud(arr):
     v = []
     for row in arr:
@@ -34,7 +41,7 @@ def shapeCloud(arr):
     return c
 
 def getComboView(mw):
-    #from PySide.QtCore import * 
+    #from PySide.QtCore import *
     dw=mw.findChildren(QDockWidget)
     for i in dw:
         if str(i.objectName()) == "Combo View":
@@ -83,7 +90,7 @@ class blendSurfFP:
     def execute(self, obj):
         if hasattr(obj,"Edge1") and hasattr(obj,"Edge2"):
             if (not obj.Edge1 == None) and (not obj.Edge2 == None):
-                
+
                 bs = blendSurface.blendSurface(obj.Edge1, obj.Edge2)
                 bs.railSamples = obj.RailSamples
                 bs.profSamples = obj.ProfileSamples
@@ -99,7 +106,7 @@ class blendSurfFP:
                     bs.var_scale2 = obj.ScaleList2
                 bs.buildCurves()
                 #pts = bs.getPoints()
-                
+
                 #obj.Points = downgradeArray(pts)
                 obj.Shape = bs.get_gordon_shapes() #shapeCloud(pts)
                 return bs
@@ -146,34 +153,34 @@ class blendSurfVP:
     def __init__(self, obj):
         obj.Proxy = self
         #self.attach(obj)
-        
+
     def getIcon(self):
         return TOOL_ICON
 
     def attach(self, vobj):
         #self.ViewObject = vobj
         self.Object = vobj.Object
-        
+
         #self.gridDM = coin.SoGroup()
         #self.pointsDM = coin.SoGroup()
         #self.ProfDM = coin.SoGroup()
         #self.railDM = coin.SoGroup()
-        
+
         #self.coord = CoinNodes.coordinate3Node(self.Object.Points)
         #self.row = CoinNodes.rowNode((0.8,0.4,0.4),1.0)
         #self.col = CoinNodes.colNode((0.4,0.4,0.8),1.0)
         #self.pointSet = coin.SoPointSet()
         #self.style = CoinNodes.styleNode((0,0,0),1.0,2.0)
         #self.style.addChild(self.pointSet)
-        
+
         ##vobj.addChild(self.coord)
-        
+
         #self.ProfDM.addChild(self.coord)
         #self.ProfDM.addChild(self.row)
-        
+
         #self.railDM.addChild(self.coord)
         #self.railDM.addChild(self.col)
-        
+
         #self.gridDM.addChild(self.coord)
         #self.gridDM.addChild(self.row)
         #self.gridDM.addChild(self.col)
@@ -181,7 +188,7 @@ class blendSurfVP:
         #self.pointsDM.addChild(self.coord)
         #self.pointsDM.addChild(self.style)
         ##self.points.addChild(self.pointSet)
-        
+
         #vobj.addDisplayMode(self.gridDM,"Wireframe")
         #vobj.addDisplayMode(self.pointsDM,"Points")
         #vobj.addDisplayMode(self.ProfDM,"Profiles")
@@ -222,7 +229,7 @@ class blendSurfVP:
 
     #def setDisplayMode(self,mode):
          #return mode
-  
+
     def setEdit(self,vobj,mode=0):
         if mode == 0:
             debug("Start Edit")
@@ -267,7 +274,7 @@ class blendSurfVP:
     def claimChildren(self):
         a = [self.Object.Edge1, self.Object.Edge2]
         return a
-        
+
     def onDelete(self, feature, subelements): # subelements is a tuple of strings
         try:
             self.Object.Edge1.ViewObject.show()
@@ -290,7 +297,7 @@ class blendSurfCommand:
         if s == []:
             FreeCAD.Console.PrintError("Select 2 CurveOnSurface objects.\n")
             return
-            
+
         myblSu = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Blend_Surface")
         blendSurfFP(myblSu)
         blendSurfVP(myblSu.ViewObject)
@@ -308,10 +315,4 @@ class blendSurfCommand:
                 'ToolTip': 'Blend surface between two curveOnSurface objects'}
 
 FreeCADGui.addCommand('blendSurface', blendSurfCommand())
-
-
-
-
-
-
 

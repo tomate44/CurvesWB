@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__ = "Profile Editor"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = ""
+
 import FreeCAD
 import FreeCADGui
 import Part
@@ -477,6 +484,9 @@ class InterpoCurveEditor(object):
         for li in self.lines:
             li.updateLine()
         self.update_curve()
+
+
+
 
     def subdivide(self):
         #  get selected lines and subdivide them

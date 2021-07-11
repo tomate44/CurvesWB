@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__ = "Sweep2Rails"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = "Sweep profiles on 2 rails"
+
 import os
 import FreeCAD
 import FreeCADGui

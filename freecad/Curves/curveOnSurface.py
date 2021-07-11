@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__ = "Curve on Surface"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = ""
+
 import FreeCAD
 import Part
 from Part import Geom2d
@@ -177,6 +184,7 @@ def get_offset_curve(bc, c1, c2, dist=0.1):
         return intersec
 
 
+
 class curveOnSurface(object):
 
     def __init__(self, edge=None, face=None):
@@ -211,6 +219,7 @@ class curveOnSurface(object):
     def reversed(self, b):
         if self._reversed is not bool(b):
             self.reverse()
+
 
     def reverse(self):
         if self.isValid:

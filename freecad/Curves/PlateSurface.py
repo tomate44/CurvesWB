@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+
+__title__ = "Plate Surface"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = ""
+
+
 from __future__ import division # allows floating point division from integers
 import FreeCAD, Part, math
 import os, dummy, FreeCADGui

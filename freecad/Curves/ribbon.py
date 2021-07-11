@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__ = "Ribbon"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = ""
+
 import FreeCAD
 import FreeCADGui
 import Part
@@ -94,7 +101,7 @@ class interp(object):
             p = self.param[0]
         else:
             p = self.bs.parameter(self.data_to_vec(v))
-        
+
         print(p,v)
         return(p)
 
@@ -208,10 +215,10 @@ class Ribbon(object):
         loft = Part.makeLoft(w)
         return(loft)
 
-            
 
 
-        
+
+
 def closest_point(pt_list,pt):
     """ returns the point in pt_list that is closest to pt."""
     dist = 1e50
@@ -273,9 +280,9 @@ def main():
     Part.show(newc1.toShape())
 
     Part.show(Part.Compound(edges))
-        
-    
-        
+
+
+
 
 
 
@@ -290,7 +297,7 @@ def test():
     i.paramAt(5)
     i.paramAt(7)
     print("---")
-    
+
     i = interp()
     i.add(0,(5,23))
     i.add(2,(6,36))

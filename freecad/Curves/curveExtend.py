@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__ = "Curve Extend"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = ""
+
 import math
 import FreeCAD
 import Part

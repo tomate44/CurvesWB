@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__ = "blendSurface"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = ""
+
 import FreeCAD
 import Part
 from freecad.Curves.curveOnSurface import curveOnSurface

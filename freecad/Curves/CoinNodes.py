@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__ = "Coin Nodes"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = ""
+
 import FreeCAD
 import FreeCADGui
 import Part

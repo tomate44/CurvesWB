@@ -1,9 +1,16 @@
+# -*- coding: utf-8 -*-
+
+__title__ = "Property Editor"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = ""
+
 import FreeCAD
 import FreeCADGui
 import Part
 
-from PySide.QtGui import * 
-from PySide.QtCore import * 
+from PySide.QtGui import *
+from PySide.QtCore import *
 
 def getComboView(mw):
    dw=mw.findChildren(QDockWidget)
@@ -82,7 +89,7 @@ class VPEditor(QObject):
         self.cancel = QPushButton()
         self.cancel.setObjectName("Cancel")
         self.cancel.setText("Cancel")
-        self.buttonLO.addWidget(self.ok) 
+        self.buttonLO.addWidget(self.ok)
         self.buttonLO.addWidget(self.cancel)
         self.ok.clicked.connect(self.accept)
         self.cancel.clicked.connect(self.reject)
@@ -146,7 +153,7 @@ class VectorListWidget(QTableWidget):
         self.removeButton = QPushButton()
         self.removeButton.setObjectName("Remove")
         self.removeButton.setText("Remove")
-        self.table_buttons.addWidget(self.insertButton) 
+        self.table_buttons.addWidget(self.insertButton)
         self.table_buttons.addWidget(self.removeButton)
         self.insertButton.clicked.connect(self.insert)
         self.removeButton.clicked.connect(self.remove)
@@ -199,7 +206,7 @@ class VectorListWidget(QTableWidget):
         objname = self.fp.Name
         st = "FreeCAD.getDocument('"+docname+"').getObject('"+objname+"')."+self.prop+"="+str(data)
         FreeCADGui.doCommand(st)
- 
+
 if __name__ == '__main__':
     z=Test()
     z.setEdit()

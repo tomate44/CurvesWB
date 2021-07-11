@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__ = "init_gui.py"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = ""
+
 import os
 import FreeCADGui as Gui
 import FreeCAD as App
@@ -7,7 +14,7 @@ from . import ICONPATH
 class CurvesWorkbench(Gui.Workbench):
     """FreeCAD workbench that offers a collection of tools mainly related to Nurbs curves and surfaces."""
     MenuText = "Curves"
-    ToolTip = "a workbench dedicated to curves and surfaces"
+    ToolTip = "A workbench dedicated to curves and surfaces"
     Icon = os.path.join(ICONPATH, "blendSurf.svg")
     toolbox = []
 

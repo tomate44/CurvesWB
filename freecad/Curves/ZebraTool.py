@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__ = "Zebra Tool"
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = "Zebra texture for surface inspection"
+
 import sys
 if sys.version_info.major >= 3:
     from importlib import reload
@@ -57,7 +64,7 @@ class zebra(QtGui.QWidget):
         self.sg = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
         #print str( FreeCADGui.ActiveDocument.Document.Label )
         #print str( self.sg )
-        
+
 
         self.stripes = coin.SoTexture2()
         self.sg.insertChild(self.stripes,0)
@@ -156,7 +163,7 @@ class ZebraTool:
             ZebraTool.active = True
         else:
             FreeCAD.Console.PrintMessage("Zebra already active\n")
-        
+
 
 
     def GetResources(self):

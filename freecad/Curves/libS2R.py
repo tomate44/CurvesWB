@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+__title__ = "libS2R"
+__author__ = "Chris_G"
+__license__ = "LGPL 2.1"
+__doc__ = ''
+
 import os
 import math
 import FreeCAD
