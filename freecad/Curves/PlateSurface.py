@@ -160,7 +160,9 @@ class Plate:
 
 
     def GetResources(self):
-        return {'Pixmap' : path_curvesWB_icons+'/sw2r.svg', 'MenuText': 'Plate Surface', 'ToolTip': 'Plate Surface'}
+        return {'Pixmap': path_curvesWB_icons+'/sw2r.svg',
+                'MenuText': 'Plate Surface',
+                'ToolTip': 'Plate Surface'}
 
 FreeCADGui.addCommand('Plate', Plate())
 

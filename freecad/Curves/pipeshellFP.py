@@ -374,6 +374,8 @@ class pipeShellCommand:
             return(False)
 
     def GetResources(self):
-        return {'Pixmap' : TOOL_ICON, 'MenuText': __title__, 'ToolTip': __doc__}
+        return {'Pixmap': TOOL_ICON,
+                'MenuText': __title__,
+                'ToolTip': __doc__}
 
 FreeCADGui.addCommand('pipeshell', pipeShellCommand())

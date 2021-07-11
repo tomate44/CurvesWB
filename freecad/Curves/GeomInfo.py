@@ -442,7 +442,7 @@ class GeomInfo:
                 self.addHUD()
             self.getTopo()
 
-    def removeSelection(self, doc, obj, sub):  # Effacer l'objet selectionne
+    def removeSelection(self, doc, obj, sub):  # Delete selected object
         # FreeCAD.Console.PrintMessage("removeSelection %s %s\n" % (obj, str(sub)))
         if self.Active:
             self.SoText2.string = ""
@@ -451,7 +451,7 @@ class GeomInfo:
     def setPreselection(self, doc, obj, sub):
         pass
 
-    def clearSelection(self, doc):  # Si clic sur l'ecran, effacer la selection
+    def clearSelection(self, doc):  # If screen is clicked, delete selection
         # FreeCAD.Console.PrintMessage("clearSelection\n")
         if self.Active:
             self.SoText2.string = ""
