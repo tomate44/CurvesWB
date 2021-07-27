@@ -26,6 +26,8 @@ class BlendSolidProxy:
                         "Base", "Faces to join")
         obj.addProperty("App::PropertyInteger", "Samples",
                         "Settings", "Number of samples to generate each surface")
+        obj.addProperty("App::PropertyBool", "Fuse",
+                        "Settings", "Fuse the 3 solids together")
         obj.addProperty("App::PropertyEnumeration", "Algo",
                         "Untwist", "Method used to untwist the wires")
         obj.addProperty("App::PropertyLinkSubList", "MatchingShapes",
@@ -52,6 +54,7 @@ class BlendSolidProxy:
         obj.Samples = 20
         obj.Continuity1 = 2
         obj.Continuity2 = 2
+        obj.Fuse = False
         obj.AutoScale = ["RegularPoles", "MinimizeCurvature", "Manual"]
         obj.AutoScale = "RegularPoles"
         obj.setEditorMode("Scale1", 2)
@@ -94,7 +97,10 @@ class BlendSolidProxy:
                 return af
 
     def execute(self, obj):
-        blso = blendSolids.BlendSolid(*self.get_input_shapes(obj))
+        f1, f2, sh1, sh2 = self.get_input_shapes(obj)
+        if None in [f1, f2, sh1, sh2]:
+            return
+        blso = blendSolids.BlendSolid(f1, f2, sh1, sh2)
         if obj.Algo == "ManualMatch" and len(obj.MatchingShapes) > 1:
             blso.match_shapes(*self.get_orientation_shapes(obj))
             obj.Offset = [FreeCAD.Vector(*tup) for tup in blso.offset]
@@ -114,6 +120,12 @@ class BlendSolidProxy:
         shape = blso.Shape
         if isinstance(shape, Part.Solid):  # and shape.isValid():
             obj.ShapeType = "Solid"
+            if obj.Fuse:
+                fuse = shape.fuse([sh1, sh2], 1e-7)
+                # print(fuse)
+                if len(fuse.Solids) == 1:
+                    shape = fuse.Solids[0]
+                    obj.ShapeType = "Fused"
         elif isinstance(shape, Part.Shell):  # and shape.isValid():
             obj.ShapeType = "Shell"
         else:
@@ -159,6 +171,23 @@ class BlendSolidViewProxy:
     def __setstate__(self, state):
         self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
         return None
+
+    def claimChildren(self):
+        if self.Object.ShapeType == "Fused":
+            o1 = self.Object.Sources[0][0]
+            o2 = self.Object.Sources[1][0]
+            o1.ViewObject.Visibility = False
+            o2.ViewObject.Visibility = False
+            return [o1, o2]
+        return []
+
+    def onDelete(self, feature, subelements):
+        if feature.Object.ShapeType == "Fused":
+            o1 = self.Object.Sources[0][0]
+            o2 = self.Object.Sources[1][0]
+            o1.ViewObject.Visibility = True
+            o2.ViewObject.Visibility = True
+        return True
 
 
 class BlendSolidCommand:
