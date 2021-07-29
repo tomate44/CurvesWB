@@ -171,10 +171,10 @@ class FaceMapper:
 
     def swapUV(self, b=False):
         if b:
+            uk = self.quad.getUKnots()
+            self.quad.setUKnots(self.quad.getVKnots())
+            self.quad.setVKnots(uk)
             self.quad.exchangeUV()
-            # pts = list(zip(*self.quad.getPoles()))
-            # self.quad.setPoleRow(1, pts[0])
-            # self.quad.setPoleRow(2, pts[1])
 
     def face_flatmap(self, fill_face=False):
         outer_wire = None
