@@ -280,6 +280,7 @@ class ShapeWrapper:
 
         self.face2 = self.face.makeOffsetShape(self.offset + self.extrusion, 1e-7).Face1
         shapes_2 = [wrap_on_face(sh, self.face2, self.quad) for sh in shapelist]
+
         if not self.fill_extrusion:
             return Part.Compound(shapes_1 + shapes_2)
 
@@ -296,16 +297,21 @@ class ShapeWrapper:
                     ruled = Part.makeRuledSurface(shapes_1[i].Edges[j], shapes_2[i].Edges[j])
                     # ruled.check(True)
                     faces.append(ruled)
+                shape = Part.Compound(faces)
                 try:
-                    shell = Part.makeShell(faces)
-                    shell.sewShape()
-                    # print_tolerance(shell)
-                    solid = Part.makeSolid(shell)
-                    # solid.fixTolerance(1e-5)
-                    shapes.append(solid)
-                except Exception:
-                    FreeCAD.Console.PrintWarning("Sketch on surface : failed to create solid # {}.\n".format(i + 1))
-                    shapes.extend(faces)
+                    shell = Part.Shell(shape)
+                    if shell.isValid():
+                        shape = shell
+                except Part.OCCError:
+                    pass
+                try:
+                    solid = Part.Solid(shape)
+                    if solid.isValid():
+                        shape = solid
+                except Part.OCCError:
+                    pass
+                # FreeCAD.Console.PrintWarning("Sketch on surface : failed to create solid # {}.\n".format(i + 1))
+                shapes.extend(shape)
             else:
                 if shapes_1[i].Wires and shapes_2[i].Wires:
                     ruled = Part.makeRuledSurface(shapes_1[i].Wires[0], shapes_2[i].Wires[0])
