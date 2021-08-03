@@ -56,26 +56,29 @@ class Discretization:
         try:
             edge = o.Shape.Edges[n - 1]
             return edge.FirstParameter, edge.LastParameter
-        except:
+        except Exception:
             return 0.0, 1.0
 
-    def getTarget(self, obj, typ):
-        o = obj.Edge[0]
-        e = obj.Edge[1][0]
-        n = eval(e.lstrip('Edge'))
+    def getTarget(self, fp, typ):
+        obj = fp.Edge[0]
+        ssname = fp.Edge[1][0]
+        sh = obj.Shape.copy()
+        if hasattr(obj, "getGlobalPlacement"):
+            gpl = obj.getGlobalPlacement()
+            sh.Placement = gpl
         try:
-            edge = o.Shape.Edges[n - 1]
-            obj.setEditorMode("Target", 2)
-            for w in o.Shape.Wires:
+            edge = sh.getElement(ssname)
+            fp.setEditorMode("Target", 2)
+            for w in sh.Wires:
                 for e in w.Edges:
                     if edge.isSame(e):
                         debug("found matching edge")
                         debug("wire has {} edges".format(len(w.Edges)))
-                        obj.setEditorMode("Target", 0)
+                        fp.setEditorMode("Target", 0)
                         if typ:
                             return w
             return edge
-        except:
+        except Exception:
             return None
 
     def buildPoints(self, obj):
