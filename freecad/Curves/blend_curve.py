@@ -682,15 +682,21 @@ class EdgeOnFace:
 
         # get offset curve
         off = get_offset_curve(cos[idx], cos[id1], cos[id2], dist)
-        bs = None
         if off:
             p1 = off[0].parameter(off[1])
             p2 = off[0].parameter(off[2])
             if p1 < p2:
-                bs = off[0].toBSpline(p1, p2)
+                return off[0].toBSpline(p1, p2)
             else:
-                bs = off[0].toBSpline(p2, p1)
-        return bs
+                return off[0].toBSpline(p2, p1)
+
+        off = Part.Geom2d.OffsetCurve2d(cos[idx], dist)
+        pt = off.value(0.5 * (off.FirstParameter + off.LastParameter))
+        if self._face.isPartOfDomain(pt.x, pt.y):
+            return off.toBSpline(off.FirstParameter, off.LastParameter)
+        else:
+            off = Part.Geom2d.OffsetCurve2d(cos[idx], -dist)
+            return off.toBSpline(off.FirstParameter, off.LastParameter)
 
     def curve_on_surface(self):
         cos = self._face.curveOnSurface(self._edge)
@@ -713,7 +719,10 @@ class EdgeOnFace:
     def valueAtPoint(self, pt):
         "Returns PointOnEdge object at given point"
         if isinstance(pt, FreeCAD.Vector):
-            return self.value(abs_par=self._edge.Curve.parameter(pt))
+            par = self._edge.Curve.parameter(pt)
+            if par < self._edge.FirstParameter and self._edge.Curve.isClosed():
+                par += self._edge.LastParameter - self._edge.FirstParameter
+            return self.value(abs_par=par)
 
     def value(self, abs_par=None, rel_par=None, dist_par=None):
         """Returns PointOnEdge object at given parameter:
