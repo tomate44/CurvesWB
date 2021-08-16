@@ -65,6 +65,103 @@ class SmoothPoint:
             return [self.raw_vectors[i] * pow(scale, i) for i in range(self.continuity)]
 
 
+class ValueOnEdge:
+    """Interpolates a float value along an edge.
+    voe = ValueOnEdge(anEdge, value=None)"""
+    def __init__(self, edge, value=None):
+        self._edge = edge
+        self._curve = Part.BSplineCurve()
+        self._pts = []
+        if value is not None:
+            self.set(value)
+
+    def __repr__(self):
+        return "{}({})".format(self.__class__.__name__, self.values)
+
+    @property
+    def values(self):
+        return [v.y for v in self._pts]
+
+    def set(self, val):
+        "Set a constant value, or a list of regularly spaced values"
+        self._pts = []
+        if isinstance(val, (list, tuple)):
+            if len(val) == 1:
+                val *= 2
+            params = np.linspace(self._edge.FirstParameter, self._edge.LastParameter, len(val))
+            for i in range(len(val)):
+                self.add(val[i], abs_par=params[i], recompute=False)
+        elif isinstance(val, (int, float)):
+            self.set([val, val])
+        self._compute()
+
+    def _get_real_param(self, abs_par=None, rel_par=None, dist_par=None, point=None):
+        """return the real edge parameter from one of the parameter values in :
+        * abs_par : the real parameter
+        * rel_par : the normalized parameter in [0.0, 1.0]
+        * dist_par : the distance from start (if positive) or end (if negative)
+        * point : parameter nearest to point"""
+        if abs_par is not None:
+            # if abs_par >= self._edge.FirstParameter and abs_par <= self._edge.LastParameter:
+            return abs_par
+        elif rel_par is not None:
+            # if rel_par >= 0.0 and rel_par <= 1.0:
+            return self._edge.FirstParameter + rel_par * (self._edge.LastParameter - self._edge.FirstParameter)
+        elif dist_par is not None:
+            # if abs(dist_par) <= self._edge.Length:
+            return self._edge.getParameterByLength(dist_par)
+        elif point is not None:
+            p = self._edge.Curve.parameter(point)
+            if p < self._edge.FirstParameter:
+                p += (self._edge.LastParameter - self._edge.FirstParameter)
+            elif p > self._edge.LastParameter:
+                p -= (self._edge.LastParameter - self._edge.FirstParameter)
+            return p
+        else:
+            raise ValueError("No parameter")
+
+    def add(self, val, abs_par=None, rel_par=None, dist_par=None, point=None, recompute=True):
+        """Add a value on the edge at the given parameter.
+        Input:
+        - val : float value
+        - one of the parameter values :
+        * abs_par : the real parameter
+        * rel_par : the normalized parameter in [0.0, 1.0]
+        * dist_par : the distance from start (if positive) or end (if negative)
+        * point : parameter nearest to point
+        - recompute : if True(default), recompute the interpolating curve"""
+        par = self._get_real_param(abs_par, rel_par, dist_par, point)
+        self._pts.append(FreeCAD.Vector(par, val, 0.0))
+        if recompute:
+            self._compute()
+
+    def reset(self):
+        self._pts = []
+
+    def _compute(self):
+        if len(self._pts) < 2:
+            return
+        self._pts = sorted(self._pts, key=itemgetter(0))
+        par = [p.x for p in self._pts]
+        if self._edge.isClosed() and self._edge.Curve.isPeriodic() and len(self._pts) > 2:
+            self._curve.interpolate(Points=self._pts[:-1], Parameters=par, PeriodicFlag=True)
+        else:
+            self._curve.interpolate(Points=self._pts, Parameters=par, PeriodicFlag=False)
+
+    def value(self, abs_par=None, rel_par=None, dist_par=None, point=None):
+        """Returns an interpolated value at the given parameter.
+        Input:
+        - one of the parameter values :
+        * abs_par : the real parameter
+        * rel_par : the normalized parameter in [0.0, 1.0]
+        * dist_par : the distance from start (if positive) or end (if negative)
+        * point : parameter nearest to point"""
+        if len(self._pts) == 1:
+            return self._pts[0].y
+        par = self._get_real_param(abs_par, rel_par, dist_par)
+        return self._curve.value(par).y
+
+
 class SmoothEdge:
     """Defines an edge that can produce SmoothPoints.
     smed = SmoothEdge(myEdge, continuity=2)
@@ -81,7 +178,7 @@ class SmoothEdge:
 
     @property
     def edge(self):
-        "The support edge of this PointOnEdge"
+        "The support edge"
         return self._edge
 
     @edge.setter
@@ -99,21 +196,85 @@ class SmoothEdge:
             res.extend([self._edge.Curve.getDN(par, i + 1) for i in range(self._continuity)])
         return SmoothPoint(res)
 
+
+class SmoothEdgeOnFace(SmoothEdge):
+    """Defines an smooth edge on a face.
+    smedof = SmoothEdgeOnFace(myEdge, myFace, continuity=2)"""
+    def __init__(self, edge, face, continuity=1):
+        super().__init__(self, edge, continuity)
+        self.face = face
+
+    def __repr__(self):
+        return "{}({}, {}, {})".format(self.__class__.__name__,
+                                       self.edge, self.face, self.continuity)
+
     @property
-    def parameter(self):
-        "Defines the location of this PointOnEdge along the edge"
-        return self._parameter
+    def face(self):
+        "The support face of this SmoothEdge"
+        return self._face
 
-    @parameter.setter
-    @recompute_vectors
-    def parameter(self, par):
-        if par < self._edge.FirstParameter:
-            self._parameter = self._edge.FirstParameter
-        elif par > self._edge.LastParameter:
-            self._parameter = self._edge.LastParameter
+    @face.setter
+    def face(self, face):
+        if face.isDerivedFrom("Part::GeomSurface"):
+            self._face = face.toShape()
         else:
-            self._parameter = par
+            self._face = face
 
+    def valueAt(self, par):
+        res = [self._edge.Curve.getD0(par), ]
+        if self._continuity > 0:
+            res.extend([self._edge.Curve.getDN(par, i + 1) for i in range(self._continuity)])
+        return SmoothPoint(res)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class Nothing:
     @property
     def distance(self):
         "Defines the location of this PointOnEdge along the edge, by distance"
@@ -129,25 +290,6 @@ class SmoothEdge:
         else:
             self.parameter = self._edge.getParameterByLength(dist)
 
-    @property
-    def continuity(self):
-        "Defines the number of derivative vectors of this PointOnEdge"
-        return self._continuity
-
-    @continuity.setter
-    @recompute_vectors
-    def continuity(self, val):
-        if val < 0:
-            self._continuity = 0
-        elif val > 5:
-            self._continuity = 5
-        else:
-            self._continuity = val
-
-
-    @property
-    def vectors(self):
-        return [self._vectors[i] * pow(self._scale, i) for i in range(self.continuity + 1)]
     # ########################
 
     @property
@@ -212,98 +354,6 @@ class SmoothEdge:
         vecs = [FreeCAD.Vector()] + self.vectors[1:]
         pts = [p + self.point for p in vecs]
         return Part.makePolygon(pts)
-
-
-class ValueOnEdge:
-    """Interpolates a float value along an edge.
-    voe = ValueOnEdge(anEdge, value=None)"""
-    def __init__(self, edge, value=None):
-        self._edge = edge
-        self._curve = Part.BSplineCurve()
-        self._pts = []
-        if value is not None:
-            self.set(value)
-
-    def __repr__(self):
-        return "{}({})".format(self.__class__.__name__, self.values)
-
-    @property
-    def values(self):
-        return [v.y for v in self._pts]
-
-    def set(self, val):
-        "Set a constant value, or a list of regularly spaced values"
-        self._pts = []
-        if isinstance(val, (list, tuple)):
-            if len(val) == 1:
-                val *= 2
-            params = np.linspace(self._edge.FirstParameter, self._edge.LastParameter, len(val))
-            for i in range(len(val)):
-                self.add(val[i], abs_par=params[i], recompute=False)
-        elif isinstance(val, (int, float)):
-            self.set([val, val])
-        self._compute()
-
-    def _get_real_param(self, abs_par=None, rel_par=None, dist_par=None, point=None):
-        """Check range and return the real edge parameter from:
-        - the real parameter
-        - the normalized parameter in [0.0, 1.0]
-        - the distance from start (if positive) or end (if negative)"""
-        if abs_par is not None:
-            # if abs_par >= self._edge.FirstParameter and abs_par <= self._edge.LastParameter:
-            return abs_par
-        elif rel_par is not None:
-            # if rel_par >= 0.0 and rel_par <= 1.0:
-            return self._edge.FirstParameter + rel_par * (self._edge.LastParameter - self._edge.FirstParameter)
-        elif dist_par is not None:
-            # if abs(dist_par) <= self._edge.Length:
-            return self._edge.getParameterByLength(dist_par)
-        elif point is not None:
-            p = self._edge.Curve.parameter(point)
-            if p < self._edge.FirstParameter:
-                p += (self._edge.LastParameter - self._edge.FirstParameter)
-            elif p > self._edge.LastParameter:
-                p -= (self._edge.LastParameter - self._edge.FirstParameter)
-            return p
-        else:
-            raise ValueError("No parameter")
-
-    def add(self, val, abs_par=None, rel_par=None, dist_par=None, point=None, recompute=True):
-        """Add a value on the edge at the given parameter.
-        Input:
-        - val : float value
-        - abs_par : the real parameter
-        - rel_par : the normalized parameter in [0.0, 1.0]
-        - dist_par : the distance from start (if positive) or end (if negative)
-        - recompute : if True(default), recompute the interpolating curve"""
-        par = self._get_real_param(abs_par, rel_par, dist_par, point)
-        self._pts.append(FreeCAD.Vector(par, val, 0.0))
-        self._pts = sorted(self._pts, key=itemgetter(0))
-        if recompute:
-            self._compute()
-
-    def reset(self):
-        self._pts = []
-
-    def _compute(self):
-        if len(self._pts) < 2:
-            return
-        par = [p.x for p in self._pts]
-        if self._edge.isClosed() and self._edge.Curve.isPeriodic() and len(self._pts) > 2:
-            self._curve.interpolate(Points=self._pts[:-1], Parameters=par, PeriodicFlag=True)
-        else:
-            self._curve.interpolate(Points=self._pts, Parameters=par, PeriodicFlag=False)
-
-    def value(self, abs_par=None, rel_par=None, dist_par=None):
-        """Returns an interpolated value at the given parameter.
-        Input:
-        - abs_par : the real parameter
-        - rel_par : the normalized parameter in [0.0, 1.0]
-        - dist_par : the distance from start (if positive) or end (if negative)"""
-        if len(self._pts) == 1:
-            return self._pts[0].y
-        par = self._get_real_param(abs_par, rel_par, dist_par)
-        return self._curve.value(par).y
 
 
 class BlendCurve:
