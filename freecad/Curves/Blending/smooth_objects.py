@@ -13,6 +13,7 @@ import FreeCADGui
 import Part
 import numpy as np
 
+from math import pi
 from . import _utils
 from . import curves_to_surface
 
@@ -58,9 +59,9 @@ class SmoothPoint:
 
     def value(self, size=0):
         "Returns the scaled SmoothPoint vectors, so that the tangent has given size"
-        if size == 0:
+        if size == 0 or self.continuity <= 0:
             return self.raw_vectors
-        elif self.continuity > 0:
+        else:
             scale = size / self.raw_vectors[1].Length
             return [self.raw_vectors[i] * pow(scale, i) for i in range(self.continuity)]
 
@@ -80,7 +81,7 @@ class ValueOnEdge:
 
     @property
     def values(self):
-        return [v.y for v in self._pts]
+        return [vec2(v.x, v.y) for v in self._pts]
 
     def set(self, val):
         "Set a constant value, or a list of regularly spaced values"
@@ -131,7 +132,7 @@ class ValueOnEdge:
         * point : parameter nearest to point
         - recompute : if True(default), recompute the interpolating curve"""
         par = self._get_real_param(abs_par, rel_par, dist_par, point)
-        self._pts.append(FreeCAD.Vector(par, val, 0.0))
+        self._pts.append(FreeCAD.Vector(val.x, val.y, par))
         if recompute:
             self._compute()
 
@@ -141,14 +142,17 @@ class ValueOnEdge:
     def _compute(self):
         if len(self._pts) < 2:
             return
-        self._pts = sorted(self._pts, key=itemgetter(0))
-        par = [p.x for p in self._pts]
+        self._pts = sorted(self._pts, key=itemgetter(2))
+        par = [p.z for p in self._pts]
         if self._edge.isClosed() and self._edge.Curve.isPeriodic() and len(self._pts) > 2:
             self._curve.interpolate(Points=self._pts[:-1], Parameters=par, PeriodicFlag=True)
         else:
             self._curve.interpolate(Points=self._pts, Parameters=par, PeriodicFlag=False)
 
-    def value(self, abs_par=None, rel_par=None, dist_par=None, point=None):
+    def _value(self, pt):
+        return vec2(pt.x, pt.y)
+
+    def valueAt(self, abs_par=None, rel_par=None, dist_par=None, point=None):
         """Returns an interpolated value at the given parameter.
         Input:
         - one of the parameter values :
@@ -157,9 +161,9 @@ class ValueOnEdge:
         * dist_par : the distance from start (if positive) or end (if negative)
         * point : parameter nearest to point"""
         if len(self._pts) == 1:
-            return self._pts[0].y
+            return self._value(self._pts[0])
         par = self._get_real_param(abs_par, rel_par, dist_par)
-        return self._curve.value(par).y
+        return self._value(self._curve.value(par))
 
 
 class SmoothEdge:
@@ -201,8 +205,9 @@ class SmoothEdgeOnFace(SmoothEdge):
     """Defines an smooth edge on a face.
     smedof = SmoothEdgeOnFace(myEdge, myFace, continuity=2)"""
     def __init__(self, edge, face, continuity=1):
-        super().__init__(self, edge, continuity)
+        super().__init__(edge, continuity)
         self.face = face
+        self.crossdir = ValueOnEdge(self.edge, vec2(0, 1))
 
     def __repr__(self):
         return "{}({}, {}, {})".format(self.__class__.__name__,
@@ -220,12 +225,54 @@ class SmoothEdgeOnFace(SmoothEdge):
         else:
             self._face = face
 
+    def tangent_plane(self, par):
+        o = self._edge.valueAt(par)
+        x = self._edge.tangentAt(par)
+        n = self._face.normalAt(*self._face.Surface.parameter(o))
+        y = n.cross(x)
+        return Part.Plane(o, o + x, o + y)
+
+    def vector2dAt(self, v, par):
+        pl = self.tangent_plane(par)
+        v.normalize()
+        return vec2(*pl.parameter(v))
+
+    def add_dir_to_point(self, v, par):
+        """Add a crosscurve direction (Vec2d) toward point v
+        at parameter par on edge."""
+        self.crossdir.add(self.vector2dAt(v, par), par)
+
+    def set_dir_to_pts(self, pts):
+        """Set crosscurves to point toward pts along edge"""
+        self.crossdir.reset()
+        i = 0
+        for p in np.linspace(self._edge.FirstParameter, self._edge.LastParameter, len(pts)):
+            self.crossdir.add(self.vector2dAt(pts[i], p), p, recompute=False)
+            i += 1
+        self.crossdir._compute()
+
+    def crossCurveAt(self, par):
+        pl = self.tangent_plane(par)
+        ls = Part.Geom2d.Line2d(vec2(0, 0), self.crossdir.valueAt(par))
+        # ls.rotate(vec2(0, 0), self.crossdir.valueAt(par))
+        edge = ls.toShape(pl, -1, 1)
+        proj = self._face.project([edge])
+        if len(proj.Edges) < 1:
+            FreeCAD.Console.PrintError("Failed to compute cross-curve\n")
+        return proj.Edges[0]
+
     def valueAt(self, par):
-        res = [self._edge.Curve.getD0(par), ]
+        cc = self.crossCurveAt(par)
+        res = [cc.Curve.getD0(0), ]
         if self._continuity > 0:
-            res.extend([self._edge.Curve.getDN(par, i + 1) for i in range(self._continuity)])
+            res.extend([cc.Curve.getDN(0, i + 1) for i in range(self._continuity)])
         return SmoothPoint(res)
 
+    def comb_shape(self, num=10):
+        edges = []
+        for p in np.linspace(self._edge.FirstParameter, self._edge.LastParameter, num):
+            edges.append(self.crossCurveAt(p))
+        return Part.Compound(edges)
 
 
 
