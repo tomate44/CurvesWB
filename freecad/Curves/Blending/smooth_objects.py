@@ -28,6 +28,42 @@ vec3 = FreeCAD.Vector
 vec2 = FreeCAD.Base.Vector2d
 
 
+def dir_der(surface, location, direction, order):
+    """Returns the (order + 1) derivatives of the surface
+    at given location, in given direction"""
+    a, b = location
+    pt = surface.getD0(a, b)
+    if order == 0:
+        return pt
+    direction.normalize()
+    x, y, _ = direction
+    du = surface.getDN(a, b, 1, 0)
+    dv = surface.getDN(a, b, 0, 1)
+    d1 = x * du + y * dv
+    if order == 1:
+        return pt, d1
+    d2u = surface.getDN(a, b, 2, 0)
+    d2v = surface.getDN(a, b, 0, 2)
+    duv = surface.getDN(a, b, 1, 1)
+    d2 = pow(x, 2) * d2u + 2 * x * y * duv + pow(y, 2) * d2v
+    if order == 2:
+        return pt, d1, d2
+    d3u = surface.getDN(a, b, 3, 0)
+    d2uv = surface.getDN(a, b, 2, 1)
+    du2v = surface.getDN(a, b, 1, 2)
+    d3v = surface.getDN(a, b, 0, 3)
+    d3 = pow(x, 3) * d3u + 3 * pow(x, 2) * y * d2uv + 3 * x * pow(y, 2) * du2v + pow(y, 3) * d3v
+    if order == 3:
+        return d1, d2, d3
+    d4u = surface.getDN(a, b, 4, 0)
+    d3uv = surface.getDN(a, b, 3, 1)
+    d2u2v = surface.getDN(a, b, 2, 2)
+    du3v = surface.getDN(a, b, 1, 3)
+    d4v = surface.getDN(a, b, 0, 4)
+    d4 = (pow(x, 4) * d4u) + (4 * pow(x, 3) * y * d3uv) + (4 * pow(x, 2) * pow(y, 2) * d2u2v) + (4 * x * pow(y, 3) * du3v) + (pow(y, 4) * d4v)
+    return d1, d2, d3, d4
+
+
 class SmoothPoint:
     def __init__(self, vecs):
         self.raw_vectors = vecs
@@ -234,7 +270,7 @@ class SmoothEdgeOnFace(SmoothEdge):
 
     def vector2dAt(self, v, par):
         pl = self.tangent_plane(par)
-        v.normalize()
+        # v.normalize()
         return vec2(*pl.parameter(v))
 
     def add_dir_to_point(self, v, par):
@@ -262,16 +298,20 @@ class SmoothEdgeOnFace(SmoothEdge):
         return proj.Edges[0]
 
     def valueAt(self, par):
-        cc = self.crossCurveAt(par)
-        res = [cc.Curve.getD0(0), ]
-        if self._continuity > 0:
-            res.extend([cc.Curve.getDN(0, i + 1) for i in range(self._continuity)])
-        return SmoothPoint(res)
+        o = self._edge.valueAt(par)
+        loc = self._face.Surface.parameter(o)
+        cd = self.crossdir.valueAt(par)
+        return SmoothPoint(dir_der(self._face.Surface, loc, FreeCAD.Vector(cd.x, cd.y), self.continuity))
+        # cc = self.crossCurveAt(par)
+        # res = [cc.Curve.getD0(0), ]
+        # if self._continuity > 0:
+            # res.extend([cc.Curve.getDN(0, i + 1) for i in range(self._continuity)])
+        # return SmoothPoint(res)
 
     def comb_shape(self, num=10):
         edges = []
         for p in np.linspace(self._edge.FirstParameter, self._edge.LastParameter, num):
-            edges.append(self.crossCurveAt(p))
+            edges.append(self.valueAt(p).tangent_edge())
         return Part.Compound(edges)
 
 
