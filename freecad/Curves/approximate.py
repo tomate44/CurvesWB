@@ -201,9 +201,9 @@ class Approximate:
 
     def execute(self, obj):
         debug("\n* Approximate : execute *\n")
+        self.getPoints(obj)
         num = len(self.Points)
         diff = num - obj.LastIndex - 1
-        self.getPoints(obj)
         # obj.FirstIndex = 0
         obj.LastIndex = len(self.Points) - diff - 1
         if isinstance(self.Points[0], list):
@@ -308,26 +308,12 @@ class Approximate:
             else:
                 fp.setEditorMode("StartOffset", 2)
 
-    # def __getstate__(self):
-        # out = {"name": self.obj.Name,
-               # "Method": self.obj.Method}
-        # return out
+    def __getstate__(self):
+        self.Points = False
+        return dict()
 
-    # def __setstate__(self, state):
-        # self.obj = FreeCAD.ActiveDocument.getObject(state["name"])
-        # if "Method" not in self.obj.PropertiesList:
-            # self.obj.addProperty("App::PropertyEnumeration",
-                                 # "Method",
-                                 # "General",
-                                 # "Approximation method").Method = ["Parametrization", "Smoothing Algorithm"]
-        # if "TorsionWeight" not in self.obj.PropertiesList:
-            # self.obj.addProperty("App::PropertyFloatConstraint",
-                                 # "TorsionWeight",
-                                 # "Parameters",
-                                 # "Weight of curve torsion for smoothing algorithm")
-        # self.obj.Method = state["Method"]
-        # self.getPoints(self.obj)
-        # return None
+    def __setstate__(self, state):
+        return None
 
 
 class ViewProviderApp:
