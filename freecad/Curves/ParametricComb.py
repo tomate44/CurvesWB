@@ -376,6 +376,12 @@ class Comb:
             debug("Comb : Samples Property changed")
             self.execute(fp)
 
+    def __getstate__(self):
+        self.edges = False
+        return dict()
+
+    def __setstate__(self, state):
+        return None
 
 class ViewProviderComb:
     def __init__(self, obj):
@@ -504,9 +510,10 @@ class ViewProviderComb:
         return TOOL_ICON
 
     def __getstate__(self):
-        return None
+        return {"name": self.Object.Name}
 
     def __setstate__(self, state):
+        self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
         return None
 
 

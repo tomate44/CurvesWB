@@ -219,9 +219,9 @@ class Approximate:
             return
         if prop == "PointObject":
             debug("Approximate : PointObject changed\n")
+            self.getPoints(fp)
             num = len(self.Points)
             diff = num - fp.LastIndex - 1
-            self.getPoints(fp)
             # fp.FirstIndex = 0
             fp.LastIndex = len(self.Points) - diff
 
