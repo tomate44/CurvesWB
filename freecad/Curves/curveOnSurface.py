@@ -260,7 +260,7 @@ class curveOnSurface(object):
                             c.join(bs)
                         c2d = [c, c.FirstParameter, c.LastParameter]
                     print("CurveOnSurface projection fallback : OK.")
-                except Part.OCCError:
+                except (Part.OCCError, IndexError):
                     print("CurveOnSurface projection fallback : Failed.")
             if isinstance(c2d, tuple):
                 self.curve2D = c2d[0]
@@ -274,7 +274,7 @@ class curveOnSurface(object):
                     self.isValid = False
                     self.edgeOnFace = Part.Edge(self.edge.Curve, self.firstParameter, self.lastParameter)
             else:
-                e = self.face.project([self.edge]).Edges[0]
+                # e = self.face.project([self.edge]).Edges[0]
                 self.isValid = False
                 self.firstParameter = self.edge.FirstParameter
                 self.lastParameter = self.edge.LastParameter
