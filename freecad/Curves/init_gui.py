@@ -119,7 +119,7 @@ class CurvesWorkbench(Gui.Workbench):
         """This is executed whenever the user right-clicks on screen.
         recipient" will be either 'view' or 'tree'"""
         if recipient == "View":
-            contextlist = ["adjacent_faces", "bspline_to_console"]  # list of commands
+            contextlist = ["Curves_adjacent_faces", "Curves_bspline_to_console"]  # list of commands
             self.appendContextMenu("Curves", contextlist)
         elif recipient == "Tree":
             contextlist = []  # list of commands
