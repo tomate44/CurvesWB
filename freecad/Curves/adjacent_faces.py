@@ -68,8 +68,8 @@ class adjacentfacesCommand:
 
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
-                'MenuText': 'Adjacent faces',
-                'ToolTip': "{}\n\n{}\n\n{}".format(__title__, __doc__, __usage__)}
+                'MenuText': __title__,
+                'ToolTip': "{}<br><br><b>Usage :</b><br>{}<br>".format(__doc__, __usage__)}
 
 
 addCommand('Curves_adjacent_faces', adjacentfacesCommand())

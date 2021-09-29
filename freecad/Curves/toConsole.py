@@ -24,7 +24,7 @@ class ToConsole:
         return {'Pixmap': TOOL_ICON,
                 'MenuText': __title__,
                 'Accel': "",
-                'ToolTip': "{}\n\n{}\n\n{}".format(__title__, __doc__, __usage__)}
+                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
     def Activated(self):
         doc = ''

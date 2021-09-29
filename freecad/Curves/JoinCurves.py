@@ -4,8 +4,7 @@ __title__ = "joinCurves"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = "Joins the selected edges into a BSpline Curve"
-__usage__ = """Select the edges to join in the 3D View,
-or select an object containing multiple edges in the Tree View.
+__usage__ = """Select the edges to join in the 3D View, or select an object containing multiple edges in the Tree View.
 Activate the tool.
 The output is a single BSpline curve joining all selected edges."""
 
@@ -235,7 +234,7 @@ class joinCommand:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': __title__,
-                'ToolTip': "{}\n\n{}\n\n{}".format(__title__, __doc__, __usage__)}
+                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
 
 FreeCADGui.addCommand('join', joinCommand())

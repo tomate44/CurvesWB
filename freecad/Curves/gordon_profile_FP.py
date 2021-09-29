@@ -326,7 +326,7 @@ class GordonProfileCommand:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': __title__,
-                'ToolTip': "{}\n\n{}\n\n{}".format(__title__, __doc__, __usage__)}
+                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
 
 FreeCADGui.addCommand('gordon_profile', GordonProfileCommand())
