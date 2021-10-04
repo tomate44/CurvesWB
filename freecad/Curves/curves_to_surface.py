@@ -113,23 +113,34 @@ def orient_curves(c1, c2):
         else:
             return c.value(p)
 
-    if c1.isClosed():
-        fp1 = 0.75 * c1.FirstParameter + 0.25 * c1.LastParameter
-        lp1 = 0.25 * c1.FirstParameter + 0.75 * c1.LastParameter
-    else:
-        fp1 = c1.FirstParameter
-        lp1 = c1.LastParameter
-    if c2.isClosed():
-        fp2 = 0.75 * c2.FirstParameter + 0.25 * c2.LastParameter
-        lp2 = 0.25 * c2.FirstParameter + 0.75 * c2.LastParameter
-    else:
-        fp2 = c2.FirstParameter
-        lp2 = c2.LastParameter
-    ls1 = Part.makeLine(value(c1, fp1), value(c2, fp2))
-    ls2 = Part.makeLine(value(c1, lp1), value(c2, lp2))
+    def test_params(c1):
+        if c1.isClosed():
+            fp1 = 0.75 * c1.FirstParameter + 0.25 * c1.LastParameter
+            lp1 = 0.25 * c1.FirstParameter + 0.75 * c1.LastParameter
+        else:
+            fp1 = c1.FirstParameter
+            lp1 = c1.LastParameter
+        return fp1, lp1
+
+    def line(c1, par1, c2, par2):
+        p1 = value(c1, par1)
+        p2 = value(c2, par2)
+        if p1.distanceToPoint(p2) < 1e-7:
+            return Part.Vertex(p1)
+        return Part.makeLine(p1, p2)
+
+    if isinstance(c1, FreeCAD.Vector) or isinstance(c2, FreeCAD.Vector):
+        return False
+    if c1.length() < 1e-7 or c2.length() < 1e-7:
+        return False
+
+    fp1, lp1 = test_params(c1)
+    fp2, lp2 = test_params(c2)
+    ls1 = line(c1, fp1, c2, fp2)
+    ls2 = line(c1, lp1, c2, lp2)
     d1 = ls1.distToShape(ls2)[0]
-    ls1 = Part.makeLine(value(c1, fp1), value(c2, lp2))
-    ls2 = Part.makeLine(value(c1, lp1), value(c2, fp2))
+    ls1 = line(c1, fp1, c2, lp2)
+    ls2 = line(c1, lp1, c2, fp2)
     d2 = ls1.distToShape(ls2)[0]
     if d1 < d2:
         c2.reverse()
@@ -312,13 +323,17 @@ class CurvesToSurface:
             p = pts[i] - pts[i - 1]
             pl = pow(p.Length, fac)
             params.append(params[-1] + pl)
+        if params[-1] < 1e-7:
+            return False
         return [p / params[-1] for p in params]
 
     def set_parameters(self, fac=1.0):
         "Compute an average parameters list from parametrization factor in [0.0, 1.0]"
         params_array = []
         for pole_idx in range(1, self.curves[0].NbPoles + 1):
-            params_array.append(self._parameters_at_poleidx(fac, pole_idx))
+            params = self._parameters_at_poleidx(fac, pole_idx)
+            if params:
+                params_array.append(params)
         params = []
         for idx in range(len(params_array[0])):
             pl = [params_array[i][idx] for i in range(len(params_array))]
@@ -334,14 +349,28 @@ class CurvesToSurface:
         bs = Part.BSplineCurve()
         for pole_idx in range(1, self.curves[0].NbPoles + 1):
             pts = [c.getPole(pole_idx) for c in self.curves]
-            bs.interpolate(Points=pts, Parameters=self.Parameters, PeriodicFlag=self.Periodic)
-            poles_array.append(bs.getPoles())
+            try:
+                bs.interpolate(Points=pts, Parameters=self.Parameters, PeriodicFlag=self.Periodic)
+                poles_array.append(bs.getPoles())
+            except Part.OCCError:
+                poles_array.append(pts)
+        maxlen = 0
+        for poles in poles_array:
+            maxlen = max(maxlen, len(poles))
+        weights = []
+        poles = []
+        for p in poles_array:
+            if len(p) < maxlen:
+                poles.append([p[0]] * maxlen)
+            else:
+                poles.append(p)
+            weights.append([1.0] * maxlen)
         self._surface = Part.BSplineSurface()
         self._surface.buildFromPolesMultsKnots(poles_array,
                                                self.curves[0].getMultiplicities(), bs.getMultiplicities(),
                                                self.curves[0].getKnots(), bs.getKnots(),
                                                self.curves[0].isPeriodic(), bs.isPeriodic(),
-                                               self.curves[0].Degree, bs.Degree)
+                                               self.curves[0].Degree, bs.Degree, weights)
         return self._surface
 
     def build_surface(self):
@@ -374,15 +403,20 @@ class Gordon:
         return True
 
     def check_corner(self, uv, tol=1e-7):
+        check = True
         u, v = uv
         p1 = self.s1.value(u, v)
-        if self.s2.value(u, v).distanceToPoint(p1) > tol:
+        p2 = self.s2.value(u, v)
+        if p2.distanceToPoint(p1) > tol:
             print("S1 and S2 points @({}, {}) don't match".format(u, v))
-            return False
-        if self.s3.value(u, v).distanceToPoint(p1) > tol:
+            print(f"{p1} != {p2}")
+            check = False
+        p3 = self.s3.value(u, v)
+        if p3.distanceToPoint(p1) > tol:
             print("S1 and S3 points @({}, {}) don't match".format(u, v))
-            return False
-        return True
+            print(f"{p1} != {p3}")
+            check = False
+        return check
 
     def check_corners(self, tolerance=1e-7):
         u0, u1, v0, v1 = self.s1.bounds()
@@ -434,8 +468,20 @@ class CurvesOn2Rails:
     def __init__(self, curves, rails):
         self.tol2d = 1e-15
         self.tol3d = 1e-7
-        self.curves = curves
-        self.rails = rails
+        self.curves = self.curve_convert(curves)
+        self.rails = self.curve_convert(rails)
+
+    def curve_convert(self, geolist):
+        curves = []
+        for geo in geolist:
+            if isinstance(geo, FreeCAD.Vector):
+                bs = Part.BSplineCurve()
+                bs.setPole(1, geo)
+                bs.setPole(2, geo)
+                curves.append(bs)
+            else:
+                curves.append(geo)
+        return curves
 
     def check_isocurves(self):
         "Check if the curves are intersecting both rails at the same parameter"
