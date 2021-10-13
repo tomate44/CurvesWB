@@ -13,7 +13,7 @@ import Part
 from freecad.Curves import ICONPATH
 
 TOOL_ICON = os.path.join(ICONPATH, 'approximate.svg')
-DEBUG = 0
+DEBUG = False
 
 
 def debug(string):
@@ -86,7 +86,7 @@ class Approximate:
         obj.addProperty("App::PropertyInteger", "FirstIndex", "Range",
                         "Index of first point").FirstIndex = 0
         obj.addProperty("App::PropertyInteger", "LastIndex", "Range",
-                        "Index of last point")
+                        "Index of last point (-1 to ignore)")
         obj.addProperty("App::PropertyInteger", "StartOffset", "Range",
                         "For closed curves, allows to choose the location of the join point").StartOffset = 0
         # obj.addProperty("App::PropertyVectorList",   "Points",    "Approximate",   "Points")
@@ -100,10 +100,11 @@ class Approximate:
         obj.Method = "Parametrization"
         obj.Parametrization = "ChordLength"
         obj.Continuity = 'C2'
+        obj.LastIndex = -1
         self.getPoints(obj)
         self.setTolerance(obj)
         # obj.ApproxTolerance = 0.05
-        obj.LastIndex = len(self.Points) - 1
+        
         # self.execute(obj)
 
     def setTolerance(self, obj):
@@ -156,9 +157,15 @@ class Approximate:
                 self.Points = self.Points[obj.StartOffset:] + self.Points[:obj.StartOffset]
             if not self.Points[0] == self.Points[-1]:
                 self.Points.append(self.Points[0])
+        if (len(self.Points) < (obj.LastIndex + 1)) and obj.LastIndex >= 0:
+            obj.LastIndex = len(self.Points) - 1
+        debug("extracted {} point objects".format(len(self.Points)))
 
     def buildCurve(self, obj):
-        pts = self.Points[obj.FirstIndex:obj.LastIndex + 1]
+        if obj.LastIndex > 0:
+            pts = self.Points[obj.FirstIndex:obj.LastIndex + 1]
+        else:
+            pts = self.Points[obj.FirstIndex:]
         bs = Part.BSplineCurve()
         if (obj.Method == "Parametrization") and (obj.Parametrization == "Curvilinear") and (hasattr(obj.PointObject, "Distance")):
             params = []
@@ -184,7 +191,10 @@ class Approximate:
         self.curve = bs
 
     def buildSurf(self, obj):
-        pts = self.Points[obj.FirstIndex:obj.LastIndex + 1]
+        if obj.LastIndex > 0:
+            pts = self.Points[obj.FirstIndex:obj.LastIndex + 1]
+        else:
+            pts = self.Points[obj.FirstIndex:]
         bs = Part.BSplineSurface()
         cont = 0
         if obj.Continuity == 'C1':
@@ -202,10 +212,6 @@ class Approximate:
     def execute(self, obj):
         debug("\n* Approximate : execute *\n")
         self.getPoints(obj)
-        num = len(self.Points)
-        diff = num - obj.LastIndex - 1
-        # obj.FirstIndex = 0
-        obj.LastIndex = len(self.Points) - diff - 1
         if isinstance(self.Points[0], list):
             self.buildSurf(obj)
         else:
@@ -220,10 +226,6 @@ class Approximate:
         if prop == "PointObject":
             debug("Approximate : PointObject changed\n")
             self.getPoints(fp)
-            num = len(self.Points)
-            diff = num - fp.LastIndex - 1
-            # fp.FirstIndex = 0
-            fp.LastIndex = len(self.Points) - diff
 
         if prop == "Parametrization":
             debug("Approximate : Parametrization changed\n")
@@ -296,9 +298,9 @@ class Approximate:
                 fp.FirstIndex = fp.LastIndex - 1
             debug("Approximate : FirstIndex changed to " + str(fp.FirstIndex))
         if prop == "LastIndex":
-            if fp.LastIndex < fp.FirstIndex + 1:
+            if (fp.LastIndex >= 0) and (fp.LastIndex < fp.FirstIndex + 1):
                 fp.LastIndex = fp.FirstIndex + 1
-            elif fp.LastIndex > len(self.Points) - 1:
+            if hasattr(self, "Points") and fp.LastIndex > len(self.Points) - 1:
                 fp.LastIndex = len(self.Points) - 1
             debug("Approximate : LastIndex changed to " + str(fp.LastIndex))
         if prop == "Closed":
