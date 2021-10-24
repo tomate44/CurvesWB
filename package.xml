@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<package format="1">
+  <name>Curves workbench</name>
+  <description>A collection of tools mainly dedicated to NURBS curves and surfaces modeling.</description>
+  <version>0.3</version>
+  <maintainer email="cg@grellier.fr">Christophe Grellier</maintainer>
+  <license file="LICENSE">LGPL-2.1</license>
+  <url type="repository" branch="master">https://github.com/tomate44/CurvesWB</url>
+  <url type="documentation">https://wiki.freecad.org/Curves_Workbench</url>
+
+  <content>
+    <workbench>
+      <name>Curves workbench</name>
+      <classname>CurvesWorkbench</classname>
+      <description>A collection of tools mainly dedicated to NURBS curves and surfaces modeling.</description>
+      <version>0.3</version>
+      <subdirectory>./</subdirectory>
+      <icon>freecad/Curves/resources/icons/blendSurf.svg</icon>
+      <freecadmin>0.19.0</freecadmin>
+    </workbench>
+  </content>
+
+</package>
