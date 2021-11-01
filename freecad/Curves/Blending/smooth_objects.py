@@ -14,8 +14,8 @@ import Part
 import numpy as np
 
 from math import pi
-from . import _utils
-from . import curves_to_surface
+from .. import _utils
+from .. import curves_to_surface
 
 CAN_MINIMIZE = True
 
@@ -30,11 +30,30 @@ vec2 = FreeCAD.Base.Vector2d
 
 def dir_der(surface, location, direction, order):
     """Returns the (order + 1) derivatives of the surface
-    at given location, in given direction"""
+    at given location, in given direction
+
+    Parameters
+    ----------
+    surface : Part.Geometry.Surface
+        The support surface that provides the derivatives
+    location : tuple or list
+        The (u, v) coordinates defining the point on the surface
+    direction : tuple or list
+        The (u, v) coordinates of the direction vector of the first derivative
+    order : Int in [0, 1, 2, 3, 4]
+        The order of the last derivative to compute
+
+    Returns
+    -------
+    List of FreeCAD vectors
+        The (order + 1) derivatives of the surface
+    """
+
     a, b = location
     pt = surface.getD0(a, b)
     if order == 0:
         return pt
+    direction = vec3(*direction)
     direction.normalize()
     x, y, _ = direction
     du = surface.getDN(a, b, 1, 0)
@@ -54,17 +73,38 @@ def dir_der(surface, location, direction, order):
     d3v = surface.getDN(a, b, 0, 3)
     d3 = pow(x, 3) * d3u + 3 * pow(x, 2) * y * d2uv + 3 * x * pow(y, 2) * du2v + pow(y, 3) * d3v
     if order == 3:
-        return d1, d2, d3
+        return pt, d1, d2, d3
     d4u = surface.getDN(a, b, 4, 0)
     d3uv = surface.getDN(a, b, 3, 1)
     d2u2v = surface.getDN(a, b, 2, 2)
     du3v = surface.getDN(a, b, 1, 3)
     d4v = surface.getDN(a, b, 0, 4)
     d4 = (pow(x, 4) * d4u) + (4 * pow(x, 3) * y * d3uv) + (4 * pow(x, 2) * pow(y, 2) * d2u2v) + (4 * x * pow(y, 3) * du3v) + (pow(y, 4) * d4v)
-    return d1, d2, d3, d4
+    return pt, d1, d2, d3, d4
 
 
 class SmoothPoint:
+    """A group of a 3D point with some derivatives
+
+    Attributes
+    ----------
+    continuity : int
+        The continuity order of this SmoothPoint.
+        This is equal to the number of derivatives
+    point : FreeCAD.Vector
+        The location in 3D space of this SmoothPoint (D0)
+    tangent : FreeCAD.Vector
+        The tangent of this SmoothPoint (D1)
+
+    Methods
+    -------
+    tangent_edge()
+        returns the edge representing the tangent
+    value(size=0)
+        Returns the scaled SmoothPoint vectors, so that the tangent has given size.
+        If size == 0, returns the original unscaled vectors.
+    """
+
     def __init__(self, vecs):
         self.raw_vectors = vecs
 
@@ -76,25 +116,49 @@ class SmoothPoint:
 
     @property
     def continuity(self):
-        "The continuity order of this SmoothPoint"
+        """The continuity order of this SmoothPoint"""
+
         return len(self.raw_vectors) - 1
 
     @property
     def point(self):
+        """The location in 3D space of this SmoothPoint (D0)"""
+
         if self.continuity >= 0:
             return self.raw_vectors[0]
 
     @property
     def tangent(self):
+        """The tangent of this SmoothPoint (D1)"""
+
         if self.continuity > 0:
             return self.raw_vectors[1]
         return FreeCAD.Vector(0, 0, 0)
 
     def tangent_edge(self):
+        """Returns the edge representing the tangent"""
+
         return Part.makeLine(self.point, self.point + self.tangent)
 
     def value(self, size=0):
-        "Returns the scaled SmoothPoint vectors, so that the tangent has given size"
+        """Returns the scaled SmoothPoint vectors.
+
+        Returns the scaled SmoothPoint vectors
+        so that the tangent has given size,
+        or the original unscaled vectors if size == 0
+
+        Parameters
+        ----------
+        size : float
+            The desired size of the tangent vector
+            If size == 0, the original unscaled vectors are returned
+
+        Returns
+        -------
+        List of FreeCAD vectors
+            The scaled vectors of this SmoothPoint
+        """
+
         if size == 0 or self.continuity <= 0:
             return self.raw_vectors
         else:
@@ -211,6 +275,8 @@ class SmoothEdge:
     def __init__(self, edge, continuity=1):
         self.continuity = continuity
         self.edge = edge
+        self._fp = self._edge.FirstParameter
+        self._lp = self._edge.LastParameter
 
     def __repr__(self):
         return "{}({}, {})".format(self.__class__.__name__,
@@ -243,7 +309,7 @@ class SmoothEdgeOnFace(SmoothEdge):
     def __init__(self, edge, face, continuity=1):
         super().__init__(edge, continuity)
         self.face = face
-        self.crossdir = ValueOnEdge(self.edge, vec2(0, 1))
+        self.aux_curve = None
 
     def __repr__(self):
         return "{}({}, {}, {})".format(self.__class__.__name__,
@@ -261,15 +327,87 @@ class SmoothEdgeOnFace(SmoothEdge):
         else:
             self._face = face
 
-    def tangent_plane(self, par):
+    def tangentPlaneAt(self, par):
+        o = self._edge.valueAt(par)
+        t1, t2 = self._face.tangentAt(*self._face.Surface.parameter(o))
+        return Part.Plane(o, o + t1, o + t2)
+
+    def fresnetPlaneAt(self, par):
         o = self._edge.valueAt(par)
         x = self._edge.tangentAt(par)
         n = self._face.normalAt(*self._face.Surface.parameter(o))
         y = n.cross(x)
         return Part.Plane(o, o + x, o + y)
 
+    def getValue(self, curve, par):
+        rp = (par - self._fp) / (self._lp - self._fp)
+        np = curve.FirstParameter + rp * (curve.LastParameter - curve.FirstParameter)
+        return curve.value(np)
+
+    def crossDirAt(self, par):
+        tan = self._edge.tangentAt(par)
+        if self.aux_curve is None:
+            return tan
+        if isinstance(self.aux_curve, FreeCAD.Base.Vector2d):
+            fp = self.fresnetPlaneAt(par)
+            pt = fp.value(self.aux_curve.x, self.aux_curve.y)
+        elif isinstance(self.aux_curve, Part.Geom2d.Curve2d):
+            cd = self.getValue(self.aux_curve, par)
+            fp = self.fresnetPlaneAt(par)
+            pt = fp.value(cd.x, cd.y)
+        elif isinstance(self.aux_curve, FreeCAD.Vector):
+            pt = self.aux_curve
+        elif self.aux_curve.isDerivedFrom("Part::GeomCurve"):
+            pt = self.getValue(self.aux_curve, par)
+        tp = self.tangentPlaneAt(par)
+        return tp.parameter(pt)
+
+    def valueAt(self, par):
+        # pl = self.tangentPlaneAt(par)
+        # cd = self.crossDirAt(par)
+        location = self._face.Surface.parameter(self._edge.valueAt(par))
+        direction = self.crossDirAt(par)
+        return SmoothPoint(dir_der(self._face.Surface, location, direction, self.continuity))
+
+    def shape(self, num=10):
+        params = np.linspace(self._edge.FirstParameter, self._edge.LastParameter, num)
+        edges = []
+        for p in params:
+            edges.append(self.valueAt(p).tangent_edge())
+        return Part.Compound(edges)
+
+
+"""
+from freecad.Curves.Blending import smooth_objects as so
+o = so.SmoothEdgeOnFace(e1, f1, 3)
+o.aux_curve = FreeCAD.Base.Vector2d(0,1)
+Part.show(o.shape(10))
+
+
+
+"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class temp:
+
     def vector2dAt(self, v, par):
-        pl = self.tangent_plane(par)
+        pl = self.fresnet_plane(par)
         # v.normalize()
         return vec2(*pl.parameter(v))
 
@@ -288,7 +426,7 @@ class SmoothEdgeOnFace(SmoothEdge):
         self.crossdir._compute()
 
     def crossCurveAt(self, par):
-        pl = self.tangent_plane(par)
+        pl = self.fresnet_plane(par)
         ls = Part.Geom2d.Line2d(vec2(0, 0), self.crossdir.valueAt(par))
         # ls.rotate(vec2(0, 0), self.crossdir.valueAt(par))
         edge = ls.toShape(pl, -1, 1)
@@ -296,17 +434,6 @@ class SmoothEdgeOnFace(SmoothEdge):
         if len(proj.Edges) < 1:
             FreeCAD.Console.PrintError("Failed to compute cross-curve\n")
         return proj.Edges[0]
-
-    def valueAt(self, par):
-        o = self._edge.valueAt(par)
-        loc = self._face.Surface.parameter(o)
-        cd = self.crossdir.valueAt(par)
-        return SmoothPoint(dir_der(self._face.Surface, loc, FreeCAD.Vector(cd.x, cd.y), self.continuity))
-        # cc = self.crossCurveAt(par)
-        # res = [cc.Curve.getD0(0), ]
-        # if self._continuity > 0:
-            # res.extend([cc.Curve.getDN(0, i + 1) for i in range(self._continuity)])
-        # return SmoothPoint(res)
 
     def comb_shape(self, num=10):
         edges = []
