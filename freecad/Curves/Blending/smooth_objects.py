@@ -135,10 +135,24 @@ class SmoothPoint:
             return self.raw_vectors[1]
         return FreeCAD.Vector(0, 0, 0)
 
-    def tangent_edge(self):
-        """Returns the edge representing the tangent"""
+    def tangent_edge(self, size=1.0):
+        """Returns the edge representing the tangent
 
-        return Part.makeLine(self.point, self.point + self.tangent)
+        Returns the edge representing the tangent
+        scaled by the supplied factor
+
+        Parameters
+        ----------
+        size : float
+            The desired size of the tangent vector
+
+        Returns
+        -------
+        FreeCAD vector
+            The edge representing the tangent
+        """
+
+        return Part.makeLine(self.point, self.point + self.tangent * size)
 
     def value(self, size=0):
         """Returns the scaled SmoothPoint vectors.
@@ -330,6 +344,8 @@ class SmoothEdgeOnFace(SmoothEdge):
     def tangentPlaneAt(self, par):
         o = self._edge.valueAt(par)
         t1, t2 = self._face.tangentAt(*self._face.Surface.parameter(o))
+        # pl = Part.Plane(o, o + t1, o + t2)
+        # print("{}\n{}\n".format(o, pl.value(0, 0)))
         return Part.Plane(o, o + t1, o + t2)
 
     def fresnetPlaneAt(self, par):
@@ -345,15 +361,14 @@ class SmoothEdgeOnFace(SmoothEdge):
         return curve.value(np)
 
     def crossDirAt(self, par):
-        tan = self._edge.tangentAt(par)
+        # o = self._edge.valueAt(par)
+        fp = self.fresnetPlaneAt(par)
         if self.aux_curve is None:
-            return tan
-        if isinstance(self.aux_curve, FreeCAD.Base.Vector2d):
-            fp = self.fresnetPlaneAt(par)
+            pt = fp.value(0, 1)
+        elif isinstance(self.aux_curve, FreeCAD.Base.Vector2d):
             pt = fp.value(self.aux_curve.x, self.aux_curve.y)
         elif isinstance(self.aux_curve, Part.Geom2d.Curve2d):
             cd = self.getValue(self.aux_curve, par)
-            fp = self.fresnetPlaneAt(par)
             pt = fp.value(cd.x, cd.y)
         elif isinstance(self.aux_curve, FreeCAD.Vector):
             pt = self.aux_curve
@@ -369,6 +384,10 @@ class SmoothEdgeOnFace(SmoothEdge):
         direction = self.crossDirAt(par)
         return SmoothPoint(dir_der(self._face.Surface, location, direction, self.continuity))
 
+    def valueAtPoint(self, pt):
+        # TODO Check valid range
+        return self.valueAt(self._edge.Curve.parameter(pt))
+
     def shape(self, num=10):
         params = np.linspace(self._edge.FirstParameter, self._edge.LastParameter, num)
         edges = []
@@ -378,10 +397,14 @@ class SmoothEdgeOnFace(SmoothEdge):
 
 
 """
+vec3 = FreeCAD.Vector
+vec2 = FreeCAD.Base.Vector2d
 from freecad.Curves.Blending import smooth_objects as so
 o = so.SmoothEdgeOnFace(e1, f1, 3)
-o.aux_curve = FreeCAD.Base.Vector2d(0,1)
-Part.show(o.shape(10))
+o.aux_curve = vec2(0,1)
+ls = Part.Geom2d.Line2dSegment(vec2(-1,1), vec2(1,1))
+o.aux_curve = ls
+Part.show(o.shape(32))
 
 
 
@@ -995,8 +1018,8 @@ class EdgeOnFace:
 class BlendSurface:
     """BSpline surface that smoothly interpolates two EdgeOnFace objects"""
     def __init__(self, edge1, face1, edge2, face2):
-        self.edge1 = EdgeOnFace(edge1, face1)
-        self.edge2 = EdgeOnFace(edge2, face2)
+        self.edge1 = SmoothEdgeOnFace(edge1, face1)
+        self.edge2 = SmoothEdgeOnFace(edge2, face2)
         self._ruled_surface = None
         self._surface = None
         self._curves = []
@@ -1076,8 +1099,8 @@ class BlendSurface:
         return params
 
     def blendcurve_at(self, par):
-        e1, e2 = self.rails
-        return BlendCurve(self.edge1.valueAtPoint(e1.value(par)), self.edge2.valueAtPoint(e2.value(par)))
+        r1, r2 = self.rails
+        return BlendCurve(self.edge1.valueAtPoint(r1.value(par)), self.edge2.valueAtPoint(r2.value(par)))
 
     def minimize_curvature(self, arg=3):
         self.edge1.size.reset()
