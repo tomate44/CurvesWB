@@ -53,9 +53,9 @@ def dir_der(surface, location, direction, order):
     pt = surface.getD0(a, b)
     if order == 0:
         return pt
-    direction = vec3(*direction)
-    direction.normalize()
-    x, y, _ = direction
+    # direction = vec3(*direction)
+    # direction.normalize()
+    x, y = direction
     du = surface.getDN(a, b, 1, 0)
     dv = surface.getDN(a, b, 0, 1)
     d1 = x * du + y * dv
@@ -358,7 +358,10 @@ class SmoothEdgeOnFace(SmoothEdge):
     def getValue(self, curve, par):
         rp = (par - self._fp) / (self._lp - self._fp)
         np = curve.FirstParameter + rp * (curve.LastParameter - curve.FirstParameter)
-        return curve.value(np)
+        if hasattr(curve, "valueAt"):
+            return curve.valueAt(np)
+        elif curve.isDerivedFrom("Part::GeomCurve"):
+            return curve.value(np)
 
     def crossDirAt(self, par):
         # o = self._edge.valueAt(par)
@@ -372,7 +375,8 @@ class SmoothEdgeOnFace(SmoothEdge):
             pt = fp.value(cd.x, cd.y)
         elif isinstance(self.aux_curve, FreeCAD.Vector):
             pt = self.aux_curve
-        elif self.aux_curve.isDerivedFrom("Part::GeomCurve"):
+        # elif self.aux_curve.isDerivedFrom("Part::GeomCurve"):
+        else:
             pt = self.getValue(self.aux_curve, par)
         tp = self.tangentPlaneAt(par)
         return tp.parameter(pt)
@@ -388,11 +392,11 @@ class SmoothEdgeOnFace(SmoothEdge):
         # TODO Check valid range
         return self.valueAt(self._edge.Curve.parameter(pt))
 
-    def shape(self, num=10):
+    def shape(self, num=10, size=1.0):
         params = np.linspace(self._edge.FirstParameter, self._edge.LastParameter, num)
         edges = []
         for p in params:
-            edges.append(self.valueAt(p).tangent_edge())
+            edges.append(self.valueAt(p).tangent_edge(size))
         return Part.Compound(edges)
 
 
@@ -403,7 +407,7 @@ from freecad.Curves.Blending import smooth_objects as so
 o = so.SmoothEdgeOnFace(e1, f1, 3)
 o.aux_curve = vec2(0,1)
 ls = Part.Geom2d.Line2dSegment(vec2(-1,1), vec2(1,1))
-o.aux_curve = ls
+# o.aux_curve = ls
 Part.show(o.shape(32))
 
 
