@@ -152,7 +152,7 @@ class SmoothPoint:
             The edge representing the tangent
         """
 
-        return Part.makeLine(self.point, self.point + self.tangent * size)
+        return Part.makeLine(self.point, self.point + self.tangent.normalize() * size)
 
     def value(self, size=0):
         """Returns the scaled SmoothPoint vectors.
@@ -323,6 +323,7 @@ class SmoothEdgeOnFace(SmoothEdge):
     def __init__(self, edge, face, continuity=1):
         super().__init__(edge, continuity)
         self.face = face
+        self.outside = self.getOutsideSign()
         self.aux_curve = None
 
     def __repr__(self):
@@ -340,6 +341,27 @@ class SmoothEdgeOnFace(SmoothEdge):
             self._face = face.toShape()
         else:
             self._face = face
+
+    def getOutsideSign(self, par=0.5, eps=1e-3):
+        p = self._edge.FirstParameter + par * (self._edge.LastParameter - self._edge.FirstParameter)
+        cos, fp, lp = self._face.curveOnSurface(self._edge)
+        p = fp + par * (lp - fp)
+        pt = cos.value(p)
+        t = cos.tangent(p)
+        p1 = vec2(pt.x + t.y * eps, pt.y - t.x * eps)
+        p2 = vec2(pt.x - t.y * eps, pt.y + t.x * eps)
+        # location = self._face.Surface.parameter(self._edge.valueAt(p))
+        # fp = self.fresnetPlaneAt(par)
+        # pt = fp.value(0, 1)
+        # tp = self.tangentPlaneAt(par)
+        # direction = tp.parameter(pt)
+        # sp = SmoothPoint(dir_der(self._face.Surface, location, direction, self.continuity))
+        # t = sp.tangent_edge(size)
+        pod1 = self._face.isPartOfDomain(pt.x + t.y * eps, pt.y - t.x * eps)
+        pod2 = self._face.isPartOfDomain(pt.x - t.y * eps, pt.y + t.x * eps)
+        if pod2 and (not pod1):
+            return -1
+        return 1
 
     def tangentPlaneAt(self, par):
         o = self._edge.valueAt(par)
@@ -360,14 +382,14 @@ class SmoothEdgeOnFace(SmoothEdge):
         np = curve.FirstParameter + rp * (curve.LastParameter - curve.FirstParameter)
         if hasattr(curve, "valueAt"):
             return curve.valueAt(np)
-        elif curve.isDerivedFrom("Part::GeomCurve"):
+        elif hasattr(curve, "value"):
             return curve.value(np)
 
     def crossDirAt(self, par):
         # o = self._edge.valueAt(par)
         fp = self.fresnetPlaneAt(par)
         if self.aux_curve is None:
-            pt = fp.value(0, 1)
+            pt = fp.value(0, self.outside)
         elif isinstance(self.aux_curve, FreeCAD.Base.Vector2d):
             pt = fp.value(self.aux_curve.x, self.aux_curve.y)
         elif isinstance(self.aux_curve, Part.Geom2d.Curve2d):
@@ -406,8 +428,14 @@ vec2 = FreeCAD.Base.Vector2d
 from freecad.Curves.Blending import smooth_objects as so
 o = so.SmoothEdgeOnFace(e1, f1, 3)
 o.aux_curve = vec2(0,1)
-ls = Part.Geom2d.Line2dSegment(vec2(-1,1), vec2(1,1))
-# o.aux_curve = ls
+o.getOutsideSign()
+# o.aux_curve = Part.Geom2d.Line2dSegment(vec2(-1,1), vec2(1,1))
+# pts = [vec2(0,1), vec2(1,1), vec2(0,1)]
+# bs = Part.Geom2d.BSplineCurve2d()
+# bs.interpolate(pts)
+# Part.show(bs.toShape())
+# o.aux_curve = bs
+# o.aux_curve = e2.Curve
 Part.show(o.shape(32))
 
 
