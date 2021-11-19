@@ -6,6 +6,7 @@ __license__ = "LGPL 2.1"
 __doc__ = """"""
 
 from time import time
+from math import pi
 from operator import itemgetter
 
 import FreeCAD
@@ -16,6 +17,7 @@ import numpy as np
 from math import pi
 from .. import _utils
 from .. import curves_to_surface
+from ..nurbs_tools import nurbs_quad
 
 CAN_MINIMIZE = True
 
@@ -24,8 +26,19 @@ try:
 except ImportError:
     CAN_MINIMIZE = False
 
-vec3 = FreeCAD.Vector
-vec2 = FreeCAD.Base.Vector2d
+
+def vec3(*arg):
+    if (len(arg) == 1) and isinstance(arg[0], FreeCAD.Base.Vector2d):
+        return FreeCAD.Vector(arg[0].x, arg[0].y)
+    else:
+        return FreeCAD.Vector(*arg)
+
+
+def vec2(*arg):
+    if (len(arg) == 1) and isinstance(arg[0], FreeCAD.Vector):
+        return FreeCAD.Base.Vector2d(arg[0].x, arg[0].y)
+    else:
+        return FreeCAD.Base.Vector2d(*arg)
 
 
 def dir_der(surface, location, direction, order):
@@ -323,8 +336,9 @@ class SmoothEdgeOnFace(SmoothEdge):
     def __init__(self, edge, face, continuity=1):
         super().__init__(edge, continuity)
         self.face = face
+        self.c2d, self._fp, self._lp = self._face.curveOnSurface(self._edge)
         self.outside = self.getOutsideSign()
-        self.aux_curve = None
+        self.aux_curve = vec2(0, self.outside)
 
     def __repr__(self):
         return "{}({}, {}, {})".format(self.__class__.__name__,
@@ -343,13 +357,13 @@ class SmoothEdgeOnFace(SmoothEdge):
             self._face = face
 
     def getOutsideSign(self, par=0.5, eps=1e-3):
-        p = self._edge.FirstParameter + par * (self._edge.LastParameter - self._edge.FirstParameter)
-        cos, fp, lp = self._face.curveOnSurface(self._edge)
-        p = fp + par * (lp - fp)
-        pt = cos.value(p)
-        t = cos.tangent(p)
-        p1 = vec2(pt.x + t.y * eps, pt.y - t.x * eps)
-        p2 = vec2(pt.x - t.y * eps, pt.y + t.x * eps)
+        # p = self._edge.FirstParameter + par * (self._edge.LastParameter - self._edge.FirstParameter)
+        # cos, fp, lp = self._face.curveOnSurface(self._edge)
+        p = self._fp + par * (self._lp - self._fp)
+        pt = self.c2d.value(p)
+        t = self.c2d.tangent(p)
+        # p1 = vec2(pt.x + t.y * eps, pt.y - t.x * eps)
+        # p2 = vec2(pt.x - t.y * eps, pt.y + t.x * eps)
         # location = self._face.Surface.parameter(self._edge.valueAt(p))
         # fp = self.fresnetPlaneAt(par)
         # pt = fp.value(0, 1)
@@ -363,12 +377,31 @@ class SmoothEdgeOnFace(SmoothEdge):
             return -1
         return 1
 
+    def D1QuadAt(self, par):
+        o = self._edge.valueAt(par)
+        u, v = self._face.Surface.parameter(o)
+        du = self._face.Surface.getDN(u, v, 1, 0)
+        dv = self._face.Surface.getDN(u, v, 0, 1)
+        poles = [[o, o + dv], [o + du, o + du + dv]]
+        quad = nurbs_quad(poles, extend_factor=100)
+        return quad
+
     def tangentPlaneAt(self, par):
         o = self._edge.valueAt(par)
-        t1, t2 = self._face.tangentAt(*self._face.Surface.parameter(o))
+        u, v = self._face.Surface.parameter(o)
+        du = self._face.Surface.getDN(u, v, 1, 0)
+        dv = self._face.Surface.getDN(u, v, 0, 1)
         # pl = Part.Plane(o, o + t1, o + t2)
         # print("{}\n{}\n".format(o, pl.value(0, 0)))
-        return Part.Plane(o, o + t1, o + t2)
+        pl = Part.Plane(o, o + du, o + dv)
+        verif_u = pl.parameter(du)
+        verif_v = pl.parameter(dv)
+        print(du, dv)
+        print(verif_u, verif_v)
+        print(pl.value(*verif_u))
+        print(pl.value(*verif_v))
+        print()
+        return pl
 
     def fresnetPlaneAt(self, par):
         o = self._edge.valueAt(par)
@@ -388,20 +421,36 @@ class SmoothEdgeOnFace(SmoothEdge):
     def crossDirAt(self, par):
         # o = self._edge.valueAt(par)
         fp = self.fresnetPlaneAt(par)
-        if self.aux_curve is None:
-            pt = fp.value(0, self.outside)
-        elif isinstance(self.aux_curve, FreeCAD.Base.Vector2d):
+        # if self.aux_curve is None:
+        #     pt = fp.value(0, self.outside)
+        if isinstance(self.aux_curve, FreeCAD.Base.Vector2d):
             pt = fp.value(self.aux_curve.x, self.aux_curve.y)
+            # tan2d = vec3(self.c2d.tangent(par))
+            # print(tan2d)
+            # rot = FreeCAD.Rotation()
+            # rot.Axis = tan2d.cross(vec3(1, 0)).normalize()
+            # rot.Angle = tan2d.getAngle(vec3(1, 0))
+            # print(rot.Angle * 180 / pi)
+            # aux = vec3(self.aux_curve)
+            # print(aux)
+            # x, y, z = rot.multVec(aux)
+            # print(x, y)
+            # return x, y
         elif isinstance(self.aux_curve, Part.Geom2d.Curve2d):
-            cd = self.getValue(self.aux_curve, par)
-            pt = fp.value(cd.x, cd.y)
+            pt2d = self.getValue(self.aux_curve, par)
+            pt = fp.value(pt2d.x, pt2d.y)
+            # tan2d = vec3(self.c2d.tangent(par))
+            # rot = FreeCAD.Rotation(tan2d, vec3(1, 0, 0))
+            # aux = vec3(self.getValue(self.aux_curve, par))
+            # x, y, z = rot.multVec(aux)
+            # return x, y
         elif isinstance(self.aux_curve, FreeCAD.Vector):
             pt = self.aux_curve
         # elif self.aux_curve.isDerivedFrom("Part::GeomCurve"):
         else:
             pt = self.getValue(self.aux_curve, par)
-        tp = self.tangentPlaneAt(par)
-        return tp.parameter(pt)
+        quad = self.D1QuadAt(par)
+        return quad.parameter(pt)
 
     def valueAt(self, par):
         # pl = self.tangentPlaneAt(par)
@@ -427,6 +476,9 @@ vec3 = FreeCAD.Vector
 vec2 = FreeCAD.Base.Vector2d
 from freecad.Curves.Blending import smooth_objects as so
 o = so.SmoothEdgeOnFace(e1, f1, 3)
+o.aux_curve = v1.Point
+Part.show(o.shape(3))
+
 o.aux_curve = vec2(0,1)
 o.getOutsideSign()
 # o.aux_curve = Part.Geom2d.Line2dSegment(vec2(-1,1), vec2(1,1))
