@@ -26,6 +26,8 @@ class FaceMapFP:
         """Add the properties"""
         obj.addProperty("App::PropertyLinkSub", "Source",
                         "Base", "Input face")
+        obj.addProperty("App::PropertyLinkList", "ExtraObjects",
+                        "Base", "External objects to project on face")
         obj.addProperty("App::PropertyFloat", "SizeU",
                         "Dimensions", "Size of the map in the U direction")
         obj.addProperty("App::PropertyFloat", "SizeV",
@@ -76,12 +78,17 @@ class FaceMapFP:
         # mapper.reverseU(obj.ReverseU)
         # mapper.reverseV(obj.ReverseV)
         mapper.swapUV(obj.SwapUV)
-        mapface = mapper.face_flatmap(obj.FillFace)
+        shapes = [mapper.flatFace(None, obj.FillFace)]
 
         if obj.AddBounds:
-            obj.Shape = Part.Compound([mapface, mapper.boundbox_flat()])
+            shapes.append(mapper.boundbox_flat())
+        if len(obj.ExtraObjects) > 0:
+            proj = face.project([o.Shape for o in obj.ExtraObjects])
+            shapes.append(mapper.flatShape(proj, obj.FillFace))
+        if len(shapes) > 1:
+            obj.Shape = Part.Compound(shapes)
         else:
-            obj.Shape = mapface
+            obj.Shape = shapes[0]
         obj.Placement = save_placement
 
     def onChanged(self, obj, prop):
@@ -135,14 +142,27 @@ class FaceMapVP:
         return None
 
 
+def isCylinder(self, lnk=None):
+    try:
+        f = lnk[0].getSubObject(lnk[1][0])
+        if isinstance(f.Surface, Part.Cylinder):
+            return True
+    except Exception as e:
+        print(f"Selection error : {e} - {lnk}")
+    return False
+
+
 class CurvesCmd_FlatMap:
     """Creates a flat map of a face"""
+
     @staticmethod
     def makeFeature(sel=None):
         fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "Face Map")
         FaceMapFP(fp)
         FaceMapVP(fp.ViewObject)
         fp.Source = sel
+        if isCylinder(sel):
+            fp.SizeMode = "Average3D"
         FreeCAD.ActiveDocument.recompute()
         return fp
 

@@ -44,6 +44,7 @@ class BoundarySorter:
     If only_closed is True, open wires will be ignored.
     b_sorter.sort() returns a list of lists of wires
     b_sorter.faces() returns a list of faces"""
+
     def __init__(self, wires, only_closed=True):
         self.wires = []
         self.parents = []
@@ -123,6 +124,7 @@ class BoundarySorter:
 
 class FaceMapper:
     """Create a flat map of a face"""
+
     def __init__(self, face):
         self.face = face
         self._quad = None
@@ -176,33 +178,60 @@ class FaceMapper:
             self.quad.setVKnots(uk)
             self.quad.exchangeUV()
 
-    def face_flatmap(self, fill_face=False):
+    def flatVertex(self, v):
+        u, v = self.face.Surface.parameter(v.Point)
+        return Part.Vertex(FreeCAD.Vector(u, v))
+
+    def flatEdge(self, e):
+        cos, fp, lp = self.face.curveOnSurface(e)
+        return cos.toShape(self.quad, fp, lp)
+
+    def flatWire(self, w):
+        el = []
+        for e in w.Edges:
+            el.append(self.flatEdge(e))
+            if e.isSeam(self.face):
+                e.reverse()
+                el.append(self.flatEdge(e))
+        se = Part.sortEdges(el)
+        if len(se) > 1:
+            print(f"Warning: multiple wires ({len(se)})")
+        return Part.Wire(Part.sortEdges(el)[0])
+
+    def flatFace(self, face=None, fill_face=False):
+        if not isinstance(face, Part.Face):
+            face = self.face
         outer_wire = None
         inner_wires = []
-        for w in self.face.Wires:
-            el = []
-            for e in w.Edges:
-                cos, fp, lp = self.face.curveOnSurface(e)
-                el.append(cos.toShape(self.quad, fp, lp))
-                if e.isSeam(self.face):
-                    e.reverse()
-                    cos, fp, lp = self.face.curveOnSurface(e)
-                    el.append(cos.toShape(self.quad, fp, lp))
-            flat_wire = Part.Wire(Part.sortEdges(el)[0])
-            if w.isSame(self.face.OuterWire):
+        for w in face.Wires:
+            flat_wire = self.flatWire(w)
+            if w.isSame(face.OuterWire):
                 outer_wire = flat_wire
             else:
                 inner_wires.append(flat_wire)
         # build a face, or a compound of wires
         if fill_face:
-            mapface = Part.Face(self.quad, outer_wire)
+            flatface = Part.Face(self.quad, outer_wire)
             if inner_wires:
-                mapface.validate()
-                mapface.cutHoles(inner_wires)
-            mapface.validate()
+                flatface.validate()
+                flatface.cutHoles(inner_wires)
+            flatface.validate()
         else:
-            mapface = Part.Compound([outer_wire] + inner_wires)
-        return mapface
+            flatface = Part.Compound([outer_wire] + inner_wires)
+        return flatface
+
+    def flatShape(self, sh, fill_face=False):
+        shl = [self.flatFace(f, fill_face) for f in sh.Faces]
+        for w in sh.Wires:
+            if len(sh.ancestorsOfType(w, Part.Face)) == 0:
+                shl.append(self.flatWire(w))
+        for e in sh.Edges:
+            if len(sh.ancestorsOfType(e, Part.Wire)) == 0:
+                shl.append(self.flatEdge(e))
+        for v in sh.Vertexes:
+            if len(sh.ancestorsOfType(v, Part.Edge)) == 0:
+                shl.append(self.flatVertex(v))
+        return Part.Compound(shl)
 
 
 def wrap_on_face(shape, face, quad):
@@ -236,6 +265,7 @@ def wrap_on_face(shape, face, quad):
 
 class ShapeWrapper:
     """Wrap shapes on a face"""
+
     def __init__(self, face, quad):
         self.face = face
         self.quad = quad
