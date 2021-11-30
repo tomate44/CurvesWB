@@ -97,9 +97,12 @@ class CurvesWorkbench(Gui.Workbench):
 
     def addSelection(self, doc, obj, sub, pnt):
         """Custom selection observer that keeps selection order."""
-        rot = Gui.getDocument(doc).ActiveView.getCameraOrientation()
-        direction = rot.multVec(App.Vector(0, 0, -1))
-        self.View_Directions.append(direction)
+        try:
+            rot = Gui.getDocument(doc).ActiveView.getCameraOrientation()
+            direction = rot.multVec(App.Vector(0, 0, -1))
+            self.View_Directions.append(direction)
+        except AttributeError:  # When ActiveView has no camera (TechDraw)
+            pass
         self.Selection.append(Gui.Selection.getSelectionObject(doc, obj, sub, pnt))
 
     def removeSelection(self, doc, obj, sub):
