@@ -58,19 +58,35 @@ class FaceMapFP:
 
     @staticmethod
     def get_face(obj):
-        if hasattr(obj, "Source"):
-            if obj.Source[1]:
+        if hasattr(obj, "Source") and isinstance(obj.Source, (list, tuple)):
+            if len(obj.Source) == 2:
                 return obj.Source[0].Shape.getElement(obj.Source[1][0])
-            else:
+            elif len(obj.Source) == 1:
                 return obj.Source[0].Shape.Face1
 
     def execute(self, obj):
         save_placement = obj.Placement
         face = self.get_face(obj)
         if not isinstance(face, Part.Face):
-            obj.Shape = None
+            # obj.Shape = None
             return
+
         mapper = face_map_wrap.FaceMapper(face)
+        su = False
+        sv = False
+        if obj.SizeMode == "Average3D":
+            bb = mapper.boundbox_on_face()
+            su = 0.5 * (bb.Edges[0].Length + bb.Edges[2].Length)
+            sv = 0.5 * (bb.Edges[1].Length + bb.Edges[3].Length)
+        elif obj.SizeMode == "Bounds2D":
+            u0, u1, v0, v1 = face.ParameterRange
+            su = u1 - u0
+            sv = v1 - v0
+        if (su is not False) and (not obj.SizeU == su):
+            obj.SizeU = su
+        if (sv is not False) and (not obj.SizeV == sv):
+            obj.SizeV = sv
+
         if obj.SwapUV:
             mapper.set_quad([0, obj.SizeV, 0, obj.SizeU], obj.ExtendFactor)
         else:
@@ -91,27 +107,31 @@ class FaceMapFP:
             obj.Shape = shapes[0]
         obj.Placement = save_placement
 
+    def setSize(self, obj):
+        face = self.get_face(obj)
+        if not isinstance(face, Part.Face):
+            return
+        if obj.SizeMode == "Average3D":
+            mapper = face_map_wrap.FaceMapper(face)
+            bb = mapper.boundbox_on_face()
+            obj.SizeU = 0.5 * (bb.Edges[0].Length + bb.Edges[2].Length)
+            obj.SizeV = 0.5 * (bb.Edges[1].Length + bb.Edges[3].Length)
+        elif obj.SizeMode == "Bounds2D":
+            u0, u1, v0, v1 = face.ParameterRange
+            obj.SizeU = u1 - u0
+            obj.SizeV = v1 - v0
+
     def onChanged(self, obj, prop):
         if 'Restore' in obj.State:
             return
+        #if prop == "Source":
+            #self.setSize(obj)
         if prop == "SizeMode":
-            if obj.SizeMode == "Average3D":
-                face = self.get_face(obj)
-                mapper = face_map_wrap.FaceMapper(face)
-                bb = mapper.boundbox_on_face()
-                obj.SizeU = 0.5 * (bb.Edges[0].Length + bb.Edges[2].Length)
-                obj.SizeV = 0.5 * (bb.Edges[1].Length + bb.Edges[3].Length)
+            if obj.SizeMode in ["Average3D", "Bounds2D"]:
+                #self.setSize(obj)
                 obj.setEditorMode("SizeU", 1)
                 obj.setEditorMode("SizeV", 1)
-            elif obj.SizeMode == "Bounds2D":
-                face = self.get_face(obj)
-                mapper = face_map_wrap.FaceMapper(face)
-                bb = mapper.boundbox_2d()
-                obj.SizeU = 0.5 * (bb[0].length() + bb[1].length())
-                obj.SizeV = 0.5 * (bb[2].length() + bb[3].length())
-                obj.setEditorMode("SizeU", 1)
-                obj.setEditorMode("SizeV", 1)
-            elif obj.SizeMode == "Manual":
+            else:
                 obj.setEditorMode("SizeU", 0)
                 obj.setEditorMode("SizeV", 0)
         if prop == "SizeU":
@@ -120,7 +140,7 @@ class FaceMapFP:
         if prop == "SizeV":
             if abs(obj.SizeV) < 1e-5:
                 obj.SizeV = 1e-5
-        if prop in ["SizeU", "SizeV", "AddBounds", "FillFace", "ExtendFactor", "SwapUV"]:
+        if prop in ["Source", "SizeU", "SizeV", "AddBounds", "FillFace", "ExtendFactor", "SwapUV"]:
             self.execute(obj)
 
 
@@ -142,9 +162,9 @@ class FaceMapVP:
         return None
 
 
-def isCylinder(self, lnk=None):
+def isCylinder(lnk=None):
     try:
-        f = lnk[0].getSubObject(lnk[1][0])
+        f = lnk[0].getSubObject(lnk[1])
         if isinstance(f.Surface, Part.Cylinder):
             return True
     except Exception as e:
@@ -155,34 +175,32 @@ def isCylinder(self, lnk=None):
 class CurvesCmd_FlatMap:
     """Creates a flat map of a face"""
 
-    @staticmethod
-    def makeFeature(sel=None):
+    def makeFeature(self, sel=None):
         fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "Face Map")
         FaceMapFP(fp)
         FaceMapVP(fp.ViewObject)
         fp.Source = sel
+        # FreeCAD.ActiveDocument.recompute()
         if isCylinder(sel):
+            print("Average3D")
             fp.SizeMode = "Average3D"
         FreeCAD.ActiveDocument.recompute()
         return fp
 
-    @classmethod
-    def Activated(cls):
+    def Activated(self):
         sel = FreeCADGui.Selection.getSelectionEx()
         if sel == []:
             FreeCAD.Console.PrintError("Select a face in the 3D view before activation.\n")
         else:
-            cls.makeFeature([sel[0].Object, (sel[0].SubElementNames[0])])
+            self.makeFeature([sel[0].Object, sel[0].SubElementNames[0]])
 
-    @staticmethod
-    def IsActive():
+    def IsActive(self):
         if FreeCAD.ActiveDocument:
             return True
         else:
             return False
 
-    @staticmethod
-    def GetResources():
+    def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': __title__,
                 'ToolTip': __doc__}
