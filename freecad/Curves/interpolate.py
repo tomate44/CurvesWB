@@ -78,7 +78,7 @@ class Interpolate:
             obj.Source = source
             obj.setEditorMode("PointList", 2)
         obj.Parametrization = "ChordLength"
-        obj.setEditorMode("CustomTangents", 2)
+        # obj.setEditorMode("CustomTangents", 2)
         obj.setEditorMode("DetectAligned", 2)
 
     def getPoints(self, obj):
