@@ -132,9 +132,10 @@ class split:
         if hasattr(obj, "CuttingObjects"):
             for o in obj.CuttingObjects:
                 d, pts, info = e.distToShape(o.Shape)
-                if info[0][0] == 'Edge':
-                    debug('adding param : {}'.format(info[0][2]))
-                    params.append(info[0][2])
+                for inf in info:
+                    if inf[0] == 'Edge':
+                        debug('adding param : {}'.format(inf[2]))
+                        params.append(inf[2])
 
         if params == []:
             if w:
