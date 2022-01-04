@@ -91,25 +91,28 @@ class Discretization:
         if target.isClosed():
             nb += 1
 
+        kwargs = dict()
+        if obj.Algorithm in ("Number", "QuasiNumber"):
+            kwargs[obj.Algorithm] = nb
+        elif obj.Algorithm in ("Deflection", "QuasiDeflection"):
+            kwargs[obj.Algorithm] = obj.Deflection
+        elif obj.Algorithm == "Distance":
+            kwargs[obj.Algorithm] = obj.Distance
+        elif obj.Algorithm == "Angular-Curvature":
+            kwargs["Angular"] = obj.Angular
+            kwargs["Curvature"] = obj.Curvature
+            kwargs["Minimum"] = obj.Minimum
+
         fp = -1e-100
         lp = 1e100
         if obj.Target == "Edge":
             fp = obj.ParameterFirst
             lp = obj.ParameterLast
+        if (fp >= target.FirstParameter) and (lp <= target.LastParameter) and (fp < lp):
+            kwargs["First"] = fp
+            kwargs["Last"] = lp
 
-        if obj.Algorithm == "Number":
-            pts = target.discretize(Number=nb, First=fp, Last=lp)
-        elif obj.Algorithm == "QuasiNumber":
-            pts = target.discretize(QuasiNumber=nb, First=fp, Last=lp)
-        elif obj.Algorithm == "Distance":
-            pts = target.discretize(Distance=obj.Distance, First=fp, Last=lp)
-        elif obj.Algorithm == "Deflection":
-            pts = target.discretize(Deflection=obj.Deflection, First=fp, Last=lp)
-        elif obj.Algorithm == "QuasiDeflection":
-            pts = target.discretize(QuasiDeflection=obj.Deflection, First=fp, Last=lp)
-        elif obj.Algorithm == "Angular-Curvature":
-            pts = target.discretize(Angular=obj.Angular, Curvature=obj.Curvature, Minimum=obj.Minimum,
-                                    First=fp, Last=lp)
+        pts = target.discretize(**kwargs)
 
         if pts[0].distanceToPoint(pts[-1]) < 1e-7:
             obj.Points = pts[:-1]
