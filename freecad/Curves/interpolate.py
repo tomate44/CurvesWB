@@ -69,6 +69,9 @@ class Interpolate:
         obj.addProperty("App::PropertyEnumeration",    "Parametrization","Parameters", "Parametrization type")
         obj.addProperty("App::PropertyVectorList",     "Tangents",       "General",    "Tangents at interpolated points")
         obj.addProperty("App::PropertyBoolList",       "TangentFlags",   "General",    "Activation flag of tangents")
+        obj.addProperty("App::PropertyLinkSub", "FaceSupport", "Spiral", "Face support of the spiral")
+        obj.addProperty("App::PropertyInteger", "UTurns", "Spiral", "Nb of turns between 2 points, in U direction").UTurns = 0
+        obj.addProperty("App::PropertyInteger", "VTurns", "Spiral", "Nb of turns between 2 points, in V direction").VTurns = 0
         obj.Parametrization = ["ChordLength", "Centripetal", "Uniform", "Custom"]
         obj.Proxy = self
         if isinstance(source, (list, tuple)):
@@ -81,17 +84,30 @@ class Interpolate:
         # obj.setEditorMode("CustomTangents", 2)
         obj.setEditorMode("DetectAligned", 2)
 
+    def getSupportface(self, obj):
+        if len(obj.FaceSupport) == 2:
+            surf = obj.FaceSupport[0].getSubObject(obj.FaceSupport[1][0])
+            print(f"Surface detected : {surf}")
+            return surf
+
     def getPoints(self, obj):
+        vl = self.getVertexes(obj)
+        if isinstance(vl, (list, tuple)):
+            return [v.Point for v in vl]
+        else:
+            return []
+
+    def getVertexes(self, obj):
         try:
             if obj.Source:
                 if hasattr(obj.Source.Shape, "OrderedVertexes"):
-                    return [v.Point for v in obj.Source.Shape.OrderedVertexes]
+                    return obj.Source.Shape.OrderedVertexes
                 else:
-                    return [v.Point for v in obj.Source.Shape.Vertexes]
+                    return obj.Source.Shape.Vertexes
             elif obj.PointList:
-                vl = _utils.getShape(obj, "PointList", "Vertex")
-                return [v.Point for v in vl]
-        except AttributeError:
+                return _utils.getShape(obj, "PointList", "Vertex")
+        except Exception as exc:
+            print(str(exc))
             return []
 
     def detect_aligned_pts(self, fp, pts):
@@ -119,6 +135,28 @@ class Interpolate:
     def execute(self, obj):
         debug("* Interpolate : execute *")
         pts = self.getPoints(obj)
+        if abs(obj.UTurns) + abs(obj.VTurns) > 0:
+            f = self.getSupportface(obj)
+            s = f.Surface
+            if s is not None:
+                u0, u1, v0, v1 = s.bounds()
+                p2l = []
+                for i in range(len(pts)):
+                    s1, t1 = s.parameter(pts[i])
+                    s2 = s1 + (i + 1) * obj.UTurns * (u1 - u0)
+                    t2 = t1 + (i + 1) * obj.VTurns * (v1 - v0)
+                    if f.isPartOfDomain(s2, t2):
+                        p2l.append(FreeCAD.Base.Vector2d(s2, t2))
+                    elif f.isPartOfDomain(s2, t1):
+                        p2l.append(FreeCAD.Base.Vector2d(s2, t1))
+                    elif f.isPartOfDomain(s1, t2):
+                        p2l.append(FreeCAD.Base.Vector2d(s1, t2))
+                if len(p2l) > 1:
+                    bs = Part.Geom2d.BSplineCurve2d()
+                    bs.interpolate(p2l)
+                    edges = [bs.toShape(s)]
+                    obj.Shape = Part.Wire(edges)
+                    return
         self.setParameters(obj)
         if obj.Polygonal:
             if obj.Periodic:
