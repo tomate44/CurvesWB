@@ -41,7 +41,7 @@ class ReflectLinesFP:
         obj.addProperty("App::PropertyBool", "IsoLine",
                         "EdgeType", "Isoparametric lines").IsoLine = True
         obj.addProperty("App::PropertyBool", "OutLine",
-                        "EdgeType", "Outline silouhette lines").OutLine = True
+                        "EdgeType", "Outline silhouette lines").OutLine = True
         obj.addProperty("App::PropertyBool", "Rg1Line",
                         "EdgeType", "smooth edge of G1-continuity between two surfaces").Rg1Line = True
         obj.addProperty("App::PropertyBool", "RgNLine",
