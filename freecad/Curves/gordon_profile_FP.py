@@ -29,6 +29,15 @@ TOOL_ICON = os.path.join(ICONPATH, 'editableSpline.svg')
 debug = _utils.doNothing
 
 
+def check_pivy():
+    try:
+        profile_editor.MarkerOnShape([FreeCAD.Vector()])
+        return True
+    except Exception as exc:
+        FreeCAD.Console.PrintWarning(str(exc) + "\nPivy interaction library failure\n")
+        return False
+
+
 def midpoint(e):
     p = e.FirstParameter + 0.5 * (e.LastParameter - e.FirstParameter)
     return e.valueAt(p)
@@ -187,7 +196,7 @@ class GordonProfileVP:
         self.ip = None
 
     def setEdit(self, vobj, mode=0):
-        if mode == 0:
+        if mode == 0 and check_pivy():
             if vobj.Selectable:
                 self.select_state = True
                 vobj.Selectable = False
@@ -220,7 +229,7 @@ class GordonProfileVP:
         return False
 
     def unsetEdit(self, vobj, mode=0):
-        if isinstance(self.ip, profile_editor.InterpoCurveEditor):
+        if isinstance(self.ip, profile_editor.InterpoCurveEditor) and check_pivy():
             pts = list()
             typ = list()
             tans = list()

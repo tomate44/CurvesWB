@@ -19,8 +19,8 @@ class CurvesWorkbench(Gui.Workbench):
             from . import graphics
             graphics.Marker([App.Vector()])
             # App.Console.PrintMessage("Pivy.graphics interaction library enabled\n")
-        except ImportError:
-            App.Console.PrintWarning("Pivy.graphics interaction library is not available on this computer\n")
+        except Exception as exc:
+            App.Console.PrintWarning(str(exc) + "\nPivy.graphics interaction library is not available on this computer\n")
 
         from . import lineFP # cleaned
         from . import gordon_profile_FP
