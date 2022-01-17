@@ -108,9 +108,9 @@ class Discretization:
         if obj.Target == "Edge":
             fp = obj.ParameterFirst
             lp = obj.ParameterLast
-        if (fp >= target.FirstParameter) and (lp <= target.LastParameter) and (fp < lp):
-            kwargs["First"] = fp
-            kwargs["Last"] = lp
+            if (fp >= target.FirstParameter) and (lp <= target.LastParameter) and (fp < lp):
+                kwargs["First"] = fp
+                kwargs["Last"] = lp
 
         pts = target.discretize(**kwargs)
 
