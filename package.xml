@@ -19,6 +19,8 @@
       <freecadmin>0.19.0</freecadmin>
       <depend>numpy</depend>
       <depend>scipy</depend>
+      <tag>curves</tag>
+      <tag>nurbs</tag>
     </workbench>
   </content>
 
