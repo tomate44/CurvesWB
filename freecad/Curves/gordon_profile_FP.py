@@ -162,7 +162,10 @@ class GordonProfileFP:
                     flags[i + 1] = True
         params = profile_editor.parameterization(pts, obj.Parametrization, obj.Periodic)
         curve = Part.BSplineCurve()
-        curve.interpolate(Points=pts, Parameters=params, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Tangents=tans, TangentFlags=flags)
+        if len(pts) == 2:
+            curve.buildFromPoles(pts)
+        else:
+            curve.interpolate(Points=pts, Parameters=params, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Tangents=tans, TangentFlags=flags)
         obj.Shape = curve.toShape()
 
     def onChanged(self, fp, prop):
