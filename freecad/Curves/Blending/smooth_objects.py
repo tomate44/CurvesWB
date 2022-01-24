@@ -191,6 +191,21 @@ class SurfaceDirectionalDerivatives:
             printError(f"{self.__class__.__name__}: {cont} is not a valid continuity")
             self._continuity = 0
 
+    def projection_coords(self, v1, v2, v3):
+        """Returns the coordinates of v1
+        in the (v2, v3) coordinate system.
+        """
+        m = FreeCAD.Matrix()
+        m.A11 = v2.x
+        m.A12 = v3.x
+        m.A21 = v2.y
+        m.A22 = v3.y
+        m.A31 = v2.z
+        m.A32 = v3.z
+        im = m.inverse()
+        nv1 = im.multVec(v1)
+        return nv1
+
     def getSmoothPoint(self, location, direction=(), target=None, order=-1):
         """Returns the point and derivatives of the surface at given location
 
@@ -235,10 +250,11 @@ class SurfaceDirectionalDerivatives:
             x, y = direction
         elif isinstance(target, FreeCAD.Vector):
             dirv = target - pt
-            dirx = Part.makeLine(vec3(0, 0, 0), du)
-            diry = Part.makeLine(vec3(0, 0, 0), dv)
-            x = dirx.Curve.parameter(dirv) / du.Length
-            y = diry.Curve.parameter(dirv) / dv.Length
+            # dirx = Part.makeLine(vec3(0, 0, 0), du)
+            # diry = Part.makeLine(vec3(0, 0, 0), dv)
+            # x = dirx.Curve.parameter(dirv) / du.Length
+            # y = diry.Curve.parameter(dirv) / dv.Length
+            x, y, _ = self.projection_coords(dirv, du, dv)
         else:
             raise ValueError("You must specify a direction=(float, float) or a target=FreeCAD.Vector")
         d1 = x * du + y * dv
