@@ -134,6 +134,7 @@ class SmoothPoint:
             return self.raw_vectors
         else:
             scale = size / self.raw_vectors[1].Length
+            # print(self.raw_vectors[1])
             return [self.raw_vectors[i] * pow(scale, i) for i in range(self.continuity + 1)]
 
 
@@ -164,6 +165,7 @@ class SurfaceDirectionalDerivatives:
     def __init__(self, surface, continuity=0):
         self.Surface = surface
         self.Continuity = continuity
+        self.quad = Part.BSplineSurface()
 
     @property
     def Surface(self):
@@ -191,9 +193,16 @@ class SurfaceDirectionalDerivatives:
             printError(f"{self.__class__.__name__}: {cont} is not a valid continuity")
             self._continuity = 0
 
-    def projection_coords(self, v1, v2, v3):
+    def projection_coords_old(self, v1, v2, v3):
         """Returns the coordinates of v1
         in the (v2, v3) coordinate system.
+        *****  Deprecated for now.
+        It is probably more efficient that function below
+        But we get some weird result sometimes (almost singular matrix)
+        For example with vectors :
+        v1 = Vector (-0.5000000000000004, -0.8660254037844375, 0.0)
+        v2 = Vector (-1.060575238724907e-15, 6.123233995736767e-16, -10.0)
+        v3 = Vector (-0.5000000000000001, -0.8660254037844386, 0.0)
         """
         m = FreeCAD.Matrix()
         m.A11 = v2.x
@@ -202,8 +211,26 @@ class SurfaceDirectionalDerivatives:
         m.A22 = v3.y
         m.A31 = v2.z
         m.A32 = v3.z
+        print(m.analyze())
+        print(m.determinant())
+        print(v1, v2, v3)
         im = m.inverse()
         nv1 = im.multVec(v1)
+        return nv1
+
+    def projection_coords(self, v1, v2, v3):
+        """Returns the coordinates of v1
+        in the (v2, v3) coordinate system.
+        """
+        fac = v1.Length / min(v2.Length, v3.Length)
+        self.quad.setUKnots([0, fac])
+        self.quad.setVKnots([0, fac])
+
+        self.quad.setPole(1, 2, fac * v3)
+        self.quad.setPole(2, 1, fac * v2)
+        self.quad.setPole(2, 2, fac * (v2 + v3))
+
+        nv1 = self.quad.parameter(v1)
         return nv1
 
     def getSmoothPoint(self, location, direction=(), target=None, order=-1):
@@ -254,10 +281,11 @@ class SurfaceDirectionalDerivatives:
             # diry = Part.makeLine(vec3(0, 0, 0), dv)
             # x = dirx.Curve.parameter(dirv) / du.Length
             # y = diry.Curve.parameter(dirv) / dv.Length
-            x, y, _ = self.projection_coords(dirv, du, dv)
+            x, y = self.projection_coords(dirv, du, dv)
         else:
             raise ValueError("You must specify a direction=(float, float) or a target=FreeCAD.Vector")
         d1 = x * du + y * dv
+        # print(x, y)
         if cont == 1:
             return SmoothPoint([pt, d1])
 
@@ -515,6 +543,7 @@ class SmoothEdgeOnFace(SmoothEdge):
         edges = []
         for p in params:
             sp = self.valueAt(p).value(size)
+            # print(sp[0], sp[1])
             pts = [sp[0], sp[0] + sp[1], self.crossDirAt(p)]
             edges.append(Part.makePolygon(pts))
         return Part.Compound(edges)
@@ -528,8 +557,8 @@ from freecad.Curves.Blending import smooth_objects
 reload(smooth_objects)
 o = smooth_objects.SmoothEdgeOnFace(e1, f1, 3)
 o.setOutside()
-o.aux_curve = v1.Point
-Part.show(o.shape(30))
+# o.aux_curve = vec2(1,1)
+Part.show(o.shape(30, 5))
 
 
 """
