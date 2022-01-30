@@ -13,6 +13,7 @@ import FreeCAD
 import FreeCADGui
 import Part
 import numpy as np
+# from scipy.linalg import solve
 
 from math import pi
 from .. import _utils
@@ -20,7 +21,8 @@ from .. import curves_to_surface
 from ..nurbs_tools import nurbs_quad
 
 
-printError = FreeCAD.Console.PrintError
+def printError(string):
+    FreeCAD.Console.PrintError(str(string) + "\n")
 
 
 # Conversion between 2D and 3D vectors
@@ -143,7 +145,7 @@ class SurfaceDirectionalDerivatives:
 
     Computes the (order + 1) derivatives of the surface
     at given location, in a given direction, or toward a target point.
-    
+
     Example
     -------
     mySDD = SurfaceDirectionalDerivatives(a_surface, 3)
@@ -165,7 +167,6 @@ class SurfaceDirectionalDerivatives:
     def __init__(self, surface, continuity=0):
         self.Surface = surface
         self.Continuity = continuity
-        self.quad = Part.BSplineSurface()
 
     @property
     def Surface(self):
@@ -193,45 +194,42 @@ class SurfaceDirectionalDerivatives:
             printError(f"{self.__class__.__name__}: {cont} is not a valid continuity")
             self._continuity = 0
 
-    def projection_coords_old(self, v1, v2, v3):
+    def projection_coords_mat_inverse(self, v1, v2, v3):
         """Returns the coordinates of v1
         in the (v2, v3) coordinate system.
-        *****  Deprecated for now.
-        It is probably more efficient that function below
-        But we get some weird result sometimes (almost singular matrix)
-        For example with vectors :
-        v1 = Vector (-0.5000000000000004, -0.8660254037844375, 0.0)
-        v2 = Vector (-1.060575238724907e-15, 6.123233995736767e-16, -10.0)
-        v3 = Vector (-0.5000000000000001, -0.8660254037844386, 0.0)
         """
+        v4 = v2.cross(v3)
         m = FreeCAD.Matrix()
         m.A11 = v2.x
         m.A12 = v3.x
+        m.A13 = v4.x
         m.A21 = v2.y
         m.A22 = v3.y
+        m.A23 = v4.y
         m.A31 = v2.z
         m.A32 = v3.z
-        print(m.analyze())
-        print(m.determinant())
-        print(v1, v2, v3)
+        m.A33 = v4.z
+        if m.determinant() < 1e-3:
+            printError(f"Matrix determinant too small ({m.determinant()})")
+            # return self.projection_coords_quad(v1, v2, v3)
         im = m.inverse()
         nv1 = im.multVec(v1)
-        return nv1
+        return nv1.x, nv1.y
 
-    def projection_coords(self, v1, v2, v3):
-        """Returns the coordinates of v1
-        in the (v2, v3) coordinate system.
-        """
-        fac = v1.Length / min(v2.Length, v3.Length)
-        self.quad.setUKnots([0, fac])
-        self.quad.setVKnots([0, fac])
-
-        self.quad.setPole(1, 2, fac * v3)
-        self.quad.setPole(2, 1, fac * v2)
-        self.quad.setPole(2, 2, fac * (v2 + v3))
-
-        nv1 = self.quad.parameter(v1)
-        return nv1
+    # def projection_coords_quad(self, v1, v2, v3):
+        # """Returns the coordinates of v1
+        # in the (v2, v3) coordinate system.
+        # """
+        # quad = Part.BSplineSurface()
+        # fac = 1.1 * v1.Length / min(v2.Length, v3.Length)
+        # quad.setUKnots([-fac, fac])
+        # quad.setVKnots([-fac, fac])
+        # quad.setPole(1, 1, fac * (-v2 - v3))
+        # quad.setPole(1, 2, fac * (-v2 + v3))
+        # quad.setPole(2, 1, fac * (v2 - v3))
+        # quad.setPole(2, 2, fac * (v2 + v3))
+        # nv1 = quad.parameter(v1)
+        # return nv1
 
     def getSmoothPoint(self, location, direction=(), target=None, order=-1):
         """Returns the point and derivatives of the surface at given location
@@ -281,7 +279,7 @@ class SurfaceDirectionalDerivatives:
             # diry = Part.makeLine(vec3(0, 0, 0), dv)
             # x = dirx.Curve.parameter(dirv) / du.Length
             # y = diry.Curve.parameter(dirv) / dv.Length
-            x, y = self.projection_coords(dirv, du, dv)
+            x, y = self.projection_coords_mat_inverse(dirv, du, dv)
         else:
             raise ValueError("You must specify a direction=(float, float) or a target=FreeCAD.Vector")
         d1 = x * du + y * dv
@@ -479,6 +477,25 @@ class SmoothEdgeOnFace(SmoothEdge):
             self._face = face
 
     def getOutside(self, par=0.5, eps=1e-3):
+        p = self._fp + par * (self._lp - self._fp)
+        o = self._edge.valueAt(p)
+        x = self._edge.tangentAt(p)
+        n = self._face.normalAt(*self._face.Surface.parameter(o))
+        y = n.cross(x)
+        fp = Part.Plane(o, o + x, o + y)
+        np = Part.Plane(o, o + n, o + y)
+        circ = Part.Geom2d.Circle2d()
+        circ.Radius = eps
+        c3d = circ.toShape(np)
+        d, pts, info = c3d.distToShape(self._face)
+        if len(pts) == 1:
+            int_par = info[0][2]
+            if int_par < pi:
+                return -1
+            else:
+                return 1
+        return False
+
         c2d, fp, lp = self._face.curveOnSurface(self._edge)
         p = fp + par * (lp - fp)
         pt = c2d.value(p)
@@ -493,6 +510,7 @@ class SmoothEdgeOnFace(SmoothEdge):
 
     def setOutside(self, reverse=False, par=0.5, eps=1e-3):
         outs = self.getOutside(par, eps)
+        print(f"Outside : {outs}")
         if outs is not False:
             if reverse:
                 self.aux_curve = vec2(0, -outs)
