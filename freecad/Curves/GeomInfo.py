@@ -378,14 +378,17 @@ class GeomInfo:
             self.trans.translation = (-0.98, 0.90, 0)
 
             self.myFont = coin.SoFont()
-            self.myFont.name = "FreeMono,FreeSans,sans"
+            f_name = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves").GetString('GeomInfoFontString', "FreeMono,FreeSans,sans") 
+            self.myFont.name = f_name
             size = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves").GetInt('GeomInfoFontSize', 14)
-            print(size)
+            # print(size)
             self.myFont.size.setValue(size)
             self.SoText2 = coin.SoText2()
             self.SoText2.string = ""  # "Nothing Selected\r2nd line"
+            pref_col = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves").GetString('GeomInfoFontColor', "0,0,0")
+            color = tuple([float(x) for x in pref_col.split(',')])
             self.color = coin.SoBaseColor()
-            self.color.rgb = (0, 0, 0)
+            self.color.rgb = color
 
             self.textSep.addChild(self.cam)
             self.textSep.addChild(self.trans)

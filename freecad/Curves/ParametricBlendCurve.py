@@ -82,20 +82,25 @@ class BlendCurveFP:
     def compute(self, fp):
         e1 = _utils.getShape(fp, "Edge1", "Edge")
         e2 = _utils.getShape(fp, "Edge2", "Edge")
-        r1 = r2 = 1.0
+        r1 = fp.Parameter1
         if fp.Reverse1:
-            r1 = -1.0
+            r1 = -r1
+            if r1 == 0:
+                r1 = 1e50
+        r2 = fp.Parameter2
         if fp.Reverse2:
-            r2 = -1.0
+            r2 = -r2
+            if r2 == 0:
+                r2 = 1e50
         if e1 and e2:
             # p1 = e1.getParameterByLength(fp.Parameter1)
             # p2 = e2.getParameterByLength(fp.Parameter2)
             c1 = blend_curve.PointOnEdge(e1)
-            c1.distance = r1 * fp.Parameter1
+            c1.distance = r1
             c1.continuity = self.getContinuity(fp.Continuity1)
             # c1.scale = fp.Scale1
             c2 = blend_curve.PointOnEdge(e2)
-            c2.distance = r2 * fp.Parameter2
+            c2.distance = r2
             c2.continuity = self.getContinuity(fp.Continuity2)
             # c2.scale = fp.Scale2
             bc = blend_curve.BlendCurve(c1, c2)

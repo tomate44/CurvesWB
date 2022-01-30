@@ -574,6 +574,7 @@ class ParametricComb:
             obj = FreeCAD.ActiveDocument.addObject("App::FeaturePython", "Comb")
             Comb(obj, edges)
             ViewProviderComb(obj.ViewObject)
+            return obj
         else:
             self.appendEdges(combSelected, edges)
 

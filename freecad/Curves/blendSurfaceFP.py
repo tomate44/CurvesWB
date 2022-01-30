@@ -82,7 +82,7 @@ class blendSurfFP:
 
     def execute(self, obj):
         if hasattr(obj,"Edge1") and hasattr(obj,"Edge2"):
-            if (not obj.Edge1 == None) and (not obj.Edge2 == None):
+            if (not obj.Edge1 is None) and (not obj.Edge2 is None):
                 
                 bs = blendSurface.blendSurface(obj.Edge1, obj.Edge2)
                 bs.railSamples = obj.RailSamples
