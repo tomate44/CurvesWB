@@ -140,17 +140,25 @@ class Interpolate:
             s = f.Surface
             if s is not None:
                 u0, u1, v0, v1 = s.bounds()
+                eps = 1e-3
                 p2l = []
                 for i in range(len(pts)):
                     s1, t1 = s.parameter(pts[i])
-                    s2 = s1 + (i + 1) * obj.UTurns * (u1 - u0)
-                    t2 = t1 + (i + 1) * obj.VTurns * (v1 - v0)
+                    s2, t2 = s1, t1
+                    if s.isUPeriodic():
+                        if abs(u1 - s1) < eps:
+                            s1 -= u1 - u0
+                        s2 = s1 + (i + 1) * obj.UTurns * (u1 - u0)
+                    if s.isVPeriodic():
+                        if abs(v1 - t1) < eps:
+                            t1 -= v1 - v0
+                        t2 = t1 + (i + 1) * obj.VTurns * (v1 - v0)
                     if f.isPartOfDomain(s2, t2):
                         p2l.append(FreeCAD.Base.Vector2d(s2, t2))
-                    elif f.isPartOfDomain(s2, t1):
-                        p2l.append(FreeCAD.Base.Vector2d(s2, t1))
-                    elif f.isPartOfDomain(s1, t2):
-                        p2l.append(FreeCAD.Base.Vector2d(s1, t2))
+                    #elif f.isPartOfDomain(s2, t1):
+                        #p2l.append(FreeCAD.Base.Vector2d(s2, t1))
+                    #elif f.isPartOfDomain(s1, t2):
+                        #p2l.append(FreeCAD.Base.Vector2d(s1, t2))
                 if len(p2l) > 1:
                     bs = Part.Geom2d.BSplineCurve2d()
                     bs.interpolate(p2l)
