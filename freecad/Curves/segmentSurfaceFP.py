@@ -106,7 +106,7 @@ class SegmentSurface:
         # print(cutKnotsU)
         # print(cutKnotsV)
         if len(cutKnotsU) < 3 and len(cutKnotsV) < 3:
-            obj.Shape = bs.toShape()
+            obj.Shape = f  # bs.toShape()
             return
 
         faces = list()
@@ -114,12 +114,19 @@ class SegmentSurface:
             for j in range(len(cutKnotsV) - 1):
                 s = bs.copy()
                 s.segment(cutKnotsU[i], cutKnotsU[i + 1], cutKnotsV[j], cutKnotsV[j + 1])
+                # print(f"Surface segmented to {s.bounds()}")
                 nf = s.toShape()
                 if f.Orientation == "Reversed":
                     nf.reverse()
                 faces.append(nf)
         if faces:
-            obj.Shape = Part.makeShell(faces)
+            shell = Part.Shell(faces)
+            if shell.isValid():
+                obj.Shape = shell
+            else:
+                obj.Shape = Part.Compound(faces)
+            return
+        obj.Shape = f
 
     def setOption(self, obj, prop):
         for p in obj.PropertiesList:
@@ -147,9 +154,11 @@ class SegmentSurfaceVP:
         self.Object = vobj.Object
 
     def claimChildren(self):
-        if len(self.Object.Source[0].Shape.Faces) == 1:
-            self.Object.Source[0].ViewObject.Visibility = False
-            return [self.Object.Source[0]]
+        if len(self.Object.Source) > 0:
+            if len(self.Object.Source[0].Shape.Faces) == 1:
+                self.Object.Source[0].ViewObject.Visibility = False
+                return [self.Object.Source[0]]
+        return []
 
     def __getstate__(self):
         return {"name": self.Object.Name}
