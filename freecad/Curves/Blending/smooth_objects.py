@@ -46,6 +46,7 @@ def coords2d(arg):
         return arg.x, arg.y
     elif len(arg) == 2:
         return arg
+    return False
 
 
 def coords_to_UVW(pt, u, v, w=None):
@@ -297,10 +298,7 @@ class SurfaceDirectionalDerivatives:
 
 class ValueOnEdge(list):
     def __init__(self, value, par=0):
-        try:
-            self.value = (par, *value)
-        except TypeError:
-            self.value = (par, value)
+        self.set(value, par)
 
     def __lt__(self, obj):
         return ((self.value[0]) < (obj.value[0]))
@@ -320,6 +318,12 @@ class ValueOnEdge(list):
     def __repr__(self):
         return "{}: {} @ {:3.3f}".format(self.__class__.__name__, self.value[1:], self.value[0])
 
+    def set(self, value, par=0):
+        try:
+            self.value = (par, *value)
+        except TypeError:
+            self.value = (par, value)
+
     @property
     def Value(self):
         return self.value[1:]
@@ -332,10 +336,10 @@ class ValueOnEdge(list):
 class EdgeInterpolator:
     """Interpolates values along an edge.
     voe = ValueOnEdge(anEdge, value=None)"""
-    def __init__(self, edge, surface=None, linear=False):
+    def __init__(self, edge, linear=False):
+        self.tol2D = 1e-7
         self._edge = edge
         self.linear = linear
-        self.frenet = surface
         self._curve = Part.BSplineCurve()
         self.values = []
         self._touched = False
@@ -344,24 +348,34 @@ class EdgeInterpolator:
         return "{}({})".format(self.__class__.__name__, self.values)
 
     @property
+    def Dimension(self):
+        if len(self.values) > 0:
+            return len(self.values[0].Value)
+        return 0
+
+    @property
     def Shape(self):
         return self._curve.toShape()
 
-    def add(self, val, par=None):
+    def set_value(self, val, par=None):
+        if par is not None:
+            for v in self.values:
+                if abs(v.Param - par) < self.tol2D:
+                    self.values.remove(v)
+                    break
+            self.add(val, par)
+        else:
+            self.values = []
+            self.add(val, self._edge.FirstParameter)
+            self.add(val, self._edge.LastParameter)
+
+    def add(self, val, par):
+        # TODO  Allow distance and normalized parameter
         """Add a value on the edge at the given parameter.
         Input:
         - val : value (tuple)
         - par : the parameter
         """
-        if par is None:
-            par = self._edge.FirstParameter
-        if self.frenet and len(val) == 2:
-            o = self._edge.valueAt(par)
-            x = self._edge.tangentAt(par)
-            n = self.frenet.normalAt(*self.frenet.Surface.parameter(o))
-            y = n.cross(x)
-            fpl = Part.Plane(o, o + x, o + y)
-            val = fpl.value(*val)
         self.values.append(ValueOnEdge(val, par))
         self._touched = True
 
@@ -370,8 +384,10 @@ class EdgeInterpolator:
         if len(self.values) < 2:
             return
         sorval = sorted(self.values)
+        print(sorval)
         par = [v.Param for v in sorval]
-        pts = [FreeCAD.Vector(v.Value) for v in sorval]
+        print(par)
+        pts = [FreeCAD.Vector(*v.Value) for v in sorval]
         if self.linear:
             mults = [1] * len(par)
             mults[0] = 2
@@ -387,8 +403,14 @@ class EdgeInterpolator:
         if self._touched:
             self._compute()
         if len(self.values) == 1:
-            return FreeCAD.Vector(self.values[0].Value)
-        return self._curve.value(par)
+            return self.values[0].Value
+        point = self._curve.value(par)
+        return point[:self.Dimension]
+
+    def vectorAt(self, par):
+        point = self.valueAt(par)
+        if len(point) == 2:
+            return FreeCAD.Base.Vector2d()
 
 
 class SmoothEdge:
@@ -435,7 +457,9 @@ class SmoothEdgeOnFace(SmoothEdge):
         super().__init__(edge, continuity)
         self.face = face
         self.aux_curve = EdgeInterpolator(edge, face)
-        self.aux_curve.add((0, 1))
+        self.setOutside()
+        self.size = EdgeInterpolator(edge, face)
+        self.size.set_value(1.0)
         self.sdd = SurfaceDirectionalDerivatives(face, continuity)
 
     def __repr__(self):
@@ -478,11 +502,11 @@ class SmoothEdgeOnFace(SmoothEdge):
         print(f"Outside : {outs}")
         if outs is not False:
             if reverse:
-                self.aux_curve = vec2(0, -outs)
+                self.aux_curve.set_value((0, -outs))
             else:
-                self.aux_curve = vec2(0, outs)
+                self.aux_curve.set_value((0, outs))
 
-    def fresnetPlaneAt(self, par):
+    def frenetPlaneAt(self, par):
         o = self._edge.valueAt(par)
         x = self._edge.tangentAt(par)
         n = self._face.normalAt(*self._face.Surface.parameter(o))
@@ -490,24 +514,23 @@ class SmoothEdgeOnFace(SmoothEdge):
         return Part.Plane(o, o + x, o + y)
 
     def getValue(self, curve, par):
+        if isinstance(curve, FreeCAD.Base.Vector2d) or isinstance(curve, FreeCAD.Vector):
+            return curve
+        if isinstance(curve, EdgeInterpolator):  # EdgeInterpolator
+            return curve.valueAt(par)
         rp = (par - self._fp) / (self._lp - self._fp)
         np = curve.FirstParameter + rp * (curve.LastParameter - curve.FirstParameter)
-        if hasattr(curve, "valueAt"):
+        if hasattr(curve, "valueAt"):  # Edge
             return curve.valueAt(np)
-        elif hasattr(curve, "value"):
+        elif hasattr(curve, "value"):  # Curve 2D / 3D
             return curve.value(np)
 
     def crossDirAt(self, par):
-        fp = self.fresnetPlaneAt(par)
-        if isinstance(self.aux_curve, FreeCAD.Base.Vector2d):
-            pt = fp.value(self.aux_curve.x, self.aux_curve.y)
-        elif isinstance(self.aux_curve, Part.Geom2d.Curve2d):
-            pt2d = self.getValue(self.aux_curve, par)
-            pt = fp.value(pt2d.x, pt2d.y)
-        elif isinstance(self.aux_curve, FreeCAD.Vector):
-            pt = self.aux_curve
-        else:
-            pt = self.getValue(self.aux_curve, par)
+        pt = self.getValue(self.aux_curve, par)
+        c2d = coords2d(pt)
+        if c2d:
+            fp = self.frenetPlaneAt(par)
+            pt = fp.value(*c2d)
         return pt
 
     def valueAt(self, par):
@@ -519,11 +542,14 @@ class SmoothEdgeOnFace(SmoothEdge):
         # TODO Check valid range
         return self.valueAt(self._edge.Curve.parameter(pt))
 
-    def shape(self, num=10, size=1.0):
+    def shape(self, num=10, size=None):
         params = np.linspace(self._edge.FirstParameter, self._edge.LastParameter, num)
         edges = []
         for p in params:
-            sp = self.valueAt(p).value(size)
+            s = size
+            if s is None:
+                s = self.size.valueAt(p)[0]
+            sp = self.valueAt(p).value(s)
             # print(sp[0], sp[1])
             pts = [sp[0], sp[0] + sp[1], sp[0] + sp[1] + sp[2]]
             edges.append(Part.makePolygon(pts))
