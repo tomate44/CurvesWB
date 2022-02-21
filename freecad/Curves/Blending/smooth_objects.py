@@ -41,6 +41,37 @@ def vec2(*arg):
         return FreeCAD.Base.Vector2d(*arg)
 
 
+def coords2d(arg):
+    if isinstance(arg, FreeCAD.Base.Vector2d):
+        return arg.x, arg.y
+    elif len(arg) == 2:
+        return arg
+
+
+def coords_to_UVW(pt, u, v, w=None):
+    """Returns the coordinates of point pt
+    in the (u, v, w) coordinate system.
+    if w is ignored, it will be set as the normal to u and v
+    """
+    if w is None:
+        w = u.cross(v)
+    m = FreeCAD.Matrix()
+    m.A11 = u.x
+    m.A12 = v.x
+    m.A13 = w.x
+    m.A21 = u.y
+    m.A22 = v.y
+    m.A23 = w.y
+    m.A31 = u.z
+    m.A32 = v.z
+    m.A33 = w.z
+    if m.determinant() < 1e-3:
+        printError(f"Matrix determinant too small ({m.determinant():3.2e})")
+        # return self.projection_coords_quad(v1, u, v)
+    im = m.inverse()
+    return im.multVec(pt)
+
+
 class SmoothPoint:
     """A group formed from a 3D point and some derivatives
 
@@ -194,43 +225,6 @@ class SurfaceDirectionalDerivatives:
             printError(f"{self.__class__.__name__}: {cont} is not a valid continuity")
             self._continuity = 0
 
-    def projection_coords_mat_inverse(self, v1, v2, v3):
-        """Returns the coordinates of v1
-        in the (v2, v3) coordinate system.
-        """
-        v4 = v2.cross(v3)
-        m = FreeCAD.Matrix()
-        m.A11 = v2.x
-        m.A12 = v3.x
-        m.A13 = v4.x
-        m.A21 = v2.y
-        m.A22 = v3.y
-        m.A23 = v4.y
-        m.A31 = v2.z
-        m.A32 = v3.z
-        m.A33 = v4.z
-        if m.determinant() < 1e-3:
-            printError(f"Matrix determinant too small ({m.determinant()})")
-            # return self.projection_coords_quad(v1, v2, v3)
-        im = m.inverse()
-        nv1 = im.multVec(v1)
-        return nv1.x, nv1.y
-
-    # def projection_coords_quad(self, v1, v2, v3):
-        # """Returns the coordinates of v1
-        # in the (v2, v3) coordinate system.
-        # """
-        # quad = Part.BSplineSurface()
-        # fac = 1.1 * v1.Length / min(v2.Length, v3.Length)
-        # quad.setUKnots([-fac, fac])
-        # quad.setVKnots([-fac, fac])
-        # quad.setPole(1, 1, fac * (-v2 - v3))
-        # quad.setPole(1, 2, fac * (-v2 + v3))
-        # quad.setPole(2, 1, fac * (v2 - v3))
-        # quad.setPole(2, 2, fac * (v2 + v3))
-        # nv1 = quad.parameter(v1)
-        # return nv1
-
     def getSmoothPoint(self, location, direction=(), target=None, order=-1):
         """Returns the point and derivatives of the surface at given location
 
@@ -249,12 +243,7 @@ class SurfaceDirectionalDerivatives:
         a SmoothPoint object containing the point and derivatives of the surface.
         If order > 0, a direction, or a target point must be supplied.
         """
-        if isinstance(location, FreeCAD.Base.Vector2d):
-            a, b = location.x, location.y
-        elif len(location) == 2:
-            a, b = location
-        else:
-            printError(f"{self.__class__.__name__}: {location} is not a valid location")
+        a, b = coords2d(location)
 
         if (order < 0) or (order > 4):
             cont = self._continuity
@@ -269,21 +258,13 @@ class SurfaceDirectionalDerivatives:
         # G1
         du = self._surface.getDN(a, b, 1, 0)
         dv = self._surface.getDN(a, b, 0, 1)
-        if isinstance(direction, FreeCAD.Base.Vector2d):
-            x, y = direction.x, direction.y
-        elif len(direction) == 2:
-            x, y = direction
-        elif isinstance(target, FreeCAD.Vector):
+
+        if isinstance(target, FreeCAD.Vector):
             dirv = target - pt
-            # dirx = Part.makeLine(vec3(0, 0, 0), du)
-            # diry = Part.makeLine(vec3(0, 0, 0), dv)
-            # x = dirx.Curve.parameter(dirv) / du.Length
-            # y = diry.Curve.parameter(dirv) / dv.Length
-            x, y = self.projection_coords_mat_inverse(dirv, du, dv)
+            x, y, z = coords_to_UVW(dirv, du, dv)
         else:
-            raise ValueError("You must specify a direction=(float, float) or a target=FreeCAD.Vector")
+            x, y = coords2d(direction)
         d1 = x * du + y * dv
-        # print(x, y)
         if cont == 1:
             return SmoothPoint([pt, d1])
 
@@ -314,104 +295,100 @@ class SurfaceDirectionalDerivatives:
         return SmoothPoint([pt, d1, d2, d3, d4])
 
 
-class ValueOnEdge:
-    """Interpolates a float value along an edge.
+class ValueOnEdge(list):
+    def __init__(self, value, par=0):
+        try:
+            self.value = (par, *value)
+        except TypeError:
+            self.value = (par, value)
+
+    def __lt__(self, obj):
+        return ((self.value[0]) < (obj.value[0]))
+
+    def __gt__(self, obj):
+        return ((self.value[0]) > (obj.value[0]))
+
+    def __le__(self, obj):
+        return ((self.value[0]) <= (obj.value[0]))
+
+    def __ge__(self, obj):
+        return ((self.value[0]) >= (obj.value[0]))
+
+    def __eq__(self, obj):
+        return (self.value[0] == obj.value[0])
+
+    def __repr__(self):
+        return "{}: {} @ {:3.3f}".format(self.__class__.__name__, self.value[1:], self.value[0])
+
+    @property
+    def Value(self):
+        return self.value[1:]
+
+    @property
+    def Param(self):
+        return self.value[0]
+
+
+class EdgeInterpolator:
+    """Interpolates values along an edge.
     voe = ValueOnEdge(anEdge, value=None)"""
-    def __init__(self, edge, value=None):
+    def __init__(self, edge, surface=None, linear=False):
         self._edge = edge
+        self.linear = linear
+        self.frenet = surface
         self._curve = Part.BSplineCurve()
-        self._pts = []
-        if value is not None:
-            self.set(value)
+        self.values = []
+        self._touched = False
 
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__, self.values)
 
     @property
-    def values(self):
-        return [vec2(v.x, v.y) for v in self._pts]
+    def Shape(self):
+        return self._curve.toShape()
 
-    def set(self, val):
-        "Set a constant value, or a list of regularly spaced values"
-        self._pts = []
-        if isinstance(val, (list, tuple)):
-            if len(val) == 1:
-                val *= 2
-            params = np.linspace(self._edge.FirstParameter, self._edge.LastParameter, len(val))
-            for i in range(len(val)):
-                self.add(val[i], abs_par=params[i], recompute=False)
-        elif isinstance(val, (int, float)):
-            self.set([val, val])
-        self._compute()
-
-    def _get_real_param(self, abs_par=None, rel_par=None, dist_par=None, point=None):
-        """return the real edge parameter from one of the parameter values in :
-        * abs_par : the real parameter
-        * rel_par : the normalized parameter in [0.0, 1.0]
-        * dist_par : the distance from start (if positive) or end (if negative)
-        * point : parameter nearest to point"""
-        if abs_par is not None:
-            # if abs_par >= self._edge.FirstParameter and abs_par <= self._edge.LastParameter:
-            return abs_par
-        elif rel_par is not None:
-            # if rel_par >= 0.0 and rel_par <= 1.0:
-            return self._edge.FirstParameter + rel_par * (self._edge.LastParameter - self._edge.FirstParameter)
-        elif dist_par is not None:
-            # if abs(dist_par) <= self._edge.Length:
-            return self._edge.getParameterByLength(dist_par)
-        elif point is not None:
-            p = self._edge.Curve.parameter(point)
-            if p < self._edge.FirstParameter:
-                p += (self._edge.LastParameter - self._edge.FirstParameter)
-            elif p > self._edge.LastParameter:
-                p -= (self._edge.LastParameter - self._edge.FirstParameter)
-            return p
-        else:
-            raise ValueError("No parameter")
-
-    def add(self, val, abs_par=None, rel_par=None, dist_par=None, point=None, recompute=True):
+    def add(self, val, par=None):
         """Add a value on the edge at the given parameter.
         Input:
-        - val : float value
-        - one of the parameter values :
-        * abs_par : the real parameter
-        * rel_par : the normalized parameter in [0.0, 1.0]
-        * dist_par : the distance from start (if positive) or end (if negative)
-        * point : parameter nearest to point
-        - recompute : if True(default), recompute the interpolating curve"""
-        par = self._get_real_param(abs_par, rel_par, dist_par, point)
-        self._pts.append(FreeCAD.Vector(val.x, val.y, par))
-        if recompute:
-            self._compute()
-
-    def reset(self):
-        self._pts = []
+        - val : value (tuple)
+        - par : the parameter
+        """
+        if par is None:
+            par = self._edge.FirstParameter
+        if self.frenet and len(val) == 2:
+            o = self._edge.valueAt(par)
+            x = self._edge.tangentAt(par)
+            n = self.frenet.normalAt(*self.frenet.Surface.parameter(o))
+            y = n.cross(x)
+            fpl = Part.Plane(o, o + x, o + y)
+            val = fpl.value(*val)
+        self.values.append(ValueOnEdge(val, par))
+        self._touched = True
 
     def _compute(self):
-        if len(self._pts) < 2:
+        self._touched = False
+        if len(self.values) < 2:
             return
-        self._pts = sorted(self._pts, key=itemgetter(2))
-        par = [p.z for p in self._pts]
-        if self._edge.isClosed() and self._edge.Curve.isPeriodic() and len(self._pts) > 2:
-            self._curve.interpolate(Points=self._pts[:-1], Parameters=par, PeriodicFlag=True)
+        sorval = sorted(self.values)
+        par = [v.Param for v in sorval]
+        pts = [FreeCAD.Vector(v.Value) for v in sorval]
+        if self.linear:
+            mults = [1] * len(par)
+            mults[0] = 2
+            mults[-1] = 2
+            self._curve.buildFromPolesMultsKnots(pts, mults, par, False, 1)
+        elif self._edge.isClosed() and self._edge.Curve.isPeriodic() and len(pts) > 2:
+            self._curve.interpolate(Points=pts[:-1], Parameters=par, PeriodicFlag=True)
         else:
-            self._curve.interpolate(Points=self._pts, Parameters=par, PeriodicFlag=False)
+            self._curve.interpolate(Points=pts, Parameters=par, PeriodicFlag=False)
 
-    def _value(self, pt):
-        return vec2(pt.x, pt.y)
-
-    def valueAt(self, abs_par=None, rel_par=None, dist_par=None, point=None):
-        """Returns an interpolated value at the given parameter.
-        Input:
-        - one of the parameter values :
-        * abs_par : the real parameter
-        * rel_par : the normalized parameter in [0.0, 1.0]
-        * dist_par : the distance from start (if positive) or end (if negative)
-        * point : parameter nearest to point"""
-        if len(self._pts) == 1:
-            return self._value(self._pts[0])
-        par = self._get_real_param(abs_par, rel_par, dist_par)
-        return self._value(self._curve.value(par))
+    def valueAt(self, par):
+        """Returns an interpolated value at the given parameter."""
+        if self._touched:
+            self._compute()
+        if len(self.values) == 1:
+            return FreeCAD.Vector(self.values[0].Value)
+        return self._curve.value(par)
 
 
 class SmoothEdge:
@@ -457,7 +434,8 @@ class SmoothEdgeOnFace(SmoothEdge):
     def __init__(self, edge, face, continuity=1):
         super().__init__(edge, continuity)
         self.face = face
-        self.aux_curve = vec2(0, 1)
+        self.aux_curve = EdgeInterpolator(edge, face)
+        self.aux_curve.add((0, 1))
         self.sdd = SurfaceDirectionalDerivatives(face, continuity)
 
     def __repr__(self):
@@ -482,7 +460,6 @@ class SmoothEdgeOnFace(SmoothEdge):
         x = self._edge.tangentAt(p)
         n = self._face.normalAt(*self._face.Surface.parameter(o))
         y = n.cross(x)
-        fp = Part.Plane(o, o + x, o + y)
         np = Part.Plane(o, o + n, o + y)
         circ = Part.Geom2d.Circle2d()
         circ.Radius = eps
@@ -494,18 +471,6 @@ class SmoothEdgeOnFace(SmoothEdge):
                 return -1
             else:
                 return 1
-        return False
-
-        c2d, fp, lp = self._face.curveOnSurface(self._edge)
-        p = fp + par * (lp - fp)
-        pt = c2d.value(p)
-        t = c2d.tangent(p)
-        pod1 = self._face.isPartOfDomain(pt.x + t.y * eps, pt.y - t.x * eps)
-        pod2 = self._face.isPartOfDomain(pt.x - t.y * eps, pt.y + t.x * eps)
-        if pod2 and (not pod1):
-            return -1
-        elif pod1 and (not pod2):
-            return 1
         return False
 
     def setOutside(self, reverse=False, par=0.5, eps=1e-3):
@@ -543,14 +508,12 @@ class SmoothEdgeOnFace(SmoothEdge):
             pt = self.aux_curve
         else:
             pt = self.getValue(self.aux_curve, par)
-        # quad = self.D1QuadAt(par)
-        # return quad.parameter(pt)
         return pt
 
     def valueAt(self, par):
         location = self._face.Surface.parameter(self._edge.valueAt(par))
         pt = self.crossDirAt(par)
-        return self.sdd.getSmoothPoint(location, target=pt)
+        return self.sdd.getSmoothPoint(location, target=pt, order=self.continuity)
 
     def valueAtPoint(self, pt):
         # TODO Check valid range
@@ -562,22 +525,166 @@ class SmoothEdgeOnFace(SmoothEdge):
         for p in params:
             sp = self.valueAt(p).value(size)
             # print(sp[0], sp[1])
-            pts = [sp[0], sp[0] + sp[1], self.crossDirAt(p)]
+            pts = [sp[0], sp[0] + sp[1], sp[0] + sp[1] + sp[2]]
             edges.append(Part.makePolygon(pts))
         return Part.Compound(edges)
 
 
+class BlendSurface:
+    """BSpline surface that smoothly interpolates two EdgeOnFace objects"""
+    def __init__(self, edge1, face1, edge2, face2):
+        self._ruled_surface = _utils.ruled_surface(edge1, edge2, True).Surface
+        u0, u1, v0, v1 = self._ruled_surface.bounds()
+        iv0, iv1 = self.ruled_surface.vIso(v0), self.ruled_surface.vIso(v1)
+        self.edge1 = SmoothEdgeOnFace(iv0.toShape(), face1)
+        self.edge2 = SmoothEdgeOnFace(iv1.toShape(), face2)
+        # self._ruled_surface = None
+        self._surface = None
+        self._curves = []
+
+    def __repr__(self):
+        return "{}(Edge1({}, G{}), Edge2({}, G{}))".format(self.__class__.__name__,
+                                                           hex(id(self.edge1)),
+                                                           self.edge1.continuity,
+                                                           hex(id(self.edge2)),
+                                                           self.edge2.continuity)
+
+    @property
+    def continuity(self):
+        "Returns the continuities of the BlendSurface"
+        return [self.edge1.continuity, self.edge2.continuity]
+
+    @continuity.setter
+    def continuity(self, args):
+        if isinstance(args, (int, float)):
+            self.edge1.continuity = args
+            self.edge2.continuity = args
+        elif isinstance(args, (list, tuple)):
+            self.edge1.continuity = args[0]
+            self.edge2.continuity = args[1]
+
+    @property
+    def curves(self):
+        "Returns the Blend curves that represent the BlendSurface"
+        return self._curves
+
+    @property
+    def edges(self):
+        "Returns the compound of edges that represent the BlendSurface"
+        el = [c.toShape() for c in self._curves]
+        return Part.Compound(el)
+
+    @property
+    def surface(self):
+        "Returns the BSpline surface that represent the BlendSurface"
+        # self.perform()
+        guides = [bezier.toBSpline() for bezier in self._curves]
+        cts = curves_to_surface.CurvesToSurface(guides)
+        cts.Parameters = self._params
+        s1 = cts.interpolate()
+        s2 = curves_to_surface.ruled_surface(self.rails[0].toShape(), self.rails[1].toShape(), True).Surface
+        s2.exchangeUV()
+        s3 = curves_to_surface.U_linear_surface(s1)
+        gordon = curves_to_surface.Gordon(s1, s2, s3)
+        self._surface = gordon.Surface
+        return self._surface
+
+    @property
+    def face(self):
+        "Returns the face that represent the BlendSurface"
+        return self.surface.toShape()
+
+    @property
+    def rails(self):
+        u0, u1, v0, v1 = self.ruled_surface.bounds()
+        return self.ruled_surface.vIso(v0), self.ruled_surface.vIso(v1)
+
+    @property
+    def ruled_surface(self):
+        if self._ruled_surface is None:
+            self._ruled_surface = _utils.ruled_surface(self.edge1._edge, self.edge2._edge, True).Surface
+        return self._ruled_surface
+
+    def set_mutual_target(self):
+        r1, r2 = self.rails
+        self.edge1.aux_curve = r2
+        self.edge2.aux_curve = r1
+
+    def set_outside(self):
+        self.edge1.setOutside()
+        self.edge2.setOutside()
+
+    def sample(self, num=3):
+        ruled = self.ruled_surface
+        u0, u1, v0, v1 = ruled.bounds()
+        if isinstance(num, int):
+            params = np.linspace(u0, u1, num)
+        return params
+
+    def blendcurve_at(self, par):
+        bs = Part.BezierCurve()
+        print(par, self.edge1.valueAt(par).value(), self.edge2.valueAt(par).value())
+        bs.interpolate([self.edge1.valueAt(par).value(), self.edge2.valueAt(par).value()])
+        return bs
+
+    def minimize_curvature(self, arg=3):
+        self.edge1.size.reset()
+        self.edge2.size.reset()
+        e1, e2 = self.rails
+        for p in self.sample(arg):
+            bc = self.blendcurve_at(p)
+            # print("Minimizing curvature @ {:3.3f} = ({:3.3f}, {:3.3f})".format(p, bc.point1.size, bc.point2.size))
+            bc.minimize_curvature()
+            self.edge1.size.add(val=bc.point1.size, point=e1.value(p))
+            self.edge2.size.add(val=bc.point2.size, point=e2.value(p))
+            # print("Minimized curvature @ {:3.3f} = ({:3.3f}, {:3.3f})".format(p, bc.point1.size, bc.point2.size))
+
+    def auto_scale(self, arg=3):
+        self.edge1.size.reset()
+        self.edge2.size.reset()
+        e1, e2 = self.rails
+        for p in self.sample(arg):
+            bc = self.blendcurve_at(p)
+            bc.auto_scale()
+            self.edge1.size.add(val=bc.point1.size, point=e1.value(p))
+            self.edge2.size.add(val=bc.point2.size, point=e2.value(p))
+            # print("Auto scaling @ {:3.3f} = ({:3.3f}, {:3.3f})".format(p, bc.point1.size, bc.point2.size))
+
+    def perform(self, arg=20, size1=1.0, size2=1.0):
+        bc_list = []
+        bs = Part.BezierCurve()
+        params1 = np.linspace(self.edge1._fp, self.edge1._lp, arg)
+        params2 = np.linspace(self.edge2._fp, self.edge2._lp, arg)
+        for i in range(len(params1)):
+            bs = Part.BezierCurve()
+            bs.interpolate([self.edge1.valueAt(params1[i]).value(size1), self.edge2.valueAt(params2[i]).value(-size2)])
+            # print("Computing BlendCurve @ {} from {} to {}".format(p, bc.point1.point, bc.point2.point))
+            bc_list.append(bs)
+        self._curves = bc_list
+        self._params = self.sample(arg)
+
+
 """
+
 from importlib import reload
 vec3 = FreeCAD.Vector
 vec2 = FreeCAD.Base.Vector2d
 from freecad.Curves.Blending import smooth_objects
 reload(smooth_objects)
-o = smooth_objects.SmoothEdgeOnFace(e1, f1, 3)
-o.setOutside()
-# o.aux_curve = vec2(1,1)
-Part.show(o.shape(30, 5))
+sme1 = smooth_objects.SmoothEdgeOnFace(e1, f1, 3)
+# sme1.setOutside()
+# Part.show(sme1.shape(30, 5))
+# sme2 = smooth_objects.SmoothEdgeOnFace(e2, f2, 3)
+# sme2.setOutside(True)
+# Part.show(sme2.shape(30, 5))
 
+bls = smooth_objects.BlendSurface(e1, f1, e2, f2)
+bls.continuity = 3
+print(bls)
+# bls.set_mutual_target()
+bls.set_outside()
+bls.perform(20, 20.0, 20.0)
+Part.show(bls.face)
 
 """
 
@@ -1026,7 +1133,7 @@ class EdgeOnFace:
         return Part.Compound([poe.rear_segment() for poe in self.discretize(num)])
 
 
-class BlendSurface:
+class BlendSurfaceDeprecated:
     """BSpline surface that smoothly interpolates two EdgeOnFace objects"""
     def __init__(self, edge1, face1, edge2, face2):
         self.edge1 = SmoothEdgeOnFace(edge1, face1)
