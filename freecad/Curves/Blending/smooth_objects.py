@@ -73,227 +73,74 @@ def coords_to_UVW(pt, u, v, w=None):
     return im.multVec(pt)
 
 
-class SmoothPoint:
-    """A group formed from a 3D point and some derivatives
+def get_surface_derivatives(surface, location, direction=(), target=None, cont=1):
+    """Returns the point and derivatives of the surface at given location
 
-    Attributes
-    ----------
-    continuity : int
-        The continuity order of this SmoothPoint.
-        This is equal to the number of derivatives
-    point : FreeCAD.Vector
-        The location in 3D space of this SmoothPoint (D0)
-    tangent : FreeCAD.Vector
-        The tangent of this SmoothPoint (D1)
+    location : tuple/list of 2 coordinates, or Vector2d
+        The (u, v) coordinates defining the point on the surface
+    direction : tuple/list of 2 coordinates, or Vector2d (optional)
+        The (u, v) coordinates of the direction vector of the first derivative
+    target : FreeCAD.Vector (optional)
+        The 3D Point toward which the first derivative will be pointing
+    order : Int in [0, 1, 2, 3, 4]
+        The order of the last derivative to compute.
+        if order is omitted, or out of valid range, Continuity attribute is used.
 
-    Methods
+    Returns
     -------
-    tangent_edge(size=0)
-        returns the edge representing the tangent, with given size
-    value(size=0)
-        Returns the scaled SmoothPoint vectors, so that the tangent has given size.
-
-    If size == 0, returns the original unscaled vectors.
+    a SmoothPoint object containing the point and derivatives of the surface.
+    If order > 0, a direction, or a target point must be supplied.
     """
+    a, b = coords2d(location)
 
-    def __init__(self, vecs):
-        self.raw_vectors = vecs
+    if isinstance(surface, Part.Face):
+        surf = surface.Surface
+    else:
+        surf = surface
 
-    def __repr__(self):
-        return "{}({})".format(self.__class__.__name__, self.raw_vectors)
+    # C0
+    pt = surf.getD0(a, b)
+    if cont == 0:
+        return SmoothPoint([pt])
 
-    def __str__(self):
-        return "{}(C{} at {})".format(self.__class__.__name__, self.continuity, self.raw_vectors[0])
+    # G1
+    du = surf.getDN(a, b, 1, 0)
+    dv = surf.getDN(a, b, 0, 1)
 
-    @property
-    def continuity(self):
-        """The continuity order of this SmoothPoint"""
+    if isinstance(target, FreeCAD.Vector):
+        dirv = target - pt
+        x, y, z = coords_to_UVW(dirv, du, dv)
+    else:
+        x, y = coords2d(direction)
+    d1 = x * du + y * dv
+    if cont == 1:
+        return [pt, d1]
 
-        return len(self.raw_vectors) - 1
+    # G2
+    d2u = surf.getDN(a, b, 2, 0)
+    d2v = surf.getDN(a, b, 0, 2)
+    duv = surf.getDN(a, b, 1, 1)
+    d2 = pow(x, 2) * d2u + 2 * x * y * duv + pow(y, 2) * d2v
+    if cont == 2:
+        return [pt, d1, d2]
 
-    @property
-    def point(self):
-        """The location in 3D space of this SmoothPoint (D0)"""
+    # G3
+    d3u = surf.getDN(a, b, 3, 0)
+    d2uv = surf.getDN(a, b, 2, 1)
+    du2v = surf.getDN(a, b, 1, 2)
+    d3v = surf.getDN(a, b, 0, 3)
+    d3 = pow(x, 3) * d3u + 3 * pow(x, 2) * y * d2uv + 3 * x * pow(y, 2) * du2v + pow(y, 3) * d3v
+    if cont == 3:
+        return [pt, d1, d2, d3]
 
-        if self.continuity >= 0:
-            return self.raw_vectors[0]
-
-    @property
-    def tangent(self):
-        """The tangent of this SmoothPoint (D1)"""
-
-        if self.continuity > 0:
-            return self.raw_vectors[1]
-        return FreeCAD.Vector(0, 0, 0)
-
-    def tangent_edge(self, size=1.0):
-        """Returns the edge representing the tangent
-
-        Returns the edge representing the tangent
-        scaled by the supplied factor
-
-        Parameters
-        ----------
-        size : float
-            The desired size of the tangent vector
-
-        Returns
-        -------
-        FreeCAD vector
-            The edge representing the tangent
-        """
-
-        return Part.makeLine(self.point, self.point + self.tangent.normalize() * size)
-
-    def value(self, size=0):
-        """Returns the scaled SmoothPoint vectors.
-
-        Returns the scaled SmoothPoint vectors
-        so that the tangent has given size,
-        or the original unscaled vectors if size == 0
-
-        Parameters
-        ----------
-        size : float
-            The desired size of the tangent vector
-            If size == 0, the original unscaled vectors are returned
-
-        Returns
-        -------
-        List of FreeCAD vectors
-            The scaled vectors of this SmoothPoint
-        """
-
-        if size == 0 or self.continuity <= 0:
-            return self.raw_vectors
-        else:
-            scale = size / self.raw_vectors[1].Length
-            # print(self.raw_vectors[1])
-            return [self.raw_vectors[i] * pow(scale, i) for i in range(self.continuity + 1)]
-
-
-class SurfaceDirectionalDerivatives:
-    """Surface directional derivatives
-
-    Computes the (order + 1) derivatives of the surface
-    at given location, in a given direction, or toward a target point.
-
-    Example
-    -------
-    mySDD = SurfaceDirectionalDerivatives(a_surface, 3)
-    mySDD.getSmoothPoint((0.5,0.5), direction=(1.0, 1.0))
-
-    Attributes
-    ----------
-    Surface : Part.Geometry.Surface (or Part.Face)
-        The support surface that provides the derivatives
-    Continuity : Int in [0, 1, 2, 3, 4]
-        The order of the last derivative to compute
-
-    Methods
-    -------
-    getSmoothPoint(location, order=-1, direction=(), target=None)
-        Returns the SmoothPoint at location, in given direction, or toward target point.
-    """
-
-    def __init__(self, surface, continuity=0):
-        self.Surface = surface
-        self.Continuity = continuity
-
-    @property
-    def Surface(self):
-        return self._surface
-
-    @Surface.setter
-    def Surface(self, surf):
-        if isinstance(surf, Part.Face):
-            self._surface = surf.Surface
-        elif surf.isDerivedFrom("Part::GeomSurface"):
-            self._surface = surf
-        else:
-            printError(f"{self.__class__.__name__}: {surf} is not a valid Surface")
-            self._surface = None
-
-    @property
-    def Continuity(self):
-        return self._continuity
-
-    @Continuity.setter
-    def Continuity(self, cont):
-        if (cont >= 0) and (cont <= 4):
-            self._continuity = cont
-        else:
-            printError(f"{self.__class__.__name__}: {cont} is not a valid continuity")
-            self._continuity = 0
-
-    def getSmoothPoint(self, location, direction=(), target=None, order=-1):
-        """Returns the point and derivatives of the surface at given location
-
-        location : tuple/list of 2 coordinates, or Vector2d
-            The (u, v) coordinates defining the point on the surface
-        direction : tuple/list of 2 coordinates, or Vector2d (optional)
-            The (u, v) coordinates of the direction vector of the first derivative
-        target : FreeCAD.Vector (optional)
-            The 3D Point toward which the first derivative will be pointing
-        order : Int in [0, 1, 2, 3, 4]
-            The order of the last derivative to compute.
-            if order is omitted, or out of valid range, Continuity attribute is used.
-
-        Returns
-        -------
-        a SmoothPoint object containing the point and derivatives of the surface.
-        If order > 0, a direction, or a target point must be supplied.
-        """
-        a, b = coords2d(location)
-
-        if (order < 0) or (order > 4):
-            cont = self._continuity
-        else:
-            cont = order
-
-        # C0
-        pt = self._surface.getD0(a, b)
-        if cont == 0:
-            return SmoothPoint([pt])
-
-        # G1
-        du = self._surface.getDN(a, b, 1, 0)
-        dv = self._surface.getDN(a, b, 0, 1)
-
-        if isinstance(target, FreeCAD.Vector):
-            dirv = target - pt
-            x, y, z = coords_to_UVW(dirv, du, dv)
-        else:
-            x, y = coords2d(direction)
-        d1 = x * du + y * dv
-        if cont == 1:
-            return SmoothPoint([pt, d1])
-
-        # G2
-        d2u = self._surface.getDN(a, b, 2, 0)
-        d2v = self._surface.getDN(a, b, 0, 2)
-        duv = self._surface.getDN(a, b, 1, 1)
-        d2 = pow(x, 2) * d2u + 2 * x * y * duv + pow(y, 2) * d2v
-        if cont == 2:
-            return SmoothPoint([pt, d1, d2])
-
-        # G3
-        d3u = self._surface.getDN(a, b, 3, 0)
-        d2uv = self._surface.getDN(a, b, 2, 1)
-        du2v = self._surface.getDN(a, b, 1, 2)
-        d3v = self._surface.getDN(a, b, 0, 3)
-        d3 = pow(x, 3) * d3u + 3 * pow(x, 2) * y * d2uv + 3 * x * pow(y, 2) * du2v + pow(y, 3) * d3v
-        if cont == 3:
-            return SmoothPoint([pt, d1, d2, d3])
-
-        # G4
-        d4u = self._surface.getDN(a, b, 4, 0)
-        d3uv = self._surface.getDN(a, b, 3, 1)
-        d2u2v = self._surface.getDN(a, b, 2, 2)
-        du3v = self._surface.getDN(a, b, 1, 3)
-        d4v = self._surface.getDN(a, b, 0, 4)
-        d4 = (pow(x, 4) * d4u) + (4 * pow(x, 3) * y * d3uv) + (4 * pow(x, 2) * pow(y, 2) * d2u2v) + (4 * x * pow(y, 3) * du3v) + (pow(y, 4) * d4v)
-        return SmoothPoint([pt, d1, d2, d3, d4])
+    # G4
+    d4u = surf.getDN(a, b, 4, 0)
+    d3uv = surf.getDN(a, b, 3, 1)
+    d2u2v = surf.getDN(a, b, 2, 2)
+    du3v = surf.getDN(a, b, 1, 3)
+    d4v = surf.getDN(a, b, 0, 4)
+    d4 = (pow(x, 4) * d4u) + (4 * pow(x, 3) * y * d3uv) + (4 * pow(x, 2) * pow(y, 2) * d2u2v) + (4 * x * pow(y, 3) * du3v) + (pow(y, 4) * d4v)
+    return [pt, d1, d2, d3, d4]
 
 
 class ValueOnEdge(list):
@@ -316,7 +163,7 @@ class ValueOnEdge(list):
         return (self.value[0] == obj.value[0])
 
     def __repr__(self):
-        return "{}: {} @ {:3.3f}".format(self.__class__.__name__, self.value[1:], self.value[0])
+        return "{}: {} @ {:3.3f}".format(self.__class__.__name__, self.Value, self.Param)
 
     def set(self, value, par=0):
         try:
@@ -340,7 +187,7 @@ class EdgeInterpolator:
         self.tol2D = 1e-7
         self._edge = edge
         self.linear = linear
-        self._curve = Part.BSplineCurve()
+        self._curve = self.default_curve()
         self.values = []
         self._touched = False
 
@@ -357,6 +204,13 @@ class EdgeInterpolator:
     def Shape(self):
         return self._curve.toShape()
 
+    def default_curve(self, vec=FreeCAD.Vector()):
+        c = Part.BSplineCurve()
+        c.setPole(1, FreeCAD.Vector(vec))
+        c.setPole(2, FreeCAD.Vector(vec))
+        c.setKnots([self._edge.FirstParameter, self._edge.LastParameter])
+        return c
+
     def set_value(self, val, par=None):
         if par is not None:
             for v in self.values:
@@ -368,6 +222,12 @@ class EdgeInterpolator:
             self.values = []
             self.add(val, self._edge.FirstParameter)
             self.add(val, self._edge.LastParameter)
+
+    def set_start_value(self, val):
+        self.set_value(val, self._edge.FirstParameter)
+
+    def set_end_value(self, val):
+        self.set_value(val, self._edge.LastParameter)
 
     def add(self, val, par):
         # TODO  Allow distance and normalized parameter
@@ -381,13 +241,22 @@ class EdgeInterpolator:
 
     def _compute(self):
         self._touched = False
-        if len(self.values) < 2:
-            return
+        self._curve = self.default_curve()
+        if len(self.values) == 0:
+            return True
+        if len(self.values) == 1:
+            self._curve = self.default_curve(self.values[0].Value)
+            return True
         sorval = sorted(self.values)
-        print(sorval)
+        # print(sorval)
         par = [v.Param for v in sorval]
-        print(par)
+        # print(par)
         pts = [FreeCAD.Vector(*v.Value) for v in sorval]
+        # print(pts)
+        if (len(pts) == 2) and (pts[0].distanceToPoint(pts[1]) < 1e-6):
+            self._curve = self.default_curve(pts[0])
+            self._curve.setPole(2, pts[1])
+            return True
         if self.linear:
             mults = [1] * len(par)
             mults[0] = 2
@@ -397,20 +266,134 @@ class EdgeInterpolator:
             self._curve.interpolate(Points=pts[:-1], Parameters=par, PeriodicFlag=True)
         else:
             self._curve.interpolate(Points=pts, Parameters=par, PeriodicFlag=False)
+        return True
 
     def valueAt(self, par):
         """Returns an interpolated value at the given parameter."""
         if self._touched:
             self._compute()
-        if len(self.values) == 1:
-            return self.values[0].Value
         point = self._curve.value(par)
         return point[:self.Dimension]
 
     def vectorAt(self, par):
         point = self.valueAt(par)
         if len(point) == 2:
-            return FreeCAD.Base.Vector2d()
+            return FreeCAD.Base.Vector2d(*point)
+        elif len(point) == 3:
+            return FreeCAD.Vector(*point)
+
+
+class SmoothPoint:
+    """A group formed from a 3D point and some derivatives
+
+    Attributes
+    ----------
+    continuity : int
+        The continuity order of this SmoothPoint.
+        This is equal to the number of derivatives
+    point : FreeCAD.Vector
+        The location in 3D space of this SmoothPoint (D0)
+    tangent : FreeCAD.Vector
+        The tangent of this SmoothPoint (D1)
+
+    Methods
+    -------
+    tangent_edge(size=0)
+        returns the edge representing the tangent, with given size
+    value(size=0)
+        Returns the scaled SmoothPoint vectors, so that the tangent has given size.
+
+    If size == 0, returns the original unscaled vectors.
+    """
+
+    def __init__(self, vecs, size=0):
+        self.raw_vectors = vecs
+        self._size = size
+
+    def __repr__(self):
+        return "{}({})".format(self.__class__.__name__, self.raw_vectors)
+
+    def __str__(self):
+        return "{}(C{} at {})".format(self.__class__.__name__, self.continuity, self.raw_vectors[0])
+
+    @property
+    def Size(self):
+        return self._size
+
+    @Size.setter
+    def Size(self, val):
+        self._size = val
+
+    @property
+    def Continuity(self):
+        """The continuity order of this SmoothPoint"""
+
+        return len(self.raw_vectors) - 1
+
+    @property
+    def Point(self):
+        """The location in 3D space of this SmoothPoint (D0)"""
+
+        if self.continuity >= 0:
+            return self.raw_vectors[0]
+
+    @property
+    def Tangent(self):
+        """The tangent of this SmoothPoint (D1)"""
+
+        if self.continuity > 0:
+            return self.raw_vectors[1]
+        return FreeCAD.Vector(0, 0, 0)
+
+    def tangent_edge(self, size=0):
+        """Returns the edge representing the tangent
+
+        Returns the edge representing the tangent
+        scaled by the supplied factor
+
+        Parameters
+        ----------
+        size : float
+            The desired size of the tangent vector
+
+        Returns
+        -------
+        FreeCAD vector
+            The edge representing the tangent
+        """
+        if size == 0:
+            size = self.Size
+        if size == 0:
+            size = 1.0
+        return Part.makeLine(self.point, self.point + self.Tangent.normalize() * size)
+
+    def value(self, size=0):
+        """Returns the scaled SmoothPoint vectors.
+
+        Returns the scaled SmoothPoint vectors
+        so that the tangent has given size,
+        or the original unscaled vectors if size == 0
+
+        Parameters
+        ----------
+        size : float
+            The desired size of the tangent vector
+            If size == 0, the original unscaled vectors are returned
+
+        Returns
+        -------
+        List of FreeCAD vectors
+            The scaled vectors of this SmoothPoint
+        """
+
+        if size == 0:
+            size = self.Size
+        if (size == 0) or (self.Continuity <= 0):
+            return self.raw_vectors
+        else:
+            scale = size / self.raw_vectors[1].Length
+            # print(self.raw_vectors[1])
+            return [self.raw_vectors[i] * pow(scale, i) for i in range(self.Continuity + 1)]
 
 
 class SmoothEdge:
@@ -424,6 +407,7 @@ class SmoothEdge:
         self.edge = edge
         self._fp = self._edge.FirstParameter
         self._lp = self._edge.LastParameter
+        self.size = EdgeInterpolator(edge)
 
     def __repr__(self):
         return "{}({}, {})".format(self.__class__.__name__,
@@ -447,7 +431,8 @@ class SmoothEdge:
         res = [self._edge.Curve.getD0(par), ]
         if self._continuity > 0:
             res.extend([self._edge.Curve.getDN(par, i + 1) for i in range(self._continuity)])
-        return SmoothPoint(res)
+        size = self.size.valueAt(par)
+        return SmoothPoint(res, size)
 
 
 class SmoothEdgeOnFace(SmoothEdge):
@@ -456,11 +441,8 @@ class SmoothEdgeOnFace(SmoothEdge):
     def __init__(self, edge, face, continuity=1):
         super().__init__(edge, continuity)
         self.face = face
-        self.aux_curve = EdgeInterpolator(edge, face)
+        self.aux_curve = EdgeInterpolator(edge)
         self.setOutside()
-        self.size = EdgeInterpolator(edge, face)
-        self.size.set_value(1.0)
-        self.sdd = SurfaceDirectionalDerivatives(face, continuity)
 
     def __repr__(self):
         return "{}({}, {}, {})".format(self.__class__.__name__,
@@ -488,9 +470,11 @@ class SmoothEdgeOnFace(SmoothEdge):
         circ = Part.Geom2d.Circle2d()
         circ.Radius = eps
         c3d = circ.toShape(np)
-        d, pts, info = c3d.distToShape(self._face)
+        # Part.show(c3d)
+        # Part.show(self._face)
+        d, pts, info = self._face.distToShape(c3d)
         if len(pts) == 1:
-            int_par = info[0][2]
+            int_par = info[0][5]
             if int_par < pi:
                 return -1
             else:
@@ -536,20 +520,20 @@ class SmoothEdgeOnFace(SmoothEdge):
     def valueAt(self, par):
         location = self._face.Surface.parameter(self._edge.valueAt(par))
         pt = self.crossDirAt(par)
-        return self.sdd.getSmoothPoint(location, target=pt, order=self.continuity)
+        sd = get_surface_derivatives(self._face.Surface, location, target=pt, cont=self.continuity)
+        size = self.size.valueAt(par)
+        print(size)
+        return SmoothPoint(sd, size)
 
     def valueAtPoint(self, pt):
         # TODO Check valid range
         return self.valueAt(self._edge.Curve.parameter(pt))
 
-    def shape(self, num=10, size=None):
+    def shape(self, num=10, size=0):
         params = np.linspace(self._edge.FirstParameter, self._edge.LastParameter, num)
         edges = []
         for p in params:
-            s = size
-            if s is None:
-                s = self.size.valueAt(p)[0]
-            sp = self.valueAt(p).value(s)
+            sp = self.valueAt(p).value(size)
             # print(sp[0], sp[1])
             pts = [sp[0], sp[0] + sp[1], sp[0] + sp[1] + sp[2]]
             edges.append(Part.makePolygon(pts))
@@ -698,11 +682,11 @@ vec2 = FreeCAD.Base.Vector2d
 from freecad.Curves.Blending import smooth_objects
 reload(smooth_objects)
 sme1 = smooth_objects.SmoothEdgeOnFace(e1, f1, 3)
-# sme1.setOutside()
-# Part.show(sme1.shape(30, 5))
-# sme2 = smooth_objects.SmoothEdgeOnFace(e2, f2, 3)
-# sme2.setOutside(True)
-# Part.show(sme2.shape(30, 5))
+sme1.setOutside()
+Part.show(sme1.shape(50))
+sme2 = smooth_objects.SmoothEdgeOnFace(e2, f2, 3)
+sme2.setOutside(True)
+Part.show(sme2.shape(50))
 
 bls = smooth_objects.BlendSurface(e1, f1, e2, f2)
 bls.continuity = 3
