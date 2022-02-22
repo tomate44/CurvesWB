@@ -198,16 +198,20 @@ class EdgeInterpolator:
     def Dimension(self):
         if len(self.values) > 0:
             return len(self.values[0].Value)
-        return 0
+        return 1
 
     @property
     def Shape(self):
         return self._curve.toShape()
 
     def default_curve(self, vec=FreeCAD.Vector()):
+        try:
+            v = FreeCAD.Vector(*vec)
+        except Exception:
+            FreeCAD.Vector(vec)
         c = Part.BSplineCurve()
-        c.setPole(1, FreeCAD.Vector(vec))
-        c.setPole(2, FreeCAD.Vector(vec))
+        c.setPole(1, v)
+        c.setPole(2, v)
         c.setKnots([self._edge.FirstParameter, self._edge.LastParameter])
         return c
 
@@ -242,9 +246,7 @@ class EdgeInterpolator:
     def _compute(self):
         self._touched = False
         self._curve = self.default_curve()
-        if len(self.values) == 0:
-            return True
-        if len(self.values) == 1:
+        if len(self.values) <= 1:
             self._curve = self.default_curve(self.values[0].Value)
             return True
         sorval = sorted(self.values)
@@ -277,7 +279,9 @@ class EdgeInterpolator:
 
     def vectorAt(self, par):
         point = self.valueAt(par)
-        if len(point) == 2:
+        if len(point) == 1:
+            return point[0]
+        elif len(point) == 2:
             return FreeCAD.Base.Vector2d(*point)
         elif len(point) == 3:
             return FreeCAD.Vector(*point)
@@ -431,7 +435,7 @@ class SmoothEdge:
         res = [self._edge.Curve.getD0(par), ]
         if self._continuity > 0:
             res.extend([self._edge.Curve.getDN(par, i + 1) for i in range(self._continuity)])
-        size = self.size.valueAt(par)
+        size = self.size.valueAt(par)[0]
         return SmoothPoint(res, size)
 
 
@@ -521,8 +525,8 @@ class SmoothEdgeOnFace(SmoothEdge):
         location = self._face.Surface.parameter(self._edge.valueAt(par))
         pt = self.crossDirAt(par)
         sd = get_surface_derivatives(self._face.Surface, location, target=pt, cont=self.continuity)
-        size = self.size.valueAt(par)
-        print(size)
+        size = self.size.valueAt(par)[0]
+        # print(size)
         return SmoothPoint(sd, size)
 
     def valueAtPoint(self, pt):
