@@ -143,46 +143,46 @@ def get_surface_derivatives(surface, location, direction=(), target=None, cont=1
     return [pt, d1, d2, d3, d4]
 
 
-class ValueOnEdge(list):
-    def __init__(self, value, par=0):
-        self.set(value, par)
-
-    def __lt__(self, obj):
-        return ((self.value[0]) < (obj.value[0]))
-
-    def __gt__(self, obj):
-        return ((self.value[0]) > (obj.value[0]))
-
-    def __le__(self, obj):
-        return ((self.value[0]) <= (obj.value[0]))
-
-    def __ge__(self, obj):
-        return ((self.value[0]) >= (obj.value[0]))
-
-    def __eq__(self, obj):
-        return (self.value[0] == obj.value[0])
-
-    def __repr__(self):
-        return "{}: {} @ {:3.3f}".format(self.__class__.__name__, self.Value, self.Param)
-
-    def set(self, value, par=0):
-        try:
-            self.value = (par, *value)
-        except TypeError:
-            self.value = (par, value)
-
-    @property
-    def Value(self):
-        return self.value[1:]
-
-    @property
-    def Param(self):
-        return self.value[0]
-
-
 class EdgeInterpolator:
     """Interpolates values along an edge.
     voe = ValueOnEdge(anEdge, value=None)"""
+
+    class ValueOnEdge(list):
+        def __init__(self, value, par=0):
+            self.set(value, par)
+
+        def __lt__(self, obj):
+            return ((self.value[0]) < (obj.value[0]))
+
+        def __gt__(self, obj):
+            return ((self.value[0]) > (obj.value[0]))
+
+        def __le__(self, obj):
+            return ((self.value[0]) <= (obj.value[0]))
+
+        def __ge__(self, obj):
+            return ((self.value[0]) >= (obj.value[0]))
+
+        def __eq__(self, obj):
+            return (self.value[0] == obj.value[0])
+
+        def __repr__(self):
+            return "{}: {} @ {:3.3f}".format(self.__class__.__name__, self.Value, self.Param)
+
+        def set(self, value, par=0):
+            try:
+                self.value = (par, *value)
+            except TypeError:
+                self.value = (par, value)
+
+        @property
+        def Value(self):
+            return self.value[1:]
+
+        @property
+        def Param(self):
+            return self.value[0]
+
     def __init__(self, edge, linear=False):
         self.tol2D = 1e-7
         self._edge = edge
@@ -200,8 +200,7 @@ class EdgeInterpolator:
             return len(self.values[0].Value)
         return 1
 
-    @property
-    def Shape(self):
+    def toShape(self):
         return self._curve.toShape()
 
     def default_curve(self, vec=FreeCAD.Vector()):
@@ -287,7 +286,7 @@ class EdgeInterpolator:
             return FreeCAD.Vector(*point)
 
 
-class SmoothPoint:
+class SmoothPoint(list):
     """A group formed from a 3D point and some derivatives
 
     Attributes
@@ -320,6 +319,27 @@ class SmoothPoint:
     def __str__(self):
         return "{}(C{} at {})".format(self.__class__.__name__, self.continuity, self.raw_vectors[0])
 
+    def __getitem__(self, i):
+        if (self._size == 0) or (self.Continuity <= 0):
+            return self.raw_vectors[i]
+        else:
+            scale = self._size / self.raw_vectors[1].Length
+            return self.raw_vectors[i] * pow(scale, i)
+
+    def __add__(self, other):
+        if isinstance(other, self.__class__):
+            return self.__class__([self.raw_vectors[i] + other[i] for i in range(len(self.raw_vectors))])
+
+    def __sub__(self, other):
+        if isinstance(other, self.__class__):
+            return self.__class__([self.raw_vectors[i] - other[i] for i in range(len(self.raw_vectors))])
+
+    def __truediv__(self, val):
+        return self.__class__([self.raw_vectors[i] / pow(float(val), i) for i in range(len(self.raw_vectors))])
+
+    def __mul__(self, val):
+        return self.__class__([self.raw_vectors[i] * pow(float(val), i) for i in range(len(self.raw_vectors))])
+
     @property
     def Size(self):
         return self._size
@@ -331,7 +351,6 @@ class SmoothPoint:
     @property
     def Continuity(self):
         """The continuity order of this SmoothPoint"""
-
         return len(self.raw_vectors) - 1
 
     @property
