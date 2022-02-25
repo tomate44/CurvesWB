@@ -74,6 +74,7 @@ def coords_to_UVW(pt, u, v, w=None):
 
 
 def get_surface_derivatives(surface, location, direction=(), target=None, cont=1):
+    # TODO Update documentation
     """Returns the point and derivatives of the surface at given location
 
     location : tuple/list of 2 coordinates, or Vector2d
@@ -239,7 +240,7 @@ class EdgeInterpolator:
         - val : value (tuple)
         - par : the parameter
         """
-        self.values.append(ValueOnEdge(val, par))
+        self.values.append(self.ValueOnEdge(val, par))
         self._touched = True
 
     def _compute(self):
@@ -357,14 +358,14 @@ class SmoothPoint(list):
     def Point(self):
         """The location in 3D space of this SmoothPoint (D0)"""
 
-        if self.continuity >= 0:
+        if self.Continuity >= 0:
             return self.raw_vectors[0]
 
     @property
     def Tangent(self):
         """The tangent of this SmoothPoint (D1)"""
 
-        if self.continuity > 0:
+        if self.Continuity > 0:
             return self.raw_vectors[1]
         return FreeCAD.Vector(0, 0, 0)
 
@@ -388,7 +389,7 @@ class SmoothPoint(list):
             size = self.Size
         if size == 0:
             size = 1.0
-        return Part.makeLine(self.point, self.point + self.Tangent.normalize() * size)
+        return Part.makeLine(self.Point, self.Point + self.Tangent.normalize() * size)
 
     def value(self, size=0):
         """Returns the scaled SmoothPoint vectors.
@@ -417,6 +418,26 @@ class SmoothPoint(list):
             scale = size / self.raw_vectors[1].Length
             # print(self.raw_vectors[1])
             return [self.raw_vectors[i] * pow(scale, i) for i in range(self.Continuity + 1)]
+
+    def auto_blend_size(self, other):
+        """Returns best sizes for blending algo
+        """
+        n = 2.05
+        chord1 = Part.LineSegment(self.Point, other.Point)
+        chlen = chord1.length()
+        e1 = self.tangent_edge(chlen)
+        e2 = self.tangent_edge(chlen)
+        end1 = e1.valueAt(e1.LastParameter)
+        end2 = e2.valueAt(e2.LastParameter)
+        par1 = chord1.parameter(end1) / chlen
+        chord2 = Part.Line(other.Point, self.Point)
+        par2 = chord2.parameter(end2) / chlen
+        if (par1 <= 0) or (par2 <= 0):  # Divergence
+            return chlen, chlen
+        size1 = (1 + (n - 1) * pow((1 - par1), 0.1)) * chlen / n
+        size2 = (1 + (n - 1) * pow((1 - par2), 0.1)) * chlen / n
+        print(chlen, size1, size2)
+        return size1, size2
 
 
 class SmoothEdge:
@@ -673,24 +694,24 @@ class BlendSurface:
             # print("Minimized curvature @ {:3.3f} = ({:3.3f}, {:3.3f})".format(p, bc.point1.size, bc.point2.size))
 
     def auto_scale(self, arg=3):
-        self.edge1.size.reset()
-        self.edge2.size.reset()
-        e1, e2 = self.rails
+        self.edge1.size.set_value(1.0)
+        self.edge2.size.set_value(1.0)
         for p in self.sample(arg):
-            bc = self.blendcurve_at(p)
-            bc.auto_scale()
-            self.edge1.size.add(val=bc.point1.size, point=e1.value(p))
-            self.edge2.size.add(val=bc.point2.size, point=e2.value(p))
+            sm1 = self.edge1.valueAt(p)
+            sm2 = self.edge2.valueAt(p)
+            s1, s2 = sm1.auto_blend_size(sm2)
+            self.edge1.size.set_value(s1, p)
+            self.edge2.size.set_value(-s2, p)
             # print("Auto scaling @ {:3.3f} = ({:3.3f}, {:3.3f})".format(p, bc.point1.size, bc.point2.size))
 
-    def perform(self, arg=20, size1=1.0, size2=1.0):
+    def perform(self, arg=20, size1=0.0, size2=0.0):
         bc_list = []
         bs = Part.BezierCurve()
         params1 = np.linspace(self.edge1._fp, self.edge1._lp, arg)
         params2 = np.linspace(self.edge2._fp, self.edge2._lp, arg)
         for i in range(len(params1)):
             bs = Part.BezierCurve()
-            bs.interpolate([self.edge1.valueAt(params1[i]).value(size1), self.edge2.valueAt(params2[i]).value(-size2)])
+            bs.interpolate([self.edge1.valueAt(params1[i]).value(size1), self.edge2.valueAt(params2[i]).value(size2)])
             # print("Computing BlendCurve @ {} from {} to {}".format(p, bc.point1.point, bc.point2.point))
             bc_list.append(bs)
         self._curves = bc_list
@@ -706,17 +727,18 @@ from freecad.Curves.Blending import smooth_objects
 reload(smooth_objects)
 sme1 = smooth_objects.SmoothEdgeOnFace(e1, f1, 3)
 sme1.setOutside()
-Part.show(sme1.shape(50))
+# Part.show(sme1.shape(50))
 sme2 = smooth_objects.SmoothEdgeOnFace(e2, f2, 3)
 sme2.setOutside(True)
-Part.show(sme2.shape(50))
+# Part.show(sme2.shape(50))
 
 bls = smooth_objects.BlendSurface(e1, f1, e2, f2)
 bls.continuity = 3
 print(bls)
 # bls.set_mutual_target()
 bls.set_outside()
-bls.perform(20, 20.0, 20.0)
+bls.auto_scale(10)
+bls.perform(30)
 Part.show(bls.face)
 
 """
