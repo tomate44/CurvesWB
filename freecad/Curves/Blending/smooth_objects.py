@@ -252,9 +252,9 @@ class EdgeInterpolator:
         sorval = sorted(self.values)
         # print(sorval)
         par = [v.Param for v in sorval]
-        # print(par)
+        print(par)
         pts = [FreeCAD.Vector(*v.Value) for v in sorval]
-        # print(pts)
+        print(pts)
         if (len(pts) == 2) and (pts[0].distanceToPoint(pts[1]) < 1e-6):
             self._curve = self.default_curve(pts[0])
             self._curve.setPole(2, pts[1])
@@ -432,11 +432,13 @@ class SmoothPoint(list):
         par1 = chord1.parameter(end1) / chlen
         chord2 = Part.Line(other.Point, self.Point)
         par2 = chord2.parameter(end2) / chlen
-        if (par1 <= 0) or (par2 <= 0):  # Divergence
-            return chlen, chlen
-        size1 = (1 + (n - 1) * pow((1 - par1), 0.1)) * chlen / n
-        size2 = (1 + (n - 1) * pow((1 - par2), 0.1)) * chlen / n
-        print(chlen, size1, size2)
+        sumlen = par1 + par2
+        size1, size2 = chlen, chlen
+        if sumlen > 1.0:
+            # tanchord = end1.distanceToPoint(end2)
+            size1 = (1 + pow((sumlen - 1), 0.5)) * chlen / 1
+            size2 = (1 + pow((sumlen - 1), 0.5)) * chlen / 1
+        print(chlen, sumlen, size1, size2)
         return size1, size2
 
 
@@ -525,14 +527,20 @@ class SmoothEdgeOnFace(SmoothEdge):
                 return 1
         return False
 
-    def setOutside(self, reverse=False, par=0.5, eps=1e-3):
+    def setInside(self, par=0.5, eps=1e-3):
         outs = self.getOutside(par, eps)
         print(f"Outside : {outs}")
         if outs is not False:
-            if reverse:
-                self.aux_curve.set_value((0, -outs))
-            else:
-                self.aux_curve.set_value((0, outs))
+            self.aux_curve = EdgeInterpolator(self._edge)
+            self.aux_curve.set_value((0, -outs))
+
+
+    def setOutside(self, par=0.5, eps=1e-3):
+        outs = self.getOutside(par, eps)
+        print(f"Outside : {outs}")
+        if outs is not False:
+            self.aux_curve = EdgeInterpolator(self._edge)
+            self.aux_curve.set_value((0, outs))
 
     def frenetPlaneAt(self, par):
         o = self._edge.valueAt(par)
@@ -587,12 +595,11 @@ class SmoothEdgeOnFace(SmoothEdge):
 class BlendSurface:
     """BSpline surface that smoothly interpolates two EdgeOnFace objects"""
     def __init__(self, edge1, face1, edge2, face2):
-        self._ruled_surface = _utils.ruled_surface(edge1, edge2, True).Surface
-        u0, u1, v0, v1 = self._ruled_surface.bounds()
-        iv0, iv1 = self.ruled_surface.vIso(v0), self.ruled_surface.vIso(v1)
+        self._ruled_surface = None
+        self.ruled_surface(edge1, edge2)
+        iv0, iv1 = self.rails
         self.edge1 = SmoothEdgeOnFace(iv0.toShape(), face1)
         self.edge2 = SmoothEdgeOnFace(iv1.toShape(), face2)
-        # self._ruled_surface = None
         self._surface = None
         self._curves = []
 
@@ -650,13 +657,16 @@ class BlendSurface:
 
     @property
     def rails(self):
-        u0, u1, v0, v1 = self.ruled_surface.bounds()
-        return self.ruled_surface.vIso(v0), self.ruled_surface.vIso(v1)
+        u0, u1, v0, v1 = self._ruled_surface.bounds()
+        return self._ruled_surface.vIso(v0), self._ruled_surface.vIso(v1)
 
-    @property
-    def ruled_surface(self):
+    def ruled_surface(self, e1, e2):
         if self._ruled_surface is None:
-            self._ruled_surface = _utils.ruled_surface(self.edge1._edge, self.edge2._edge, True).Surface
+            self._ruled_surface = _utils.ruled_surface(e1, e2, True).Surface
+            chk1 = e1.isClosed() and e1.Curve.isPeriodic()
+            chk2 = e2.isClosed() and e2.Curve.isPeriodic()
+            if chk1 and chk2:
+                self._ruled_surface.setUPeriodic()
         return self._ruled_surface
 
     def set_mutual_target(self):
@@ -669,7 +679,7 @@ class BlendSurface:
         self.edge2.setOutside()
 
     def sample(self, num=3):
-        ruled = self.ruled_surface
+        ruled = self._ruled_surface
         u0, u1, v0, v1 = ruled.bounds()
         if isinstance(num, int):
             params = np.linspace(u0, u1, num)
@@ -727,17 +737,17 @@ from freecad.Curves.Blending import smooth_objects
 reload(smooth_objects)
 sme1 = smooth_objects.SmoothEdgeOnFace(e1, f1, 3)
 sme1.setOutside()
-# Part.show(sme1.shape(50))
+Part.show(sme1.shape(50))
 sme2 = smooth_objects.SmoothEdgeOnFace(e2, f2, 3)
 sme2.setOutside(True)
-# Part.show(sme2.shape(50))
+Part.show(sme2.shape(50))
 
 bls = smooth_objects.BlendSurface(e1, f1, e2, f2)
 bls.continuity = 3
 print(bls)
 # bls.set_mutual_target()
 bls.set_outside()
-bls.auto_scale(10)
+bls.auto_scale(13)
 bls.perform(30)
 Part.show(bls.face)
 
