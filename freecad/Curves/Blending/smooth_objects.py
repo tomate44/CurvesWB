@@ -313,12 +313,14 @@ class SmoothPoint(list):
     def __init__(self, vecs, size=0):
         self.raw_vectors = vecs
         self._size = size
+        self.tolerance = 1e-7
+        self._idx = 0
 
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__, self.raw_vectors)
 
     def __str__(self):
-        return "{}(C{} at {})".format(self.__class__.__name__, self.continuity, self.raw_vectors[0])
+        return "{}(C{} at {})".format(self.__class__.__name__, len(self.raw_vectors) - 1, self.raw_vectors[0])
 
     def __getitem__(self, i):
         if (self._size == 0) or (self.Continuity <= 0):
@@ -335,11 +337,32 @@ class SmoothPoint(list):
         if isinstance(other, self.__class__):
             return self.__class__([self.raw_vectors[i] - other[i] for i in range(len(self.raw_vectors))])
 
+    def __neg__(self):
+        return self.__class__([self.raw_vectors[i] / pow(-1, i) for i in range(len(self.raw_vectors))])
+
     def __truediv__(self, val):
         return self.__class__([self.raw_vectors[i] / pow(float(val), i) for i in range(len(self.raw_vectors))])
 
     def __mul__(self, val):
         return self.__class__([self.raw_vectors[i] * pow(float(val), i) for i in range(len(self.raw_vectors))])
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            sub = self - other
+            for v in sub:
+                if v.Length > self.tolerance:
+                    return False
+            return True
+
+    def __iter__(self):
+        self._idx = 0
+        return self
+
+    def __next__(self):
+        if self._idx >= len(self.raw_vectors):
+            raise StopIteration
+        self._idx += 1
+        return self.raw_vectors[self._idx - 1]
 
     @property
     def Size(self):
@@ -581,13 +604,17 @@ class SmoothEdgeOnFace(SmoothEdge):
         # TODO Check valid range
         return self.valueAt(self._edge.Curve.parameter(pt))
 
+    def discretize(self, num=10, size=0):
+        params = np.linspace(self._edge.FirstParameter, self._edge.LastParameter, num)
+        return [self.valueAt(p).value(size) for p in params]
+
     def shape(self, num=10, size=0):
         params = np.linspace(self._edge.FirstParameter, self._edge.LastParameter, num)
         edges = []
-        for p in params:
-            sp = self.valueAt(p).value(size)
-            # print(sp[0], sp[1])
-            pts = [sp[0], sp[0] + sp[1], sp[0] + sp[1] + sp[2]]
+        for sp in self.discretize(num, size):
+            pts = sp[::]
+            for i in range(1, len(pts)):
+                pts[i] += pts[i - 1]
             edges.append(Part.makePolygon(pts))
         return Part.Compound(edges)
 
@@ -737,6 +764,8 @@ from freecad.Curves.Blending import smooth_objects
 reload(smooth_objects)
 sme1 = smooth_objects.SmoothEdgeOnFace(e1, f1, 3)
 sme1.setOutside()
+sp = sme1.valueAt(0.5)
+
 Part.show(sme1.shape(50))
 sme2 = smooth_objects.SmoothEdgeOnFace(e2, f2, 3)
 sme2.setOutside(True)
