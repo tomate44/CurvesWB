@@ -287,7 +287,7 @@ class EdgeInterpolator:
             return FreeCAD.Vector(*point)
 
 
-class SmoothPoint(list):
+class SmoothPoint:
     """A group formed from a 3D point and some derivatives
 
     Attributes
@@ -310,41 +310,36 @@ class SmoothPoint(list):
     If size == 0, returns the original unscaled vectors.
     """
 
-    def __init__(self, vecs, size=0):
-        self.raw_vectors = vecs
-        self._size = size
+    def __init__(self, vecs):
+        self.vectors = vecs
         self.tolerance = 1e-7
         self._idx = 0
 
     def __repr__(self):
-        return "{}({})".format(self.__class__.__name__, self.raw_vectors)
+        return "{}({})".format(self.__class__.__name__, self.vectors)
 
     def __str__(self):
-        return "{}(C{} at {})".format(self.__class__.__name__, len(self.raw_vectors) - 1, self.raw_vectors[0])
+        return "{}(C{} at {})".format(self.__class__.__name__, len(self.vectors) - 1, self.vectors[0])
 
     def __getitem__(self, i):
-        if (self._size == 0) or (self.Continuity <= 0):
-            return self.raw_vectors[i]
-        else:
-            scale = self._size / self.raw_vectors[1].Length
-            return self.raw_vectors[i] * pow(scale, i)
+            return self.vectors[i]
 
     def __add__(self, other):
         if isinstance(other, self.__class__):
-            return self.__class__([self.raw_vectors[i] + other[i] for i in range(len(self.raw_vectors))])
+            return self.__class__([self.vectors[i] + other[i] for i in range(len(self.vectors))])
 
     def __sub__(self, other):
         if isinstance(other, self.__class__):
-            return self.__class__([self.raw_vectors[i] - other[i] for i in range(len(self.raw_vectors))])
+            return self.__class__([self.vectors[i] - other[i] for i in range(len(self.vectors))])
 
     def __neg__(self):
-        return self.__class__([self.raw_vectors[i] / pow(-1, i) for i in range(len(self.raw_vectors))])
+        return self.__class__([self.vectors[i] / pow(-1, i) for i in range(len(self.vectors))])
 
     def __truediv__(self, val):
-        return self.__class__([self.raw_vectors[i] / pow(float(val), i) for i in range(len(self.raw_vectors))])
+        return self.__class__([self.vectors[i] / pow(float(val), i) for i in range(len(self.vectors))])
 
     def __mul__(self, val):
-        return self.__class__([self.raw_vectors[i] * pow(float(val), i) for i in range(len(self.raw_vectors))])
+        return self.__class__([self.vectors[i] * pow(float(val), i) for i in range(len(self.vectors))])
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -359,40 +354,33 @@ class SmoothPoint(list):
         return self
 
     def __next__(self):
-        if self._idx >= len(self.raw_vectors):
+        if self._idx >= len(self.vectors):
             raise StopIteration
         self._idx += 1
-        return self.raw_vectors[self._idx - 1]
+        return self.vectors[self._idx - 1]
 
     @property
     def Size(self):
-        return self._size
-
-    @Size.setter
-    def Size(self, val):
-        self._size = val
+        return self.Tangent.Length
 
     @property
     def Continuity(self):
         """The continuity order of this SmoothPoint"""
-        return len(self.raw_vectors) - 1
+        return len(self.vectors) - 1
 
     @property
     def Point(self):
         """The location in 3D space of this SmoothPoint (D0)"""
-
         if self.Continuity >= 0:
-            return self.raw_vectors[0]
+            return self.vectors[0]
 
     @property
     def Tangent(self):
         """The tangent of this SmoothPoint (D1)"""
-
         if self.Continuity > 0:
-            return self.raw_vectors[1]
-        return FreeCAD.Vector(0, 0, 0)
+            return self.vectors[1]
 
-    def tangent_edge(self, size=0):
+    def tangent_edge(self, size=1.0):
         """Returns the edge representing the tangent
 
         Returns the edge representing the tangent
@@ -408,13 +396,9 @@ class SmoothPoint(list):
         FreeCAD vector
             The edge representing the tangent
         """
-        if size == 0:
-            size = self.Size
-        if size == 0:
-            size = 1.0
         return Part.makeLine(self.Point, self.Point + self.Tangent.normalize() * size)
 
-    def value(self, size=0):
+    def scaled_to(self, size=0):
         """Returns the scaled SmoothPoint vectors.
 
         Returns the scaled SmoothPoint vectors
@@ -432,15 +416,11 @@ class SmoothPoint(list):
         List of FreeCAD vectors
             The scaled vectors of this SmoothPoint
         """
-
-        if size == 0:
-            size = self.Size
         if (size == 0) or (self.Continuity <= 0):
-            return self.raw_vectors
+            return self
         else:
-            scale = size / self.raw_vectors[1].Length
-            # print(self.raw_vectors[1])
-            return [self.raw_vectors[i] * pow(scale, i) for i in range(self.Continuity + 1)]
+            scale = size / self.vectors[1].Length
+            return self * scale
 
     def auto_blend_size(self, other):
         """Returns best sizes for blending algo
@@ -598,26 +578,28 @@ class SmoothEdgeOnFace(SmoothEdge):
         sd = get_surface_derivatives(self._face.Surface, location, target=pt, cont=self.continuity)
         size = self.size.valueAt(par)[0]
         # print(size)
-        return SmoothPoint(sd, size)
+        return SmoothPoint(sd).scaled_to(size)
 
     def valueAtPoint(self, pt):
         # TODO Check valid range
         return self.valueAt(self._edge.Curve.parameter(pt))
 
-    def discretize(self, num=10, size=0):
+    def discretize(self, num=10):
         params = np.linspace(self._edge.FirstParameter, self._edge.LastParameter, num)
-        return [self.valueAt(p).value(size) for p in params]
+        return [self.valueAt(p) for p in params]
 
-    def shape(self, num=10, size=0):
+    def shape(self, num=10, size=1.0):
         params = np.linspace(self._edge.FirstParameter, self._edge.LastParameter, num)
         edges = []
-        for sp in self.discretize(num, size):
-            pts = sp[::]
+        for sp in self.discretize(num):
+            pts = sp.scaled_to(size)
             for i in range(1, len(pts)):
                 pts[i] += pts[i - 1]
             edges.append(Part.makePolygon(pts))
         return Part.Compound(edges)
 
+    def continuity_with(self, surf):
+        pass
 
 class BlendSurface:
     """BSpline surface that smoothly interpolates two EdgeOnFace objects"""
