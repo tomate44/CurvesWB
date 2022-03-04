@@ -102,7 +102,7 @@ def get_surface_derivatives(surface, location, direction=(), target=None, cont=1
     # C0
     pt = surf.getD0(a, b)
     if cont == 0:
-        return SmoothPoint([pt])
+        return [pt, ]
 
     # G1
     du = surf.getDN(a, b, 1, 0)
@@ -422,6 +422,15 @@ class SmoothPoint:
             scale = size / self.vectors[1].Length
             return self * scale
 
+    def continuity_with(self, other):
+        if isinstance(other, self.__class__):
+            sub = self - other
+            cont = -1
+            for v in sub:
+                if v.Length <= self.tolerance:
+                    cont += 1
+            return cont
+
     def auto_blend_size(self, other):
         """Returns best sizes for blending algo
         """
@@ -589,7 +598,7 @@ class SmoothEdgeOnFace(SmoothEdge):
         return [self.valueAt(p) for p in params]
 
     def shape(self, num=10, size=1.0):
-        params = np.linspace(self._edge.FirstParameter, self._edge.LastParameter, num)
+        # params = np.linspace(self._edge.FirstParameter, self._edge.LastParameter, num)
         edges = []
         for sp in self.discretize(num):
             pts = sp.scaled_to(size)
@@ -598,8 +607,20 @@ class SmoothEdgeOnFace(SmoothEdge):
             edges.append(Part.makePolygon(pts))
         return Part.Compound(edges)
 
-    def continuity_with(self, surf):
-        pass
+    def continuity_with(self, surf, num=10, tol=1e-7):
+        params = np.linspace(self._edge.FirstParameter, self._edge.LastParameter, num)
+        contlist = []
+        for par in params:
+            point = self._edge.valueAt(par)
+            loc1 = self._face.Surface.parameter(point)
+            loc2 = surf.parameter(point)
+            targ = self.crossDirAt(par)
+            sp1 = SmoothPoint(get_surface_derivatives(self._face.Surface, loc1, target=targ, cont=self.continuity)).scaled_to(1.0)
+            sp1.tolerance = tol
+            sp2 = SmoothPoint(get_surface_derivatives(surf, loc2, target=targ, cont=self.continuity)).scaled_to(1.0)
+            contlist.append(sp1.continuity_with(sp2))
+        return contlist
+
 
 class BlendSurface:
     """BSpline surface that smoothly interpolates two EdgeOnFace objects"""
@@ -730,7 +751,7 @@ class BlendSurface:
         params2 = np.linspace(self.edge2._fp, self.edge2._lp, arg)
         for i in range(len(params1)):
             bs = Part.BezierCurve()
-            bs.interpolate([self.edge1.valueAt(params1[i]).value(size1), self.edge2.valueAt(params2[i]).value(size2)])
+            bs.interpolate([self.edge1.valueAt(params1[i]).scaled_to(size1).vectors, self.edge2.valueAt(params2[i]).scaled_to(size2).vectors])
             # print("Computing BlendCurve @ {} from {} to {}".format(p, bc.point1.point, bc.point2.point))
             bc_list.append(bs)
         self._curves = bc_list
@@ -759,8 +780,10 @@ print(bls)
 # bls.set_mutual_target()
 bls.set_outside()
 bls.auto_scale(13)
-bls.perform(30)
+bls.perform(200)
 Part.show(bls.face)
+
+sme1.continuity_with(bls.surface, 20, 1e-5)
 
 """
 
