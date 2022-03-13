@@ -1,4 +1,4 @@
-# FreeCAD Curves and Surfaces WorkBench
+## FreeCAD Curves and Surfaces WorkBench
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/tomate44/CurvesWB.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/tomate44/CurvesWB/alerts/)
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/tomate44/CurvesWB.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/tomate44/CurvesWB/context:python)  
 
