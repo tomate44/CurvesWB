@@ -14,9 +14,12 @@ There are 2 methods to install Curves WB:
 
 ### Automatic (recommended)
 
-For FreeCAD version 0.17 or higher it's preferred to install this workbench with the [FreeCAD's addon manager](https://github.com/FreeCAD/FreeCAD-addons) under the label "Curves".
+For FreeCAD version 0.17 or higher it's preferred to install this workbench with the [FreeCAD's addon manager](https://wiki.freecad.org/Std_AddonMgr) under the label **Curves**.
 
 ### Manual
+
+<details>
+<summary>Expand this section for instructions on Manual install</summary>
 
 - Identify the location of your personal FreeCAD folder 
     - On Linux it is usually `/home/username/.FreeCAD/Mod/`
@@ -26,7 +29,9 @@ For FreeCAD version 0.17 or higher it's preferred to install this workbench with
 - `git clone https://github.com/tomate44/CurvesWB`
 - Start FreeCAD
 
-"Curves" workbench should now show up in the workbench dropdown list.
+</details><br/>
+
+**Curves** workbench should now show up in the workbench dropdown list.
 
 ## Documentation
 
