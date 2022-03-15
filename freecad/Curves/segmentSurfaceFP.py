@@ -59,6 +59,7 @@ class SegmentSurface:
 
     def execute(self, obj):
         f = obj.Source[0].getSubObject(obj.Source[1][0])
+        pl = obj.Source[0].Placement
         u0, u1, v0, v1 = f.ParameterRange
         # print("Face parameters : {}".format(f.ParameterRange))
         trim = Part.RectangularTrimmedSurface(f.Surface, u0, u1, v0, v1)
@@ -127,6 +128,7 @@ class SegmentSurface:
                 obj.Shape = Part.Compound(faces)
             return
         obj.Shape = f
+        obj.Placement = pl
 
     def setOption(self, obj, prop):
         for p in obj.PropertiesList:
