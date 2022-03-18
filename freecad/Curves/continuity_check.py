@@ -8,9 +8,10 @@ __doc__ = 'Doc'
 import os
 import FreeCAD
 import FreeCADGui
-# import Part
+import Part
 # from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
+from freecad.Curves.Blending.smooth_objects import SmoothPoint
 from math import pi
 
 TOOL_ICON = os.path.join(ICONPATH, 'icon.svg')
@@ -75,7 +76,7 @@ def derivativesAt(edge, point):
     par = edge.Curve.parameter(point)
     res = [edge.Curve.getD0(par), ]
     res.extend([edge.Curve.getDN(par, i + 1) for i in range(4)])
-    return SmoothPoint(res, size)
+    return SmoothPoint(res)
 
 
 
@@ -83,7 +84,7 @@ def edge_to_edge_continuity(e1, e2, tol=1e-7):
     dist, pts, info = e1.distToShape(e2)
     sp1 = derivativesAt(e1, pts[0][0])
     sp2 = derivativesAt(e2, pts[0][1])
-
+    return sp1.continuity_with(sp2)
 
 
 class SeamSampler:
@@ -120,7 +121,7 @@ class SeamSampler:
             for e in star:
                 parproj = comp.makeParallelProjection(e, -avn)
                 if len(parproj.Edges) == 2:
-                    proj.append(parproj.Edges)
+                    proj.append(Part.Wire(parproj.Edges))
         return proj
 
 
@@ -146,7 +147,7 @@ class ContinuityCheckerFP:
     """Creates a ..."""
     def __init__(self, obj):
         """Add the properties"""
-        obj.addProperty("App::PropertyLinkList", "Sources",
+        obj.addProperty("App::PropertyLinkSub", "Sources",
                         "Base", "The list of seam edges to check")
         obj.addProperty("App::PropertyInteger", "Samples",
                         "Settings", "Number of test samples on edge")
@@ -157,7 +158,15 @@ class ContinuityCheckerFP:
         obj.Proxy = self
 
     def execute(self, obj):
-        obj.Shape = None
+        s = obj.Sources[0]
+        e = s.getSubObject(obj.Sources[1][0])
+        faces = s.Shape.ancestorsOfType(e, Part.Face)
+        if len(faces) >= 1:
+            ss = SeamSampler(e, faces)
+            wires = ss.projected_lines(obj.Samples, obj.Lines, obj.Tolerance)
+            obj.Shape = Part.Compound(wires)
+        else:
+            obj.Shape = Part.Shape()
 
     def onChanged(self, obj, prop):
         return False
@@ -170,8 +179,22 @@ class ContinuityCheckerVP:
     def getIcon(self):
         return TOOL_ICON
 
+    def updateData(self, fp, prop):
+        colors = []
+        for w in fp.Shape.Wires:
+            cont = edge_to_edge_continuity(w.Edge1, w.Edge2, fp.Tolerance)
+            colors.extend([self.cont_colors[cont], self.cont_colors[cont]])
+        fp.ViewObject.LineColorArray = colors
+
     def attach(self, viewobj):
         self.Object = viewobj.Object
+        self.cont_colors = dict()
+        self.cont_colors[-1] = (0.0, 0.0, 0.0, 0.0)
+        self.cont_colors[0] = (1.0, 0.0, 0.0, 0.0)
+        self.cont_colors[1] = (0.1, 1.0, 0.0, 0.0)
+        self.cont_colors[2] = (0.0, 1.0, 0.0, 0.0)
+        self.cont_colors[3] = (0.0, 1.0, 1.0, 0.0)
+        self.cont_colors[4] = (0.0, 0.0, 1.0, 0.0)
 
     def __getstate__(self):
         return {"name": self.Object.Name}
@@ -209,3 +232,10 @@ class ContinuityCheckerCommand:
 
 
 FreeCADGui.addCommand('Curves_ContinuityCheckerCmd', ContinuityCheckerCommand())
+
+"""
+from importlib import reload
+from freecad.Curves import continuity_check
+reload(continuity_check)
+FreeCADGui.runCommand('Curves_ContinuityCheckerCmd')
+"""
