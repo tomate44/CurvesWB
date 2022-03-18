@@ -68,19 +68,33 @@ Sketcher::PropertyConstraintList
 
 
 from math import pi
-
-
 vec2 = FreeCAD.Base.Vector2d
+
+
+def derivativesAt(edge, point):
+    par = edge.Curve.parameter(point)
+    res = [edge.Curve.getD0(par), ]
+    res.extend([edge.Curve.getDN(par, i + 1) for i in range(4)])
+    return SmoothPoint(res, size)
+
+
+
+def edge_to_edge_continuity(e1, e2, tol=1e-7):
+    dist, pts, info = e1.distToShape(e2)
+    sp1 = derivativesAt(e1, pts[0][0])
+    sp2 = derivativesAt(e2, pts[0][1])
+
 
 
 class SeamSampler:
     def __init__(self, edge, faces):
         self.faces = faces
         self.seam = edge
+        self.line_size = 1.0
 
     def lines2d(self, nb):
         lines = []
-        line = Part.Geom2d.Line2dSegment(vec2(-0.1, 0), vec2(0.1, 0))
+        line = Part.Geom2d.Line2dSegment(vec2(-self.line_size, 0), vec2(self.line_size, 0))
         for i in range(nb):
             li = line.copy()
             li.rotate(vec2(), (i + 1) * pi / (nb + 1))
@@ -90,7 +104,7 @@ class SeamSampler:
     def edges2d(self, lines, plane):
         return [li.toShape(plane) for li in lines]
 
-    def continuity(self, samples=10, lines=1, tol=1e-7):
+    def projected_lines(self, samples=10, lines=1, tol=1e-7):
         checker = self.lines2d(lines)
         comp = Part.Compound(self.faces)
         proj = []
@@ -108,6 +122,7 @@ class SeamSampler:
                 if len(parproj.Edges) == 2:
                     proj.append(parproj.Edges)
         return proj
+
 
 
 """
