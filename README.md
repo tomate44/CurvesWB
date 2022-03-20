@@ -1,6 +1,5 @@
-# FreeCAD Curves and Surfaces WorkBench
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/tomate44/CurvesWB.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/tomate44/CurvesWB/alerts/)
-[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/tomate44/CurvesWB.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/tomate44/CurvesWB/context:python)  
+## FreeCAD Curves and Surfaces WorkBench
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/tomate44/CurvesWB.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/tomate44/CurvesWB/alerts/) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/tomate44/CurvesWB.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/tomate44/CurvesWB/context:python)  
 
 ![Curves Workbench](https://github.com/tomate44/CurvesWB/raw/master/docs/pics/CurvesWB.jpg)
 
@@ -15,9 +14,12 @@ There are 2 methods to install Curves WB:
 
 ### Automatic (recommended)
 
-For FreeCAD version 0.17 or higher it's preferred to install this workbench with the [FreeCAD's addon manager](https://github.com/FreeCAD/FreeCAD-addons) under the label "Curves".
+For FreeCAD version 0.17 or higher it's preferred to install this workbench with the [FreeCAD's addon manager](https://wiki.freecad.org/Std_AddonMgr) under the label **Curves**.
 
 ### Manual
+
+<details>
+<summary>Expand this section for instructions on Manual install</summary>
 
 - Identify the location of your personal FreeCAD folder 
     - On Linux it is usually `/home/username/.FreeCAD/Mod/`
@@ -27,11 +29,13 @@ For FreeCAD version 0.17 or higher it's preferred to install this workbench with
 - `git clone https://github.com/tomate44/CurvesWB`
 - Start FreeCAD
 
-"Curves" workbench should now show up in the workbench dropdown list.
+</details><br/>
+
+**Curves** workbench should now show up in the workbench dropdown list.
 
 ## Documentation
 
-The Curves workbench documentation can be found on the FreeCAD wiki: https://wiki.freecadweb.org/Curves_Workbench
+The Curves workbench documentation can be found on the FreeCAD wiki: https://wiki.freecad.org/Curves_Workbench
 
 ## Feedback  
 Feedback, suggestions, and patches (via Pull Request) are all appreciated. If you find a problem with this workbench please open an issue in the issue queue, or join the following discussion of FreeCAD's forum : [Curves workbench](https://forum.freecadweb.org/viewtopic.php?f=8&t=22675)
@@ -64,4 +68,4 @@ Feedback, suggestions, and patches (via Pull Request) are all appreciated. If yo
 - Birail object to be used as support for a "Sweep On 2 Rails" tool-->
 
 ## License  
-CurvesWB is released under the LGPL2.1+ license
+CurvesWB is released under the LGPL2.1+ license. See [LICENSE](LICENSE).
