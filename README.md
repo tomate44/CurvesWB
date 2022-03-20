@@ -3,7 +3,7 @@
 
 ![Curves Workbench](https://github.com/tomate44/CurvesWB/raw/master/docs/pics/CurvesWB.jpg)
 
-This is a python workbench, with a collection of tools for NURBS curves and surfaces. This workbench is developed with FreeCAD Master (currently 0.19) and OCC 7.4
+This is a python workbench, with a collection of tools for NURBS curves and surfaces. This workbench is developed with FreeCAD Master (currently 0.20) and OCC 7.5.3
 
 **Important Notes:**  
 * This workbench is in ALPHA state and should NOT be used for any serious work.
@@ -30,8 +30,6 @@ For FreeCAD version 0.17 or higher it's preferred to install this workbench with
 - Start FreeCAD
 
 </details><br/>
-
-**Curves** workbench should now show up in the workbench dropdown list.
 
 ## Documentation
 
