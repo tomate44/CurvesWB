@@ -24,6 +24,9 @@ from ..nurbs_tools import nurbs_quad
 def printError(string):
     FreeCAD.Console.PrintError(str(string) + "\n")
 
+def vec3_to_string(v):
+    return f"Vector({v.x:6.2f}, {v.y:6.2f}, {v.z:6.2f})"
+
 
 # Conversion between 2D and 3D vectors
 
@@ -311,18 +314,26 @@ class SmoothPoint:
     """
 
     def __init__(self, vecs):
-        self.vectors = vecs
+        if isinstance(vecs, self.__class__):
+            self.vectors = vecs.vectors
+        elif isinstance(vecs, FreeCAD.Vector):
+            self.vectors = [vecs, ]
+        else:
+            self.vectors = vecs
         self.tolerance = 1e-7
         self._idx = 0
 
     def __repr__(self):
-        return "{}({})".format(self.__class__.__name__, self.vectors)
+        rep = "{}\n".format(self.__class__.__name__)
+        for i, v in enumerate(self.vectors):
+            rep += "D{} = {}\n".format(i, vec3_to_string(v))
+        return rep
 
     def __str__(self):
-        return "{}(C{} at {})".format(self.__class__.__name__, len(self.vectors) - 1, self.vectors[0])
+        return "{} C{} at {}".format(self.__class__.__name__, len(self.vectors) - 1, vec3_to_string(self.vectors[0]))
 
     def __getitem__(self, i):
-            return self.vectors[i]
+        return self.vectors[i]
 
     def __add__(self, other):
         if isinstance(other, self.__class__):
@@ -358,6 +369,10 @@ class SmoothPoint:
             raise StopIteration
         self._idx += 1
         return self.vectors[self._idx - 1]
+
+    @property
+    def Lengths(self):
+        return [v.Length for v in self.vectors]
 
     @property
     def Size(self):
@@ -424,11 +439,12 @@ class SmoothPoint:
 
     def continuity_with(self, other):
         if isinstance(other, self.__class__):
-            sub = self - other
+            sub = self.scaled_to(1.0) - other.scaled_to(1.0)
             cont = -1
             for v in sub:
-                if v.Length <= self.tolerance:
-                    cont += 1
+                if v.Length > self.tolerance:
+                    break
+                cont += 1
             return cont
 
     def auto_blend_size(self, other):
@@ -452,6 +468,29 @@ class SmoothPoint:
             size2 = (1 + pow((sumlen - 1), 0.5)) * chlen / 1
         print(chlen, sumlen, size1, size2)
         return size1, size2
+
+    def test(self):
+        poles0 = [vec3(-5.3, -4.3, -1.5), vec3(-4.7, -2.9, 0.4), vec3(-2.8, -2.0, 1.1), vec3(0.6, -1.6, 0.0), vec3(4.2, 0.4, 1.5), vec3(7.1, 1.4, 2.2), vec3(10.0, 0.0, 0.0)]
+        weights0 = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+        knots0 = [0.0, 4.45, 7.43, 10.19, 17.17]
+        mults0 = [4, 1, 1, 1, 4]
+        periodic0 = False
+        degree0 = 3
+        rational0 = False
+        bs0 = Part.BSplineCurve()
+        bs0.buildFromPolesMultsKnots(poles0, mults0, knots0, periodic0, degree0, weights0, rational0)
+        bs1 = bs0.copy()
+        bs1.segment(bs1.FirstParameter, 8.0)
+        knots = bs1.getKnots()
+        newknots = [k / knots[-1] for k in knots]
+        bs1.setKnots(newknots)
+        bs2 = bs0.copy()
+        bs2.segment(8.0, bs2.LastParameter)
+        se1 = SmoothEdge(bs1.toShape(), 3)
+        se2 = SmoothEdge(bs2.toShape(), 3)
+        sp1 = se1.valueAt(se1.End)
+        sp2 = se2.valueAt(se2.Start)
+        print("Continuity = {}".format(sp1.continuity_with(sp2)))
 
 
 class SmoothEdge:
@@ -485,12 +524,22 @@ class SmoothEdge:
         else:
             self._edge = edge
 
+    @property
+    def Start(self):
+        "The Start parameter of this edge"
+        return self._fp
+
+    @property
+    def End(self):
+        "The End parameter of this edge"
+        return self._lp
+
     def valueAt(self, par):
         res = [self._edge.Curve.getD0(par), ]
-        if self._continuity > 0:
-            res.extend([self._edge.Curve.getDN(par, i + 1) for i in range(self._continuity)])
-        size = self.size.valueAt(par)[0]
-        return SmoothPoint(res, size)
+        if self.continuity > 0:
+            res.extend([self._edge.Curve.getDN(par, i + 1) for i in range(self.continuity)])
+        # size = self.size.valueAt(par)[0]
+        return SmoothPoint(res)  # , size)
 
 
 class SmoothEdgeOnFace(SmoothEdge):
