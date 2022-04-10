@@ -374,7 +374,7 @@ def addFaceWireToSketch(fa, w, sk):
     o = int(sk.GeometryCount)
     sk.addGeometry(curves, False)
     for idx in range(len(curves)):
-        const.append(Sketcher.Constraint('Block', o+idx))
+        const.append(Sketcher.Constraint('Block', o + idx))
     sk.addConstraint(const)
 
 
@@ -389,18 +389,18 @@ def addFaceBoundsToSketch(para_range, sk):
     o = int(sk.GeometryCount)
     sk.addGeometry(geoList, False)
 
-    conList.append(Sketcher.Constraint('Coincident', o+0, 2, o+1, 1))
-    conList.append(Sketcher.Constraint('Coincident', o+1, 2, o+2, 1))
-    conList.append(Sketcher.Constraint('Coincident', o+2, 2, o+3, 1))
-    conList.append(Sketcher.Constraint('Coincident', o+3, 2, o+0, 1))
-    conList.append(Sketcher.Constraint('Horizontal', o+0))
-    conList.append(Sketcher.Constraint('Horizontal', o+2))
-    conList.append(Sketcher.Constraint('Vertical', o+1))
-    conList.append(Sketcher.Constraint('Vertical', o+3))
-    conList.append(Sketcher.Constraint('DistanceX', o+2, 2, o+2, 1, u1-u0))
-    conList.append(Sketcher.Constraint('DistanceY', o+1, 1, o+1, 2, v1-v0))
-    conList.append(Sketcher.Constraint('DistanceX', o+0, 1, -1, 1, -u0))
-    conList.append(Sketcher.Constraint('DistanceY', o+0, 1, -1, 1, -v0))
+    conList.append(Sketcher.Constraint('Coincident', o + 0, 2, o + 1, 1))
+    conList.append(Sketcher.Constraint('Coincident', o + 1, 2, o + 2, 1))
+    conList.append(Sketcher.Constraint('Coincident', o + 2, 2, o + 3, 1))
+    conList.append(Sketcher.Constraint('Coincident', o + 3, 2, o + 0, 1))
+    conList.append(Sketcher.Constraint('Horizontal', o + 0))
+    conList.append(Sketcher.Constraint('Horizontal', o + 2))
+    conList.append(Sketcher.Constraint('Vertical', o + 1))
+    conList.append(Sketcher.Constraint('Vertical', o + 3))
+    conList.append(Sketcher.Constraint('DistanceX', o + 2, 2, o + 2, 1, u1 - u0))
+    conList.append(Sketcher.Constraint('DistanceY', o + 1, 1, o + 1, 2, v1 - v0))
+    conList.append(Sketcher.Constraint('DistanceX', o + 0, 1, -1, 1, -u0))
+    conList.append(Sketcher.Constraint('DistanceY', o + 0, 1, -1, 1, -v0))
     sk.addConstraint(conList)
 
 
@@ -410,7 +410,7 @@ def build_sketch(sk, fa):
     if isinstance(fa.Surface, Part.Cylinder):
         u0 *= fa.Surface.Radius
         u1 *= fa.Surface.Radius
-        addFaceBoundsToSketch([u0, u1, v0, v1], sk)
+    addFaceBoundsToSketch([u0, u1, v0, v1], sk)
     # elif isinstance(fa.Surface, Part.Cone):
         # u1 = 0.5 * (fa.Edge1.Length + fa.Edge3.Length)
         # addFaceBoundsToSketch([u0,u1,v0,v1], sk)
@@ -418,9 +418,9 @@ def build_sketch(sk, fa):
         # u1 = 0.5 * (fa.Edge1.Length + fa.Edge3.Length)
         # v1 = 0.5 * (fa.Edge2.Length + fa.Edge4.Length)
         # addFaceBoundsToSketch([0,u1,0,v1], sk)
-    else:
-        for w in fa.Wires:
-            addFaceWireToSketch(fa, w, sk)
+    # else:
+        # for w in fa.Wires:
+            # addFaceWireToSketch(fa, w, sk)
     for i in range(int(sk.GeometryCount)):
         sk.toggleConstruction(i)
 
