@@ -8,11 +8,12 @@ from freecad.Curves import graphics
 # FreeCAD.Console.PrintMessage("Using local Pivy.graphics library\n")
 
 
-def parameterization(pts, a, closed):
+def parameterization(points, a, closed):
     """Computes a knot Sequence for a set of points
     fac (0-1) : parameterization factor
     fac=0 -> Uniform / fac=0.5 -> Centripetal / fac=1.0 -> Chord-Length"""
-    if closed:  # we need to add the first point as the end point
+    pts = points.copy()
+    if closed and pts[0].distanceToPoint(pts[-1]) > 1e-7:  # we need to add the first point as the end point
         pts.append(pts[0])
     params = [0]
     for i in range(1, len(pts)):
