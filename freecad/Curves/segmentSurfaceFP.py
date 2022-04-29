@@ -59,7 +59,7 @@ class SegmentSurface:
 
     def execute(self, obj):
         f = obj.Source[0].getSubObject(obj.Source[1][0])
-        obj.Placement = obj.Source[0].Placement
+        # mat = obj.Source[0].Placement.Matrix
         u0, u1, v0, v1 = f.ParameterRange
         # print("Face parameters : {}".format(f.ParameterRange))
         trim = Part.RectangularTrimmedSurface(f.Surface, u0, u1, v0, v1)
@@ -107,7 +107,8 @@ class SegmentSurface:
         # print(cutKnotsU)
         # print(cutKnotsV)
         if len(cutKnotsU) < 3 and len(cutKnotsV) < 3:
-            obj.Shape = f  # bs.toShape()
+            # f.transformShape(mat)
+            obj.Shape = bs.toShape()
             return
 
         faces = list()
@@ -127,7 +128,8 @@ class SegmentSurface:
             else:
                 obj.Shape = Part.Compound(faces)
             return
-        obj.Shape = f
+        # f.transformShape(mat)
+        obj.Shape = bs.toShape()
 
     def setOption(self, obj, prop):
         for p in obj.PropertiesList:
