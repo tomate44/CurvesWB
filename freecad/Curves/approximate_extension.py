@@ -72,6 +72,8 @@ class ApproximateExtension:
             obj.ApproxTolerance = 0.001
 
     def approximate(self, obj, input_shape):
+        if not obj.Active:
+            return input_shape
         pts = False
         input_edges = None
         if isinstance(input_shape, (list, tuple)):
@@ -82,8 +84,6 @@ class ApproximateExtension:
                 input_edges = input_shape
         else:
             input_edges = input_shape.Edges
-        if not obj.Active:
-            return Part.Compound(input_shape)
         edges = list()
         if input_edges:
             for e in input_edges:

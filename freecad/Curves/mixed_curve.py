@@ -63,6 +63,10 @@ class MixedCurveFP:
                         "Projection direction of the first shape.\nIf vector is null, shape's placement is used.").Direction1 = d1
         obj.addProperty("App::PropertyVector", "Direction2", "Mixed Curve",
                         "Projection direction of the second shape.\nIf vector is null, shape's placement is used.").Direction2 = d2
+        obj.addProperty("App::PropertyBool", "FillFace1", "Mixed Curve",
+                        "Build ruled surfaces between Shape1 and resulting Mixed-Curve").FillFace1 = True
+        obj.addProperty("App::PropertyBool", "FillFace2", "Mixed Curve",
+                        "Build ruled surfaces between Shape2 and resulting Mixed-Curve").FillFace2 = True
         obj.Proxy = self
 
     def execute(self, obj):
@@ -77,10 +81,28 @@ class MixedCurveFP:
         else:
             d2 = obj.Direction2
         cc = MixedCurve(s1, s2, d1, d2)
+
         if hasattr(obj, "ExtensionProxy"):
-            obj.Shape = obj.ExtensionProxy.approximate(obj, cc.shape().Edges)
+            mixed = obj.ExtensionProxy.approximate(obj, cc.shape())
         else:
-            obj.Shape = cc.shape()
+            mixed = cc.shape()
+
+        wip = """
+        print(s1, s2, mixed.Wires)
+        trimshape1, trimshape2 = Part.Shape(), Part.Shape()
+        try:
+            if obj.FillFace1:
+                trimshape1 = Part.makeRuledSurface(s1, mixed.Wires[0])  # ruled_surface(e1, e2, normalize=False):
+            if obj.FillFace2:
+                trimshape2 = Part.makeRuledSurface(s2, mixed.Wires[0])  # ruled_surface(e1, e2, normalize=False):
+            shell = Part.Shell(trimshape1.Faces + trimshape2.Faces)
+            if shell.Faces:
+                obj.Shape = shell
+                return
+        except Exception as ex:
+            print("Mixed Curve : Filling Faces failed (%s)".format(str(ex)))
+        """
+        obj.Shape = mixed
 
     def onChanged(self, fp, prop):
         if hasattr(fp, "ExtensionProxy"):
