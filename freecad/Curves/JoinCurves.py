@@ -159,7 +159,11 @@ class join:
         outEdges = [Part.Edge(c) for c in outcurves]
 
         if hasattr(obj, "ExtensionProxy"):
-            obj.Shape = obj.ExtensionProxy.approximate(obj, outEdges)
+            appsh = obj.ExtensionProxy.approximate(obj, outEdges)
+            if isinstance(appsh, (list, tuple)):
+                obj.Shape = Part.Compound(appsh)
+            else:
+                obj.Shape = appsh
         else:
             obj.Shape = Part.Wire(outEdges)
 

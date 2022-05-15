@@ -12,8 +12,8 @@ import Part
 from freecad.Curves import _utils
 from FreeCAD import Base
 
-debug = _utils.debug
-# debug = _utils.doNothing
+# debug = _utils.debug
+debug = _utils.doNothing
 
 # ********************************************************
 # ************** Approximate extension *******************
