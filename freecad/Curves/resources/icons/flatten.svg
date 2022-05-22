@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="64"
+   height="64"
+   viewBox="0 0 16.933333 16.933334"
+   version="1.1"
+   id="svg8"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <defs
+     id="defs2">
+    <linearGradient
+       id="linearGradient3253">
+      <stop
+         style="stop-color:#003cbd;stop-opacity:1;"
+         offset="0"
+         id="stop3249" />
+      <stop
+         style="stop-color:#003cbd;stop-opacity:0;"
+         offset="1"
+         id="stop3251" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient861">
+      <stop
+         style="stop-color:#ff0000;stop-opacity:1;"
+         offset="0"
+         id="stop857" />
+      <stop
+         style="stop-color:#ff0000;stop-opacity:0;"
+         offset="1"
+         id="stop859" />
+    </linearGradient>
+    <linearGradient
+       xlink:href="#linearGradient861"
+       id="linearGradient863"
+       x1="9.0836382"
+       y1="289.34735"
+       x2="7.6573739"
+       y2="296.46655"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       xlink:href="#linearGradient3253"
+       id="linearGradient3255"
+       x1="3.2606224"
+       y1="286.32808"
+       x2="16.780064"
+       y2="286.32808"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     id="layer1"
+     transform="translate(0,-280.06665)"
+     style="display:inline">
+    <path
+       style="opacity:1;fill:url(#linearGradient863);fill-opacity:1;stroke:#ffffff;stroke-width:1.5875;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.627451"
+       d="m 5.8068342,288.04954 c -1.7380666,1.38757 -3.9956468,2.75414 -4.6965291,8.05274 l 8.3390995,0.0945 c 0.7566514,-2.57473 2.8069834,-3.46767 4.7860274,-4.45328 l -4.114073,-0.377 z"
+       id="path828" />
+    <path
+       style="opacity:1;fill:url(#linearGradient3255);fill-opacity:1;stroke:#ffffff;stroke-width:1.587;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.62745098"
+       d="m 10.855999,292.03865 -6.565029,-5.1238 c -0.807395,-1.39845 0.509029,-3.67004 2.9403173,-5.07374 2.4312884,-1.40371 5.0567607,-1.40798 5.8641557,-0.01 l 2.957372,6.77588"
+       id="path815" />
+    <ellipse
+       ry="1.8071986"
+       rx="3.141927"
+       cy="257.9678"
+       cx="-133.54352"
+       id="ellipse817"
+       style="opacity:1;fill:#296dff;fill-opacity:1;stroke:#ffffff;stroke-width:1.58749998;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.62745098"
+       transform="rotate(-30)" />
+  </g>
+  <g
+     transform="translate(0,-280.06665)"
+     id="g843"
+     style="display:inline">
+    <path
+       id="path837"
+       d="m 5.8068342,288.04954 c -1.7380666,1.38757 -3.9956468,2.75414 -4.6965291,8.05274 l 8.3390995,0.0945 c 0.7566514,-2.57473 2.8069834,-3.46767 4.7860274,-4.45328"
+       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <path
+       id="path839"
+       d="m 10.855999,292.03865 -6.565029,-5.1238 c -0.807395,-1.39845 0.509029,-3.67004 2.9403173,-5.07374 2.4312884,-1.40371 5.0567607,-1.40798 5.8641557,-0.01 l 2.957372,6.77588"
+       style="opacity:1;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.5;stroke-miterlimit:4;stroke-dasharray:none" />
+    <ellipse
+       transform="rotate(-30)"
+       style="opacity:1;fill:none;stroke:#000000;stroke-width:0.5;stroke-miterlimit:4;stroke-dasharray:none"
+       id="ellipse841"
+       cx="-133.54352"
+       cy="257.9678"
+       rx="3.141927"
+       ry="1.8071986" />
+  </g>
+</svg>
