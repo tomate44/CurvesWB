@@ -64,9 +64,9 @@ class MixedCurveFP:
         obj.addProperty("App::PropertyVector", "Direction2", "Mixed Curve",
                         "Projection direction of the second shape.\nIf vector is null, shape's placement is used.").Direction2 = d2
         obj.addProperty("App::PropertyBool", "FillFace1", "Mixed Curve",
-                        "Build ruled surfaces between Shape1 and resulting Mixed-Curve").FillFace1 = True
+                        "Build ruled surfaces between Shape1 and resulting Mixed-Curve").FillFace1 = False
         obj.addProperty("App::PropertyBool", "FillFace2", "Mixed Curve",
-                        "Build ruled surfaces between Shape2 and resulting Mixed-Curve").FillFace2 = True
+                        "Build ruled surfaces between Shape2 and resulting Mixed-Curve").FillFace2 = False
         obj.Proxy = self
 
     def execute(self, obj):
@@ -86,22 +86,23 @@ class MixedCurveFP:
             mixed = obj.ExtensionProxy.approximate(obj, cc.shape())
         else:
             mixed = cc.shape()
-
-        wip = """
-        print(s1, s2, mixed.Wires)
+        if not hasattr(obj, "FillFace1"):
+            obj.Shape = mixed
+            return
+        # print(s1, s2, mixed.Wires)
         trimshape1, trimshape2 = Part.Shape(), Part.Shape()
-        try:
-            if obj.FillFace1:
-                trimshape1 = Part.makeRuledSurface(s1, mixed.Wires[0])  # ruled_surface(e1, e2, normalize=False):
-            if obj.FillFace2:
-                trimshape2 = Part.makeRuledSurface(s2, mixed.Wires[0])  # ruled_surface(e1, e2, normalize=False):
-            shell = Part.Shell(trimshape1.Faces + trimshape2.Faces)
+        if obj.FillFace1:
+            trimshape1 = _utils.ruled_surface(s1, mixed.Wires[0], normalize=False)
+            # print(trimshape1)
+        if obj.FillFace2:
+            trimshape2 = _utils.ruled_surface(s2, mixed.Wires[0], normalize=False)
+            # print(trimshape2)
+        faces = trimshape1.Faces + trimshape2.Faces
+        if faces:
+            shell = Part.Shell(faces)
             if shell.Faces:
                 obj.Shape = shell
                 return
-        except Exception as ex:
-            print("Mixed Curve : Filling Faces failed (%s)".format(str(ex)))
-        """
         obj.Shape = mixed
 
     def onChanged(self, fp, prop):

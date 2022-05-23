@@ -173,12 +173,21 @@ def rootNode(shape, mode=2, deviation=0.3, angle=0.4):
 
 
 def ruled_surface(e1, e2, normalize=False):
-    """creates a ruled surface between 2 edges, with automatic orientation."""
-    e3 = e2.copy()
-    fp1 = e1.firstVertex(True).Point
-    lp1 = e1.lastVertex(True).Point
-    fp2 = e2.firstVertex(True).Point
-    lp2 = e2.lastVertex(True).Point
+    """creates a ruled surface between 2 edges or wires, with automatic orientation."""
+    def wire_and_endpoints(sh):
+        if isinstance(sh, Part.Edge):
+            fp1 = sh.firstVertex(True).Point
+            lp1 = sh.lastVertex(True).Point
+            return Part.Wire([sh]), fp1, lp1
+        else:
+            fp1 = sh.OrderedVertexes[0].Point
+            lp1 = sh.OrderedVertexes[-1].Point
+            return sh, fp1, lp1
+
+    w1, fp1, lp1 = wire_and_endpoints(e1)
+    w2, fp2, lp2 = wire_and_endpoints(e2)
+    w3 = w2.copy()
+
     line11 = Part.makeLine(fp1, fp2)
     line12 = Part.makeLine(lp1, lp2)
     line21 = Part.makeLine(fp1, lp2)
@@ -187,14 +196,21 @@ def ruled_surface(e1, e2, normalize=False):
     d2 = line21.distToShape(line22)[0]
     # if (line21.Length + line22.Length) < (line11.Length + line12.Length):
     if d1 < d2:
-        e3.reverse()
-    ruled = Part.makeRuledSurface(e1, e3)
+        w3.reverse()
+    print(w1, w3)
+    ruled = Part.makeRuledSurface(w1, w3)
     if normalize:
-        s = ruled.Surface
-        u0, u1, v0, v1 = s.bounds()
-        normalized_knots = [(k - u0) / (u1 - u0) for k in s.getUKnots()]
-        s.setUKnots(normalized_knots)
-        ruled = s.toShape()
+        faces = []
+        for f in ruled.Faces:
+            s = f.Surface
+            u0, u1, v0, v1 = s.bounds()
+            normalized_knots = [(k - u0) / (u1 - u0) for k in s.getUKnots()]
+            s.setUKnots(normalized_knots)
+            faces.append(s.toShape())
+        if len(faces) == 1:
+            return faces[0]
+        else:
+            return Part.Shell(faces)
     return ruled
 
 
