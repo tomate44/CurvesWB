@@ -114,6 +114,8 @@ def get_surface_derivatives(surface, location, direction=(), target=None, cont=1
     if isinstance(target, FreeCAD.Vector):
         dirv = target - pt
         x, y, z = coords_to_UVW(dirv, du, dv)
+    elif isinstance(direction, FreeCAD.Vector):
+        x, y, z = coords_to_UVW(direction, du, dv)
     else:
         x, y = coords2d(direction)
     d1 = x * du + y * dv
