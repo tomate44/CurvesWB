@@ -121,11 +121,15 @@ def flatten_face(face, inPlace=False, size=0.0):
     a face that is the unrolled representation of the input cone or cylinder face.
     """
     if isinstance(face.Surface, Part.Cone):
+        if size == 0.0:
+            offset = face.Surface.parameter(face.Surface.Apex)
+            size = face.ParameterRange[3] - offset[1]
+            print(size)
         flatsurf = flat_cone_surface(face.Surface, inPlace, size)
     elif isinstance(face.Surface, Part.Cylinder):
         flatsurf = flat_cylinder_surface(face.Surface, inPlace, size)
     else:
-        raise TypeError("Face support must be a cone or a cylinder.")
+        raise TypeError(f"Flattening surface of type {face.Surface.TypeId} not implemented")
     wl = []
     ow = None
     for w in face.Wires:
@@ -158,7 +162,7 @@ class FlattenProxy:
         obj.addProperty("App::PropertyFloat", "Size",
                         "Settings", "Size of the underlying surface")
         obj.setEditorMode("Size", 2)
-        obj.Size = 1.0
+        obj.Size = 0.0
         obj.InPlace = True
         obj.Proxy = self
 
