@@ -4,12 +4,19 @@ __title__ = "Reflect Lines"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = "Creates the reflect lines on a shape, according to a view direction"
-
+__usage__ = """Select an object and activate tool.
+This will create reflect lines according to the current view direction.
+If selected object is a ReflectLines object, the view direction will be updated to the current camera direction.
+If property OnShape is True, the lines will be ON the input shape (ViewPos and UpDir properties won't be used).
+Otherwise, lines will be on the XY plane.
+If view property TrackCam is True, the view direction will keep updating upon camera movements.
+"""
 
 import os
 import FreeCAD
 import FreeCADGui
 import Part
+from pivy import coin
 
 from freecad.Curves import nurbs_tools
 from freecad.Curves import _utils
@@ -32,12 +39,12 @@ class ReflectLinesFP:
                         "ReflectLines", "View direction")
         obj.addProperty("App::PropertyVector", "UpDir",
                         "ReflectLines", "Up direction")
-        obj.addProperty("App::PropertyBool", "ShapeCleaning",
-                        "ReflectLines", "Remove duplicate edges").ShapeCleaning = False
+        obj.addProperty("App::PropertyBool", "RemoveDuplicates",
+                        "CleaningOptions", "Remove duplicate edges").RemoveDuplicates = False
         obj.addProperty("App::PropertyInteger", "Samples",
                         "CleaningOptions", "Number of edge samples").Samples = 10
-        obj.addProperty("App::PropertyQuantity", "Tolerance",
-                        "CleaningOptions", "Tolerance for duplicate detection").Tolerance = 1e-3
+        obj.addProperty("App::PropertyQuantity", "CleaningTolerance",
+                        "CleaningOptions", "CleaningTolerance for duplicate detection").CleaningTolerance = 1e-3
         obj.addProperty("App::PropertyBool", "IsoLine",
                         "EdgeType", "Isoparametric lines").IsoLine = True
         obj.addProperty("App::PropertyBool", "OutLine",
@@ -49,7 +56,7 @@ class ReflectLinesFP:
         obj.addProperty("App::PropertyBool", "Sharp",
                         "EdgeType", "sharp edge (of C0-continuity)").Sharp = True
         obj.addProperty("App::PropertyBool", "Visible",
-                        "ReflectLines", "Visible lines").Visible = True
+                        "ReflectLines", "Generate the visible lines, or the hidden lines").Visible = True
         obj.addProperty("App::PropertyBool", "OnShape",
                         "ReflectLines", "Output on-shape 3D lines").OnShape = True
         # obj.Samples = [10,3,999,1]
@@ -57,7 +64,7 @@ class ReflectLinesFP:
         obj.ViewDir = FreeCAD.Vector(0, 0, 1)
         obj.UpDir = FreeCAD.Vector(0, 1, 0)
         obj.setEditorMode("Samples", 2)
-        obj.setEditorMode("Tolerance", 2)
+        obj.setEditorMode("CleaningTolerance", 2)
         if isinstance(src, (list, tuple)):
             obj.IndivFaces = src
         else:
@@ -82,9 +89,9 @@ class ReflectLinesFP:
             rl = Part.Compound(shapes)
         except AttributeError:
             pass
-        if rl and obj.ShapeCleaning:
+        if rl and obj.RemoveDuplicates:
             edges = rl.Edges
-            rl = Part.Compound(nurbs_tools.remove_subsegments(edges, num=obj.Samples, tol=obj.Tolerance))
+            rl = Part.Compound(nurbs_tools.remove_subsegments(edges, num=obj.Samples, tol=obj.CleaningTolerance))
         if rl:
             obj.Shape = rl
             obj.Placement = plm
@@ -92,13 +99,13 @@ class ReflectLinesFP:
     def onChanged(self, obj, prop):
         if 'Restore' in obj.State:
             return
-        if prop == "ShapeCleaning":
-            if obj.ShapeCleaning:
+        if prop == "RemoveDuplicates":
+            if obj.RemoveDuplicates:
                 obj.setEditorMode("Samples", 0)
-                obj.setEditorMode("Tolerance", 0)
+                obj.setEditorMode("CleaningTolerance", 0)
             else:
                 obj.setEditorMode("Samples", 2)
-                obj.setEditorMode("Tolerance", 2)
+                obj.setEditorMode("CleaningTolerance", 2)
         if prop == "OnShape":
             if obj.OnShape:
                 obj.setEditorMode("ViewPos", 2)
@@ -113,13 +120,27 @@ class ReflectLinesFP:
 
 class ReflectLinesVP:
     def __init__(self, vobj):
+        vobj.addProperty("App::PropertyBool", "TrackCamera",
+                        "AutoView", "Track camera movements").TrackCamera = False
         vobj.Proxy = self
+
+    def onChanged(self, vobj, prop):
+        if prop == 'TrackCamera':
+            if vobj.TrackCamera:
+                cam = FreeCADGui.ActiveDocument.ActiveView.getCameraNode()
+                self.sensor.attach(cam)
+            else:
+                self.sensor.detach()
 
     def getIcon(self):
         return(TOOL_ICON)
 
     def attach(self, vobj):
         self.Object = vobj.Object
+        self.sensor = coin.SoNodeSensor(self.cameramove, None)
+
+    def cameramove(self, *args):
+        self.Object.ViewDir = FreeCADGui.ActiveDocument.ActiveView.getCameraOrientation().multVec(FreeCAD.Vector(0,0,1))
 
     def __getstate__(self):
         return {"name": self.Object.Name}
@@ -178,7 +199,7 @@ class ReflectLinesCommand:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': __title__,
-                'ToolTip': __doc__}
+                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
 
 FreeCADGui.addCommand('ReflectLines', ReflectLinesCommand())
