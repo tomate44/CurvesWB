@@ -132,18 +132,26 @@ def flatten_face(face, inPlace=False, size=0.0):
         raise TypeError(f"Flattening surface of type {face.Surface.TypeId} not implemented")
     wl = []
     ow = None
-    for w in face.Wires:
+    build_face = True
+    for i, w in enumerate(face.Wires):
         el = []
         for e in w.OrderedEdges:
             c, fp, lp = face.curveOnSurface(e)
             el.append(c.toShape(flatsurf, fp, lp))
         nw = Part.Wire(el)
-        if w.Orientation == "Reversed":
-            nw.reverse()
+        if not nw.isClosed() or not nw.isValid():
+            FreeCAD.Console.PrintError(f"Wire{i + 1} is not valid. Switching to Compound output.\n")
+            build_face = False
+            nw = Part.Compound(el)
+        else:
+            if w.Orientation == "Reversed":
+                nw.reverse()
         if w.isPartner(face.OuterWire):
             ow = nw
         else:
             wl.append(nw)
+    if not build_face:
+        return Part.Compound([ow] + wl)
     ff = Part.Face(flatsurf, ow)
     ff.validate()
     if wl:
