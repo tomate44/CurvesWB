@@ -14,6 +14,7 @@ import FreeCADGui
 import Part
 from math import pi
 from freecad.Curves import ICONPATH
+from freecad.Curves.nurbs_tools import KnotVector
 
 TOOL_ICON = os.path.join(ICONPATH, 'flatten.svg')
 vec3 = FreeCAD.Vector
@@ -91,9 +92,14 @@ def flat_cone_surface(cone, inPlace=False, size=0.0):
         rs = Part.makeRuledSurface(ci.toShape(), cimir.toShape()).Surface
         start = -size + hyp.length()
     end = start + 2 * size
-    # print(f"Setting V range [{start} - {end}]")
-    rs.setVKnots([start, end])
-    rs.setUKnot(2, 2 * pi * hyp.length() / cone.Radius)
+    u0, u1, v0, v1 = rs.bounds()
+    if hasattr(rs, "setBounds"):
+        rs.setBounds(u0, 2 * pi * hyp.length() / cone.Radius, start, end)
+    else:
+        rs.setVKnots([start, end])
+        knots = rs.getUKnots()
+        kv = KnotVector(knots)
+        rs.setUKnots(kv.transpose(u0, 2 * pi * hyp.length() / cone.Radius))
     rs.setUPeriodic()
     if inPlace:
         origin = cone.Apex
@@ -124,7 +130,7 @@ def flatten_face(face, inPlace=False, size=0.0):
         if size == 0.0:
             offset = face.Surface.parameter(face.Surface.Apex)
             size = face.ParameterRange[3] - offset[1]
-            print(size)
+            # print(size)
         flatsurf = flat_cone_surface(face.Surface, inPlace, size)
     elif isinstance(face.Surface, Part.Cylinder):
         flatsurf = flat_cylinder_surface(face.Surface, inPlace, size)
