@@ -161,7 +161,11 @@ class join:
         if hasattr(obj, "ExtensionProxy"):
             appsh = obj.ExtensionProxy.approximate(obj, outEdges)
             if isinstance(appsh, (list, tuple)):
-                obj.Shape = Part.Compound(appsh)
+                w = Part.Wire(appsh)
+                if w.isValid():
+                    obj.Shape = w
+                else:
+                    obj.Shape = Part.Compound(appsh)
             else:
                 obj.Shape = appsh
         else:

@@ -144,14 +144,15 @@ def flatten_face(face, inPlace=False, size=0.0):
         for e in w.OrderedEdges:
             c, fp, lp = face.curveOnSurface(e)
             el.append(c.toShape(flatsurf, fp, lp))
-        nw = Part.Wire(el)
-        if not nw.isClosed() or not nw.isValid():
+        try:
+            nw = Part.Wire(el)
+            assert nw.isClosed() and nw.isValid()
+            if w.Orientation == "Reversed":
+                nw.reverse()
+        except (Part.OCCError, AssertionError):
             FreeCAD.Console.PrintError(f"Wire{i + 1} is not valid. Switching to Compound output.\n")
             build_face = False
             nw = Part.Compound(el)
-        else:
-            if w.Orientation == "Reversed":
-                nw.reverse()
         if w.isPartner(face.OuterWire):
             ow = nw
         else:
