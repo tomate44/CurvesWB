@@ -20,6 +20,10 @@ TOOL_ICON = os.path.join(ICONPATH, 'flatten.svg')
 vec3 = FreeCAD.Vector
 vec2 = FreeCAD.Base.Vector2d
 
+preferences = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves")
+if 'FlattenDefaultInPlace' not in preferences.GetBools():
+    preferences.SetBool("FlattenDefaultInPlace", True)
+
 
 def flat_cylinder_surface(cyl, inPlace=False, size=0.0):
     """Returns a BSpline surface that is a flat representation of the input Cylinder.
@@ -178,7 +182,8 @@ class FlattenProxy:
                         "Settings", "Size of the underlying surface")
         obj.setEditorMode("Size", 2)
         obj.Size = 0.0
-        obj.InPlace = True
+        preferences = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves")
+        obj.InPlace = preferences.GetBool("FlattenDefaultInPlace", True)
         obj.Proxy = self
 
     def get_face(self, fp):
