@@ -33,8 +33,8 @@ class MultiLoftFP:
         src_shapes = []
         for o in obj.Sources:
             sh = o.Shape.copy()
-            # pl = sh.Placement
-            sh.Placement = o.getGlobalPlacement()
+            if hasattr(sh, "getGlobalPlacement"):
+                sh.Placement = o.getGlobalPlacement()
             src_shapes.append(sh)
         solids = []
         for i in range(len(src_shapes[0].Faces)):
