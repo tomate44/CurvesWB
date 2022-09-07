@@ -408,13 +408,16 @@ class GeomInfo:
             FreeCADGui.Selection.removeObserver(self)
 
     def addHUD(self):
-        self.activeDoc = FreeCADGui.ActiveDocument
-        self.view = self.activeDoc.ActiveView
-        self.sg = self.view.getSceneGraph()
-        self.viewer = self.view.getViewer()
-        self.render = self.viewer.getSoRenderManager()
-        self.sup = self.render.addSuperimposition(self.textSep)
-        self.sg.touch()
+        try:
+            self.activeDoc = FreeCADGui.ActiveDocument
+            self.view = self.activeDoc.ActiveView
+            self.sg = self.view.getSceneGraph()
+            self.viewer = self.view.getViewer()
+            self.render = self.viewer.getSoRenderManager()
+            self.sup = self.render.addSuperimposition(self.textSep)
+            self.sg.touch()
+        except AttributeError:
+            self.activeDoc = None
 
     def removeHUD(self):
         try:
