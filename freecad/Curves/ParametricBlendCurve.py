@@ -13,7 +13,7 @@ from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
 
 from pivy import coin
-from freecad.Curves import nurbs_tools
+# from freecad.Curves import nurbs_tools
 from freecad.Curves import blend_curve
 from freecad.Curves import CoinNodes
 from freecad.Curves import graphics
@@ -56,6 +56,19 @@ class BlendCurveFP:
             FreeCAD.Console.PrintWarning("BlendCurve: Install 'scipy' python package for AutoScale feature\n")
             fp.setEditorMode("AutoScale", 2)
 
+    def getShape(self, fp, prop):
+        sub = None
+        if hasattr(fp, prop) and fp.getPropertyByName(prop):
+            obj, senl = fp.getPropertyByName(prop)
+            for sen in senl:
+                if ("Edge" in sen) or ("Line" in sen):
+                    sub = obj.getSubObject(sen)
+                    break
+            if hasattr(obj, "getGlobalPlacement"):
+                pl = obj.getGlobalPlacement()
+                sub.Placement = pl
+        return sub
+
     def migrate(self, fp):
         if hasattr(fp, "DegreeMax"):
             fp.removeProperty("DegreeMax")
@@ -67,21 +80,21 @@ class BlendCurveFP:
         if not hasattr(fp, "Reverse2"):
             fp.addProperty("App::PropertyBool", "Reverse2", "Edge2", "Reverse Edge").Reverse2 = False
         if fp.getTypeIdOfProperty("Parameter1") == "App::PropertyFloatConstraint":
-            e1 = _utils.getShape(fp, "Edge1", "Edge")
+            e1 = self.getShape(fp, "Edge1")
             val = fp.Parameter1 * e1.Length
             fp.removeProperty("Parameter1")
             fp.addProperty("App::PropertyDistance", "Parameter1", "Edge1", "Location on first edge")
             fp.Parameter1 = val
         if fp.getTypeIdOfProperty("Parameter2") == "App::PropertyFloatConstraint":
-            e2 = _utils.getShape(fp, "Edge2", "Edge")
+            e2 = self.getShape(fp, "Edge2")
             val = fp.Parameter2 * e2.Length
             fp.removeProperty("Parameter2")
             fp.addProperty("App::PropertyDistance", "Parameter2", "Edge1", "Location on second edge")
             fp.Parameter2 = val
 
     def compute(self, fp):
-        e1 = _utils.getShape(fp, "Edge1", "Edge")
-        e2 = _utils.getShape(fp, "Edge2", "Edge")
+        e1 = self.getShape(fp, "Edge1")
+        e2 = self.getShape(fp, "Edge2")
         r1 = fp.Parameter1
         if fp.Reverse1:
             r1 = -r1
@@ -151,13 +164,13 @@ class BlendCurveFP:
             if not fp.AutoScale:
                 self.execute(fp)
         elif prop == "Parameter1":
-            e1 = _utils.getShape(fp, "Edge1", "Edge")
+            e1 = self.getShape(fp, "Edge1")
             if fp.Parameter1 > e1.Length:
                 fp.Parameter1 = e1.Length
             elif fp.Parameter1 < 0.0:
                 fp.Parameter1 = 0.0
         elif prop == "Parameter2":
-            e2 = _utils.getShape(fp, "Edge2", "Edge")
+            e2 = self.getShape(fp, "Edge2")
             if fp.Parameter2 > e2.Length:
                 fp.Parameter2 = e2.Length
             elif fp.Parameter2 < 0.0:
@@ -345,8 +358,8 @@ class BlendCurveVP:
             return 0.0
 
     def update_shape(self):
-        e1 = _utils.getShape(self.Object, "Edge1", "Edge")
-        e2 = _utils.getShape(self.Object, "Edge2", "Edge")
+        e1 = self.Object.getShape(self.Object, "Edge1")
+        e2 = self.Object.getShape(self.Object, "Edge2")
         if self.bc:
             # self.bc.constraints = []
             # bc = nurbs_tools.blendCurve(e1, e2)
@@ -381,8 +394,8 @@ class BlendCurveVP:
             pts = list()
             self.bc = self.Object.Proxy.compute(self.Object)
 
-            # e1 = _utils.getShape(self.Object, "Edge1", "Edge")
-            # e2 = _utils.getShape(self.Object, "Edge2", "Edge")
+            # e1 = self.getShape(self.Object, "Edge1", "Edge")
+            # e2 = self.getShape(self.Object, "Edge2", "Edge")
             # pa1 = e1.getParameterByLength(self.Object.Parameter1)
             # pa2 = e2.getParameterByLength(self.Object.Parameter2)
 
@@ -432,8 +445,8 @@ class BlendCurveVP:
         return False
 
     def unsetEdit(self, vobj, mode=0):
-        e1 = _utils.getShape(self.Object, "Edge1", "Edge")
-        e2 = _utils.getShape(self.Object, "Edge2", "Edge")
+        e1 = self.Object.getShape(self.Object, "Edge1", "Edge")
+        e2 = self.Object.getShape(self.Object, "Edge2", "Edge")
         if isinstance(self.ip, pointEditor):
             v = Part.Vertex(self.m1.point)
             proj = v.distToShape(self.m1.snap_shape)[1][0][1]
@@ -601,6 +614,8 @@ class oldBlendCurveVP:
 class ParametricBlendCurve:
     """Prepare selection and create blendCurve FeaturePython object."""
     def getEdge(self, edge):
+        if "Line" in edge[1]:
+            return edge[0].Shape
         n = eval(edge[1].lstrip('Edge'))
         return edge[0].Shape.Edges[n - 1]
 
