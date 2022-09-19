@@ -7,63 +7,15 @@ __doc__ = 'Doc'
 
 import os
 import FreeCAD
+# from FreeCAD.Console import PrintError, PrintWarning, PrintMessage
 import FreeCADGui
-# import Part
-# from freecad.Curves import _utils
+import Part
+from freecad.Curves import curves_to_surface as CTS
 from freecad.Curves import ICONPATH
 
 TOOL_ICON = os.path.join(ICONPATH, 'icon.svg')
 # debug = _utils.debug
 # debug = _utils.doNothing
-
-props = """
-App::PropertyBool
-App::PropertyBoolList
-App::PropertyFloat
-App::PropertyFloatList
-App::PropertyFloatConstraint
-App::PropertyQuantity
-App::PropertyQuantityConstraint
-App::PropertyAngle
-App::PropertyDistance
-App::PropertyLength
-App::PropertySpeed
-App::PropertyAcceleration
-App::PropertyForce
-App::PropertyPressure
-App::PropertyInteger
-App::PropertyIntegerConstraint
-App::PropertyPercent
-App::PropertyEnumeration
-App::PropertyIntegerList
-App::PropertyIntegerSet
-App::PropertyMap
-App::PropertyString
-App::PropertyUUID
-App::PropertyFont
-App::PropertyStringList
-App::PropertyLink
-App::PropertyLinkSub
-App::PropertyLinkList
-App::PropertyLinkSubList
-App::PropertyMatrix
-App::PropertyVector
-App::PropertyVectorList
-App::PropertyPlacement
-App::PropertyPlacementLink
-App::PropertyColor
-App::PropertyColorList
-App::PropertyMaterial
-App::PropertyPath
-App::PropertyFile
-App::PropertyFileIncluded
-App::PropertyPythonObject
-Part::PropertyPartShape
-Part::PropertyGeometryList
-Part::PropertyShapeHistory
-Part::PropertyFilletEdges
-Sketcher::PropertyConstraintList
-"""
 
 
 class RotationSweep:
@@ -71,34 +23,83 @@ class RotationSweep:
         self.path = path
         self.profiles = profiles
         self.closed = closed
+        self.tol = 1e-7
 
     def getCenter(self):
         if len(self.profiles) == 1:
-            dist, pts, info = self.path.toShape.distToShape(self.profiles[0].toShape())
+            FreeCAD.Console.PrintWarning("RotationSweep: Only 1 profile provided. Choosing center opposite to path.\n")
+            dist, pts, info = self.path.distToShape(self.profiles[0])
             par = self.profiles[0].parameter(pts[0][1])
             if abs(par - self.profiles[0].FirstParameter) > abs(par - self.profiles[0].LastParameter):
-                return self.profiles[0].value(self.profiles[0].FirstParameter)
+                return self.profiles[0].valueAt(self.profiles[0].FirstParameter)
             else:
-                return self.profiles[0].value(self.profiles[0].LastParameter)
+                return self.profiles[0].valueAt(self.profiles[0].LastParameter)
 
         center = FreeCAD.Vector()
         for p in self.profiles[1:]:
-            dist, pts, info = p.toShape.distToShape(self.profiles[0].toShape())
+            dist, pts, info = p.distToShape(self.profiles[0])
             center += pts[0][1]
         return center / (len(self.profiles) - 1)
 
+    def insertknotsSC(self, surf, curve, direc=0, reciprocal=False):
+        if direc == 1:
+            surf.insertVKnots(curve.getKnots(), curve.getMultiplicities(), self.tol, False)
+        else:
+            surf.insertUKnots(curve.getKnots(), curve.getMultiplicities(), self.tol, False)
+        if reciprocal:
+            if direc == 1:
+                curve.insertKnots(surf.getVKnots(), surf.getVMultiplicities(), self.tol, False)
+            else:
+                curve.insertKnots(surf.getUKnots(), surf.getUMultiplicities(), self.tol, False)
+
     def loftProfiles(self):
-        wl = [Part.Wire([c.toShape()]) for c in self.profiles]
+        wl = [Part.Wire([c]) for c in self.profiles]
         loft = Part.makeLoft(wl, False, False, self.closed, 3)
         return loft.Face1.Surface
 
-    def ruledToCenter(self):
+    def ruledToCenter(self, curve, center):
+        bs = Part.BSplineSurface()
+        poles = [[center] * curve.NbPoles, curve.getPoles()]
+        bs.buildFromPolesMultsKnots(poles,
+                                    [2, 2], curve.getMultiplicities(),
+                                    [0.0, 1.0], curve.getKnots(),
+                                    False, curve.isPeriodic(),
+                                    1, curve.Degree)
+        return bs
 
+    def compute(self):
+        center = self.getCenter()
+        loft = self.loftProfiles()
+        # return loft
+        c = self.path.Curve
+        c.scaleKnotsToBounds()
+        loft.scaleKnotsToBounds()
+        d = max(c.Degree, loft.VDegree)
+        loft.increaseDegree(loft.UDegree, d)
+        c.increaseDegree(d)
+        self.insertknotsSC(loft, c, 1, True)
+        # self.path = c.toShape()
+        ruled = self.ruledToCenter(c, center)
+        ruled.increaseDegree(loft.UDegree, d)
+        self.insertknotsSC(ruled, loft.vIso(0.0), 0, False)
+        # self.insertknotsSC(ruled, loft.uIso(0.0), 0, False)
+        pts_interp = CTS.U_linear_surface(loft)
+        pts_interp.increaseDegree(loft.UDegree, d)
+        self.insertknotsSC(pts_interp, loft.vIso(0.0), 0, False)
+        # return loft, ruled, pts_interp
+        gordon = CTS.Gordon(loft, ruled, pts_interp)
+        return gordon.gordon()
 
+    @property
+    def Face(self):
+        g = self.compute()
+        return g.toShape()
+        return Part.Compound([s.toShape() for s in g])
 
 
 class RotsweepProxyFP:
     """Creates a ..."""
+
     def __init__(self, obj):
         """Add the properties"""
         obj.addProperty("App::PropertyLinkSubList", "Profiles",
@@ -112,19 +113,23 @@ class RotsweepProxyFP:
     def getCurve(self, prop):
         edges = []
         po, psn = prop
+        # print(psn)
         for sn in psn:
-            edges.append(po.getSubObject(sn))
+            if "Edge" in sn:
+                edges.append(po.getSubObject(sn))
         if len(edges) == 0:
             edges = po.Shape.Edges
         if len(edges) == 1:
-            return edges[0].Curve
-        soed = Part.SortEdges(edges)
+            return edges[0]
+        soed = Part.sortEdges(edges)
         w = Part.Wire(soed[0])
-        return w.approximate(1e-10, 1e-7, 10000, 3)
+        bs = w.approximate(1e-10, 1e-7, 10000, 3)
+        # print(bs)
+        return bs.toShape()
 
     def execute(self, obj):
-        path = self.getCurve(obj.Path)[0]
-        profiles = [self.getCurve(l) for l in obj.Profiles]
+        path = self.getCurve(obj.Path)
+        profiles = [self.getCurve(li) for li in obj.Profiles]
         rs = RotationSweep(path, profiles, obj.Closed)
         obj.Shape = rs.Face
 
@@ -152,6 +157,7 @@ class RotsweepProxyVP:
 
 class RotsweepFPCommand:
     """Create a ... feature"""
+
     def makeFeature(self, sel=None):
         fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "Rotation Sweep")
         RotsweepProxyFP(fp)
@@ -162,7 +168,7 @@ class RotsweepFPCommand:
 
     def Activated(self):
         links = []
-        sel = FreeCADGui.Selection.getSelectionEx('',0)
+        sel = FreeCADGui.Selection.getSelectionEx('', 0)
         for so in sel:
             if so.HasSubObjects:
                 links.append((so.Object, so.SubElementNames))
@@ -185,4 +191,4 @@ class RotsweepFPCommand:
                 'ToolTip': __doc__}
 
 
-FreeCADGui.addCommand('tool_name', ToolCommand())
+FreeCADGui.addCommand('Curves_RotationSweep', RotsweepFPCommand())
