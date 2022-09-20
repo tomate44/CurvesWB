@@ -18,75 +18,109 @@ TOOL_ICON = os.path.join(ICONPATH, 'icon.svg')
 # debug = _utils.doNothing
 
 
-def insKnots(geom, knots, mults, tol=1e-10, add=False):
-    if isinstance(geom, Part.BSplineCurve):
-        geom.insertKnots(knots, mults, tol, add)
-    elif isinstance(geom, (list, tuple)):
-        if geom[1] == 0:
-            geom[0].insertUKnots(knots, mults, tol, add)
-        elif geom[1] == 1:
-            geom[0].insertVKnots(knots, mults, tol, add)
+class BSplineFacade:
+    """Class BSplineFacade is a collection of functions
+    that work both on BSpline curves and BSpline surfaces.
+    The geom argument of the functions is either :
+    - a BSpline Curve
+    - U or V dimension of a BSpline Surface in the form (surf, 0 or 1)
+    """
+    def getDegree(geom):
+        "Returns the degree of the BSpline geom"
+        if isinstance(geom, Part.BSplineCurve):
+            return geom.Degree
+        elif isinstance(geom, (list, tuple)):
+            if geom[1] == 0:
+                return geom.UDegree
+            elif geom[1] == 1:
+                return geom.VDegree
 
-def getDegree(geom):
-    if isinstance(geom, Part.BSplineCurve):
-        return geom.Degree
-    elif isinstance(geom, (list, tuple)):
-        if geom[1] == 0:
-            return geom.UDegree
-        elif geom[1] == 1:
-            return geom.VDegree
+    def getKnots(geom):
+        "Returns the knots of the BSpline geom"
+        if isinstance(geom, Part.BSplineCurve):
+            return geom.getKnots()
+        elif isinstance(geom, (list, tuple)):
+            if geom[1] == 0:
+                return geom.getUKnots()
+            elif geom[1] == 1:
+                return geom.getVKnots()
 
-def getKnots(geom):
-    if isinstance(geom, Part.BSplineCurve):
-        return geom.getKnots()
-    elif isinstance(geom, (list, tuple)):
-        if geom[1] == 0:
-            return geom.getUKnots()
-        elif geom[1] == 1:
-            return geom.getVKnots()
+    def getMults(geom):
+        "Returns the multiplicities of the BSpline geom"
+        if isinstance(geom, Part.BSplineCurve):
+            return geom.getMultiplicities()
+        elif isinstance(geom, (list, tuple)):
+            if geom[1] == 0:
+                return geom.getUMultiplicities()
+            elif geom[1] == 1:
+                return geom.getVMultiplicities()
 
-def getMults(geom):
-    if isinstance(geom, Part.BSplineCurve):
-        return geom.getMultiplicities()
-    elif isinstance(geom, (list, tuple)):
-        if geom[1] == 0:
-            return geom.getUMultiplicities()
-        elif geom[1] == 1:
-            return geom.getVMultiplicities()
+    def incDegree(geom, d):
+        """incDegree(geom, d)
+        Raise the degree of the BSpline geom to d
+        """
+        if isinstance(geom, Part.BSplineCurve):
+            geom.increaseDegree(d)
+        elif isinstance(geom, (list, tuple)):
+            if geom[1] == 0:
+                geom[0].increaseDegree(d, geom[0].VDegree)
+            elif geom[1] == 1:
+                geom[0].increaseDegree(geom[0].UDegree, d)
 
-def incDegree(geom, d):
-    if isinstance(geom, Part.BSplineCurve):
-        geom.increaseDegree(d)
-    elif isinstance(geom, (list, tuple)):
-        if geom[1] == 0:
-            geom[0].increaseDegree(d, geom[0].VDegree)
-        elif geom[1] == 1:
-            geom[0].increaseDegree(geom[0].UDegree, d)
+    def insKnots(geom, knots, mults, tol=1e-10, add=False):
+        """insKnots(geom, knots, mults, tol=1e-10, add=False)
+        Inserts the knots and mults into the BSpline geom
+        """
+        if isinstance(geom, Part.BSplineCurve):
+            geom.insertKnots(knots, mults, tol, add)
+        elif isinstance(geom, (list, tuple)):
+            if geom[1] == 0:
+                geom[0].insertUKnots(knots, mults, tol, add)
+            elif geom[1] == 1:
+                geom[0].insertVKnots(knots, mults, tol, add)
 
-def syncDegree(geo1, geo2):
-    d1 = geo1.getDegree()
-    d2 = geo2.getDegree()
-    if d1 > d2:
-        incDegree(geo2, d1)
-    elif d2 > d1:
-        incDegree(geo1, d2)
+    def syncDegree(geo1, geo2):
+        """syncDegree(geo1, geo2)
+        Raise the degree of one of the BSpline geoms
+        to match the other one.
+        """
+        d1 = geo1.getDegree()
+        d2 = geo2.getDegree()
+        if d1 > d2:
+            incDegree(geo2, d1)
+        elif d2 > d1:
+            incDegree(geo1, d2)
 
-def syncKnots(geo1, geo2, tol=1e-10):
-    k = getKnots(geo1)
-    m = getMults(geo1)
-    insKnots(geo1, getKnots(geo2), getMults(geo2), tol, False)
-    insKnots(geo2, k, m, tol, False)
+    def syncKnots(geo1, geo2, tol=1e-10):
+        """syncKnots(geo1, geo2, tol=1e-10)
+        Mutual knots insertion (geo1 and geo2 are modified)
+        to make the 2 BSpline geometries compatible.
+        """
+        k = getKnots(geo1)
+        m = getMults(geo1)
+        insKnots(geo1, getKnots(geo2), getMults(geo2), tol, False)
+        insKnots(geo2, k, m, tol, False)
 
-def normalize(*geom):
+
+def normalize(geom):
+    """normalize([bpline_objects, ...])
+    Batch normalize knots of supplied bspline geometries.
+    works on curves and surfaces.
+    """
     for g in geom:
         g.scaleKnotsToBounds()
 
-def clamp(curve, pt1, pt2):
+
+def contact_points(curve, pt1, pt2):
+    """contact_points(bspline_curve, pt1, pt2)
+    Trim or extend bspline_curve to contact points.
+    The bspline_curve is also oriented from pt1 to pt2
+    """
     p1 = curve.parameter(pt1)
     p2 = curve.parameter(pt2)
     if p1 > p2:
         curve.reverse()
-        clamp(curve, pt1, pt2)
+        contact_points(curve, pt1, pt2)
         return
     if p1 == curve.FirstParameter:
         curve.setPole(1, pt1)
@@ -95,13 +129,16 @@ def clamp(curve, pt1, pt2):
     curve.segment(p1, p2)
     curve.scaleKnotsToBounds()
 
-def trim_and_orient(curve, geo1, geo2):
-    edge = curve.toShape()
-    sh1 = geo1.toShape()
-    sh2 = geo2.toShape()
-    pt1 = edge.distToShape(sh1)[1][0][1]
-    pt2 = edge.distToShape(sh2)[1][0][1]
-    clamp(curve, pt1, pt2)
+
+def contact_shapes(bscurve, shape1, shape2):
+    """contact_shapes(bspline_curve, shape1, shape2)
+    Trim or extend bspline_curve to contact shapes.
+    The bspline_curve is also oriented from shape1 to shape2
+    """
+    edge = bscurve.toShape()
+    pt1 = edge.distToShape(shape1)[1][0][1]
+    pt2 = edge.distToShape(shape2)[1][0][1]
+    contact_points(bscurve, pt1, pt2)
 
 
 
