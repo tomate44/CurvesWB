@@ -7,12 +7,12 @@ __doc__ = 'Doc'
 
 import os
 import FreeCAD
-# from FreeCAD.Console import PrintError, PrintWarning, PrintMessage
 import FreeCADGui
 import Part
 from freecad.Curves import curves_to_surface as CTS
 from freecad.Curves import ICONPATH
 
+warn = FreeCAD.Console.PrintWarning
 TOOL_ICON = os.path.join(ICONPATH, 'icon.svg')
 # debug = _utils.debug
 # debug = _utils.doNothing
@@ -67,7 +67,7 @@ class BSplineFacade:
             elif geom[1] == 1:
                 geom[0].increaseDegree(geom[0].UDegree, d)
 
-    def insKnots(geom, knots, mults, tol=1e-10, add=False):
+    def insKnotsMults(geo1, knots, mults, tol=1e-10, add=False):
         """insKnots(geom, knots, mults, tol=1e-10, add=False)
         Inserts the knots and mults into the BSpline geom
         """
@@ -90,6 +90,14 @@ class BSplineFacade:
             incDegree(geo2, d1)
         elif d2 > d1:
             incDegree(geo1, d2)
+
+    def mergeKnots(geo1, geo2, tol=1e-10, add=False):
+        """insKnots(geo1, geo2, tol=1e-10, add=False)
+        Inserts the knots and mults of geo1 into the BSpline geo2
+        """
+        knots = getKnots(geo2)
+        mults = getMults(geo2)
+        insKnotsMults(geo1, knots, mults, tol, add)
 
     def syncKnots(geo1, geo2, tol=1e-10):
         """syncKnots(geo1, geo2, tol=1e-10)
@@ -141,8 +149,6 @@ def contact_shapes(bscurve, shape1, shape2):
     contact_points(bscurve, pt1, pt2)
 
 
-
-
 class RotationSweep:
     def __init__(self, path, profiles, closed=False):
         self.path = path
@@ -152,13 +158,16 @@ class RotationSweep:
 
     def getCenter(self):
         if len(self.profiles) == 1:
-            FreeCAD.Console.PrintWarning("RotationSweep: Only 1 profile provided. Choosing center opposite to path.\n")
+            warn("RotationSweep: Only 1 profile provided.\n")
+            warn("Choosing center opposite to path.\n")
             dist, pts, info = self.path.distToShape(self.profiles[0])
             par = self.profiles[0].parameter(pts[0][1])
-            if abs(par - self.profiles[0].FirstParameter) > abs(par - self.profiles[0].LastParameter):
-                return self.profiles[0].valueAt(self.profiles[0].FirstParameter)
+            fp = self.profiles[0].FirstParameter
+            lp = self.profiles[0].LastParameter
+            if abs(par - fp) > abs(par - lp):
+                return self.profiles[0].valueAt(fp)
             else:
-                return self.profiles[0].valueAt(self.profiles[0].LastParameter)
+                return self.profiles[0].valueAt(lp)
 
         center = FreeCAD.Vector()
         for p in self.profiles[1:]:
