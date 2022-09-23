@@ -13,101 +13,116 @@ from freecad.Curves import curves_to_surface as CTS
 from freecad.Curves import ICONPATH
 
 warn = FreeCAD.Console.PrintWarning
+message = warn = FreeCAD.Console.PrintMessage
 TOOL_ICON = os.path.join(ICONPATH, 'icon.svg')
 # debug = _utils.debug
 # debug = _utils.doNothing
 
 
-class BSplineFacade:
-    """Class BSplineFacade is a collection of functions
-    that work both on BSpline curves and BSpline surfaces.
-    The geom argument of the functions is either :
-    - a BSpline Curve
-    - U or V dimension of a BSpline Surface in the form (surf, 0 or 1)
+"""Class BSplineFacade is a collection of functions
+that work both on BSpline curves and BSpline surfaces.
+The geom argument of the functions is either :
+- a BSpline Curve
+- U or V dimension of a BSpline Surface in the form (surf, 0 or 1)
+"""
+
+
+def getDegree(geom):
+    "Returns the degree of the BSpline geom"
+    if isinstance(geom, Part.BSplineCurve):
+        return geom.Degree
+    elif isinstance(geom, (list, tuple)):
+        if geom[1] == 0:
+            return geom[0].UDegree
+        elif geom[1] == 1:
+            return geom[0].VDegree
+
+
+def getKnots(geom):
+    "Returns the knots of the BSpline geom"
+    if isinstance(geom, Part.BSplineCurve):
+        return geom.getKnots()
+    elif isinstance(geom, (list, tuple)):
+        if geom[1] == 0:
+            return geom[0].getUKnots()
+        elif geom[1] == 1:
+            return geom[0].getVKnots()
+
+
+def getMults(geom):
+    "Returns the multiplicities of the BSpline geom"
+    if isinstance(geom, Part.BSplineCurve):
+        return geom.getMultiplicities()
+    elif isinstance(geom, (list, tuple)):
+        if geom[1] == 0:
+            return geom[0].getUMultiplicities()
+        elif geom[1] == 1:
+            return geom[0].getVMultiplicities()
+
+
+def incDegree(geom, d):
+    """incDegree(geom, d)
+    Raise the degree of the BSpline geom to d
     """
-    def getDegree(geom):
-        "Returns the degree of the BSpline geom"
-        if isinstance(geom, Part.BSplineCurve):
-            return geom.Degree
-        elif isinstance(geom, (list, tuple)):
-            if geom[1] == 0:
-                return geom.UDegree
-            elif geom[1] == 1:
-                return geom.VDegree
+    if isinstance(geom, Part.BSplineCurve):
+        geom.increaseDegree(d)
+    elif isinstance(geom, (list, tuple)):
+        if geom[1] == 0:
+            geom[0].increaseDegree(d, geom[0].VDegree)
+        elif geom[1] == 1:
+            geom[0].increaseDegree(geom[0].UDegree, d)
 
-    def getKnots(geom):
-        "Returns the knots of the BSpline geom"
-        if isinstance(geom, Part.BSplineCurve):
-            return geom.getKnots()
-        elif isinstance(geom, (list, tuple)):
-            if geom[1] == 0:
-                return geom.getUKnots()
-            elif geom[1] == 1:
-                return geom.getVKnots()
 
-    def getMults(geom):
-        "Returns the multiplicities of the BSpline geom"
-        if isinstance(geom, Part.BSplineCurve):
-            return geom.getMultiplicities()
-        elif isinstance(geom, (list, tuple)):
-            if geom[1] == 0:
-                return geom.getUMultiplicities()
-            elif geom[1] == 1:
-                return geom.getVMultiplicities()
+def insKnotsMults(geom, knots, mults, tol=1e-10, add=False):
+    """insKnots(geom, knots, mults, tol=1e-10, add=False)
+    Inserts the knots and mults into the BSpline geom
+    """
+    message(f"insKnotsMults: {geom}\n")
+    if isinstance(geom, Part.BSplineCurve):
+        geom.insertKnots(knots, mults, tol, add)
+    elif isinstance(geom, (list, tuple)):
+        if geom[1] == 0:
+            geom[0].insertUKnots(knots, mults, tol, add)
+        elif geom[1] == 1:
+            geom[0].insertVKnots(knots, mults, tol, add)
+    # return geom
 
-    def incDegree(geom, d):
-        """incDegree(geom, d)
-        Raise the degree of the BSpline geom to d
-        """
-        if isinstance(geom, Part.BSplineCurve):
-            geom.increaseDegree(d)
-        elif isinstance(geom, (list, tuple)):
-            if geom[1] == 0:
-                geom[0].increaseDegree(d, geom[0].VDegree)
-            elif geom[1] == 1:
-                geom[0].increaseDegree(geom[0].UDegree, d)
 
-    def insKnotsMults(geo1, knots, mults, tol=1e-10, add=False):
-        """insKnots(geom, knots, mults, tol=1e-10, add=False)
-        Inserts the knots and mults into the BSpline geom
-        """
-        if isinstance(geom, Part.BSplineCurve):
-            geom.insertKnots(knots, mults, tol, add)
-        elif isinstance(geom, (list, tuple)):
-            if geom[1] == 0:
-                geom[0].insertUKnots(knots, mults, tol, add)
-            elif geom[1] == 1:
-                geom[0].insertVKnots(knots, mults, tol, add)
+def syncDegree(geo1, geo2):
+    """syncDegree(geo1, geo2)
+    Raise the degree of one of the BSpline geoms
+    to match the other one.
+    """
+    d1 = getDegree(geo1)
+    d2 = getDegree(geo2)
+    if d1 > d2:
+        incDegree(geo2, d1)
+    elif d2 > d1:
+        incDegree(geo1, d2)
 
-    def syncDegree(geo1, geo2):
-        """syncDegree(geo1, geo2)
-        Raise the degree of one of the BSpline geoms
-        to match the other one.
-        """
-        d1 = geo1.getDegree()
-        d2 = geo2.getDegree()
-        if d1 > d2:
-            incDegree(geo2, d1)
-        elif d2 > d1:
-            incDegree(geo1, d2)
 
-    def mergeKnots(geo1, geo2, tol=1e-10, add=False):
-        """insKnots(geo1, geo2, tol=1e-10, add=False)
-        Inserts the knots and mults of geo1 into the BSpline geo2
-        """
-        knots = getKnots(geo2)
-        mults = getMults(geo2)
-        insKnotsMults(geo1, knots, mults, tol, add)
+def insKnots(geo1, geo2, tol=1e-10, add=False):
+    """insKnots(geo1, geo2, tol=1e-10, add=False)
+    Inserts the knots and mults of geo2 into the BSpline geo1
+    """
+    knots = getKnots(geo2)
+    mults = getMults(geo2)
+    # print(knots, mults)
+    insKnotsMults(geo1, knots, mults, tol, add)
 
-    def syncKnots(geo1, geo2, tol=1e-10):
-        """syncKnots(geo1, geo2, tol=1e-10)
-        Mutual knots insertion (geo1 and geo2 are modified)
-        to make the 2 BSpline geometries compatible.
-        """
-        k = getKnots(geo1)
-        m = getMults(geo1)
-        insKnots(geo1, getKnots(geo2), getMults(geo2), tol, False)
-        insKnots(geo2, k, m, tol, False)
+
+def syncKnots(geo1, geo2, tol=1e-10):
+    """syncKnots(geo1, geo2, tol=1e-10)
+    Mutual knots insertion (geo1 and geo2 are modified)
+    to make the 2 BSpline geometries compatible.
+    """
+    # k = getKnots(geo1)
+    # m = getMults(geo1)
+    # k2 = getKnots(geo2)
+    # m2 = getMults(geo2)
+    geo3 = geo1
+    insKnots(geo1, geo2, tol, False)
+    insKnots(geo2, geo3, tol, False)
 
 
 def normalize(geom):
@@ -155,8 +170,16 @@ class RotationSweep:
         self.profiles = profiles
         self.closed = closed
         self.tol = 1e-7
+        self.sort_profiles()
+
+    def sort_profiles(self):
+        def getParam(p):
+            dist, pts, info = self.path.distToShape(p)
+            return self.path.Curve.parameter(pts[0][0])
+        self.profiles.sort(key=getParam)
 
     def getCenter(self):
+        center = FreeCAD.Vector()
         if len(self.profiles) == 1:
             warn("RotationSweep: Only 1 profile provided.\n")
             warn("Choosing center opposite to path.\n")
@@ -165,15 +188,16 @@ class RotationSweep:
             fp = self.profiles[0].FirstParameter
             lp = self.profiles[0].LastParameter
             if abs(par - fp) > abs(par - lp):
-                return self.profiles[0].valueAt(fp)
+                center = self.profiles[0].valueAt(fp)
             else:
-                return self.profiles[0].valueAt(lp)
-
-        center = FreeCAD.Vector()
-        for p in self.profiles[1:]:
-            dist, pts, info = p.distToShape(self.profiles[0])
-            center += pts[0][1]
-        return center / (len(self.profiles) - 1)
+                center = self.profiles[0].valueAt(lp)
+        else:
+            for p in self.profiles[1:]:
+                dist, pts, info = p.distToShape(self.profiles[0])
+                center += pts[0][1]
+            center = center / (len(self.profiles) - 1)
+        message(f"Center found at {center}\n")
+        return center
 
     def insertknotsSC(self, surf, curve, direc=0, reciprocal=False):
         if direc == 1:
@@ -202,25 +226,45 @@ class RotationSweep:
                                     1, curve.Degree)
         return bs
 
+    def trim_profiles(self, sh1, sh2):
+        edges = []
+        for prof in self.profiles:
+            c = prof.Curve
+            contact_shapes(c, sh1, sh2)
+            edges.append(c.toShape())
+        self.profiles = edges
+
     def compute(self):
         center = self.getCenter()
+        self.trim_profiles(self.path, Part.Vertex(center))
+        c = self.path.Curve
+        contact_shapes(c, self.profiles[0], self.profiles[-1])
+        self.path = c.toShape()
         loft = self.loftProfiles()
         # return loft
         c = self.path.Curve
-        c.scaleKnotsToBounds()
-        loft.scaleKnotsToBounds()
-        d = max(c.Degree, loft.VDegree)
-        loft.increaseDegree(loft.UDegree, d)
-        c.increaseDegree(d)
-        self.insertknotsSC(loft, c, 1, True)
+        # c.scaleKnotsToBounds()
+        # loft.scaleKnotsToBounds()
+        # d = max(c.Degree, loft.VDegree)
+        normalize([c, loft])
+        syncDegree(c, [loft, 1])
+        # loft.increaseDegree(loft.UDegree, d)
+        # c.increaseDegree(d)
+        syncKnots(c, [loft, 1], 1e-10)
+        # self.insertknotsSC(loft, c, 1, True)
         # self.path = c.toShape()
         ruled = self.ruledToCenter(c, center)
-        ruled.increaseDegree(loft.UDegree, d)
-        self.insertknotsSC(ruled, loft.vIso(0.0), 0, False)
+        syncDegree([ruled, 0], [loft, 0])
+        # normalize([ruled])
+        # ruled.increaseDegree(loft.UDegree, d)
+        insKnots([ruled, 0], [loft, 0], 1e-10)
+        # self.insertknotsSC(ruled, loft.vIso(0.0), 0, False)
         # self.insertknotsSC(ruled, loft.uIso(0.0), 0, False)
         pts_interp = CTS.U_linear_surface(loft)
-        pts_interp.increaseDegree(loft.UDegree, d)
-        self.insertknotsSC(pts_interp, loft.vIso(0.0), 0, False)
+        # pts_interp.increaseDegree(loft.UDegree, d)
+        syncDegree([pts_interp, 0], [loft, 0])
+        # self.insertknotsSC(pts_interp, loft.vIso(0.0), 0, False)
+        insKnots([pts_interp, 0], [loft, 0], 1e-10)
         # return loft, ruled, pts_interp
         gordon = CTS.Gordon(loft, ruled, pts_interp)
         return gordon.gordon()
