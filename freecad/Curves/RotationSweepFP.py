@@ -12,8 +12,9 @@ import Part
 from freecad.Curves import curves_to_surface as CTS
 from freecad.Curves import ICONPATH
 
+err = FreeCAD.Console.PrintError
 warn = FreeCAD.Console.PrintWarning
-message = warn = FreeCAD.Console.PrintMessage
+message = FreeCAD.Console.PrintMessage
 TOOL_ICON = os.path.join(ICONPATH, 'icon.svg')
 # debug = _utils.debug
 # debug = _utils.doNothing
@@ -141,15 +142,21 @@ def contact_points(curve, pt1, pt2):
     """
     p1 = curve.parameter(pt1)
     p2 = curve.parameter(pt2)
+    fp = curve.FirstParameter
+    lp = curve.LastParameter
     if p1 > p2:
         curve.reverse()
         contact_points(curve, pt1, pt2)
         return
-    if p1 == curve.FirstParameter:
+    if p1 == fp:
         curve.setPole(1, pt1)
-    if p2 == curve.LastParameter:
+    if p2 == lp:
         curve.setPole(curve.NbPoles, pt2)
-    curve.segment(p1, p2)
+    try:
+        curve.segment(p1, p2)
+    except Part.OCCError:
+        err(f"Failed to segment BSpline curve ({fp}, {lp})\n")
+        err(f"between ({p1}, {p2})\n")
     curve.scaleKnotsToBounds()
 
 
@@ -199,17 +206,6 @@ class RotationSweep:
         message(f"Center found at {center}\n")
         return center
 
-    def insertknotsSC(self, surf, curve, direc=0, reciprocal=False):
-        if direc == 1:
-            surf.insertVKnots(curve.getKnots(), curve.getMultiplicities(), self.tol, False)
-        else:
-            surf.insertUKnots(curve.getKnots(), curve.getMultiplicities(), self.tol, False)
-        if reciprocal:
-            if direc == 1:
-                curve.insertKnots(surf.getVKnots(), surf.getVMultiplicities(), self.tol, False)
-            else:
-                curve.insertKnots(surf.getUKnots(), surf.getUMultiplicities(), self.tol, False)
-
     def loftProfiles(self):
         wl = [Part.Wire([c]) for c in self.profiles]
         loft = Part.makeLoft(wl, False, False, self.closed, 3)
@@ -228,7 +224,8 @@ class RotationSweep:
 
     def trim_profiles(self, sh1, sh2):
         edges = []
-        for prof in self.profiles:
+        for i, prof in enumerate(self.profiles):
+            message(f"Connecting curve #{i}\n")
             c = prof.Curve
             contact_shapes(c, sh1, sh2)
             edges.append(c.toShape())
@@ -239,31 +236,18 @@ class RotationSweep:
         self.trim_profiles(self.path, Part.Vertex(center))
         c = self.path.Curve
         contact_shapes(c, self.profiles[0], self.profiles[-1])
-        self.path = c.toShape()
+        # S1
         loft = self.loftProfiles()
-        # return loft
-        c = self.path.Curve
-        # c.scaleKnotsToBounds()
-        # loft.scaleKnotsToBounds()
-        # d = max(c.Degree, loft.VDegree)
         normalize([c, loft])
         syncDegree(c, [loft, 1])
-        # loft.increaseDegree(loft.UDegree, d)
-        # c.increaseDegree(d)
         syncKnots(c, [loft, 1], 1e-10)
-        # self.insertknotsSC(loft, c, 1, True)
-        # self.path = c.toShape()
+        # S2
         ruled = self.ruledToCenter(c, center)
         syncDegree([ruled, 0], [loft, 0])
-        # normalize([ruled])
-        # ruled.increaseDegree(loft.UDegree, d)
         insKnots([ruled, 0], [loft, 0], 1e-10)
-        # self.insertknotsSC(ruled, loft.vIso(0.0), 0, False)
-        # self.insertknotsSC(ruled, loft.uIso(0.0), 0, False)
+        # S3
         pts_interp = CTS.U_linear_surface(loft)
-        # pts_interp.increaseDegree(loft.UDegree, d)
         syncDegree([pts_interp, 0], [loft, 0])
-        # self.insertknotsSC(pts_interp, loft.vIso(0.0), 0, False)
         insKnots([pts_interp, 0], [loft, 0], 1e-10)
         # return loft, ruled, pts_interp
         gordon = CTS.Gordon(loft, ruled, pts_interp)
@@ -338,7 +322,8 @@ class RotsweepFPCommand:
     """Create a ... feature"""
 
     def makeFeature(self, sel=None):
-        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "Rotation Sweep")
+        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython",
+                                              "Rotation Sweep")
         RotsweepProxyFP(fp)
         fp.Path = sel[0]
         fp.Profiles = sel[1:]
