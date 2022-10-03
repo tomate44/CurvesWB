@@ -191,7 +191,7 @@ class RotationSweep:
             warn("RotationSweep: Only 1 profile provided.\n")
             warn("Choosing center opposite to path.\n")
             dist, pts, info = self.path.distToShape(self.profiles[0])
-            par = self.profiles[0].parameter(pts[0][1])
+            par = self.profiles[0].Curve.parameter(pts[0][1])
             fp = self.profiles[0].FirstParameter
             lp = self.profiles[0].LastParameter
             if abs(par - fp) > abs(par - lp):

@@ -1,16 +1,53 @@
 import FreeCAD
-from FreeCAD.Base import Vector
+import FreeCADGui
+from FreeCAD import Vector
 import Part
+
+
+class SweepProfile:
+    def __init__(self, prof, par=None):
+        self.param = par
+        if hasattr(prof, "value"):
+            self.curve = prof.toBSpline()
+        elif hasattr(prof, "Curve"):
+            self.curve = prof.Curve.toBSpline()
+        elif isinstance(prof, Part.Wire):
+            self.curve = prof.approximate(1e-10, 1e-7, 10000, 3)
+
+    @property
+    def Curve(self):
+        return self.curve
+
+    @property
+    def Shape(self):
+        return self.curve.toShape()
+
+    @property
+    def Parameter(self):
+        return self.param
+
+    @Parameter.setter
+    def Parameter(self, p):
+        self.param = p
 
 
 class SweepPath:
     def __init__(self, path):
+        self.profiles = []
         if hasattr(path, "value"):
             self.path = path.toShape()
         elif hasattr(path, "valueAt"):
             self.path = path
         else:
             raise (TypeError, "Path must be a curve or an edge")
+
+    def add_profile(self, prof):
+        dist, pts, info = self.path.distToShape(prof)
+        par = self.path.Curve.parameter(pts[0][0])
+        self.profiles.append(SweepProfile(prof, par))
+
+    def sort_profiles(self):
+        self.profiles.sort(key=lambda x: x.Parameter)
 
 
 class RotationSweepPath(SweepPath):
@@ -21,50 +58,87 @@ class RotationSweepPath(SweepPath):
         elif isinstance(center, Part.Vertex):
             self.center = center.Point
 
-    def trsfMatrixAt(self, par):
+    def transitionMatrixAt(self, par):
         poc = self.path.valueAt(par)
-        v1 = poc - self.center
-        der = self.path.derivative1At(par)
-        nor = v1.cross(der)
-        m = FreeCAD.Matrix()
-        m.A11 = v1.x
-        m.A12 = der.x
-        m.A13 = nor.x
-        m.A21 = v1.y
-        m.A22 = der.y
-        m.A23 = nor.y
-        m.A31 = v1.z
-        m.A32 = der.z
-        m.A33 = nor.z
-        print(m.analyze())
+        cho = self.center - poc
+        der = self.path.tangentAt(par)  # derivative1At(par)
+        nor = cho.cross(der)
+        m = FreeCAD.Matrix(cho.x, der.x, nor.x, poc.x,
+                           cho.y, der.y, nor.y, poc.y,
+                           cho.z, der.z, nor.z, poc.z,
+                           0, 0, 0, 1)
+        # print(m.analyze())
         return m
 
-    def localProfile(self, prof, par=None, offset=None):
-        if par is None:
-            dist, pts, info = prof.distToShape(self.path)
-            par = self.path.parameter(pts[0][1])
-        if offset is None:
-            offset = par
-        m = self.trsfMatrixAt(par)
-        im = m.inverse()
-        locprof = prof.copy()
+    def computeLocalProfile(self, prof):
+        m = self.transitionMatrixAt(prof.Parameter)
+        m = m.inverse()
+        locprof = prof.Curve.copy()
         for i in range(locprof.NbPoles):
             pole = locprof.getPole(i + 1)
-            np = im.multVec(pole)
-            np.y += offset
+            np = m.multVec(pole)
+            # np.y += prof.Parameter
             locprof.setPole(i + 1, np)
+        # print(locprof.getPole(1))
+        # print(locprof.getPole(locprof.NbPoles))
+        prof.locCurve = locprof
         return locprof
 
-    def transformProfiles(self, profiles):
-        locprofs = []
-        for i, p in enumerate(profiles):
-            locprofs.append(self.localProfile(p, None, i))
-        return locprofs
+    def add_profile(self, prof):
+        if isinstance(prof, (list, tuple)):
+            for p in prof:
+                self.add_profile(p)
+            return
+        sp = SweepProfile(prof)
+        dist, pts, info = self.path.distToShape(sp.Shape)
+        sp.Parameter = self.path.Curve.parameter(pts[0][0])
+        self.computeLocalProfile(sp)
+        self.profiles.append(sp)
+        print(f"Profile added at {sp.Parameter}")
 
-    def localLoft(self, profiles):
-        locprofs = self.transformProfiles(profiles)
+    def interpolate_profiles(self):
+        self.sort_profiles()
+        locprofs = [p.locCurve for p in self.profiles]
         bs = Part.BSplineSurface()
         bs.buildFromNSections(locprofs)
+        fp, lp = self.profiles[0].Parameter, self.profiles[-1].Parameter
+        bs.scaleKnotsToBounds(0.0, 1.0, fp, lp)
+        self.localLoft = bs
         return bs
+
+    def get_profile(self, par):
+        locprof = self.localLoft.vIso(par)
+        m = self.transitionMatrixAt(par)
+        for i in range(locprof.NbPoles):
+            pole = locprof.getPole(i + 1)
+            # pole.y -= par
+            np = m.multVec(pole)
+            locprof.setPole(i + 1, np)
+        # print(locprof.getPole(1))
+        # print(locprof.getPole(locprof.NbPoles))
+        return locprof
+
+
+sel = FreeCADGui.Selection.getSelectionEx()
+el = []
+for so in sel:
+    el.extend(so.SubObjects)
+
+center = el[1].valueAt(el[1].FirstParameter)
+rsp = RotationSweepPath(el[0], center)
+rsp.add_profile(el[1:])
+rsp.interpolate_profiles()
+
+Part.show(rsp.localLoft.toShape())
+
+for i, p in enumerate(rsp.profiles[1:-1]):
+    # Part.show(p.Shape)
+    Part.show(rsp.get_profile(p.Parameter).toShape())
+
+for pt in rsp.path.discretize(10):
+    p = rsp.path.Curve.parameter(pt)
+    iso = rsp.get_profile(p)
+    Part.show(iso.toShape(), f"Profile@{p}")
+
 
 
