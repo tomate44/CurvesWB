@@ -79,6 +79,7 @@ class RotationSweepPath(SweepPath):
             np = m.multVec(pole)
             # np.y += prof.Parameter
             locprof.setPole(i + 1, np)
+        locprof.translate(FreeCAD.Vector(0, prof.Parameter, 0))
         # print(locprof.getPole(1))
         # print(locprof.getPole(locprof.NbPoles))
         prof.locCurve = locprof
@@ -108,6 +109,7 @@ class RotationSweepPath(SweepPath):
 
     def get_profile(self, par):
         locprof = self.localLoft.vIso(par)
+        locprof.translate(FreeCAD.Vector(0, -par, 0))
         m = self.transitionMatrixAt(par)
         for i in range(locprof.NbPoles):
             pole = locprof.getPole(i + 1)
@@ -135,7 +137,7 @@ for i, p in enumerate(rsp.profiles[1:-1]):
     # Part.show(p.Shape)
     Part.show(rsp.get_profile(p.Parameter).toShape())
 
-for pt in rsp.path.discretize(10):
+for pt in rsp.path.discretize(9)[1:-1]:
     p = rsp.path.Curve.parameter(pt)
     iso = rsp.get_profile(p)
     Part.show(iso.toShape(), f"Profile@{p}")
