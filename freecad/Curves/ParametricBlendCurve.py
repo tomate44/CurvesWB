@@ -358,8 +358,8 @@ class BlendCurveVP:
             return 0.0
 
     def update_shape(self):
-        e1 = self.Object.getShape(self.Object, "Edge1")
-        e2 = self.Object.getShape(self.Object, "Edge2")
+        e1 = self.Object.Proxy.getShape(self.Object, "Edge1")
+        e2 = self.Object.Proxy.getShape(self.Object, "Edge2")
         if self.bc:
             # self.bc.constraints = []
             # bc = nurbs_tools.blendCurve(e1, e2)
@@ -445,8 +445,8 @@ class BlendCurveVP:
         return False
 
     def unsetEdit(self, vobj, mode=0):
-        e1 = self.Object.getShape(self.Object, "Edge1", "Edge")
-        e2 = self.Object.getShape(self.Object, "Edge2", "Edge")
+        e1 = self.Object.Proxy.getShape(self.Object, "Edge1", "Edge")
+        e2 = self.Object.Proxy.getShape(self.Object, "Edge2", "Edge")
         if isinstance(self.ip, pointEditor):
             v = Part.Vertex(self.m1.point)
             proj = v.distToShape(self.m1.snap_shape)[1][0][1]
