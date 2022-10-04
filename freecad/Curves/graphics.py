@@ -442,8 +442,8 @@ class InteractionSeparator(coin.SoSeparator):
                 s = "up"
             elif event.getState() == coin.SoMouseButtonEvent.DOWN:
                 s = "down"
-            import FreeCAD
-            FreeCAD.Console.PrintMessage("{} {}\n".format(b,s))
+            # import FreeCAD
+            # FreeCAD.Console.PrintMessage("{} {}\n".format(b,s))
         if ((type(event) == coin.SoMouseButtonEvent and
                 event.getState() == coin.SoMouseButtonEvent.UP
                 and event.getButton() == coin.SoMouseButtonEvent.BUTTON1) or 

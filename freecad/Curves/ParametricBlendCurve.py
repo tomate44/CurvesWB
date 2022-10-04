@@ -147,6 +147,8 @@ class BlendCurveFP:
         fp.Shape = w
 
     def onChanged(self, fp, prop):
+        if 'Restore' in fp.State:
+            return
         if prop == "AutoScale" and fp.AutoScale:
             fp.setEditorMode("Scale1", 2)
             fp.setEditorMode("Scale2", 2)
@@ -334,7 +336,7 @@ class BlendCurveVP:
         vobj.Proxy = self
         self.select_state = True
         self.active = False
-        self.ps = 0.0
+        self.ps = 1.0
 
     def getIcon(self):
         return(TOOL_ICON)
@@ -343,6 +345,7 @@ class BlendCurveVP:
         self.Object = vobj.Object
         self.active = False
         self.select_state = vobj.Selectable
+        self.ps = 1.0
         self.ip = None
 
     def get_length(self, edge, point):
@@ -445,8 +448,8 @@ class BlendCurveVP:
         return False
 
     def unsetEdit(self, vobj, mode=0):
-        e1 = self.Object.Proxy.getShape(self.Object, "Edge1", "Edge")
-        e2 = self.Object.Proxy.getShape(self.Object, "Edge2", "Edge")
+        e1 = self.Object.Proxy.getShape(self.Object, "Edge1")
+        e2 = self.Object.Proxy.getShape(self.Object, "Edge2")
         if isinstance(self.ip, pointEditor):
             v = Part.Vertex(self.m1.point)
             proj = v.distToShape(self.m1.snap_shape)[1][0][1]
