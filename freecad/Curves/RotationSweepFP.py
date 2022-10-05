@@ -10,6 +10,7 @@ import FreeCAD
 import FreeCADGui
 import Part
 from freecad.Curves import curves_to_surface as CTS
+from freecad.Curves import SweepPath
 from freecad.Curves import ICONPATH
 
 err = FreeCAD.Console.PrintError
@@ -178,6 +179,8 @@ class RotationSweep:
         self.closed = closed
         self.tol = 1e-7
         self.sort_profiles()
+        self.trim_profiles()
+        self.trim_path()
 
     def sort_profiles(self):
         def getParam(p):
@@ -222,27 +225,39 @@ class RotationSweep:
                                     1, curve.Degree)
         return bs
 
-    def trim_profiles(self, sh1, sh2):
+    def trim_profiles(self):
+        center = self.getCenter()
         edges = []
         for i, prof in enumerate(self.profiles):
             message(f"Connecting curve #{i}\n")
             c = prof.Curve
-            contact_shapes(c, sh1, sh2)
+            contact_shapes(c, self.path, Part.Vertex(center))
             edges.append(c.toShape())
         self.profiles = edges
 
-    def compute(self):
-        center = self.getCenter()
-        self.trim_profiles(self.path, Part.Vertex(center))
+    def trim_path(self):
         c = self.path.Curve
         contact_shapes(c, self.profiles[0], self.profiles[-1])
+        self.path = c.toShape()
+
+    def insert_profiles(self, num=0):
+        if num < 1:
+            return
+        rsp = SweepPath.RotationSweepPath(self.path, self.getCenter())
+        rsp.add_profile(self.profiles)
+        rsp.interpolate_local_profiles()
+        profs = [c.toShape() for c in rsp.insert_profiles(num)]
+        self.profiles = profs
+
+    def compute(self):
+        c = self.path.Curve
         # S1
         loft = self.loftProfiles()
         normalize([c, loft])
         syncDegree(c, [loft, 1])
         syncKnots(c, [loft, 1], 1e-10)
         # S2
-        ruled = self.ruledToCenter(c, center)
+        ruled = self.ruledToCenter(c, self.getCenter())
         syncDegree([ruled, 0], [loft, 0])
         insKnots([ruled, 0], [loft, 0], 1e-10)
         # S3
@@ -271,30 +286,46 @@ class RotsweepProxyFP:
                         "InputShapes", "The sweep path")
         obj.addProperty("App::PropertyBool", "Closed",
                         "Settings", "Close the sweep shape")
+        obj.addProperty("App::PropertyBool", "AddProfiles",
+                        "Settings", "Add profiles to the sweep shape")
+        obj.addProperty("App::PropertyInteger", "AddSamples",
+                        "Settings", "Number of additional profiles")
+        obj.setEditorMode("AddProfiles", 2)
         obj.Proxy = self
 
-    def getCurve(self, prop):
+    def getCurve(self, lo):
         edges = []
-        po, psn = prop
+        po, psn = lo
         # print(psn)
         for sn in psn:
             if "Edge" in sn:
                 edges.append(po.getSubObject(sn))
         if len(edges) == 0:
             edges = po.Shape.Edges
-        if len(edges) == 1:
-            return edges[0]
-        soed = Part.sortEdges(edges)
-        w = Part.Wire(soed[0])
-        bs = w.approximate(1e-10, 1e-7, 10000, 3)
-        # print(bs)
-        return bs.toShape()
+        bsedges = []
+        for e in edges:
+            if isinstance(e.Curve, Part.BSplineCurve):
+                bsedges.append(e)
+            else:
+                c = e.Curve.toBSpline(e.FirstParameter, e.LastParameter)
+                bsedges.append(c.toShape())
+        return bsedges
+
+    def getCurves(self, prop):
+        edges = []
+        for p in prop:
+            edges.extend(self.getCurve(p))
+        return edges
 
     def execute(self, obj):
-        path = self.getCurve(obj.Path)
-        profiles = [self.getCurve(li) for li in obj.Profiles]
+        path = self.getCurve(obj.Path)[0]
+        profiles = self.getCurves(obj.Profiles)
         rs = RotationSweep(path, profiles, obj.Closed)
-        obj.Shape = rs.Face
+        rs.insert_profiles(obj.AddSamples)
+        if obj.AddProfiles:
+            obj.Shape = Part.Compound([rs.Face] + rs.profiles)
+        else:
+            obj.Shape = rs.Face
 
     def onChanged(self, obj, prop):
         return False

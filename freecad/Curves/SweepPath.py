@@ -6,6 +6,7 @@ import Part
 
 class SweepProfile:
     def __init__(self, prof, par=None):
+        self.locCurve = None
         self.param = par
         if hasattr(prof, "value"):
             self.curve = prof.toBSpline()
@@ -97,7 +98,7 @@ class RotationSweepPath(SweepPath):
         self.profiles.append(sp)
         print(f"Profile added at {sp.Parameter}")
 
-    def interpolate_profiles(self):
+    def interpolate_local_profiles(self):
         self.sort_profiles()
         locprofs = [p.locCurve for p in self.profiles]
         bs = Part.BSplineSurface()
@@ -108,9 +109,12 @@ class RotationSweepPath(SweepPath):
         return bs
 
     def get_profile(self, par):
+        print(f"extracting profile @ {par}")
         locprof = self.localLoft.vIso(par)
-        locprof.translate(FreeCAD.Vector(0, -par, 0))
+        fp = locprof.getPole(1)
+        locprof.translate(FreeCAD.Vector(0, -fp.y, 0))
         m = self.transitionMatrixAt(par)
+        # print(locprof.getPole(1), locprof.getPole(locprof.NbPoles))
         for i in range(locprof.NbPoles):
             pole = locprof.getPole(i + 1)
             # pole.y -= par
@@ -120,7 +124,22 @@ class RotationSweepPath(SweepPath):
         # print(locprof.getPole(locprof.NbPoles))
         return locprof
 
+    def insert_profiles(self, num):
+        path_range = self.path.LastParameter - self.path.FirstParameter
+        step = path_range / (num + 1)
+        profs = []
+        for i in range(len(self.profiles) - 1):
+            profs.append(self.profiles[i].Curve)
+            lrange = self.profiles[i + 1].Parameter - self.profiles[i].Parameter
+            nb = int(lrange / step)
+            lstep = lrange / (nb + 1)
+            for j in range(nb):
+                par = self.profiles[i].Parameter + (j + 1) * lstep
+                profs.append(self.get_profile(par))
+        profs.append(self.profiles[-1].Curve)
+        return profs
 
+"""
 sel = FreeCADGui.Selection.getSelectionEx()
 el = []
 for so in sel:
@@ -129,18 +148,17 @@ for so in sel:
 center = el[1].valueAt(el[1].FirstParameter)
 rsp = RotationSweepPath(el[0], center)
 rsp.add_profile(el[1:])
-rsp.interpolate_profiles()
+rsp.interpolate_local_profiles()
 
-Part.show(rsp.localLoft.toShape())
+# Part.show(rsp.localLoft.toShape())
 
 for i, p in enumerate(rsp.profiles[1:-1]):
     # Part.show(p.Shape)
-    Part.show(rsp.get_profile(p.Parameter).toShape())
+    pass # Part.show(rsp.get_profile(p.Parameter).toShape())
 
-for pt in rsp.path.discretize(9)[1:-1]:
-    p = rsp.path.Curve.parameter(pt)
-    iso = rsp.get_profile(p)
-    Part.show(iso.toShape(), f"Profile@{p}")
+profs = rsp.insert_profiles(8)
+for p in profs:
+    Part.show(p.toShape(), f"Profile@{p}")
 
-
+"""
 
