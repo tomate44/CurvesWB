@@ -237,6 +237,11 @@ class sketchOnSurface:
         if not obj.Sketch:
             error("No Sketch attached")
             return
+        for i in range(len(obj.Sketch.Geometry)):
+            try:
+                obj.Sketch.deleteUnusedInternalGeometry(i)
+            except ValueError:
+                pass
         skedges = []
         for i in range(len(obj.Sketch.Geometry)):
             try:
