@@ -182,6 +182,13 @@ class RotationSweep:
         self.trim_profiles()
         self.trim_path()
 
+    def get_profile_parameters(self):
+        pl = []
+        for p in self.profiles:
+            dist, pts, info = self.path.distToShape(p)
+            pl.append(self.path.Curve.parameter(pts[0][0]))
+        return pl
+
     def sort_profiles(self):
         def getParam(p):
             dist, pts, info = self.path.distToShape(p)
@@ -210,8 +217,19 @@ class RotationSweep:
         return center
 
     def loftProfiles(self):
+        # cl = [c.Curve for c in self.profiles]
+        # cts = CTS.CurvesToSurface(cl)
+        # cts.match_degrees()
+        # # self.auto_orient()
+        # # self.auto_twist()
+        # cts.normalize_knots()
+        # CTS.match_knots(cts.curves)
+        # cts.Parameters = self.get_profile_parameters()
+        # cts.interpolate()
         wl = [Part.Wire([c]) for c in self.profiles]
         loft = Part.makeLoft(wl, False, False, self.closed, 3)
+        # s = cts._surface
+        # s.scaleKnotsToBounds()
         return loft.Face1.Surface
 
     def ruledToCenter(self, curve, center):

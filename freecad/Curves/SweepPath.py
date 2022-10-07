@@ -2,6 +2,7 @@ import FreeCAD
 import FreeCADGui
 from FreeCAD import Vector
 import Part
+from freecad.Curves import curves_to_surface as CTS
 
 
 class SweepProfile:
@@ -13,7 +14,7 @@ class SweepProfile:
         elif hasattr(prof, "Curve"):
             self.curve = prof.Curve.toBSpline()
         elif isinstance(prof, Part.Wire):
-            self.curve = prof.approximate(1e-10, 1e-7, 10000, 3)
+            self.curve = prof.approximate()
 
     @property
     def Curve(self):
@@ -59,11 +60,17 @@ class RotationSweepPath(SweepPath):
         elif isinstance(center, Part.Vertex):
             self.center = center.Point
 
+    def profile_parameters(self):
+        return [p.Parameter for p in self.profiles]
+
     def transitionMatrixAt(self, par):
         poc = self.path.valueAt(par)
         cho = self.center - poc
         der = self.path.tangentAt(par)  # derivative1At(par)
+        # normcho = cho
+        # normcho.normalize()
         nor = cho.cross(der)
+        nor.normalize()
         m = FreeCAD.Matrix(cho.x, der.x, nor.x, poc.x,
                            cho.y, der.y, nor.y, poc.y,
                            cho.z, der.z, nor.z, poc.z,
@@ -101,12 +108,16 @@ class RotationSweepPath(SweepPath):
     def interpolate_local_profiles(self):
         self.sort_profiles()
         locprofs = [p.locCurve for p in self.profiles]
-        bs = Part.BSplineSurface()
-        bs.buildFromNSections(locprofs)
-        fp, lp = self.profiles[0].Parameter, self.profiles[-1].Parameter
-        bs.scaleKnotsToBounds(0.0, 1.0, fp, lp)
-        self.localLoft = bs
-        return bs
+        cts = CTS.CurvesToSurface(locprofs)
+        cts.match_curves()
+        cts.Parameters = self.profile_parameters()
+        cts.interpolate()
+        # bs = Part.BSplineSurface()
+        # bs.buildFromNSections(locprofs)
+        # fp, lp = self.profiles[0].Parameter, self.profiles[-1].Parameter
+        # bs.scaleKnotsToBounds(0.0, 1.0, fp, lp)
+        self.localLoft = cts._surface
+        return self.localLoft
 
     def get_profile(self, par):
         print(f"extracting profile @ {par}")
