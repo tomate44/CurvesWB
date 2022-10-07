@@ -302,11 +302,18 @@ class CurvesToSurface:
     def normalize_knots(self):
         "Set all curves knots to the [0,1] interval"
         for c in self.curves:
-            fp = c.FirstParameter
-            lp = c.LastParameter
-            if (not fp == 0.0) or (not lp == 1.0):
-                normalized_knots = [(k - fp) / (lp - fp) for k in c.getKnots()]
-                c.setKnots(normalized_knots)
+            c.scaleKnotsToBounds()
+
+    def match_knots(self, tol=1e-15):
+        self.normalize_knots()
+        for c in self.curves[1:]:
+            self.curves[0].insertKnots(c.getKnots(), c.getMultiplicities(), tol, False)
+        for c in self.curves[1:]:
+            c.insertKnots(self.curves[0].getKnots(), self.curves[0].getMultiplicities(), tol, False)
+
+    def match_curves(self, tol=1e-15):
+        self.match_degrees()
+        self.match_knots(tol)
 
     def _parameters_at_poleidx(self, fac=1.0, idx=1):
         """Compute the parameters list from parametrization factor fac (in [0.0, 1.0])
@@ -353,6 +360,7 @@ class CurvesToSurface:
                 bs.interpolate(Points=pts, Parameters=self.Parameters, PeriodicFlag=self.Periodic)
                 poles_array.append(bs.getPoles())
             except Part.OCCError:
+                print(f"Curve interpolation error: {pts}")
                 poles_array.append(pts)
         maxlen = 0
         for poles in poles_array:
@@ -366,6 +374,13 @@ class CurvesToSurface:
                 poles.append(p)
             weights.append([1.0] * maxlen)
         self._surface = Part.BSplineSurface()
+        # for data in (poles_array,
+        #              self.curves[0].getMultiplicities(), bs.getMultiplicities(),
+        #              self.curves[0].getKnots(), bs.getKnots(),
+        #              self.curves[0].isPeriodic(), bs.isPeriodic(),
+        #              self.curves[0].Degree, bs.Degree, weights):
+        #     print(data)
+        # print(f"{len(poles_array)} x {len(poles_array[0])}")
         self._surface.buildFromPolesMultsKnots(poles_array,
                                                self.curves[0].getMultiplicities(), bs.getMultiplicities(),
                                                self.curves[0].getKnots(), bs.getKnots(),
@@ -375,12 +390,9 @@ class CurvesToSurface:
 
     def build_surface(self):
         "Make curves compatible and build surface"
-        self.match_degrees()
+        self.match_curves()
         self.auto_orient()
         self.auto_twist()
-        # self.auto_orient()
-        self.normalize_knots()
-        match_knots(self.curves)
         self.set_parameters(1.0)
         self.interpolate()
 
