@@ -15,6 +15,7 @@ PrintError = FreeCAD.Console.PrintError
 class SurfaceAdapter:
     """Adapter to work on one direction of a BSpline surface
     with BSpline curve tools"""
+
     def __init__(self, surf, direction=0):
         self.surface = surf
         self.direction = direction
@@ -261,6 +262,15 @@ class CurvesToSurface:
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__, len(self.curves))
 
+    def repeated_points(self, pts, tol=1e-7):
+        d = 0
+        for i in range(len(pts) - 1):
+            d += pts[i].distanceToPoint(pts[i + 1])
+        if d < tol * len(pts):
+            print("Repeated points detected")
+            return True
+        return False
+
     def check_all_closed(self):
         self.all_closed = True
         for c in self.curves:
@@ -348,6 +358,14 @@ class CurvesToSurface:
         # print("Average parameters : {}".format(params))
         self.Parameters = params
 
+    def interpolate_multipoints(self, pts):
+        fpts = []
+        for i in range(len(pts)):
+            fpts.append(FreeCAD.Vector(i, 0, 0))
+        bs = Part.BSplineCurve()
+        bs.interpolate(Points=fpts, Parameters=self.Parameters, PeriodicFlag=self.Periodic)
+        return [pts[0]] * bs.NbPoles
+
     def interpolate(self):
         "interpolate the poles of the curves and build the surface"
         if self.Parameters is None:
@@ -360,8 +378,10 @@ class CurvesToSurface:
                 bs.interpolate(Points=pts, Parameters=self.Parameters, PeriodicFlag=self.Periodic)
                 poles_array.append(bs.getPoles())
             except Part.OCCError:
-                print(f"Curve interpolation error: {pts}")
-                poles_array.append(pts)
+                print("Curve interpolation error")
+                if self.repeated_points(pts):
+                    print(f"at Pole #{pole_idx}")
+                    poles_array.append(self.interpolate_multipoints(pts))
         maxlen = 0
         for poles in poles_array:
             maxlen = max(maxlen, len(poles))
@@ -381,11 +401,13 @@ class CurvesToSurface:
         #              self.curves[0].Degree, bs.Degree, weights):
         #     print(data)
         # print(f"{len(poles_array)} x {len(poles_array[0])}")
+        print(poles_array[-1])
         self._surface.buildFromPolesMultsKnots(poles_array,
                                                self.curves[0].getMultiplicities(), bs.getMultiplicities(),
                                                self.curves[0].getKnots(), bs.getKnots(),
                                                self.curves[0].isPeriodic(), bs.isPeriodic(),
                                                self.curves[0].Degree, bs.Degree, weights)
+        print(self._surface.getPoles()[-1])
         return self._surface
 
     def build_surface(self):
@@ -399,6 +421,7 @@ class CurvesToSurface:
 
 class Gordon:
     """Gordon Surface algorithm on 3 surfaces : S1 + S2 - S3"""
+
     def __init__(self, s1, s2, s3):
         self.s1 = s1
         self.s2 = s2
@@ -477,6 +500,7 @@ class Gordon:
 
 class CurvesOn2Rails:
     """Surface defined by a series of curves on 2 rails"""
+
     def __init__(self, curves, rails):
         self.tol2d = 1e-15
         self.tol3d = 1e-7

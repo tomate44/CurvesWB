@@ -80,6 +80,12 @@ def insKnotsMults(geom, knots, mults, tol=1e-10, add=False):
     Inserts the knots and mults into the BSpline geom
     """
     message(f"insKnotsMults: {geom}\n")
+    # geom.scaleKnotsToBounds()
+    # print(knots)
+    # print(mults)
+    # print(getKnots(geom))
+    # print(getMults(geom))
+    # print(geom.getPoles())
     if isinstance(geom, Part.BSplineCurve):
         geom.insertKnots(knots, mults, tol, add)
     elif isinstance(geom, (list, tuple)):
@@ -101,6 +107,16 @@ def syncDegree(geo1, geo2):
         incDegree(geo2, d1)
     elif d2 > d1:
         incDegree(geo1, d2)
+
+
+def syncAllDegrees(*geo_list):
+    """syncAllDegrees(geo_list)
+    Raise the degree of the BSpline geoms
+    the highest one.
+    """
+    deg = max([getDegree(g) for g in geo_list])
+    for geo in geo_list:
+        incDegree(geo, deg)
 
 
 def insKnots(geo1, geo2, tol=1e-10, add=False):
@@ -125,6 +141,16 @@ def syncKnots(geo1, geo2, tol=1e-10):
     geo3 = geo1
     insKnots(geo1, geo2, tol, False)
     insKnots(geo2, geo3, tol, False)
+
+
+def syncAllKnots(geo_list, tol=1e-10):
+    """syncAllKnots(geo_list, tol=1e-10)
+    Knots insertion to make the BSpline geometries compatible.
+    """
+    for geo in geo_list[1:]:
+        insKnots(geo_list[0], geo, tol, False)
+    for geo in geo_list[1:]:
+        insKnots(geo, geo_list[0], tol, False)
 
 
 def normalize(geom):
@@ -217,20 +243,21 @@ class RotationSweep:
         return center
 
     def loftProfiles(self):
-        # cl = [c.Curve for c in self.profiles]
-        # cts = CTS.CurvesToSurface(cl)
-        # cts.match_degrees()
-        # # self.auto_orient()
-        # # self.auto_twist()
-        # cts.normalize_knots()
+        cl = [c.Curve for c in self.profiles]
+        cts = CTS.CurvesToSurface(cl)
+        cts.match_degrees()
+        # self.auto_orient()
+        # self.auto_twist()
+        cts.normalize_knots()
         # CTS.match_knots(cts.curves)
-        # cts.Parameters = self.get_profile_parameters()
-        # cts.interpolate()
-        wl = [Part.Wire([c]) for c in self.profiles]
-        loft = Part.makeLoft(wl, False, False, self.closed, 3)
-        # s = cts._surface
-        # s.scaleKnotsToBounds()
-        return loft.Face1.Surface
+        syncAllKnots(cts.curves, 1e-8)
+        cts.Parameters = self.get_profile_parameters()
+        cts.interpolate()
+        # wl = [Part.Wire([c]) for c in self.profiles]
+        # loft = Part.makeLoft(wl, False, False, self.closed, 3)
+        s = cts._surface
+        s.scaleKnotsToBounds()
+        return s  # loft.Face1.Surface
 
     def ruledToCenter(self, curve, center):
         bs = Part.BSplineSurface()
@@ -273,15 +300,15 @@ class RotationSweep:
         loft = self.loftProfiles()
         normalize([c, loft])
         syncDegree(c, [loft, 1])
-        syncKnots(c, [loft, 1], 1e-10)
+        syncKnots(c, [loft, 1], 1e-7)
         # S2
         ruled = self.ruledToCenter(c, self.getCenter())
         syncDegree([ruled, 0], [loft, 0])
-        insKnots([ruled, 0], [loft, 0], 1e-10)
+        insKnots([ruled, 0], [loft, 0], 1e-7)
         # S3
         pts_interp = CTS.U_linear_surface(loft)
         syncDegree([pts_interp, 0], [loft, 0])
-        insKnots([pts_interp, 0], [loft, 0], 1e-10)
+        insKnots([pts_interp, 0], [loft, 0], 1e-7)
         # return loft, ruled, pts_interp
         gordon = CTS.Gordon(loft, ruled, pts_interp)
         return gordon.gordon()

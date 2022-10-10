@@ -1,5 +1,4 @@
 import FreeCAD
-import FreeCADGui
 from FreeCAD import Vector
 import Part
 from freecad.Curves import curves_to_surface as CTS
@@ -109,7 +108,7 @@ class RotationSweepPath(SweepPath):
         self.sort_profiles()
         locprofs = [p.locCurve for p in self.profiles]
         cts = CTS.CurvesToSurface(locprofs)
-        cts.match_curves()
+        cts.match_curves(1e-7)
         cts.Parameters = self.profile_parameters()
         cts.interpolate()
         # bs = Part.BSplineSurface()
@@ -150,7 +149,10 @@ class RotationSweepPath(SweepPath):
         profs.append(self.profiles[-1].Curve)
         return profs
 
+
 """
+import FreeCADGui
+
 sel = FreeCADGui.Selection.getSelectionEx()
 el = []
 for so in sel:
