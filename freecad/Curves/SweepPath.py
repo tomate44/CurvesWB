@@ -178,8 +178,8 @@ class BSplineFacade:
 
 
 class SweepProfile:
-    def __init__(self, prof, par=None):
-        self.locCurve = None
+    def __init__(self, prof=None, locprof=None, par=None):
+        self.locCurve = locprof
         self._param = par
         if hasattr(prof, "value"):
             self.Curve = prof.toBSpline()
@@ -209,6 +209,9 @@ class SweepProfile:
     def Parameter(self, p):
         self._param = p
 
+    def duplicateAt(self, par):
+        return SweepProfile(None, self.locprof, par)
+
 
 class PathInterpolation:
     def __init__(self, path):
@@ -227,7 +230,7 @@ class PathInterpolation:
             return
         dist, pts, info = self.path.distToShape(prof)
         par = self.path.Curve.parameter(pts[0][0])
-        self.profiles.append(SweepProfile(prof, par))
+        self.profiles.append(SweepProfile(prof, None, par))
 
     def sort_profiles(self):
         self.profiles.sort(key=lambda x: x.Parameter)
@@ -269,6 +272,8 @@ class RotationPathInterpolation(PathInterpolation):
         return m
 
     def computeLocalProfile(self, prof):
+        if prof.Curve is None:
+            return prof.locprof
         m = self.transitionMatrixAt(prof.Parameter)
         m = m.inverse()
         locprof = prof.Curve.copy()
@@ -302,9 +307,13 @@ class RotationPathInterpolation(PathInterpolation):
         self.localLoft = cts._surface
         return self.localLoft
 
-    def get_profile(self, par):
+    def get_profile(self, par, tol=1e-7):
+        for p in self.profiles:
+            if abs(par - p.Parameter) < tol:
+                return p
         print(f"extracting profile @ {par}")
         locprof = self.localLoft.vIso(par)
+        sp = SweepProfile(None, locprof, par)
         fp = locprof.getPole(1)
         locprof.translate(FreeCAD.Vector(0, -fp.y, 0))
         m = self.transitionMatrixAt(par)
@@ -316,21 +325,22 @@ class RotationPathInterpolation(PathInterpolation):
             locprof.setPole(i + 1, np)
         # print(locprof.getPole(1))
         # print(locprof.getPole(locprof.NbPoles))
-        return locprof
+        sp.Curve = locprof
+        return sp
 
-    def insert_profiles(self, num):
+    def get_profiles(self, num):
         path_range = self.path.LastParameter - self.path.FirstParameter
         step = path_range / (num + 1)
         profs = []
         for i in range(len(self.profiles) - 1):
-            profs.append(self.profiles[i].Curve)
+            profs.append(self.profiles[i])
             lrange = self.profiles[i + 1].Parameter - self.profiles[i].Parameter
             nb = int(lrange / step)
             lstep = lrange / (nb + 1)
             for j in range(nb):
                 par = self.profiles[i].Parameter + (j + 1) * lstep
                 profs.append(self.get_profile(par))
-        profs.append(self.profiles[-1].Curve)
+        profs.append(self.profiles[-1])
         return profs
 
 
@@ -413,8 +423,7 @@ class RotationSweep(RotationPathInterpolation):
         if num < 1:
             return
         self.interpolate_local_profiles()
-        profs = [c.toShape() for c in self.insert_profiles(num)]
-        self.profiles = profs
+        self.profiles = self.get_profiles(num)
 
     def compute(self):
         c = self.path.Curve
