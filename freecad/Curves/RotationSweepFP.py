@@ -66,6 +66,7 @@ class RotsweepProxyFP:
         path = self.getCurve(obj.Path)[0]
         profiles = self.getCurves(obj.Profiles)
         rs = SweepPath.RotationSweep(path, profiles, obj.Closed)
+        rs.prepare()
         rs.insert_profiles(obj.AddSamples)
         if obj.AddProfiles:
             comp = Part.Compound([p.Shape for p in rs.profiles] + [rs.Face])
