@@ -108,7 +108,7 @@ class BSplineFacade:
         """insKnots(geom, knots, mults, tol=1e-10, add=False)
         Inserts the knots and mults into the BSpline geom
         """
-        message(f"insKnotsMults: {geom}\n")
+        # message(f"insKnotsMults: {geom}\n")
         # geom.scaleKnotsToBounds()
         # print(knots)
         # print(mults)
@@ -195,11 +195,10 @@ class SweepProfile:
     @Curve.setter
     def Curve(self, c):
         self._curve = c
-        self._shape = self._curve.toShape()
 
     @property
     def Shape(self):
-        return self._shape
+        return self._curve.toShape()
 
     @property
     def Parameter(self):
@@ -214,7 +213,7 @@ class SweepProfile:
 
 
 class PathInterpolation:
-    def __init__(self, path):
+    def __init__(self, path, profiles=None):
         self.profiles = []
         if hasattr(path, "value"):
             self.path = path.toShape()
@@ -222,6 +221,8 @@ class PathInterpolation:
             self.path = path
         else:
             raise (TypeError, "Path must be a curve or an edge")
+        if profiles is not None:
+            self.add_profile(profiles)
 
     def add_profile(self, prof):
         if isinstance(prof, (list, tuple)):
@@ -240,8 +241,12 @@ class PathInterpolation:
 
 
 class RotationPathInterpolation(PathInterpolation):
-    def __init__(self, path):
-        super().__init__(path)
+    def __init__(self, path, profiles=None):
+        super().__init__(path, profiles)
+        self._center = None
+        self.localLoft = None
+        if self.profiles:
+            self.Center = self.getCenter()
 
     @property
     def Center(self):
@@ -254,16 +259,33 @@ class RotationPathInterpolation(PathInterpolation):
         elif isinstance(center, Part.Vertex):
             self._center = center.Point
 
+    def getCenter(self):
+        center = FreeCAD.Vector()
+        if len(self.profiles) == 1:
+            warn("RotationSweep: Only 1 profile provided.\n")
+            warn("Choosing center opposite to path.\n")
+            dist, pts, info = self.path.distToShape(self.profiles[0].Shape)
+            par = self.profiles[0].Curve.parameter(pts[0][1])
+            fp = self.profiles[0].FirstParameter
+            lp = self.profiles[0].LastParameter
+            if abs(par - fp) > abs(par - lp):
+                center = self.profiles[0].Shape.valueAt(fp)
+            else:
+                center = self.profiles[0].Shape.valueAt(lp)
+        else:
+            for p in self.profiles[1:]:
+                dist, pts, info = p.Shape.distToShape(self.profiles[0].Shape)
+                center += pts[0][1]
+            center = center / (len(self.profiles) - 1)
+        message(f"Center found at {center}\n")
+        return center
+
     def transitionMatrixAt(self, par):
         poc = self.path.valueAt(par)
         cho = self.Center - poc
         der = self.path.tangentAt(par)  # derivative1At(par)
-        # der *= cho.Length
-        # normcho = cho
-        # normcho.normalize()
         nor = cho.cross(der)
         nor.normalize()
-        # nor *= cho.Length
         m = FreeCAD.Matrix(cho.x, der.x, nor.x, poc.x,
                            cho.y, der.y, nor.y, poc.y,
                            cho.z, der.z, nor.z, poc.z,
@@ -300,10 +322,6 @@ class RotationPathInterpolation(PathInterpolation):
         cts.match_curves(1e-7)
         cts.Parameters = self.profile_parameters()
         cts.interpolate()
-        # bs = Part.BSplineSurface()
-        # bs.buildFromNSections(locprofs)
-        # fp, lp = self.profiles[0].Parameter, self.profiles[-1].Parameter
-        # bs.scaleKnotsToBounds(0.0, 1.0, fp, lp)
         self.localLoft = cts._surface
         return self.localLoft
 
@@ -312,23 +330,23 @@ class RotationPathInterpolation(PathInterpolation):
             if abs(par - p.Parameter) < tol:
                 return p
         print(f"extracting profile @ {par}")
+        if self.localLoft is None:
+            self.interpolate_local_profiles()
         locprof = self.localLoft.vIso(par)
         sp = SweepProfile(None, locprof, par)
         fp = locprof.getPole(1)
         locprof.translate(FreeCAD.Vector(0, -fp.y, 0))
         m = self.transitionMatrixAt(par)
-        # print(locprof.getPole(1), locprof.getPole(locprof.NbPoles))
         for i in range(locprof.NbPoles):
             pole = locprof.getPole(i + 1)
-            # pole.y -= par
             np = m.multVec(pole)
             locprof.setPole(i + 1, np)
-        # print(locprof.getPole(1))
-        # print(locprof.getPole(locprof.NbPoles))
         sp.Curve = locprof
         return sp
 
-    def get_profiles(self, num):
+    def insert_profiles(self, num):
+        if num < 1:
+            return
         path_range = self.path.LastParameter - self.path.FirstParameter
         step = path_range / (num + 1)
         profs = []
@@ -341,40 +359,18 @@ class RotationPathInterpolation(PathInterpolation):
                 par = self.profiles[i].Parameter + (j + 1) * lstep
                 profs.append(self.get_profile(par))
         profs.append(self.profiles[-1])
+        self.profiles = profs
         return profs
 
 
 class RotationSweep(RotationPathInterpolation):
     def __init__(self, path, profiles, closed=False):
-        super().__init__(path)
-        self.add_profile(profiles)
-        self.Center = self.getCenter()
+        super().__init__(path, profiles)
         self.closed = closed
         self.tol = 1e-7
         self.sort_profiles()
         self.trim_profiles()
         # self.trim_path()
-
-    def getCenter(self):
-        center = FreeCAD.Vector()
-        if len(self.profiles) == 1:
-            warn("RotationSweep: Only 1 profile provided.\n")
-            warn("Choosing center opposite to path.\n")
-            dist, pts, info = self.path.distToShape(self.profiles[0].Shape)
-            par = self.profiles[0].Curve.parameter(pts[0][1])
-            fp = self.profiles[0].FirstParameter
-            lp = self.profiles[0].LastParameter
-            if abs(par - fp) > abs(par - lp):
-                center = self.profiles[0].Shape.valueAt(fp)
-            else:
-                center = self.profiles[0].Shape.valueAt(lp)
-        else:
-            for p in self.profiles[1:]:
-                dist, pts, info = p.Shape.distToShape(self.profiles[0].Shape)
-                center += pts[0][1]
-            center = center / (len(self.profiles) - 1)
-        message(f"Center found at {center}\n")
-        return center
 
     def loftProfiles(self):
         cl = [c.Curve for c in self.profiles]
@@ -418,12 +414,6 @@ class RotationSweep(RotationPathInterpolation):
         # c = self.path.Curve
         contact_shapes(self.path.Curve, self.profiles[0], self.profiles[-1])
         # self.path = c.toShape()
-
-    def insert_profiles(self, num=0):
-        if num < 1:
-            return
-        self.interpolate_local_profiles()
-        self.profiles = self.get_profiles(num)
 
     def compute(self):
         c = self.path.Curve

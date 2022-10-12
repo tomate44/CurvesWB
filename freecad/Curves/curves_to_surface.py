@@ -401,13 +401,11 @@ class CurvesToSurface:
         #              self.curves[0].Degree, bs.Degree, weights):
         #     print(data)
         # print(f"{len(poles_array)} x {len(poles_array[0])}")
-        print(poles_array[-1])
         self._surface.buildFromPolesMultsKnots(poles_array,
                                                self.curves[0].getMultiplicities(), bs.getMultiplicities(),
                                                self.curves[0].getKnots(), bs.getKnots(),
                                                self.curves[0].isPeriodic(), bs.isPeriodic(),
                                                self.curves[0].Degree, bs.Degree, weights)
-        print(self._surface.getPoles()[-1])
         return self._surface
 
     def build_surface(self):
