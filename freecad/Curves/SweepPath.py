@@ -211,6 +211,33 @@ class SweepProfile:
     @Parameter.setter
     def Parameter(self, p):
         self._param = p
+
+    def toLCS(self, matrix, par=None):
+        if par is None:
+            par = self.Parameter
+        matrix = matrix.inverse()
+        locprof = self.Curve.copy()
+        for i in range(locprof.NbPoles):
+            pole = locprof.getPole(i + 1)
+            np = matrix.multVec(pole)
+            locprof.setPole(i + 1, np)
+        locprof.translate(FreeCAD.Vector(0, par, 0))
+        return SweepProfile(locprof, par)
+
+    def toGCS(self, matrix, par=None):
+        if par is None:
+            par = self.Parameter
+        locprof = self.Curve.copy()
+        locprof = self.localLoft.vIso(par)
+        fp = locprof.getPole(1)
+        locprof.translate(FreeCAD.Vector(0, -fp.y, 0))
+        for i in range(locprof.NbPoles):
+            pole = locprof.getPole(i + 1)
+            np = matrix.multVec(pole)
+            locprof.setPole(i + 1, np)
+        locprof.translate(FreeCAD.Vector(0, par, 0))
+        return SweepProfile(locprof, par)
+
     #
     # def duplicateAt(self, par):
     #     return SweepProfile(self.Curve, par)
@@ -262,12 +289,12 @@ class PathInterpolation:
     def add_profiles(self, prof):
         if isinstance(prof, (list, tuple)):
             for p in prof:
-                self.add_profile(p)
+                self.add_profiles(p)
             return
         lp = self.computeLocalProfile(prof)
         self.profiles.append(lp)
 
-    def prepare(self):
+    def extend(self, periodic=False):
         """Add end profiles outside of the path range
         in case some extrapolation is needed
         """
@@ -275,17 +302,10 @@ class PathInterpolation:
         p1 = self.profiles[-1]
         u0, u1 = self.path.ParameterRange
         path_range = u1 - u0
-        if self.path.isClosed:
+        if periodic:
             path_range = -path_range
-        self.profiles.append(SweepProfile(p1, p1.Parameter - path_range))
-        self.profiles.append(SweepProfile(p0, p0.Parameter + path_range))
-        self.sort_profiles()
-        self.interpolate_local_profiles()
-        fp = self.profileAt(u0)
-        lp = self.profileAt(u1)
-        self.profiles.append(fp)
-        self.profiles.append(lp)
-        self.sort_profiles()
+        self.profiles.append(SweepProfile(p1, p1.Parameter + path_range))
+        self.profiles.append(SweepProfile(p0, p0.Parameter - path_range))
 
     def interpolate_local_profiles(self):
         self.sort_profiles()
@@ -300,9 +320,6 @@ class PathInterpolation:
         return self.localLoft
 
     def profileAt(self, par, tol=1e-7):
-        for p in self.profiles:
-            if abs(par - p.Parameter) < tol:
-                return p
         print(f"extracting profile @ {par}")
         if self.localLoft is None:
             self.interpolate_local_profiles()
@@ -315,21 +332,6 @@ class PathInterpolation:
             np = m.multVec(pole)
             locprof.setPole(i + 1, np)
         return SweepProfile(locprof, par)
-
-    def intermediate_profiles(self, num):
-        if num < 1:
-            return
-        path_range = self.path.LastParameter - self.path.FirstParameter
-        step = path_range / (num + 1)
-        profs = []
-        for i in range(len(self.profiles) - 1):
-            lrange = self.profiles[i + 1].Parameter - self.profiles[i].Parameter
-            nb = int(lrange / step)
-            lstep = lrange / (nb + 1)
-            for j in range(nb):
-                par = self.profiles[i].Parameter + (j + 1) * lstep
-                profs.append(self.profileAt(par))
-        return profs
 
     def sort_profiles(self):
         self.profiles.sort(key=lambda x: x.Parameter)
@@ -363,16 +365,20 @@ class RotationPathInterpolation(PathInterpolation):
 
 
 class RotationSweep:
-    def __init__(self, path, profiles, closed=False):
+    def __init__(self, path, profiles, trim=True):
         self.path = path
-        self.closed = closed
+        self.profiles = []
+        self.TrimPath = trim
         self.tol = 1e-7
+        self.interpolator = None
         self.Center = self.getCenter(profiles)
+        if self.TrimPath and len(profiles) >= 2:
+            self.trim_path()
         self.add_profiles(profiles)
         self.sort_profiles()
         self.trim_profiles()
-        if not self.closed:
-            self.trim_path()
+        if len(self.profiles) == 1:
+            self.extend(self.path.isClosed())
 
     @property
     def Center(self):
@@ -387,7 +393,7 @@ class RotationSweep:
 
     def getCenter(self, profiles):
         center = FreeCAD.Vector()
-        sh = profiles[0].Shape
+        sh = profiles[0]
         if len(profiles) == 1:
             warn("RotationSweep: Only 1 profile provided.\n")
             warn("Choosing center opposite to path.\n")
@@ -401,7 +407,7 @@ class RotationSweep:
                 center = sh.valueAt(lp)
         else:
             for p in profiles[1:]:
-                dist, pts, info = p.Shape.distToShape(sh)
+                dist, pts, info = p.distToShape(sh)
                 center += pts[0][1]
             center = center / (len(profiles) - 1)
         message(f"Center found at {center}\n")
@@ -410,11 +416,17 @@ class RotationSweep:
     def add_profiles(self, prof):
         if isinstance(prof, (list, tuple)):
             for p in prof:
-                self.add_profile(p)
+                self.add_profiles(p)
             return
         dist, pts, info = self.path.distToShape(prof)
         par = self.path.Curve.parameter(pts[0][0])
         self.profiles.append(SweepProfile(prof, par))
+
+    def sort_profiles(self):
+        self.profiles.sort(key=lambda x: x.Parameter)
+
+    def profile_parameters(self):
+        return [p.Parameter for p in self.profiles]
 
     def loftProfiles(self):
         cl = [c.Curve for c in self.profiles]
@@ -456,45 +468,63 @@ class RotationSweep:
 
     def trim_path(self):
         # c = self.path.Curve
-        contact_shapes(self.path.Curve, self.profiles[0], self.profiles[-1])
+        contact_shapes(self.path.Curve, self.profiles[0].Shape, self.profiles[-1].Shape)
         # self.path = c.toShape()
 
     def compute(self):
+        self.sort_profiles()
         c = self.path.Curve
         # S1
         loft = self.loftProfiles()
+        if self.path.Curve.isPeriodic():
+            loft.setVPeriodic()
         normalize([c, loft])
         BSplineFacade.syncDegree(c, [loft, 1])
         BSplineFacade.syncKnots(c, [loft, 1], 1e-7)
         # S2
-        ruled = self.ruledToCenter(c, self.getCenter())
+        ruled = self.ruledToCenter(c, self.Center)
         BSplineFacade.syncDegree([ruled, 0], [loft, 0])
         BSplineFacade.insKnots([ruled, 0], [loft, 0], 1e-7)
         # S3
         pts_interp = CTS.U_linear_surface(loft)
         BSplineFacade.syncDegree([pts_interp, 0], [loft, 0])
         BSplineFacade.insKnots([pts_interp, 0], [loft, 0], 1e-7)
-        # return loft, ruled, pts_interp
+        return loft, ruled, pts_interp
         gordon = CTS.Gordon(loft, ruled, pts_interp)
         return gordon.gordon()
 
-    def prepare(self):
-        if len(self.profiles) == 1:
-            self.computeLocalProfiles()
-            add_profs = []
-            fp = self.path.FirstParameter
-            lp = self.path.LastParameter
-            if self.profiles[0].Parameter > fp:
-                add_profs.append(self.profiles[0].duplicateAt(fp))
-            if self.profiles[0].Parameter < lp:
-                add_profs.append(self.profiles[0].duplicateAt(lp))
-            self.profiles.extend(add_profs)
-            self.interpolate_local_profiles()
+    def extend(self, periodic=False):
+        self.interpolator = RotationPathInterpolation(self.path,
+                                                      self.profiles,
+                                                      self.Center)
+        self.interpolator.extend(periodic)
+        fp = self.interpolator.profileAt(self.path.FirstParameter)
+        lp = self.interpolator.profileAt(self.path.LastParameter)
+        self.profiles.extend((fp, lp))
+
+    def insert_profiles(self, num=0):
+        if num < 1:
+            return
+        if self.interpolator is None:
+            self.interpolator = RotationPathInterpolation(self.path,
+                                                          self.profiles,
+                                                          self.Center)
+        path_range = self.path.LastParameter - self.path.FirstParameter
+        step = path_range / (num + 1)
+        profs = []
+        for i in range(len(self.profiles) - 1):
+            lrange = self.profiles[i + 1].Parameter - self.profiles[i].Parameter
+            nb = int(lrange / step)
+            lstep = lrange / (nb + 1)
+            for j in range(nb):
+                par = self.profiles[i].Parameter + (j + 1) * lstep
+                profs.append(self.interpolator.profileAt(par))
+        self.profiles.extend(profs)
 
     @property
     def Face(self):
         g = self.compute()
-        return g.toShape()
+        # return g.toShape()
         return Part.Compound([s.toShape() for s in g])
 
 
