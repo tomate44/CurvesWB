@@ -4,6 +4,7 @@ import Part
 from freecad.Curves import curves_to_surface as CTS
 
 
+DEBUG = False
 err = FreeCAD.Console.PrintError
 warn = FreeCAD.Console.PrintWarning
 message = FreeCAD.Console.PrintMessage
@@ -304,8 +305,8 @@ class PathInterpolation:
         path_range = u1 - u0
         if periodic:
             path_range = -path_range
-        self.profiles.append(SweepProfile(p1, p1.Parameter + path_range))
-        self.profiles.append(SweepProfile(p0, p0.Parameter - path_range))
+        self.profiles.append(SweepProfile(p1.Curve, p1.Parameter + path_range))
+        self.profiles.append(SweepProfile(p0.Curve, p0.Parameter - path_range))
 
     def interpolate_local_profiles(self):
         self.sort_profiles()
@@ -317,6 +318,8 @@ class PathInterpolation:
         cts.Parameters = self.profile_parameters()
         cts.interpolate()
         self.localLoft = cts._surface
+        print(f"interpolate_local_profiles {cts.Parameters} -> ")
+        print(self.localLoft.getVKnots())
         return self.localLoft
 
     def profileAt(self, par, tol=1e-7):
@@ -346,7 +349,7 @@ class RotationPathInterpolation(PathInterpolation):
         super().__init__(path, profiles)
 
     def transitionMatrixAt(self, par):
-        message(f"RotationPath matrix at {par}\n")
+        # message(f"RotationPath matrix at {par}\n")
         poc = self.path.valueAt(par)
         cho = self.Center - poc
         der = self.path.tangentAt(par)  # derivative1At(par)
@@ -354,7 +357,7 @@ class RotationPathInterpolation(PathInterpolation):
             u, v = self.FaceSupport.Surface.parameter(poc)
             nor = self.FaceSupport.Surface.normal(u, v)
         else:
-            nor = cho.cross(der)
+            nor = der.cross(cho)
             nor.normalize()
         m = FreeCAD.Matrix(cho.x, der.x, nor.x, poc.x,
                            cho.y, der.y, nor.y, poc.y,
@@ -366,18 +369,21 @@ class RotationPathInterpolation(PathInterpolation):
 
 class RotationSweep:
     def __init__(self, path, profiles, trim=True):
+        self.FaceSupport = None
         self.path = path
         self.profiles = []
         self.TrimPath = trim
+        if len(profiles) == 1:
+            self.TrimPath = False
         self.tol = 1e-7
         self.interpolator = None
         self.Center = self.getCenter(profiles)
         if self.TrimPath and len(profiles) >= 2:
-            self.trim_path()
+            self.trim_path(profiles)
         self.add_profiles(profiles)
         self.sort_profiles()
         self.trim_profiles()
-        if len(self.profiles) == 1:
+        if not self.TrimPath:
             self.extend(self.path.isClosed())
 
     @property
@@ -438,6 +444,7 @@ class RotationSweep:
         # CTS.match_knots(cts.curves)
         BSplineFacade.syncAllKnots(cts.curves, 1e-8)
         cts.Parameters = self.profile_parameters()
+        message(f"loftProfiles : {cts.Parameters}\n")
         cts.interpolate()
         # wl = [Part.Wire([c]) for c in self.profiles]
         # loft = Part.makeLoft(wl, False, False, self.closed, 3)
@@ -466,19 +473,21 @@ class RotationSweep:
         #     edges.append(c.toShape())
         # self.profiles = edges
 
-    def trim_path(self):
-        # c = self.path.Curve
-        contact_shapes(self.path.Curve, self.profiles[0].Shape, self.profiles[-1].Shape)
-        # self.path = c.toShape()
+    def trim_path(self, profiles=None):
+        if profiles is None:
+            profiles = [p.Shape for p in self.profiles]
+        c = self.path.Curve
+        contact_shapes(c, profiles[0], profiles[-1])
+        self.path = c.toShape()
 
     def compute(self):
         self.sort_profiles()
         c = self.path.Curve
         # S1
         loft = self.loftProfiles()
+        normalize([c, loft])
         if self.path.Curve.isPeriodic():
             loft.setVPeriodic()
-        normalize([c, loft])
         BSplineFacade.syncDegree(c, [loft, 1])
         BSplineFacade.syncKnots(c, [loft, 1], 1e-7)
         # S2
@@ -489,7 +498,8 @@ class RotationSweep:
         pts_interp = CTS.U_linear_surface(loft)
         BSplineFacade.syncDegree([pts_interp, 0], [loft, 0])
         BSplineFacade.insKnots([pts_interp, 0], [loft, 0], 1e-7)
-        return loft, ruled, pts_interp
+        if DEBUG:
+            return loft, ruled, pts_interp
         gordon = CTS.Gordon(loft, ruled, pts_interp)
         return gordon.gordon()
 
@@ -497,10 +507,14 @@ class RotationSweep:
         self.interpolator = RotationPathInterpolation(self.path,
                                                       self.profiles,
                                                       self.Center)
+        self.interpolator.FaceSupport = self.FaceSupport
         self.interpolator.extend(periodic)
-        fp = self.interpolator.profileAt(self.path.FirstParameter)
-        lp = self.interpolator.profileAt(self.path.LastParameter)
-        self.profiles.extend((fp, lp))
+        if self.path.FirstParameter < min(self.profile_parameters()):
+            fp = self.interpolator.profileAt(self.path.FirstParameter)
+            self.profiles.insert(0, fp)
+        if self.path.LastParameter > max(self.profile_parameters()):
+            lp = self.interpolator.profileAt(self.path.LastParameter)
+            self.profiles.append(lp)
 
     def insert_profiles(self, num=0):
         if num < 1:
@@ -509,6 +523,7 @@ class RotationSweep:
             self.interpolator = RotationPathInterpolation(self.path,
                                                           self.profiles,
                                                           self.Center)
+            self.interpolator.FaceSupport = self.FaceSupport
         path_range = self.path.LastParameter - self.path.FirstParameter
         step = path_range / (num + 1)
         profs = []
@@ -524,8 +539,9 @@ class RotationSweep:
     @property
     def Face(self):
         g = self.compute()
-        # return g.toShape()
-        return Part.Compound([s.toShape() for s in g])
+        if DEBUG:
+            return Part.Compound([s.toShape() for s in g])
+        return g.toShape()
 
 
 """

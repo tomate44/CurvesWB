@@ -374,12 +374,13 @@ class CurvesToSurface:
         bs = Part.BSplineCurve()
         for pole_idx in range(1, self.curves[0].NbPoles + 1):
             pts = [c.getPole(pole_idx) for c in self.curves]
+            print(pts)
             try:
                 bs.interpolate(Points=pts, Parameters=self.Parameters, PeriodicFlag=self.Periodic)
                 poles_array.append(bs.getPoles())
             except Part.OCCError:
                 print("Curve interpolation error")
-                if self.repeated_points(pts):
+                if self.repeated_points(pts, 1e-5):
                     print(f"at Pole #{pole_idx}")
                     poles_array.append(self.interpolate_multipoints(pts))
         maxlen = 0

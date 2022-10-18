@@ -29,6 +29,8 @@ class RotsweepProxyFP:
                         "InputShapes", "The list of profiles to sweep")
         obj.addProperty("App::PropertyLinkSub", "Path",
                         "InputShapes", "The sweep path")
+        obj.addProperty("App::PropertyLinkSub", "FaceSupport",
+                        "InputShapes", "Face support of the sweep path")
         obj.addProperty("App::PropertyBool", "TrimPath",
                         "Settings", "Trim the sweep shape").TrimPath = True
         obj.addProperty("App::PropertyBool", "AddProfiles",
@@ -66,6 +68,8 @@ class RotsweepProxyFP:
         path = self.getCurve(obj.Path)[0]
         profiles = self.getCurves(obj.Profiles)
         rs = SweepPath.RotationSweep(path, profiles, obj.TrimPath)
+        if obj.FaceSupport is not None:
+            rs.FaceSupport = obj.FaceSupport[0].getSubObject(obj.FaceSupport[1])
         rs.insert_profiles(obj.AddSamples)
         if obj.AddProfiles:
             comp = Part.Compound([p.Shape for p in rs.profiles] + [rs.Face])
