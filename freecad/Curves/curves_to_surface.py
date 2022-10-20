@@ -374,7 +374,7 @@ class CurvesToSurface:
         bs = Part.BSplineCurve()
         for pole_idx in range(1, self.curves[0].NbPoles + 1):
             pts = [c.getPole(pole_idx) for c in self.curves]
-            print(pts)
+            print(pts, self.Parameters)
             try:
                 bs.interpolate(Points=pts, Parameters=self.Parameters, PeriodicFlag=self.Periodic)
                 poles_array.append(bs.getPoles())
@@ -395,13 +395,13 @@ class CurvesToSurface:
                 poles.append(p)
             weights.append([1.0] * maxlen)
         self._surface = Part.BSplineSurface()
-        # for data in (poles_array,
-        #              self.curves[0].getMultiplicities(), bs.getMultiplicities(),
-        #              self.curves[0].getKnots(), bs.getKnots(),
-        #              self.curves[0].isPeriodic(), bs.isPeriodic(),
-        #              self.curves[0].Degree, bs.Degree, weights):
-        #     print(data)
-        # print(f"{len(poles_array)} x {len(poles_array[0])}")
+        print(f"{len(poles_array)} x {len(poles_array[0])}")
+        for data in (poles_array,
+                     self.curves[0].getMultiplicities(), bs.getMultiplicities(),
+                     self.curves[0].getKnots(), bs.getKnots(),
+                     self.curves[0].isPeriodic(), bs.isPeriodic(),
+                     self.curves[0].Degree, bs.Degree, weights):
+            print(data)
         self._surface.buildFromPolesMultsKnots(poles_array,
                                                self.curves[0].getMultiplicities(), bs.getMultiplicities(),
                                                self.curves[0].getKnots(), bs.getKnots(),
