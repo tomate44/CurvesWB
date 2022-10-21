@@ -229,6 +229,9 @@ class CurvesToSurface:
                 self._params = par
             else:
                 print("Wrong number of parameters")
+                print(f"Periodic = {self._periodic}")
+                print(len(par))
+                print(len(self.curves))
 
     @property
     def Surface(self):

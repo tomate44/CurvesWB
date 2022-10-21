@@ -337,6 +337,7 @@ class PathInterpolation:
             pole = locprof.getPole(i + 1)
             np = m.multVec(pole)
             locprof.setPole(i + 1, np)
+        print(f"profileAt({par}) = {locprof}")
         return SweepProfile(locprof, par)
 
     def sort_profiles(self):
@@ -375,7 +376,9 @@ class RotationPathInterpolation(PathInterpolation):
 class RotationSweep:
     def __init__(self, path, profiles, trim=True):
         self.FaceSupport = None
-        self.path = path
+        c = path.Curve.toBSpline(path.FirstParameter, path.LastParameter)
+        c.scaleKnotsToBounds()
+        self.path = c.toShape()
         self.profiles = []
         self.TrimPath = trim
         if len(profiles) == 1:
@@ -385,15 +388,11 @@ class RotationSweep:
         self.Center = self.getCenter(profiles)
         if self.TrimPath and len(profiles) >= 2:
             self.trim_path(profiles)
-        # else:
-        #     c = self.path.Curve.toBSpline(self.path.FirstParameter, self.path.LastParameter)
-        #     c.scaleKnotsToBounds()
-        #     self.path = c.toShape()
         self.add_profiles(profiles)
-        self.sort_profiles()
-        self.trim_profiles()
         if not self.TrimPath:
             self.extend(self.path.isClosed())
+        self.sort_profiles()
+        self.trim_profiles()
 
     @property
     def Center(self):
@@ -444,6 +443,7 @@ class RotationSweep:
         return [p.Parameter for p in self.profiles]
 
     def loftProfiles(self):
+        print(self.profile_parameters())
         cl = [c.Curve for c in self.profiles]
         cts = CTS.CurvesToSurface(cl)
         cts.Periodic = self.path.Curve.isPeriodic()
@@ -527,7 +527,7 @@ class RotationSweep:
             fp = self.interpolator.profileAt(self.path.FirstParameter)
             self.profiles.insert(0, fp)
         if self.path.LastParameter > max(self.profile_parameters()):
-            if self.path.Curve.isPeriodic():
+            if not self.path.Curve.isPeriodic():
                 lp = self.interpolator.profileAt(self.path.LastParameter)
                 self.profiles.append(lp)
 
