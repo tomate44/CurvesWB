@@ -30,7 +30,9 @@ def contact_points(curve, pt1, pt2):
     lp = curve.LastParameter
     if p1 > p2:
         curve.reverse()
-        contact_points(curve, pt1, pt2)
+        p1, p2 = p2, p1
+        fp, lp = lp, fp
+        message("Curve reversed.\n")
         return
     if p1 == fp:
         curve.setPole(1, pt1)
@@ -367,11 +369,13 @@ class RotationPathInterpolation(PathInterpolation):
         self.Center = center
         super().__init__(path, profiles)
 
-    def transitionMatrixAt(self, par):
+    def transitionMatrixAt(self, par, stretch=True):
         # message(f"RotationPath matrix at {par}\n")
         poc = self.path.valueAt(par)
         cho = self.Center - poc
-        der = self.path.tangentAt(par) * cho.Length  # derivative1At(par)
+        der = self.path.tangentAt(par)  # * cho.Length  # derivative1At(par)
+        if not stretch:
+            der.multiply(cho.Length)
         if self.FaceSupport is not None:
             # print(self.FaceSupport)
             u, v = self.FaceSupport.Surface.parameter(poc)
@@ -380,7 +384,8 @@ class RotationPathInterpolation(PathInterpolation):
         else:
             nor = der.cross(cho)
         nor.normalize()
-        nor.multiply(cho.Length)
+        if not stretch:
+            nor.multiply(cho.Length)
         m = FreeCAD.Matrix(cho.x, der.x, nor.x, poc.x,
                            cho.y, der.y, nor.y, poc.y,
                            cho.z, der.z, nor.z, poc.z,
@@ -391,6 +396,7 @@ class RotationPathInterpolation(PathInterpolation):
 
 class RotationSweep:
     def __init__(self, path, profiles, trim=True):
+        message("\n---------- RotationSweep ----------\n")
         self.FaceSupport = None
         self.profiles = []
         self.interpolator = None
@@ -400,6 +406,7 @@ class RotationSweep:
         c.scaleKnotsToBounds()
         self.path = c.toShape()
         self.Center = self.getCenter(profiles)
+        self.trim_profiles(profiles)
 
         self.TrimPath = trim
         if len(profiles) == 1:
@@ -411,7 +418,6 @@ class RotationSweep:
         if not self.TrimPath:
             self.extend(self.path.isClosed())
         self.sort_profiles()
-        self.trim_profiles()
 
     @property
     def Center(self):
@@ -453,12 +459,18 @@ class RotationSweep:
             return
         dist, pts, info = self.path.distToShape(prof)
         par = self.path.Curve.parameter(pts[0][0])
+        message(f"Adding curve @ {par}\n")
         self.profiles.append(SweepProfile(prof, par))
 
-    def trim_profiles(self):
-        for i, prof in enumerate(self.profiles):
+    def trim_profiles(self, profs=None):
+        if profs is None:
+            profs = self.profiles
+
+        for i in range(len(profs)):
             message(f"Connecting curve #{i}\n")
-            contact_shapes(prof.Curve, self.path, Part.Vertex(self.Center))
+            c = profs[i].Curve
+            contact_shapes(c, self.path, Part.Vertex(self.Center))
+            profs[i] = c.toShape()
 
     def trim_path(self, profiles=None):
         if profiles is None:
