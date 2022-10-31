@@ -4,10 +4,24 @@ import Part
 from freecad.Curves import curves_to_surface as CTS
 
 
-DEBUG = False
+DEBUG = True
 err = FreeCAD.Console.PrintError
 warn = FreeCAD.Console.PrintWarning
 message = FreeCAD.Console.PrintMessage
+
+
+def vec2str(vec):
+    if isinstance(vec, (list, tuple)):
+        if len(vec) == 0:
+            return str(vec)
+        strl = "["
+        for v in vec:
+            strl += vec2str(v)
+            strl += ", "
+        return strl[:-2] + "]"
+    if isinstance(vec, FreeCAD.Vector):
+        return f"Vec({vec.x:5.3f}, {vec.y:5.3f}, {vec.z:5.3f})"
+    return f"{vec:5.3f}"
 
 
 def normalize(geom):
@@ -33,7 +47,6 @@ def contact_points(curve, pt1, pt2):
         p1, p2 = p2, p1
         fp, lp = lp, fp
         message("Curve reversed.\n")
-        return
     if p1 == fp:
         curve.setPole(1, pt1)
     if p2 == lp:
@@ -44,6 +57,7 @@ def contact_points(curve, pt1, pt2):
         err(f"Failed to segment BSpline curve ({fp}, {lp})\n")
         err(f"between ({p1}, {p2})\n")
     curve.scaleKnotsToBounds()
+    # return curve
 
 
 def contact_shapes(bscurve, shape1, shape2):
@@ -402,22 +416,24 @@ class RotationSweep:
         self.interpolator = None
         self.tol = 1e-7
 
-        c = path.Curve.toBSpline(path.FirstParameter, path.LastParameter)
-        c.scaleKnotsToBounds()
-        self.path = c.toShape()
-        self.Center = self.getCenter(profiles)
-        self.trim_profiles(profiles)
-
         self.TrimPath = trim
         if len(profiles) == 1:
             self.TrimPath = False
+            message("TrimPath disabled, needs at least 2 profiles\n")
 
-        if self.TrimPath and len(profiles) >= 2:
+        if self.TrimPath:
+            self.path = path
             self.trim_path(profiles)
+        else:
+            c = path.Curve.toBSpline(path.FirstParameter, path.LastParameter)
+            c.scaleKnotsToBounds()
+            self.path = c.toShape()
+
+        self.Center = self.getCenter(path, profiles)
         self.add_profiles(profiles)
+        self.sort_profiles()
         if not self.TrimPath:
             self.extend(self.path.isClosed())
-        self.sort_profiles()
 
     @property
     def Center(self):
@@ -430,13 +446,13 @@ class RotationSweep:
         else:
             self._center = center
 
-    def getCenter(self, profiles):
+    def getCenter(self, path, profiles):
         center = FreeCAD.Vector()
         sh = profiles[0]
         if len(profiles) == 1:
             warn("RotationSweep: Only 1 profile provided.\n")
-            warn("Choosing center opposite to path.\n")
-            dist, pts, info = self.path.distToShape(sh)
+            warn("Choosing center point opposite to path.\n")
+            dist, pts, info = path.distToShape(sh)
             par = profiles[0].Curve.parameter(pts[0][1])
             fp = sh.FirstParameter
             lp = sh.LastParameter
@@ -449,7 +465,7 @@ class RotationSweep:
                 dist, pts, info = p.distToShape(sh)
                 center += pts[0][1]
             center = center / (len(profiles) - 1)
-        message(f"Center found at {center}\n")
+        message(f"Center found at {vec2str(center)}\n")
         return center
 
     def add_profiles(self, prof):
@@ -459,24 +475,36 @@ class RotationSweep:
             return
         dist, pts, info = self.path.distToShape(prof)
         par = self.path.Curve.parameter(pts[0][0])
-        message(f"Adding curve @ {par}\n")
-        self.profiles.append(SweepProfile(prof, par))
+        print(info)
+        message(f"Adding profile @ {vec2str(par)}\n")
+        c = prof.Curve
+        print(c.length())
+        contact_shapes(c, self.path, Part.Vertex(self.Center))
+        print(c.length())
+        self.profiles.append(SweepProfile(c, par))
 
-    def trim_profiles(self, profs=None):
-        if profs is None:
-            profs = self.profiles
-
-        for i in range(len(profs)):
-            message(f"Connecting curve #{i}\n")
-            c = profs[i].Curve
-            contact_shapes(c, self.path, Part.Vertex(self.Center))
-            profs[i] = c.toShape()
+    # def trim_profiles(self, profs=None):
+    #     if profs is None:
+    #         profs = self.profiles
+    #
+    #     for i in range(len(profs)):
+    #         message(f"Connecting curve #{i}\n")
+    #         c = profs[i].Curve
+    #         contact_shapes(c, self.path, Part.Vertex(self.Center))
+    #         profs[i] = c.toShape()
 
     def trim_path(self, profiles=None):
         if profiles is None:
             profiles = [p.Shape for p in self.profiles]
+        params = []
+        for prof in profiles:
+            dist, pts, info = self.path.distToShape(prof)
+            par = self.path.Curve.parameter(pts[0][0])
+            params.append(par)
         c = self.path.Curve
-        contact_shapes(c, profiles[0], profiles[-1])
+        # contact_shapes(c, min(params), max(params))
+        c.segment(min(params), max(params))
+        c.scaleKnotsToBounds()
         self.path = c.toShape()
 
     def sort_profiles(self):
@@ -499,7 +527,7 @@ class RotationSweep:
         # BSplineFacade.syncAllKnots(cts.curves, 1e-7)
         cts.match_curves(1e-7)
         cts.Parameters = self.profile_parameters()
-        message(f"loftProfiles : {cts.Parameters}\n")
+        message(f"loftProfiles : {vec2str(cts.Parameters)}\n")
         cts.interpolate()
         s = cts._surface
         s.scaleKnotsToBounds()
@@ -560,7 +588,7 @@ class RotationSweep:
         if num < 1:
             return
         params = self.profile_parameters()
-        print(f"Insert Profiles in {params}")
+        print(f"Insert Profiles in {vec2str(params)}")
         if self.interpolator is None:
             profs = [SweepProfile(p.Curve, p.Parameter) for p in self.profiles]
             self.interpolator = RotationPathInterpolation(self.path,
@@ -577,7 +605,7 @@ class RotationSweep:
             lstep = lrange / (nb + 1)
             for j in range(nb):
                 par = params[i] + (j + 1) * lstep
-                print(f"Insert profile #{count} @ {par}")
+                print(f"Insert profile #{count} @ {vec2str(par)}")
                 count += 1
                 intpro = self.interpolator.profileAt(par)
                 contact_shapes(intpro.Curve, self.path, Part.Vertex(self.Center))
@@ -589,7 +617,7 @@ class RotationSweep:
     def Face(self):
         g = self.compute()
         if DEBUG:
-            return Part.Compound([s.toShape() for s in g])
+            return Part.Compound([s.toShape() for s in g] + [c.Shape for c in self.profiles])
         return g.toShape()
 
 

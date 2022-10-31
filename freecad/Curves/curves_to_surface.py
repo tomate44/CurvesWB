@@ -270,7 +270,6 @@ class CurvesToSurface:
         for i in range(len(pts) - 1):
             d += pts[i].distanceToPoint(pts[i + 1])
         if d < tol * len(pts):
-            print("Repeated points detected")
             return True
         return False
 
@@ -385,12 +384,11 @@ class CurvesToSurface:
                 bs.interpolate(Points=pts, Parameters=self.Parameters, PeriodicFlag=self.Periodic)
                 poles_array.append(bs.getPoles())
             except Part.OCCError:
-                print("Curve interpolation error")
                 if self.repeated_points(pts, 1e-5):
-                    print(f"at Pole #{pole_idx}")
+                    print(f"Repeated points detected at Pole #{pole_idx}")
                     poles_array.append(self.interpolate_multipoints(pts))
                 else:
-                    print("Bad data :")
+                    print("Curve interpolation error. Bad data :")
                     for d in (pts, self.Parameters, self.Periodic):
                         print(d)
         maxlen = 0
@@ -415,6 +413,7 @@ class CurvesToSurface:
         except Part.OCCError as exc:
             print("\n*** CurvesToSurface interpolation error ***\n")
             print(f"{len(poles_array)} x {len(poles_array[0])} Poles")
+            print(f"{sum(self.curves[0].getMultiplicities()[:-1])} x {sum(bs.getMultiplicities()[:-1])} Mults")
             for data in args[1:-1]:
                 print(data)
             raise exc

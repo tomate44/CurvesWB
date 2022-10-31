@@ -15,7 +15,7 @@ from freecad.Curves import ICONPATH
 err = FreeCAD.Console.PrintError
 warn = FreeCAD.Console.PrintWarning
 message = FreeCAD.Console.PrintMessage
-TOOL_ICON = os.path.join(ICONPATH, 'icon.svg')
+TOOL_ICON = os.path.join(ICONPATH, 'sweep_around.svg')
 # debug = _utils.debug
 # debug = _utils.doNothing
 
