@@ -501,8 +501,13 @@ class InterpolateCurveNetwork(object):
         max_cp_u = max(min_u, min(max_cp_u + 10, max_u))
         max_cp_v = max(min_v, min(max_cp_v + 10, max_v))
 
-        progressbar = FreeCAD.Base.ProgressIndicator()
-        progressbar.start("Computing Gordon surface ...", nProfiles + nGuides)
+        try:
+            progressbar = FreeCAD.Base.ProgressIndicator()
+            hasProgressBar = True
+        except:
+            hasProgressBar = False
+        if hasProgressBar:
+            progressbar.start("Computing Gordon surface ...", nProfiles + nGuides)
         #  reparametrize u-directional B-splines
         for spline_u_idx in range(nProfiles):  # (int spline_u_idx = 0; spline_u_idx < nProfiles; ++spline_u_idx) {
             oldParametersProfile = list()
@@ -524,7 +529,8 @@ class InterpolateCurveNetwork(object):
             debug(profile)
             self.profiles[spline_u_idx] = bsa.reparametrizeBSplineContinuouslyApprox(profile, oldParametersProfile, newParametersProfiles, max_cp_u)
             # debug(self.profiles[spline_u_idx])
-            progressbar.next()
+            if hasProgressBar:
+                progressbar.next()
 
         #  reparametrize v-directional B-splines
         for spline_v_idx in range(nGuides):
@@ -547,9 +553,11 @@ class InterpolateCurveNetwork(object):
             debug(guide)
             self.guides[spline_v_idx] = bsa.reparametrizeBSplineContinuouslyApprox(guide, oldParameterGuide, newParametersGuides, max_cp_v)
             # debug(self.guides[spline_v_idx])
-            progressbar.next()
+            if hasProgressBar:
+                progressbar.next()
 
-        progressbar.stop()
+        if hasProgressBar:
+            progressbar.stop()
         self.intersectionParamsU = newParametersProfiles
         self.intersectionParamsV = newParametersGuides
 
