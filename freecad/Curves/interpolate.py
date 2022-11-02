@@ -218,6 +218,8 @@ class Interpolate:
         fp.Parametrization = p
 
     def onChanged(self, fp, prop):
+        if 'Restore' in fp.State:
+            return
         if not self.getPoints(fp):
             return
         if prop in ("Parametrization", "Source", "PointList"):
