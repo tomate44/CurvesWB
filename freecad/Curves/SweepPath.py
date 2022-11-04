@@ -4,7 +4,7 @@ import Part
 from freecad.Curves import curves_to_surface as CTS
 
 
-DEBUG = True
+DEBUG = False
 err = FreeCAD.Console.PrintError
 warn = FreeCAD.Console.PrintWarning
 message = FreeCAD.Console.PrintMessage
@@ -40,19 +40,22 @@ def contact_points(curve, pt1, pt2):
     """
     p1 = curve.parameter(pt1)
     p2 = curve.parameter(pt2)
-    fp = curve.FirstParameter
-    lp = curve.LastParameter
     if p1 > p2:
         curve.reverse()
-        p1, p2 = p2, p1
-        fp, lp = lp, fp
+        p1 = curve.parameter(pt1)
+        p2 = curve.parameter(pt2)
         message("Curve reversed.\n")
+    fp = curve.FirstParameter
+    lp = curve.LastParameter
     if p1 == fp:
         curve.setPole(1, pt1)
+        message("Forcing contact at start\n")
     if p2 == lp:
         curve.setPole(curve.NbPoles, pt2)
+        message("Forcing contact at end\n")
     try:
         curve.segment(p1, p2)
+        message(f"Segmenting curve to ({p1}, {p2})\n")
     except Part.OCCError:
         err(f"Failed to segment BSpline curve ({fp}, {lp})\n")
         err(f"between ({p1}, {p2})\n")
@@ -205,7 +208,8 @@ class SweepProfile:
         elif hasattr(prof, "value"):
             self.Curve = prof.toBSpline()
         elif hasattr(prof, "Curve"):
-            self.Curve = prof.Curve.toBSpline(prof.FirstParameter, prof.LastParameter)
+            self.Curve = prof.Curve.toBSpline(prof.FirstParameter,
+                                              prof.LastParameter)
             self._shape = prof
         elif isinstance(prof, Part.Wire):
             self.Curve = prof.approximate()
@@ -340,8 +344,9 @@ class PathInterpolation:
         else:
             fp = self.profiles[0]
             lp = self.profiles[-1]
-            self.offset_profile(fp, -path_range)
-            self.offset_profile(lp, path_range)
+            for i in range(1, 4):
+                self.offset_profile(fp, -i * path_range)
+                self.offset_profile(lp, i * path_range)
         self.sort_profiles()
         self.interpolate_local_profiles()
 
@@ -356,8 +361,9 @@ class PathInterpolation:
         cts.interpolate()
         self.localLoft = cts._surface
         u0, u1 = self.localLoft.bounds()[0:2]
-        # print(u0, u1, self.profiles[0].Parameter, self.profiles[-1].Parameter)
-        self.localLoft.scaleKnotsToBounds(u0, u1, self.profiles[0].Parameter, self.profiles[-1].Parameter)
+        # print(u0, u1, self.profiles[0].Parameter,self.profiles[-1].Parameter)
+        self.localLoft.scaleKnotsToBounds(u0, u1, self.profiles[0].Parameter,
+                                          self.profiles[-1].Parameter)
         print(f"interpolate_local_profiles {cts.Parameters} -> ")
         print(self.localLoft.getVKnots())
         return self.localLoft
