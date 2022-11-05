@@ -262,9 +262,9 @@ class LocalProfile(SweepProfile):
 
 
 class PathInterpolation:
-    def __init__(self, path, profiles=None):
+    def __init__(self, path, profiles=None, face=None):
         self.profiles = []
-        self.FaceSupport = None
+        self.FaceSupport = face
         self.localLoft = None
         if hasattr(path, "value"):
             self.path = path.toShape()
@@ -385,9 +385,9 @@ class PathInterpolation:
 
 
 class RotationPathInterpolation(PathInterpolation):
-    def __init__(self, path, profiles, center):
+    def __init__(self, path, profiles, center, face=None):
         self.Center = center
-        super().__init__(path, profiles)
+        super().__init__(path, profiles, face)
 
     def transitionMatrixAt(self, par, stretch=True):
         # message(f"RotationPath matrix at {par}\n")
@@ -397,7 +397,7 @@ class RotationPathInterpolation(PathInterpolation):
         if not stretch:
             der.multiply(cho.Length)
         if self.FaceSupport is not None:
-            # print(self.FaceSupport)
+            print(self.FaceSupport)
             u, v = self.FaceSupport.Surface.parameter(poc)
             snor = self.FaceSupport.Surface.normal(u, v)
             nor = snor.cross(der)
@@ -415,9 +415,9 @@ class RotationPathInterpolation(PathInterpolation):
 
 
 class RotationSweep:
-    def __init__(self, path, profiles, trim=True):
+    def __init__(self, path, profiles, trim=True, face=None):
         message("\n---------- RotationSweep ----------\n")
-        self.FaceSupport = None
+        self.FaceSupport = face
         self.profiles = []
         self.interpolator = None
         self.tol = 1e-7
@@ -579,8 +579,8 @@ class RotationSweep:
         profs = [SweepProfile(p.Curve, p.Parameter) for p in self.profiles]
         self.interpolator = RotationPathInterpolation(self.path,
                                                       profs,
-                                                      self.Center)
-        self.interpolator.FaceSupport = self.FaceSupport
+                                                      self.Center,
+                                                      self.FaceSupport)
         self.interpolator.extend(periodic)
         if self.path.FirstParameter < min(self.profile_parameters()):
             fp = self.interpolator.profileAt(self.path.FirstParameter)
@@ -599,8 +599,8 @@ class RotationSweep:
             profs = [SweepProfile(p.Curve, p.Parameter) for p in self.profiles]
             self.interpolator = RotationPathInterpolation(self.path,
                                                           profs,
-                                                          self.Center)
-            self.interpolator.FaceSupport = self.FaceSupport
+                                                          self.Center,
+                                                          self.FaceSupport)
         path_range = self.path.LastParameter - self.path.FirstParameter
         step = path_range / (num + 1)
         profs = []

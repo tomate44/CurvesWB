@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
-__title__ = 'Title'
+__title__ = 'Rotation Sweep'
 __author__ = 'Christophe Grellier (Chris_G)'
 __license__ = 'LGPL 2.1'
-__doc__ = 'Doc'
+__doc__ = 'Sweep some profiles along a path, and around a point'
+__usage__ = """Select a sweep path and some profiles in the 3D View.
+If TrimPath is False, the Sweep surface will be extrapolated to fit the whole path."""
 
 import os
 import FreeCAD
@@ -38,6 +40,7 @@ class RotsweepProxyFP:
         obj.addProperty("App::PropertyInteger", "AddSamples",
                         "Settings", "Number of additional profiles")
         obj.setEditorMode("AddProfiles", 2)
+        # obj.setEditorMode("AddSamples", 2)
         obj.Proxy = self
 
     def getCurve(self, lo):
@@ -67,9 +70,11 @@ class RotsweepProxyFP:
     def execute(self, obj):
         path = self.getCurve(obj.Path)[0]
         profiles = self.getCurves(obj.Profiles)
-        rs = SweepPath.RotationSweep(path, profiles, obj.TrimPath)
+        fc = None
         if obj.FaceSupport is not None:
-            rs.FaceSupport = obj.FaceSupport[0].getSubObject(obj.FaceSupport[1])[0]
+            fc = obj.FaceSupport[0].getSubObject(obj.FaceSupport[1])[0]
+            FreeCAD.Console.PrintMessage(fc)
+        rs = SweepPath.RotationSweep(path, profiles, obj.TrimPath, fc)
         rs.insert_profiles(obj.AddSamples)
         if obj.AddProfiles:
             shapes = [p.Shape for p in rs.profiles] + [rs.Face]
@@ -136,7 +141,7 @@ class RotsweepFPCommand:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': __title__,
-                'ToolTip': __doc__}
+                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
 
 FreeCADGui.addCommand('Curves_RotationSweep', RotsweepFPCommand())
