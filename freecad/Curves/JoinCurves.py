@@ -103,7 +103,7 @@ class join:
                 res = obj.Base.Shape.Edges
         if hasattr(obj, "Edges"):
             for link in obj.Edges:
-                for ss in link[1]:
+                for ss in list( dict.fromkeys(link[1])):
                     res.append(link[0].getSubObject(ss))
         return res
 
