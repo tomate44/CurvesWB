@@ -39,6 +39,8 @@ class RotsweepProxyFP:
                         "Settings", "Add profiles to the sweep shape")
         obj.addProperty("App::PropertyInteger", "AddSamples",
                         "Settings", "Number of additional profiles")
+        obj.addProperty("App::PropertyBool", "Stretch",
+                        "Settings", "Stretch or scale additional profiles")
         obj.setEditorMode("AddProfiles", 2)
         # obj.setEditorMode("AddSamples", 2)
         obj.Proxy = self
@@ -75,6 +77,7 @@ class RotsweepProxyFP:
             fc = obj.FaceSupport[0].getSubObject(obj.FaceSupport[1])[0]
             FreeCAD.Console.PrintMessage(fc)
         rs = SweepPath.RotationSweep(path, profiles, obj.TrimPath, fc)
+        rs.stretch = obj.Stretch
         rs.insert_profiles(obj.AddSamples)
         if obj.AddProfiles:
             shapes = [p.Shape for p in rs.profiles] + [rs.Face]

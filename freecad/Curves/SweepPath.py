@@ -387,14 +387,15 @@ class PathInterpolation:
 class RotationPathInterpolation(PathInterpolation):
     def __init__(self, path, profiles, center, face=None):
         self.Center = center
+        self.stretch = False
         super().__init__(path, profiles, face)
 
-    def transitionMatrixAt(self, par, stretch=True):
+    def transitionMatrixAt(self, par):
         # message(f"RotationPath matrix at {par}\n")
         poc = self.path.valueAt(par)
         cho = self.Center - poc
         der = self.path.tangentAt(par)  # * cho.Length  # derivative1At(par)
-        if not stretch:
+        if not self.stretch:
             der.multiply(cho.Length)
         if self.FaceSupport is not None:
             print(self.FaceSupport)
@@ -404,7 +405,7 @@ class RotationPathInterpolation(PathInterpolation):
         else:
             nor = der.cross(cho)
         nor.normalize()
-        if not stretch:
+        if not self.stretch:
             nor.multiply(cho.Length)
         m = FreeCAD.Matrix(cho.x, der.x, nor.x, poc.x,
                            cho.y, der.y, nor.y, poc.y,
@@ -421,6 +422,7 @@ class RotationSweep:
         self.profiles = []
         self.interpolator = None
         self.tol = 1e-7
+        self.stretch = False
 
         self.TrimPath = trim
         if len(profiles) == 1:
@@ -581,6 +583,7 @@ class RotationSweep:
                                                       profs,
                                                       self.Center,
                                                       self.FaceSupport)
+        self.interpolator.stretch = self.stretch
         self.interpolator.extend(periodic)
         if self.path.FirstParameter < min(self.profile_parameters()):
             fp = self.interpolator.profileAt(self.path.FirstParameter)
@@ -601,6 +604,7 @@ class RotationSweep:
                                                           profs,
                                                           self.Center,
                                                           self.FaceSupport)
+            self.interpolator.stretch = self.stretch
         path_range = self.path.LastParameter - self.path.FirstParameter
         step = path_range / (num + 1)
         profs = []
