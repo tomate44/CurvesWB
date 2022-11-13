@@ -373,8 +373,8 @@ class CurvesToSurface:
         "interpolate the poles of the curves and build the surface"
         if self.Parameters is None:
             self.set_parameters(1.0)
-        nbp = [c.NbPoles for c in self.curves]
-        print(nbp)
+        # nbp = [c.NbPoles for c in self.curves]
+        # print(nbp)
         poles_array = []
         bs = Part.BSplineCurve()
         for pole_idx in range(1, self.curves[0].NbPoles + 1):
