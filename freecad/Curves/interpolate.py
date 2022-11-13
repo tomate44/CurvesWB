@@ -132,6 +132,34 @@ class Interpolate:
         fp.Tangents = tans
         fp.TangentFlags = flags
 
+    def periodic_interpolate(self, pts, params, tol):
+        nbp = len(pts)
+        n = 1
+        if nbp <= 4:
+            n = 2
+        npts = pts
+        npts.extend(pts * (2 * n))
+        period = params[-1] - params[0]
+        nparams = []
+        for p in params:
+            for i in range(1, n + 1):
+                nparams.append(p)
+                nparams.append(p - i * period)
+                nparams.append(p + i * period)
+        npars = list(set(nparams))
+        npars.sort()
+        # interpolate the extended list of points
+        bs = Part.BSplineCurve()
+        bs.interpolate(Points=npts, Parameters=npars, PeriodicFlag=True)
+        # extract a one turn BSpline curve in the middle
+        offset = n * nbp
+        npoles = bs.getPoles()[offset:-offset - 1]
+        nmults = bs.getMultiplicities()[offset:-offset]
+        nknots = bs.getKnots()[offset:-offset]
+        nbs = Part.BSplineCurve()
+        nbs.buildFromPolesMultsKnots(npoles, nmults, nknots, True, 3)
+        return nbs
+
     def execute(self, obj):
         debug("* Interpolate : execute *")
         pts = self.getPoints(obj)
@@ -176,8 +204,11 @@ class Interpolate:
             else:
                 bs = poly.approximate(1e-8, obj.Tolerance, 999, 1)
         else:
-            bs = Part.BSplineCurve()
-            bs.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Parameters=obj.Parameters)
+            if obj.Periodic:
+                bs = self.periodic_interpolate(pts, obj.Parameters, obj.Tolerance)
+            else:
+                bs = Part.BSplineCurve()
+                bs.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Parameters=obj.Parameters)
             if not (len(obj.Tangents) == len(pts) and len(obj.TangentFlags) == len(pts)):  # or obj.DetectAligned:
                 if obj.Periodic:
                     obj.Tangents = [bs.tangent(p)[0] for p in obj.Parameters[0:-1]]
@@ -203,15 +234,18 @@ class Interpolate:
             val = 0.5
         elif obj.Parametrization == "Uniform":
             val = 0.0
-        if obj.Periodic:  # we need to add the first point as the end point
+        if obj.Periodic and pts[0].distanceToPoint(pts[-1]) > 1e-7:  # we need to add the first point as the end point
             pts.append(pts[0])
+        obj.Parameters = self.parametrization(pts, val)
+
+    def parametrization(self, pts, val):
         params = [0]
         for i in range(1, len(pts)):
             p = pts[i].sub(pts[i - 1])
             pl = pow(p.Length, val)
             params.append(params[-1] + pl)
         m = float(max(params))
-        obj.Parameters = [p / m for p in params]
+        return [p / m for p in params]
 
     def touch_parametrization(self, fp):
         p = fp.Parametrization
