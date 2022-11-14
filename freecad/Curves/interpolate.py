@@ -334,7 +334,7 @@ class interpolate:
             return None
 
     def Activated(self):
-        s = FreeCADGui.Selection.getSelectionEx()
+        s = FreeCADGui.Selection.getCompleteSelection()
         source = self.parseSel(s)
         if not source:
             return False
