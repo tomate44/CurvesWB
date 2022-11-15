@@ -35,14 +35,14 @@ class RotsweepProxyFP:
                         "InputShapes", "Face support of the sweep path")
         obj.addProperty("App::PropertyBool", "TrimPath",
                         "Settings", "Trim the sweep shape").TrimPath = True
-        obj.addProperty("App::PropertyBool", "AddProfiles",
+        obj.addProperty("App::PropertyBool", "ViewProfiles",
                         "Settings", "Add profiles to the sweep shape")
-        obj.addProperty("App::PropertyInteger", "AddSamples",
-                        "Settings", "Number of additional profiles")
-        obj.addProperty("App::PropertyBool", "Stretch",
-                        "Settings", "Stretch or scale additional profiles")
-        obj.setEditorMode("AddProfiles", 2)
-        # obj.setEditorMode("AddSamples", 2)
+        obj.addProperty("App::PropertyInteger", "ExtraProfiles",
+                        "Settings", "Number of extra profiles")
+        obj.addProperty("App::PropertyBool", "SmoothTop",
+                        "Settings", "Build a smooth top with extra profiles")
+        obj.setEditorMode("ViewProfiles", 2)
+        # obj.setEditorMode("ExtraProfiles", 2)
         obj.Proxy = self
 
     def getCurve(self, lo):
@@ -72,21 +72,19 @@ class RotsweepProxyFP:
     def execute(self, obj):
         path = self.getCurve(obj.Path)[0]
         profiles = self.getCurves(obj.Profiles)
-        fc = None
-        if obj.FaceSupport is not None:
-            fc = obj.FaceSupport[0].getSubObject(obj.FaceSupport[1])[0]
-            FreeCAD.Console.PrintMessage(fc)
-        rs = SweepPath.RotationSweep(path, profiles)  # , obj.TrimPath, fc)
-        # rs.stretch = obj.Stretch
-        # rs.insert_profiles(obj.AddSamples)
-        if obj.AddProfiles:
-            shapes = [p.Shape for p in rs.profiles] + [rs.Face]
-            if rs.interpolator is not None:
-                shapes.append(rs.interpolator.localLoft.toShape())
-            comp = Part.Compound(shapes)
-            obj.Shape = comp
-        else:
-            obj.Shape = rs.Face
+        rs = SweepPath.RotationSweep(path, profiles)
+        if obj.ExtraProfiles or not obj.TrimPath:
+            inter = SweepPath.SweepAroundInterpolator(rs)
+            inter.Extend = not obj.TrimPath
+            inter.NumExtra = obj.ExtraProfiles
+            if obj.SmoothTop:
+                inter.setSmoothTop()
+            elif obj.FaceSupport is not None:
+                fs = obj.FaceSupport[0].getSubObject(obj.FaceSupport[1])[0]
+                FreeCAD.Console.PrintMessage(fs)
+                inter.FaceSupport = fs
+            inter.compute()
+        obj.Shape = rs.Face
 
     def onChanged(self, obj, prop):
         return False

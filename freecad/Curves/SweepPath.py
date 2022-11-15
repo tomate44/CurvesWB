@@ -421,15 +421,23 @@ class RotationSweep(Sweep):
 
     def trim_profiles(self):
         debug("RotationSweep.trim_profiles()")
-        super().trim_profiles()
+        # super().trim_profiles()
         cv = Part.Vertex(self.Center)
         for prof in self.Profiles:
             c = prof.Curve
-            dist, pts, info = prof.Shape.distToShape(cv)
-            par = c.parameter(pts[0][0])
-            if par > c.FirstParameter and par < c.LastParameter:
-                c.segment(par, c.LastParameter)
+            dist1, pts1, info1 = prof.Shape.distToShape(cv)
+            dist2, pts2, info2 = prof.Shape.distToShape(self.Path)
+            par1 = c.parameter(pts1[0][0])
+            par2 = c.parameter(pts2[0][0])
+            if par1 > par2:
+                c.segment(par2, par1)
+                c.reverse()
+            else:
+                c.segment(par1, par2)
             c.scaleKnotsToBounds()
+            npar = self.Path.Curve.parameter(pts2[0][1])
+            prof.Curve = c
+            prof.Parameter = npar
 
     def compute_S2(self):
         debug("SweepAround.compute_S2()")
@@ -475,7 +483,7 @@ class SweepInterpolator:
         poc = self.valueAt(par)
         tan = self.tangentAt(par)
         nor = self.normalAt(par)
-        bno = nor.cross(tan)
+        bno = self.binormalAt(par)
         m = FreeCAD.Matrix(bno.x, tan.x, nor.x, poc.x,
                            bno.y, tan.y, nor.y, poc.y,
                            bno.z, tan.z, nor.z, poc.z,
@@ -604,9 +612,12 @@ class SweepInterpolator:
 class SweepAroundInterpolator(SweepInterpolator):
     def __init__(self, sweepAround, extend=False, extra=0):
         super().__init__(sweepAround, extend, extra)
+        self.TopNormal = None
 
     def normalAt(self, par):
-        if isinstance(self.FaceSupport, Part.face):
+        if isinstance(self.TopNormal, FreeCAD.Vector):
+            return self.TopNormal
+        elif isinstance(self.FaceSupport, Part.face):
             u, v = self.FaceSupport.Surface.parameter(self.valueAt(par))
             snor = self.FaceSupport.Surface.normal(u, v)
             return snor.cross(self.tangentAt(par))
@@ -615,5 +626,17 @@ class SweepAroundInterpolator(SweepInterpolator):
 
     def binormalAt(self, par):
         return self.Sweep.Center - self.valueAt(par)
+
+    def setSmoothTop(self, idx=None):
+        if idx is not None and idx < len(self.Sweep.Profiles):
+            p = self.Sweep.Profiles[idx]
+            ct = p.Curve.tangent(p.Curve.FirstParameter)
+            self.TopNormal = ct.cross(self.tangentAt(p.Parameter))
+            return
+        v = FreeCAD.Vector()
+        for p in self.Sweep.Profiles:
+            ct = p.Curve.tangent(p.Curve.FirstParameter)
+            v += ct.cross(self.tangentAt(p.Parameter))
+        self.TopNormal = v / len(self.Sweep.Profiles)
 
 
