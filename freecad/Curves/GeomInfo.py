@@ -521,6 +521,10 @@ class GeomInfo:
             s = self.propStr(surf, p)
             if s:
                 ret.append(s)
+        pl = surf.isPlanar()
+        if pl:
+            s = "is Planar"
+            ret.append(s)
         if isinstance(surf, Part.BSplineSurface):
             funct = [(surf.getUKnots, "U Knots"),
                      (surf.getUMultiplicities, "U Mults"),
