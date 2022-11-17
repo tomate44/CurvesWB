@@ -3,7 +3,7 @@ import Part
 from freecad.Curves import curves_to_surface as CTS
 
 
-DEBUG = False
+DEBUG = True
 err = FreeCAD.Console.PrintError
 warn = FreeCAD.Console.PrintWarning
 message = FreeCAD.Console.PrintMessage
@@ -272,9 +272,10 @@ class Sweep:
     """
 
     def __init__(self, path, profiles=[]):
-        self.Tol2D = 1e-8  # Mainly for knot insertion
+        self.Tol2D = 1e-6  # Mainly for knot insertion
         self.Tol3D = 1e-7
         self.Path = path
+        self.TrimPath = True
         self.Profiles = [SweepProfile(p) for p in profiles]
 
     def trim_path(self, profiles=None):
@@ -292,7 +293,7 @@ class Sweep:
 
     def trim_profiles(self):
         debug("Sweep.trim_profiles()")
-        for prof in self.Profiles:
+        for i, prof in enumerate(self.Profiles):
             c = prof.Curve
             dist, pts, info = prof.Shape.distToShape(self.Path)
             par = c.parameter(pts[0][0])
@@ -305,6 +306,7 @@ class Sweep:
             npar = self.Path.Curve.parameter(pts[0][1])
             prof.Curve = c
             prof.Parameter = npar
+            print(f"Sweep.trim_profiles #{i} @{npar}")
 
     def sort_profiles(self):
         self.Profiles.sort(key=lambda x: x.Parameter)
@@ -313,7 +315,7 @@ class Sweep:
         # print(self.profiles)
         params = [p.Parameter for p in self.Profiles]
         if self.Path.Curve.isPeriodic():
-            params.append(self.profiles[0].Parameter + self.Path.Curve.period())
+            params.append(self.Profiles[0].Parameter + self.Path.Curve.period())
         return params
 
     def loftProfiles(self):
@@ -361,7 +363,8 @@ class Sweep:
 
     def compute(self):
         debug("Sweep.compute")
-        self.trim_path()
+        if self.TrimPath:
+            self.trim_path()
         self.trim_profiles()
         debug(self.Profiles)
         self.sort_profiles()
@@ -460,6 +463,7 @@ class SweepInterpolator:
         self.Extend = extend
         self.NumExtra = extra
         self.FaceSupport = None
+        self.localLoft = None
 
     def valueAt(self, par):
         return self.Sweep.Path.valueAt(par)
@@ -503,6 +507,7 @@ class SweepInterpolator:
     def computeLocalProfiles(self):
         locprofs = []
         for prof in self.Sweep.Profiles:
+            print(prof.Parameter)
             m = self.transitionMatrixAt(prof.Parameter)
             m = m.inverse()
             locprof = prof.Curve.copy()
@@ -524,14 +529,14 @@ class SweepInterpolator:
         self.sort_profiles()
         locprofs = self.profile_curves()
         cts = CTS.CurvesToSurface(locprofs)
-        cts.match_curves(self.Tol2D)
+        cts.match_curves(self.Sweep.Tol2D)
         cts.Parameters = self.profile_parameters()
         cts.interpolate()
         self.localLoft = cts._surface
         u0, u1 = self.localLoft.bounds()[0:2]
         # print(u0, u1, self.profiles[0].Parameter,self.profiles[-1].Parameter)
-        self.localLoft.scaleKnotsToBounds(u0, u1, self.profiles[0].Parameter,
-                                          self.profiles[-1].Parameter)
+        self.localLoft.scaleKnotsToBounds(u0, u1, self.LocalProfiles[0].Parameter,
+                                          self.LocalProfiles[-1].Parameter)
         print(f"interpolate_local_profiles {cts.Parameters} -> ")
         print(self.localLoft.getVKnots())
         return self.localLoft
@@ -583,7 +588,7 @@ class SweepInterpolator:
     def addExtra(self):
         if self.NumExtra < 1:
             return
-        params = self.Sweep.Profile_parameters()
+        params = self.Sweep.profile_parameters()
         print(f"Insert Profiles in {vec2str(params)}")
         u0, u1 = self.Sweep.Path.ParameterRange
         path_range = u1 - u0
@@ -617,7 +622,7 @@ class SweepAroundInterpolator(SweepInterpolator):
     def normalAt(self, par):
         if isinstance(self.TopNormal, FreeCAD.Vector):
             return self.TopNormal
-        elif isinstance(self.FaceSupport, Part.face):
+        elif isinstance(self.FaceSupport, Part.Face):
             u, v = self.FaceSupport.Surface.parameter(self.valueAt(par))
             snor = self.FaceSupport.Surface.normal(u, v)
             return snor.cross(self.tangentAt(par))
@@ -630,12 +635,12 @@ class SweepAroundInterpolator(SweepInterpolator):
     def setSmoothTop(self, idx=None):
         if idx is not None and idx < len(self.Sweep.Profiles):
             p = self.Sweep.Profiles[idx]
-            ct = p.Curve.tangent(p.Curve.FirstParameter)
+            ct = p.Curve.tangent(p.Curve.FirstParameter)[0]
             self.TopNormal = ct.cross(self.tangentAt(p.Parameter))
             return
         v = FreeCAD.Vector()
         for p in self.Sweep.Profiles:
-            ct = p.Curve.tangent(p.Curve.FirstParameter)
+            ct = p.Curve.tangent(p.Curve.FirstParameter)[0]
             v += ct.cross(self.tangentAt(p.Parameter))
         self.TopNormal = v / len(self.Sweep.Profiles)
 

@@ -73,6 +73,8 @@ class RotsweepProxyFP:
         path = self.getCurve(obj.Path)[0]
         profiles = self.getCurves(obj.Profiles)
         rs = SweepPath.RotationSweep(path, profiles)
+        rs.TrimPath = obj.TrimPath
+        rs.trim_profiles()
         if obj.ExtraProfiles or not obj.TrimPath:
             inter = SweepPath.SweepAroundInterpolator(rs)
             inter.Extend = not obj.TrimPath
