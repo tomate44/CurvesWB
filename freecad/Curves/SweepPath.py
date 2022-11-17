@@ -3,7 +3,7 @@ import Part
 from freecad.Curves import curves_to_surface as CTS
 
 
-DEBUG = True
+DEBUG = False
 err = FreeCAD.Console.PrintError
 warn = FreeCAD.Console.PrintWarning
 message = FreeCAD.Console.PrintMessage
@@ -143,9 +143,17 @@ class BSplineFacade:
             geom.insertKnots(knots, mults, tol, add)
         elif isinstance(geom, (list, tuple)):
             if geom[1] == 0:
-                geom[0].insertUKnots(knots, mults, tol, add)
+                try:
+                    geom[0].insertUKnots(knots, mults, tol, add)
+                except Part.OCCError:
+                    err(f"Failed to insert UKnots {knots}\n{mults}\n")
+                    err(f"into {geom[0].getUKnots()} - {geom[0].getUMultiplicities()}\n")
             elif geom[1] == 1:
-                geom[0].insertVKnots(knots, mults, tol, add)
+                try:
+                    geom[0].insertVKnots(knots, mults, tol, add)
+                except Part.OCCError:
+                    err(f"Failed to insert VKnots {knots}\n{mults}\n")
+                    err(f"into {geom[0].getVKnots()} - {geom[0].getVMultiplicities()}\n")
         # return geom
 
     def syncDegree(geo1, geo2):
@@ -271,25 +279,30 @@ class Sweep:
     using the Gordon surface algorithm.
     """
 
-    def __init__(self, path, profiles=[]):
+    def __init__(self, path, profiles=[], trim=True):
         self.Tol2D = 1e-6  # Mainly for knot insertion
         self.Tol3D = 1e-7
         self.Path = path
-        self.TrimPath = True
+        self.TrimPath = trim
         self.Profiles = [SweepProfile(p) for p in profiles]
 
     def trim_path(self, profiles=None):
+        debug(f"Sweep.trim_path({self.TrimPath})")
+        c = self.Path.Curve
         if profiles is None:
             profiles = [p.Shape for p in self.Profiles]
-        params = []
-        for prof in profiles:
-            dist, pts, info = self.Path.distToShape(prof)
-            par = self.Path.Curve.parameter(pts[0][0])
-            params.append(par)
-        c = self.Path.Curve
-        c.segment(min(params), max(params))
+        if self.TrimPath and len(profiles) > 1:
+            params = []
+            for prof in profiles:
+                dist, pts, info = self.Path.distToShape(prof)
+                par = self.Path.Curve.parameter(pts[0][0])
+                params.append(par)
+            c.segment(min(params), max(params))
         c.scaleKnotsToBounds()
+        c.setKnot(1, 0.0)
+        c.setKnot(c.NbKnots, 1.0)
         self.Path = c.toShape()
+        debug(f"path ParameterRange({self.Path.ParameterRange})")
 
     def trim_profiles(self):
         debug("Sweep.trim_profiles()")
@@ -306,7 +319,7 @@ class Sweep:
             npar = self.Path.Curve.parameter(pts[0][1])
             prof.Curve = c
             prof.Parameter = npar
-            print(f"Sweep.trim_profiles #{i} @{npar}")
+            debug(f"Sweep.trim_profiles #{i} @{npar}")
 
     def sort_profiles(self):
         self.Profiles.sort(key=lambda x: x.Parameter)
@@ -320,6 +333,7 @@ class Sweep:
 
     def loftProfiles(self):
         cl = [c.Curve for c in self.Profiles]
+        debug(f"{cl}\n")
         cts = CTS.CurvesToSurface(cl)
         cts.Periodic = self.Path.Curve.isPeriodic()
         cts.match_curves(self.Tol2D)
@@ -337,6 +351,7 @@ class Sweep:
             loft.setVPeriodic()
         BSplineFacade.syncDegree(c, [loft, 1])
         BSplineFacade.syncKnots(c, [loft, 1], self.Tol2D)
+        self.Path = c.toShape()
         return loft
 
     def compute_S2(self):
@@ -361,14 +376,15 @@ class Sweep:
         BSplineFacade.insKnots([pts_interp, 0], [self.S1, 0], self.Tol2D)
         return pts_interp
 
+    def set_curves(self):
+        self.trim_path()
+        self.trim_profiles()
+        self.sort_profiles()
+        debug(f"Profiles are ready :\n{self.Profiles}\n")
+
     def compute(self):
         debug("Sweep.compute")
-        if self.TrimPath:
-            self.trim_path()
-        self.trim_profiles()
-        debug(self.Profiles)
         self.sort_profiles()
-
         self.S1 = self.compute_S1()
         self.S2 = self.compute_S2()
         self.S3 = self.compute_S3()
@@ -393,8 +409,8 @@ class RotationSweep(Sweep):
     rotating around a center point.
     """
 
-    def __init__(self, path, profiles=[], center=None):
-        super().__init__(path, profiles)
+    def __init__(self, path, profiles=[], trim=True, center=None):
+        super().__init__(path, profiles, trim)
         if center is None:
             self.Center = self.getCenter()
         else:
@@ -441,6 +457,7 @@ class RotationSweep(Sweep):
             npar = self.Path.Curve.parameter(pts2[0][1])
             prof.Curve = c
             prof.Parameter = npar
+            debug(f"{prof}\n")
 
     def compute_S2(self):
         debug("SweepAround.compute_S2()")
@@ -464,6 +481,7 @@ class SweepInterpolator:
         self.NumExtra = extra
         self.FaceSupport = None
         self.localLoft = None
+        self.TopNormal = None
 
     def valueAt(self, par):
         return self.Sweep.Path.valueAt(par)
@@ -507,7 +525,7 @@ class SweepInterpolator:
     def computeLocalProfiles(self):
         locprofs = []
         for prof in self.Sweep.Profiles:
-            print(prof.Parameter)
+            # print(prof.Parameter)
             m = self.transitionMatrixAt(prof.Parameter)
             m = m.inverse()
             locprof = prof.Curve.copy()
@@ -522,7 +540,7 @@ class SweepInterpolator:
     def offset_profile(self, prof, par):
         sp = LocalProfile(prof)
         sp.translate(par)
-        print(f"Inserting local profile @ {sp.Parameter}")
+        debug(f"Inserting local profile @ {sp.Parameter}")
         self.LocalProfiles.append(sp)
 
     def interpolate_local_profiles(self):
@@ -537,8 +555,8 @@ class SweepInterpolator:
         # print(u0, u1, self.profiles[0].Parameter,self.profiles[-1].Parameter)
         self.localLoft.scaleKnotsToBounds(u0, u1, self.LocalProfiles[0].Parameter,
                                           self.LocalProfiles[-1].Parameter)
-        print(f"interpolate_local_profiles {cts.Parameters} -> ")
-        print(self.localLoft.getVKnots())
+        debug(f"interpolate_local_profiles @ {cts.Parameters}")
+        # print(self.localLoft.getVKnots())
         return self.localLoft
 
     def profileAt(self, par):
@@ -553,6 +571,10 @@ class SweepInterpolator:
             pole = locprof.getPole(i + 1)
             np = m.multVec(pole)
             locprof.setPole(i + 1, np)
+        if self.TopNormal:
+            pl = Part.Plane(locprof.getPole(1), self.TopNormal)
+            pt = pl.projectPoint(locprof.getPole(2))
+            locprof.setPole(2, pt)
         return SweepProfile(locprof, par)
 
     def extend(self, periodic=False):
@@ -563,6 +585,9 @@ class SweepInterpolator:
             return
         u0, u1 = self.Sweep.Path.ParameterRange
         path_range = u1 - u0
+        params = self.profile_parameters()
+        minpar = min(params)
+        maxpar = max(params)
         if periodic:
             path_range = -path_range
             profs = self.LocalProfiles[:]
@@ -577,19 +602,21 @@ class SweepInterpolator:
                 self.offset_profile(lp, i * path_range)
         self.sort_profiles()
         self.interpolate_local_profiles()
-        if self.Sweep.Path.FirstParameter < min(self.profile_parameters()):
-            fp = self.profileAt(self.Sweep.Path.FirstParameter)
+        if u0 < minpar:
+            fp = self.profileAt(u0)
             self.Sweep.Profiles.insert(0, fp)
-        if self.Sweep.Path.LastParameter > max(self.profile_parameters()):
+            debug(f"inserting start profile @ {fp.Parameter}")
+        if (u1 > maxpar) and (not self.Sweep.Path.Curve.isPeriodic()):
             # if not self.path.Curve.isPeriodic():
-            lp = self.profileAt(self.Sweep.Path.LastParameter)
+            lp = self.profileAt(u1)
             self.Sweep.Profiles.append(lp)
+            debug(f"inserting end profile @ {lp.Parameter}")
 
     def addExtra(self):
         if self.NumExtra < 1:
             return
         params = self.Sweep.profile_parameters()
-        print(f"Insert Profiles in {vec2str(params)}")
+        debug(f"Insert {self.NumExtra} Profiles in {vec2str(params)}")
         u0, u1 = self.Sweep.Path.ParameterRange
         path_range = u1 - u0
         step = path_range / (self.NumExtra + 1)
@@ -601,7 +628,7 @@ class SweepInterpolator:
             lstep = lrange / (nb + 1)
             for j in range(nb):
                 par = params[i] + (j + 1) * lstep
-                print(f"Insert profile #{count} @ {vec2str(par)}")
+                debug(f"Insert profile #{count} @ {vec2str(par)}")
                 count += 1
                 intpro = self.profileAt(par)
                 # contact_shapes(intpro.Curve, self.path, Part.Vertex(self.Center))
@@ -617,17 +644,17 @@ class SweepInterpolator:
 class SweepAroundInterpolator(SweepInterpolator):
     def __init__(self, sweepAround, extend=False, extra=0):
         super().__init__(sweepAround, extend, extra)
-        self.TopNormal = None
 
     def normalAt(self, par):
+        chord = self.tangentAt(par).cross(self.binormalAt(par))
         if isinstance(self.TopNormal, FreeCAD.Vector):
-            return self.TopNormal
+            return self.TopNormal  # * chord.Length
         elif isinstance(self.FaceSupport, Part.Face):
             u, v = self.FaceSupport.Surface.parameter(self.valueAt(par))
             snor = self.FaceSupport.Surface.normal(u, v)
-            return snor.cross(self.tangentAt(par))
+            return snor.cross(self.tangentAt(par))  # * chord.Length
         else:
-            return self.tangentAt(par).cross(self.binormalAt(par))
+            return chord
 
     def binormalAt(self, par):
         return self.Sweep.Center - self.valueAt(par)

@@ -385,7 +385,7 @@ class CurvesToSurface:
                 poles_array.append(bs.getPoles())
             except Part.OCCError:
                 if self.repeated_points(pts, 1e-5):
-                    print(f"Repeated points detected at Pole #{pole_idx}")
+                    # print(f"Repeated points detected at Pole #{pole_idx}")
                     poles_array.append(self.interpolate_multipoints(pts))
                 else:
                     print("Curve interpolation error. Bad data :")

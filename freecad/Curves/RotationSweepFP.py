@@ -11,6 +11,7 @@ import os
 import FreeCAD
 import FreeCADGui
 import Part
+from importlib import reload
 from freecad.Curves import SweepPath
 from freecad.Curves import ICONPATH
 
@@ -72,12 +73,12 @@ class RotsweepProxyFP:
     def execute(self, obj):
         path = self.getCurve(obj.Path)[0]
         profiles = self.getCurves(obj.Profiles)
-        rs = SweepPath.RotationSweep(path, profiles)
-        rs.TrimPath = obj.TrimPath
-        rs.trim_profiles()
-        if obj.ExtraProfiles or not obj.TrimPath:
+        reload(SweepPath)
+        rs = SweepPath.RotationSweep(path, profiles, obj.TrimPath)
+        rs.set_curves()
+        if obj.ExtraProfiles or (not obj.TrimPath) or (len(profiles) < 2):
             inter = SweepPath.SweepAroundInterpolator(rs)
-            inter.Extend = not obj.TrimPath
+            inter.Extend = (not obj.TrimPath) or (len(profiles) < 2)
             inter.NumExtra = obj.ExtraProfiles
             if obj.SmoothTop:
                 inter.setSmoothTop()
