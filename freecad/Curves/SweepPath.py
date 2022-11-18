@@ -282,7 +282,10 @@ class Sweep:
     def __init__(self, path, profiles=[], trim=True):
         self.Tol2D = 1e-6  # Mainly for knot insertion
         self.Tol3D = 1e-7
-        self.Path = path
+        c = path.Curve.toBSpline(path.FirstParameter, path.LastParameter)
+        if c.isClosed() and not c.isPeriodic():
+            c.setPeriodic()
+        self.Path = c.toShape()
         self.TrimPath = trim
         self.Profiles = [SweepProfile(p) for p in profiles]
 
@@ -420,8 +423,8 @@ class RotationSweep(Sweep):
         center = FreeCAD.Vector()
         sh = self.Profiles[0].Shape
         if len(self.Profiles) == 1:
-            warn("RotationSweep: Only 1 profile provided.\n")
-            warn("Choosing center point opposite to path.\n")
+            debug("RotationSweep: Only 1 profile provided.\n")
+            debug("Choosing center point opposite to path.\n")
             dist, pts, info = self.Path.distToShape(sh)
             par = self.Profiles[0].Curve.parameter(pts[0][1])
             fp = sh.FirstParameter
@@ -490,7 +493,7 @@ class SweepInterpolator:
         return self.Sweep.Path.tangentAt(par)
 
     def normalAt(self, par):
-        if isinstance(self.FaceSupport, Part.face):
+        if isinstance(self.FaceSupport, Part.Face):
             u, v = self.FaceSupport.Surface.parameter(self.valueAt(par))
             snor = self.FaceSupport.Surface.normal(u, v)
             return snor.cross(self.tangentAt(par))
@@ -503,9 +506,9 @@ class SweepInterpolator:
     def transitionMatrixAt(self, par):
         """Path local CS"""
         poc = self.valueAt(par)
+        bno = self.binormalAt(par)
         tan = self.tangentAt(par)
         nor = self.normalAt(par)
-        bno = self.binormalAt(par)
         m = FreeCAD.Matrix(bno.x, tan.x, nor.x, poc.x,
                            bno.y, tan.y, nor.y, poc.y,
                            bno.z, tan.z, nor.z, poc.z,
@@ -607,7 +610,6 @@ class SweepInterpolator:
             self.Sweep.Profiles.insert(0, fp)
             debug(f"inserting start profile @ {fp.Parameter}")
         if (u1 > maxpar) and (not self.Sweep.Path.Curve.isPeriodic()):
-            # if not self.path.Curve.isPeriodic():
             lp = self.profileAt(u1)
             self.Sweep.Profiles.append(lp)
             debug(f"inserting end profile @ {lp.Parameter}")
@@ -631,7 +633,6 @@ class SweepInterpolator:
                 debug(f"Insert profile #{count} @ {vec2str(par)}")
                 count += 1
                 intpro = self.profileAt(par)
-                # contact_shapes(intpro.Curve, self.path, Part.Vertex(self.Center))
                 profs.append(intpro)
         self.Sweep.Profiles.extend(profs)
 
@@ -646,15 +647,14 @@ class SweepAroundInterpolator(SweepInterpolator):
         super().__init__(sweepAround, extend, extra)
 
     def normalAt(self, par):
-        chord = self.tangentAt(par).cross(self.binormalAt(par))
-        if isinstance(self.TopNormal, FreeCAD.Vector):
-            return self.TopNormal  # * chord.Length
-        elif isinstance(self.FaceSupport, Part.Face):
+        # if isinstance(self.TopNormal, FreeCAD.Vector):
+        #     return self.TopNormal  # * chord.Length
+        if isinstance(self.FaceSupport, Part.Face):
             u, v = self.FaceSupport.Surface.parameter(self.valueAt(par))
             snor = self.FaceSupport.Surface.normal(u, v)
             return snor.cross(self.tangentAt(par))  # * chord.Length
         else:
-            return chord
+            return self.tangentAt(par).cross(self.binormalAt(par))
 
     def binormalAt(self, par):
         return self.Sweep.Center - self.valueAt(par)

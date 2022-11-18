@@ -33,15 +33,15 @@ class RotsweepProxyFP:
         obj.addProperty("App::PropertyLinkSub", "Path",
                         "InputShapes", "The sweep path")
         obj.addProperty("App::PropertyLinkSub", "FaceSupport",
-                        "InputShapes", "Face support of the sweep path")
+                        "ExtraProfiles", "Face support of the sweep path")
         obj.addProperty("App::PropertyBool", "TrimPath",
                         "Settings", "Trim the sweep shape").TrimPath = True
         obj.addProperty("App::PropertyBool", "ViewProfiles",
                         "Settings", "Add profiles to the sweep shape")
         obj.addProperty("App::PropertyInteger", "ExtraProfiles",
-                        "Settings", "Number of extra profiles")
+                        "ExtraProfiles", "Number of extra profiles")
         obj.addProperty("App::PropertyBool", "SmoothTop",
-                        "Settings", "Build a smooth top with extra profiles")
+                        "ExtraProfiles", "Build a smooth top with extra profiles")
         obj.setEditorMode("ViewProfiles", 2)
         # obj.setEditorMode("ExtraProfiles", 2)
         obj.Proxy = self
@@ -84,10 +84,22 @@ class RotsweepProxyFP:
                 inter.setSmoothTop()
             elif obj.FaceSupport is not None:
                 fs = obj.FaceSupport[0].getSubObject(obj.FaceSupport[1])[0]
-                FreeCAD.Console.PrintMessage(fs)
+                # FreeCAD.Console.PrintMessage(fs)
                 inter.FaceSupport = fs
             inter.compute()
-        obj.Shape = rs.Face
+        f = rs.Face
+        if obj.SmoothTop:
+            s = f.Surface
+            pl = Part.Plane(s.value(0, 0), inter.TopNormal)
+            for i, pt in enumerate(s.getPoles()[1]):
+                npt = pl.projectPoint(pt)
+                s.setPole(2, i + 1, npt)
+            f = s.toShape()
+        if obj.ViewProfiles:
+            shl = [f] + [p.Shape for p in rs.Profiles]
+            obj.Shape = Part.Compound(shl)
+        else:
+            obj.Shape = f
 
     def onChanged(self, obj, prop):
         return False
