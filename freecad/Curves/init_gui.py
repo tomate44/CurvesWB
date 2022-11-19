@@ -59,6 +59,7 @@ class CurvesWorkbench(Gui.Workbench):
         from . import blendSurfaceFP_new
         from . import blendSolidFP
         from . import FlattenFP
+        from . import RotationSweepFP
         # from . import HQRuledSurfaceFP
         # from . import HelicalSweepFP
         # import sectionSketch
@@ -70,7 +71,7 @@ class CurvesWorkbench(Gui.Workbench):
         surflist = ["ZebraTool", "Trim", "IsoCurve", "SoS", "sw2r", "profileSupportCmd",
                     "profile", "pipeshell", "gordon", "segment_surface", "comp_spring",
                     "ReflectLines", "MultiLoft", "Curves_BlendSurf2", "Curves_BlendSolid",
-                    "Curves_FlattenFace"]
+                    "Curves_FlattenFace", "Curves_RotationSweep"]
         misclist = ["GeomInfo", "extract", "solid", "pasteSVG", "to_console", "Curves_adjacent_faces",
                     "Curves_bspline_to_console"]
 

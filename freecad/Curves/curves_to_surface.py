@@ -15,6 +15,7 @@ PrintError = FreeCAD.Console.PrintError
 class SurfaceAdapter:
     """Adapter to work on one direction of a BSpline surface
     with BSpline curve tools"""
+
     def __init__(self, surf, direction=0):
         self.surface = surf
         self.direction = direction
@@ -228,6 +229,9 @@ class CurvesToSurface:
                 self._params = par
             else:
                 print("Wrong number of parameters")
+                print(f"Periodic = {self._periodic}")
+                print(len(par))
+                print(len(self.curves))
 
     @property
     def Surface(self):
@@ -260,6 +264,14 @@ class CurvesToSurface:
 
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__, len(self.curves))
+
+    def repeated_points(self, pts, tol=1e-7):
+        d = 0
+        for i in range(len(pts) - 1):
+            d += pts[i].distanceToPoint(pts[i + 1])
+        if d < tol * len(pts):
+            return True
+        return False
 
     def check_all_closed(self):
         self.all_closed = True
@@ -302,11 +314,19 @@ class CurvesToSurface:
     def normalize_knots(self):
         "Set all curves knots to the [0,1] interval"
         for c in self.curves:
-            fp = c.FirstParameter
-            lp = c.LastParameter
-            if (not fp == 0.0) or (not lp == 1.0):
-                normalized_knots = [(k - fp) / (lp - fp) for k in c.getKnots()]
-                c.setKnots(normalized_knots)
+            c.scaleKnotsToBounds()
+
+    def match_knots(self, tol=1e-15):
+        self.normalize_knots()
+        for c in self.curves[1:]:
+            self.curves[0].insertKnots(c.getKnots(), c.getMultiplicities(), tol, False)
+        for c in self.curves[1:]:
+            c.insertKnots(self.curves[0].getKnots(), self.curves[0].getMultiplicities(), tol, False)
+
+    def match_curves(self, tol=1e-15):
+        self.match_degrees()
+        self.normalize_knots()
+        self.match_knots(tol)
 
     def _parameters_at_poleidx(self, fac=1.0, idx=1):
         """Compute the parameters list from parametrization factor fac (in [0.0, 1.0])
@@ -341,19 +361,36 @@ class CurvesToSurface:
         # print("Average parameters : {}".format(params))
         self.Parameters = params
 
+    def interpolate_multipoints(self, pts):
+        fpts = []
+        for i in range(len(pts)):
+            fpts.append(FreeCAD.Vector(i, 0, 0))
+        bs = Part.BSplineCurve()
+        bs.interpolate(Points=fpts, Parameters=self.Parameters, PeriodicFlag=self.Periodic)
+        return [pts[0]] * bs.NbPoles
+
     def interpolate(self):
         "interpolate the poles of the curves and build the surface"
         if self.Parameters is None:
             self.set_parameters(1.0)
+        # nbp = [c.NbPoles for c in self.curves]
+        # print(nbp)
         poles_array = []
         bs = Part.BSplineCurve()
         for pole_idx in range(1, self.curves[0].NbPoles + 1):
             pts = [c.getPole(pole_idx) for c in self.curves]
+            # print(pts, self.Parameters)
             try:
                 bs.interpolate(Points=pts, Parameters=self.Parameters, PeriodicFlag=self.Periodic)
                 poles_array.append(bs.getPoles())
             except Part.OCCError:
-                poles_array.append(pts)
+                if self.repeated_points(pts, 1e-5):
+                    # print(f"Repeated points detected at Pole #{pole_idx}")
+                    poles_array.append(self.interpolate_multipoints(pts))
+                else:
+                    print("Curve interpolation error. Bad data :")
+                    for d in (pts, self.Parameters, self.Periodic):
+                        print(d)
         maxlen = 0
         for poles in poles_array:
             maxlen = max(maxlen, len(poles))
@@ -366,27 +403,34 @@ class CurvesToSurface:
                 poles.append(p)
             weights.append([1.0] * maxlen)
         self._surface = Part.BSplineSurface()
-        self._surface.buildFromPolesMultsKnots(poles_array,
-                                               self.curves[0].getMultiplicities(), bs.getMultiplicities(),
-                                               self.curves[0].getKnots(), bs.getKnots(),
-                                               self.curves[0].isPeriodic(), bs.isPeriodic(),
-                                               self.curves[0].Degree, bs.Degree, weights)
+        args = (poles_array,
+                self.curves[0].getMultiplicities(), bs.getMultiplicities(),
+                self.curves[0].getKnots(), bs.getKnots(),
+                self.curves[0].isPeriodic(), bs.isPeriodic(),
+                self.curves[0].Degree, bs.Degree, weights)
+        try:
+            self._surface.buildFromPolesMultsKnots(*args)
+        except Part.OCCError as exc:
+            print("\n*** CurvesToSurface interpolation error ***\n")
+            print(f"{len(poles_array)} x {len(poles_array[0])} Poles")
+            print(f"{sum(self.curves[0].getMultiplicities()[:-1])} x {sum(bs.getMultiplicities()[:-1])} Mults")
+            for data in args[1:-1]:
+                print(data)
+            raise exc
         return self._surface
 
     def build_surface(self):
         "Make curves compatible and build surface"
-        self.match_degrees()
+        self.match_curves()
         self.auto_orient()
         self.auto_twist()
-        # self.auto_orient()
-        self.normalize_knots()
-        match_knots(self.curves)
         self.set_parameters(1.0)
         self.interpolate()
 
 
 class Gordon:
     """Gordon Surface algorithm on 3 surfaces : S1 + S2 - S3"""
+
     def __init__(self, s1, s2, s3):
         self.s1 = s1
         self.s2 = s2
@@ -465,6 +509,7 @@ class Gordon:
 
 class CurvesOn2Rails:
     """Surface defined by a series of curves on 2 rails"""
+
     def __init__(self, curves, rails):
         self.tol2d = 1e-15
         self.tol3d = 1e-7

@@ -1,135 +1,114 @@
 # -*- coding: utf-8 -*-
 
-__title__ = 'Title'
+__title__ = 'Rotation Sweep'
 __author__ = 'Christophe Grellier (Chris_G)'
 __license__ = 'LGPL 2.1'
-__doc__ = 'Doc'
+__doc__ = 'Sweep some profiles along a path, and around a point'
+__usage__ = """Select a sweep path and some profiles in the 3D View.
+If TrimPath is False, the Sweep surface will be extrapolated to fit the whole path."""
 
 import os
 import FreeCAD
 import FreeCADGui
-# import Part
-# from freecad.Curves import _utils
+import Part
+from importlib import reload
+from freecad.Curves import SweepPath
 from freecad.Curves import ICONPATH
 
-TOOL_ICON = os.path.join(ICONPATH, 'icon.svg')
+err = FreeCAD.Console.PrintError
+warn = FreeCAD.Console.PrintWarning
+message = FreeCAD.Console.PrintMessage
+TOOL_ICON = os.path.join(ICONPATH, 'sweep_around.svg')
 # debug = _utils.debug
 # debug = _utils.doNothing
-
-props = """
-App::PropertyBool
-App::PropertyBoolList
-App::PropertyFloat
-App::PropertyFloatList
-App::PropertyFloatConstraint
-App::PropertyQuantity
-App::PropertyQuantityConstraint
-App::PropertyAngle
-App::PropertyDistance
-App::PropertyLength
-App::PropertySpeed
-App::PropertyAcceleration
-App::PropertyForce
-App::PropertyPressure
-App::PropertyInteger
-App::PropertyIntegerConstraint
-App::PropertyPercent
-App::PropertyEnumeration
-App::PropertyIntegerList
-App::PropertyIntegerSet
-App::PropertyMap
-App::PropertyString
-App::PropertyUUID
-App::PropertyFont
-App::PropertyStringList
-App::PropertyLink
-App::PropertyLinkSub
-App::PropertyLinkList
-App::PropertyLinkSubList
-App::PropertyMatrix
-App::PropertyVector
-App::PropertyVectorList
-App::PropertyPlacement
-App::PropertyPlacementLink
-App::PropertyColor
-App::PropertyColorList
-App::PropertyMaterial
-App::PropertyPath
-App::PropertyFile
-App::PropertyFileIncluded
-App::PropertyPythonObject
-Part::PropertyPartShape
-Part::PropertyGeometryList
-Part::PropertyShapeHistory
-Part::PropertyFilletEdges
-Sketcher::PropertyConstraintList
-"""
-
-
-class RotationSweep:
-    def __init__(self, path, profiles, closed=False):
-        self.path = path
-        self.profiles = profiles
-        self.closed = closed
-
-    def getCenter(self):
-        if len(self.profiles) == 1:
-            dist, pts, info = self.path.toShape.distToShape(self.profiles[0].toShape())
-            par = self.profiles[0].parameter(pts[0][1])
-            if abs(par - self.profiles[0].FirstParameter) > abs(par - self.profiles[0].LastParameter):
-                return self.profiles[0].value(self.profiles[0].FirstParameter)
-            else:
-                return self.profiles[0].value(self.profiles[0].LastParameter)
-
-        center = FreeCAD.Vector()
-        for p in self.profiles[1:]:
-            dist, pts, info = p.toShape.distToShape(self.profiles[0].toShape())
-            center += pts[0][1]
-        return center / (len(self.profiles) - 1)
-
-    def loftProfiles(self):
-        wl = [Part.Wire([c.toShape()]) for c in self.profiles]
-        loft = Part.makeLoft(wl, False, False, self.closed, 3)
-        return loft.Face1.Surface
-
-    def ruledToCenter(self):
-
-
 
 
 class RotsweepProxyFP:
     """Creates a ..."""
+
     def __init__(self, obj):
         """Add the properties"""
         obj.addProperty("App::PropertyLinkSubList", "Profiles",
                         "InputShapes", "The list of profiles to sweep")
         obj.addProperty("App::PropertyLinkSub", "Path",
                         "InputShapes", "The sweep path")
-        obj.addProperty("App::PropertyBool", "Closed",
-                        "Settings", "Close the sweep shape")
+        obj.addProperty("App::PropertyLinkSub", "FaceSupport",
+                        "ExtraProfiles", "Face support of the sweep path")
+        obj.addProperty("App::PropertyBool", "TrimPath",
+                        "Settings", "Trim the sweep shape").TrimPath = True
+        obj.addProperty("App::PropertyBool", "ViewProfiles",
+                        "Settings", "Add profiles to the sweep shape")
+        obj.addProperty("App::PropertyInteger", "ExtraProfiles",
+                        "ExtraProfiles", "Number of extra profiles")
+        obj.addProperty("App::PropertyBool", "SmoothTop",
+                        "Settings", "Build a smooth top with extra profiles")
+        obj.setEditorMode("ViewProfiles", 2)
+        # obj.setEditorMode("ExtraProfiles", 2)
         obj.Proxy = self
 
-    def getCurve(self, prop):
+    def getCurve(self, lo):
         edges = []
-        po, psn = prop
+        po, psn = lo
+        # print(psn)
         for sn in psn:
-            edges.append(po.getSubObject(sn))
+            if "Edge" in sn:
+                edges.append(po.getSubObject(sn))
         if len(edges) == 0:
             edges = po.Shape.Edges
-        if len(edges) == 1:
-            return edges[0].Curve
-        soed = Part.SortEdges(edges)
-        w = Part.Wire(soed[0])
-        return w.approximate(1e-10, 1e-7, 10000, 3)
+        bsedges = []
+        for e in edges:
+            if isinstance(e.Curve, Part.BSplineCurve):
+                bsedges.append(e)
+            else:
+                c = e.Curve.toBSpline(e.FirstParameter, e.LastParameter)
+                bsedges.append(c.toShape())
+        return bsedges
+
+    def getCurves(self, prop):
+        edges = []
+        for p in prop:
+            edges.extend(self.getCurve(p))
+        return edges
 
     def execute(self, obj):
         path = self.getCurve(obj.Path)[0]
-        profiles = [self.getCurve(l) for l in obj.Profiles]
-        rs = RotationSweep(path, profiles, obj.Closed)
-        obj.Shape = rs.Face
+        profiles = self.getCurves(obj.Profiles)
+        reload(SweepPath)
+        rs = SweepPath.RotationSweep(path, profiles, obj.TrimPath)
+        rs.set_curves()
+        inter = None
+        if obj.ExtraProfiles or (not obj.TrimPath) or (len(profiles) < 2) or obj.SmoothTop:
+            inter = SweepPath.SweepAroundInterpolator(rs)
+            inter.Extend = (not obj.TrimPath) or (len(profiles) < 2)
+            inter.NumExtra = obj.ExtraProfiles
+            if obj.SmoothTop:
+                inter.setSmoothTop()
+            if obj.FaceSupport is not None:
+                fs = obj.FaceSupport[0].getSubObject(obj.FaceSupport[1])[0]
+                # FreeCAD.Console.PrintMessage(fs)
+                inter.FaceSupport = fs
+            inter.compute()
+        f = rs.Face
+        if obj.SmoothTop:
+            s = f.Surface
+            pl = Part.Plane(s.value(0, 0), inter.TopNormal)
+            for i, pt in enumerate(s.getPoles()[1]):
+                npt = pl.projectPoint(pt)
+                s.setPole(2, i + 1, npt)
+            f = s.toShape()
+        if obj.ViewProfiles:
+            shl = [f] + [p.Shape for p in rs.Profiles]
+            obj.Shape = Part.Compound(shl)
+        else:
+            obj.Shape = f
 
     def onChanged(self, obj, prop):
-        return False
+        if 'Restore' in obj.State:
+            return
+        if prop == "Profiles":
+            edges = self.getCurves(obj.Profiles)
+            if len(edges) == 1:
+                obj.ExtraProfiles = 1
 
 
 class RotsweepProxyVP:
@@ -152,8 +131,10 @@ class RotsweepProxyVP:
 
 class RotsweepFPCommand:
     """Create a ... feature"""
+
     def makeFeature(self, sel=None):
-        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "Rotation Sweep")
+        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython",
+                                              "Rotation Sweep")
         RotsweepProxyFP(fp)
         fp.Path = sel[0]
         fp.Profiles = sel[1:]
@@ -162,7 +143,7 @@ class RotsweepFPCommand:
 
     def Activated(self):
         links = []
-        sel = FreeCADGui.Selection.getSelectionEx('',0)
+        sel = FreeCADGui.Selection.getSelectionEx('', 0)
         for so in sel:
             if so.HasSubObjects:
                 links.append((so.Object, so.SubElementNames))
@@ -182,7 +163,7 @@ class RotsweepFPCommand:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': __title__,
-                'ToolTip': __doc__}
+                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
 
-FreeCADGui.addCommand('tool_name', ToolCommand())
+FreeCADGui.addCommand('Curves_RotationSweep', RotsweepFPCommand())
