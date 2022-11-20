@@ -19,8 +19,7 @@ from . import CoinNodes as coinNodes
 
 
 TOOL_ICON = os.path.join(ICONPATH, 'info.svg')
-
-DEBUG = 1
+DEBUG = False
 
 
 def debug(string):
@@ -31,12 +30,12 @@ def debug(string):
 
 def beautify(shp):
     if not shp:
-        return("")
+        return ""
     else:
         t = shp
         if (shp[0] == "<") and (shp[-1] == ">"):
             t = shp[1:-1]
-        return(t.split()[0])
+        return t.split()[0]
 
 
 def getString(weights):
@@ -91,7 +90,7 @@ def to1D(arr):
 
 
 def paramList(n, fp, lp):
-    rang = lp-fp
+    rang = lp - fp
     params = []
     if n == 1:
         params = [fp + rang / 2.0]
@@ -109,17 +108,17 @@ def curveNode(cur):
     try:
         poles = cur.getPoles()
         weights = cur.getWeights()
-    except:
+    except AttributeError:
         return False
     try:
         rational = cur.isRational()
-    except:
+    except AttributeError:
         pass
     try:
         knots = cur.getKnots()
         mults = cur.getMultiplicities()
         bspline = True
-    except:
+    except AttributeError:
         bspline = False
 
     # *** Set poles ***
@@ -182,22 +181,23 @@ def curveNode(cur):
 def surfNode(surf):
     bspline = False
     rational = False
+    tol3d = FreeCAD.Base.Precision.confusion()
     try:
         poles = surf.getPoles()
         weights = surf.getWeights()
         nbU = int(surf.NbUPoles)
         nbV = int(surf.NbVPoles)
-    except:
+    except AttributeError:
         return False
     try:
         rational = surf.isURational() or surf.isVRational()
-    except:
+    except AttributeError:
         pass
     try:
         uknots = surf.getUKnots()
         vknots = surf.getVKnots()
         bspline = True
-    except:
+    except AttributeError:
         bspline = False
 
     # *** Set poles ***
@@ -220,15 +220,15 @@ def surfNode(surf):
     markerSep.color = [(1, 0, 0)] + [(0.5, 0.0, 0.5)] * (len(flatPoles) - 1)
 
     u0, u1, v0, v1 = surf.bounds()
-    halfU = u0 + 1.*(u1-u0)/2
-    halfV = v0 + 1.*(v1-v0)/2
+    halfU = u0 + (u1 - u0) / 2
+    halfV = v0 + (v1 - v0) / 2
     UPos = surf.value(halfU, v0)
     Uletter = coinNodes.text2dNode((0, 0, 0),
                                    "osiFont,FreeSans,sans",
                                    20,
                                    (UPos.x, UPos.y, UPos.z),
                                    'U')
-    VPos = surf.value(u0,halfV)
+    VPos = surf.value(u0, halfV)
     Vletter = coinNodes.text2dNode((0, 0, 0),
                                    "osiFont,FreeSans,sans",
                                    20,
@@ -255,23 +255,24 @@ def surfNode(surf):
         # *** Set knots ***
         uknotPoints = []
         nb_curves = 0
+        np = 100
         for k in uknots:
             try:
                 uIso = surf.uIso(k)
-                epts = uIso.toShape().discretize(100)
-                if len(epts) == 100:
+                if uIso.length() > tol3d:
+                    epts = uIso.toShape().discretize(np)
                     for p in epts:
                         uknotPoints.append((p.x, p.y, p.z))
                     nb_curves += 1
-            except:
-                FreeCAD.Console.PrintError("Error computing surface U Iso\n")
+            except Exception as exc:
+                debug(f"Error computing surface U Iso\n{exc}")
 
         if nb_curves > 0:
             uknotsnode = coinNodes.coordinate3Node(uknotPoints)
             uCurves = coinNodes.rowNode((1.0, 0.5, 0.3), 3)
-            uCurves.color = [(1.0, 0.5, 0.3)] * 99
-            uCurves.color += [(0.7, 0.0, 0.3)] * (nb_curves - 1) * 99
-            uCurves.vertices = (nb_curves, 100)
+            uCurves.color = [(1.0, 0.5, 0.3)] * (np - 1)
+            uCurves.color += [(0.7, 0.0, 0.3)] * (nb_curves - 1) * (np - 1)
+            uCurves.vertices = (nb_curves, np)
             vizSep.addChild(uknotsnode)
             vizSep.addChild(uCurves)
 
@@ -280,87 +281,88 @@ def surfNode(surf):
         for k in vknots:
             try:
                 vIso = surf.vIso(k)
-                epts = vIso.toShape().discretize(100)
-                if len(epts) == 100:
+                if vIso.length() > tol3d:
+                    epts = vIso.toShape().discretize(np)
                     for p in epts:
                         vknotPoints.append((p.x, p.y, p.z))
                     nb_curves += 1
-            except:
-                FreeCAD.Console.PrintError("Error computing surface V Iso\n")
+            except Exception as exc:
+                debug(f"Error computing surface V Iso\n{exc}")
 
         if nb_curves > 0:
             vknotsnode = coinNodes.coordinate3Node(vknotPoints)
             vCurves = coinNodes.rowNode((0.3, 0.5, 1.0), 3)
-            vCurves.color = [(0.8, 0.8, 0.0)] * 99
-            vCurves.color += [(0.3, 0.0, 0.7)] * (nb_curves - 1) * 99
-            vCurves.vertices = (nb_curves, 100)
+            vCurves.color = [(0.8, 0.8, 0.0)] * (np - 1)
+            vCurves.color += [(0.3, 0.0, 0.7)] * (nb_curves - 1) * (np - 1)
+            vCurves.vertices = (nb_curves, np)
             vizSep.addChild(vknotsnode)
             vizSep.addChild(vCurves)
 
         # removed because of several FC crashes
-        ## ***** isoCurves ******
-        
-        #uparam = paramList(16,u0,u1)
-        #uisoPoints = []
-        #nb_curves = 0
-        #for k in uparam:
-            #try:
-                #uIso = surf.uIso(k)
-                #epts = uIso.toShape().discretize(100)
-                #if len(epts) == 100:
-                    #for p in epts:
-                        #uisoPoints.append((p.x,p.y,p.z))
-                    #nb_curves += 1
-            #except:
-                #FreeCAD.Console.PrintError("Error computing surface U Iso\n")
-        
-        #if nb_curves > 0:
-            #uisonode = coinNodes.coordinate3Node(uisoPoints)
-            #uisoCurves = coinNodes.rowNode((0.0,0.0,0.0),1)
-            #uisoCurves.transparency = 0.8
-            #uisoCurves.vertices=(nb_curves,100)
-            #vizSep.addChild(uisonode)
-            #vizSep.addChild(uisoCurves)
-            ##debug(str(uCurves.vertices))
-        
-        #vparam = paramList(16,v0,v1)
-        #visoPoints = []
-        #nb_curves = 0
-        #for k in vparam:
-            #try:
-                #vIso = surf.vIso(k)
-                #epts = vIso.toShape().discretize(100)
-                #if len(epts) == 100:
-                    #for p in epts:
-                        #vknotPoints.append((p.x,p.y,p.z))
-                    #nb_curves += 1
-            #except:
-                #FreeCAD.Console.PrintError("Error computing surface V Iso\n")
-        
-        #if nb_curves > 0:
-            #visonode = coinNodes.coordinate3Node(visoPoints)
-            #visoCurves = coinNodes.rowNode((0.0,0.0,0.0),1)
-            #visoCurves.transparency = 0.8
-            #visoCurves.vertices=(nb_curves,100)
-            #vizSep.addChild(visonode)
-            #vizSep.addChild(visoCurves)
-
-        ## *** Set texts ***        
-        #multStr = []
-        #for m in mults:
-            #multStr.append("%d"%m)
-        
-        #knotMarkerSep = coinNodes.markerSetNode((0,0,1),coin.SoMarkerSet.CIRCLE_FILLED_9_9)
-
-        ## *** Set mult text ***        
-        #multSep = coinNodes.multiTextNode((0,0,1),"osiFont,FreeSans,sans",16,1)
-        #multSep.data = (knotPoints,multStr)
+#         # ***** isoCurves ******
+#
+#         uparam = paramList(16,u0,u1)
+#         uisoPoints = []
+#         nb_curves = 0
+#         for k in uparam:
+#             try:
+#                 uIso = surf.uIso(k)
+#                 epts = uIso.toShape().discretize(100)
+#                 if len(epts) == 100:
+#                     for p in epts:
+#                         uisoPoints.append((p.x,p.y,p.z))
+#                     nb_curves += 1
+#             except:
+#                 debug("Error computing surface U Iso")
+#
+#         if nb_curves > 0:
+#             uisonode = coinNodes.coordinate3Node(uisoPoints)
+#             uisoCurves = coinNodes.rowNode((0.0,0.0,0.0),1)
+#             uisoCurves.transparency = 0.8
+#             uisoCurves.vertices=(nb_curves,100)
+#             vizSep.addChild(uisonode)
+#             vizSep.addChild(uisoCurves)
+#             #debug(str(uCurves.vertices))
+#
+#         vparam = paramList(16,v0,v1)
+#         visoPoints = []
+#         nb_curves = 0
+#         for k in vparam:
+#             try:
+#                 vIso = surf.vIso(k)
+#                 epts = vIso.toShape().discretize(100)
+#                 if len(epts) == 100:
+#                     for p in epts:
+#                         vknotPoints.append((p.x,p.y,p.z))
+#                     nb_curves += 1
+#             except:
+#                 debug("Error computing surface V Iso")
+#
+#         if nb_curves > 0:
+#             visonode = coinNodes.coordinate3Node(visoPoints)
+#             visoCurves = coinNodes.rowNode((0.0,0.0,0.0),1)
+#             visoCurves.transparency = 0.8
+#             visoCurves.vertices=(nb_curves,100)
+#             vizSep.addChild(visonode)
+#             vizSep.addChild(visoCurves)
+#
+#         # *** Set texts ***
+#         multStr = []
+#         for m in mults:
+#             multStr.append("%d"%m)
+#
+#         knotMarkerSep = coinNodes.markerSetNode((0,0,1),coin.SoMarkerSet.CIRCLE_FILLED_9_9)
+#
+#         # *** Set mult text ***
+#         multSep = coinNodes.multiTextNode((0,0,1),"osiFont,FreeSans,sans",16,1)
+#         multSep.data = (knotPoints,multStr)
 
     return vizSep
 
 
 class GeomInfo:
     "this class displays info about the geometry of the selected shape"
+
     def Activated(self, index=0):
 
         if index == 1:
@@ -378,7 +380,7 @@ class GeomInfo:
             self.trans.translation = (-0.98, 0.90, 0)
 
             self.myFont = coin.SoFont()
-            f_name = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves").GetString('GeomInfoFontString', "FreeMono,FreeSans,sans") 
+            f_name = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves").GetString('GeomInfoFontString', "FreeMono,FreeSans,sans")
             self.myFont.name = f_name
             size = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves").GetInt('GeomInfoFontSize', 14)
             # print(size)
@@ -426,7 +428,7 @@ class GeomInfo:
                 self.removeGrid()
                 self.sg.touch()
         except ReferenceError:
-            print("GeomInfo: doc has been closed")
+            debug("GeomInfo: doc has been closed")
 
     def removeGrid(self):
         if self.viz:
@@ -479,17 +481,17 @@ class GeomInfo:
         else:
             return False
 
-    #def propMeth(self, c, att):
-        #if hasattr(c, att):
-            #a = c.__getattribute__(att)()
-            #if not a:
-                #return False
-            #elif hasattr(a, 'x') and hasattr(a, 'y') and hasattr(a, 'z'):
-                #return "%s : (%0.2f, %0.2f, %0.2f)" % (att, a.x, a.y, a.z)
-            #else:
-                #return "%s : %s"%(att, str(a))
-        #else:
-            #return False
+    # def propMeth(self, c, att):
+    #     if hasattr(c, att):
+    #         a = c.__getattribute__(att)()
+    #         if not a:
+    #             return False
+    #         elif hasattr(a, 'x') and hasattr(a, 'y') and hasattr(a, 'z'):
+    #             return "%s : (%0.2f, %0.2f, %0.2f)" % (att, a.x, a.y, a.z)
+    #         else:
+    #             return "%s : %s"%(att, str(a))
+    #     else:
+    #         return False
 
     def getSurfInfo(self, face):
         surf = face.Surface
@@ -598,7 +600,8 @@ class GeomInfo:
                 try:
                     self.ss = sel0.SubObjects[-1]
                     self.so = sel0.Object
-                except:
+                except Exception as exc:
+                    debug(f"{exc}")
                     return
             else:
                 return

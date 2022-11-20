@@ -319,9 +319,10 @@ class interpolate:
     def parseSel(self, selectionObject):
         verts = list()
         for obj in selectionObject:
-            if obj.HasSubObjects:
-                FreeCAD.Console.PrintMessage("object has subobjects {}\n".format(obj.SubElementNames))
-                for n in obj.SubElementNames:
+            sen = obj.SubElementNames
+            if (len(sen) > 0) and (not sen[0] == ''):
+                # FreeCAD.Console.PrintMessage("object has subobjects {}\n".format(sen))
+                for n in sen:
                     if 'Vertex' in n:
                         verts.append((obj.Object, [n]))
             else:
@@ -330,7 +331,7 @@ class interpolate:
         if verts:
             return verts
         else:
-            FreeCAD.Console.PrintMessage("\nPlease select an object that has at least 2 vertexes")
+            FreeCAD.Console.PrintMessage("\nPlease select an object that has at least 2 vertexes\n")
             return None
 
     def Activated(self):
