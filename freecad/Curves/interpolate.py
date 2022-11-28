@@ -322,7 +322,7 @@ class interpolate:
             try:
                 sen = obj.SubElementNames
             except AttributeError:
-                sen = []
+                return obj
             if (len(sen) > 0) and (not sen[0] == ''):
                 # FreeCAD.Console.PrintMessage("object has subobjects {}\n".format(sen))
                 for n in sen:
