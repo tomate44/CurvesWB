@@ -319,7 +319,10 @@ class interpolate:
     def parseSel(self, selectionObject):
         verts = list()
         for obj in selectionObject:
-            sen = obj.SubElementNames
+            try:
+                sen = obj.SubElementNames
+            except AttributeError:
+                sen = []
             if (len(sen) > 0) and (not sen[0] == ''):
                 # FreeCAD.Console.PrintMessage("object has subobjects {}\n".format(sen))
                 for n in sen:
