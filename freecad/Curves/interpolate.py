@@ -319,13 +319,9 @@ class interpolate:
     def parseSel(self, selectionObject):
         verts = list()
         for obj in selectionObject:
-            try:
-                sen = obj.SubElementNames
-            except AttributeError:
-                return obj
-            if (len(sen) > 0) and (not sen[0] == ''):
-                # FreeCAD.Console.PrintMessage("object has subobjects {}\n".format(sen))
-                for n in sen:
+            if obj.HasSubObjects:
+                FreeCAD.Console.PrintMessage("object has subobjects {}\n".format(obj.SubElementNames))
+                for n in obj.SubElementNames:
                     if 'Vertex' in n:
                         verts.append((obj.Object, [n]))
             else:
@@ -338,7 +334,13 @@ class interpolate:
             return None
 
     def Activated(self):
-        s = FreeCADGui.Selection.getCompleteSelection()
+        s = FreeCADGui.Selection.getSelectionEx()
+        try:
+            ordered = FreeCADGui.activeWorkbench().Selection
+            if ordered:
+                s = ordered
+        except AttributeError:
+            pass
         source = self.parseSel(s)
         if not source:
             return False
