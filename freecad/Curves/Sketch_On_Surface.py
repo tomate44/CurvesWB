@@ -248,10 +248,9 @@ class sketchOnSurface:
                 cons = obj.Sketch.Geometry[i].Construction
             except AttributeError:
                 cons = obj.Sketch.getConstruction(i)
-            if cons and obj.ConstructionBounds:
-                skedges.append(obj.Sketch.Geometry[i].toShape())
-            elif not cons and not obj.ConstructionBounds:
-                skedges.append(obj.Sketch.Geometry[i].toShape())
+            if cons and not obj.ConstructionBounds:
+                continue
+            skedges.append(obj.Sketch.Geometry[i].toShape())
         comp = Part.Compound(skedges)
 
         bb = comp.BoundBox
