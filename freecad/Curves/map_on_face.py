@@ -48,46 +48,42 @@ class MapOnFace:
         return plane
 
     def transform_source(self):
-        place = FreeCAD.Placement(self.SourcePlane.Position, self.SourcePlane.Rotation)
+        place = FreeCAD.Placement(self.SourcePlane.Position,
+                                  self.SourcePlane.Rotation)
         self.SourceShape.transformShape(place.Matrix.inverse(), False, False)
         if self.Boundary is not None:
             self.Boundary.transformShape(place.Matrix.inverse(), False, False)
 
-    def search_bounds(self, search_margin=0.1):
-        if self.Boundary is None:
+    def search_bounds(self, shape=None, search_fac=0.1, margins=[0, 0, 0, 0]):
+        if not len(margins) == 4:
+            raise RuntimeError("margins must have 4 values")
+        if shape is None:
             bb = self.SourceShape.BoundBox
         else:
-            bb = self.Boundary.BoundBox
+            bb = shape.BoundBox
         if bb.ZLength > 1e-5:
             raise RuntimeError("Source shape is not in XY plane.")
-        if search_margin <= 0:
-            return bb.XMin, bb.XMax, bb.YMin, bb.YMax
-        margin_x = search_margin * bb.XLength
-        margin_y = search_margin * bb.YLength
+        if search_fac <= 0:
+            return [bb.XMin - margins[0],
+                    bb.XMax + margins[1],
+                    bb.YMin - margins[2],
+                    bb.YMax + margins[3]]
+        margin_x = search_fac * bb.XLength
+        margin_y = search_fac * bb.YLength
         p1 = FreeCAD.Vector(bb.XMin - margin_x, bb.YMin - margin_y, bb.ZMin)
         p2 = FreeCAD.Vector(bb.XMin - margin_x, bb.YMax + margin_y, bb.ZMin)
         p3 = FreeCAD.Vector(bb.XMax + margin_x, bb.YMin - margin_y, bb.ZMin)
         p4 = FreeCAD.Vector(bb.XMax + margin_x, bb.YMax + margin_y, bb.ZMin)
         edge = Part.makeLine(p1, p2)
-        u0 = self.SourceShape.distToShape(edge)[1][0][0].x
+        u0 = self.SourceShape.distToShape(edge)[1][0][0].x - margins[0]
         edge = Part.makeLine(p3, p4)
-        u1 = self.SourceShape.distToShape(edge)[1][0][0].x
+        u1 = self.SourceShape.distToShape(edge)[1][0][0].x + margins[1]
         edge = Part.makeLine(p1, p3)
-        v0 = self.SourceShape.distToShape(edge)[1][0][0].y
+        v0 = self.SourceShape.distToShape(edge)[1][0][0].y - margins[2]
         edge = Part.makeLine(p2, p4)
-        v1 = self.SourceShape.distToShape(edge)[1][0][0].y
+        v1 = self.SourceShape.distToShape(edge)[1][0][0].y + margins[3]
         return u0, u1, v0, v1
 
-    def get_bounds(self, margins=None):
-        u0, u1, v0, v1 = self.search_bounds()
-        if margins is None:
-            return u0, u1, v0, v1
-        if not len(margins) == 4:
-            raise RuntimeError("margins must have 4 values")
-        return [u0 - margins[0],
-                u1 + margins[1],
-                v0 - margins[2],
-                v1 + margins[3]]
 
 
 
