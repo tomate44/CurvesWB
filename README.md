@@ -1,9 +1,8 @@
-## FreeCAD Curves and Surfaces WorkBench
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/tomate44/CurvesWB.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/tomate44/CurvesWB/alerts/) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/tomate44/CurvesWB.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/tomate44/CurvesWB/context:python)  
+## FreeCAD Curves and Surfaces WorkBench 
 
 ![Curves Workbench](https://github.com/tomate44/CurvesWB/raw/master/docs/pics/CurvesWB.jpg)
 
-This is a python workbench, with a collection of tools for NURBS curves and surfaces. This workbench is developed with FreeCAD Master (currently 0.20) and OCC 7.5.3
+This is a python workbench, with a collection of tools for NURBS curves and surfaces. This workbench is developed with FreeCAD Master (currently 0.21) and OCC 7.6.3
 
 **Important Notes:**  
 * This workbench is in ALPHA state and should NOT be used for any serious work.
