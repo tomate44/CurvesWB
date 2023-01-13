@@ -34,6 +34,14 @@ class Quad:
             self.setPoles(*bounds)
 
     @property
+    def Face(self):
+        return self.quad.toShape()
+
+    @property
+    def Surface(self):
+        return self.quad
+
+    @property
     def Limits(self):
         pu1, pu2 = self.quad.getPoles()
         p00 = pu1[0]
@@ -114,6 +122,7 @@ class MapOnFace:
         if hasattr(boundary, "copy"):
             self.Boundary = boundary.copy()
         self.SourcePlane = self.get_source_plane()
+        self.transform_source()
 
     def get_source_plane(self):
         if self.Boundary is not None:
@@ -131,7 +140,7 @@ class MapOnFace:
         if self.Boundary is not None:
             self.Boundary.transformShape(place.Matrix.inverse(), False, False)
 
-    def search_bounds(self, shape=None, search_fac=0.1, margins=[0, 0, 0, 0]):
+    def search_bounds(self, shape=None, margins=[0, 0, 0, 0], search_fac=0.1):
         if not len(margins) == 4:
             raise RuntimeError("margins must have 4 values")
         if shape is None:
@@ -161,8 +170,33 @@ class MapOnFace:
         v1 = self.SourceShape.distToShape(edge)[1][0][0].y + margins[3]
         return u0, u1, v0, v1
 
+    def build_quad(self, face, margins=[0, 0, 0, 0]):
+        ssbb = self.search_bounds(self.SourceShape, margins)
+        if self.Boundary is None:
+            self.quad = Quad(ssbb)
+            self.quad.Bounds = face.ParameterRange
+        else:
+            bobb = self.search_bounds(self.Boundary)
+            self.quad = Quad(bobb)
+            self.quad.Bounds = face.ParameterRange
+            self.quad.extend(ssbb)
+
+    def get_pcurve(self, edge):
+        proj = self.quad.Face.project([edge])
+        if len(proj.Edges) == 0:
+            raise RuntimeError("Failed to get pcurve")
+        if len(proj.Edges) > 1:
+            FreeCAD.Console.PrintWarning("Projection: several pcurves\n")
+        cos = self.quad.curveOnSurface(proj.Edge1)
+        if edge.isClosed() and not cos[0].isClosed():
+            FreeCAD.Console.PrintWarning("pcurve should be closed\n")
+
+
+
 
 """
+from importlib import reload
+from freecad.Curves import map_on_face
 reload(map_on_face)
 q = map_on_face.Quad()
 q.Limits = [-2, 5, -1, 10]
