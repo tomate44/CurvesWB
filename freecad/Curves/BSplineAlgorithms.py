@@ -370,7 +370,10 @@ class BSplineAlgorithms(object):
         mi = knots[0]
         if abs(mi - umin) > tol or abs(ma - umax) > tol:
             ran = ma - mi
-            newknots = [(k - mi) / ran for k in knots]
+            # fix from edwilliams16
+            # https://forum.freecadweb.org/viewtopic.php?f=22&t=75293&p=653658#p653658
+            fracknots = [(k - mi) / ran for k in knots]
+            newknots = [umin * (1 - f) + umax * f for f in fracknots]
             spline.setKnots(newknots)
 
     def getKinkParameters(self, curve):
