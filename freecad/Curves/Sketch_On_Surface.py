@@ -15,8 +15,8 @@ from freecad.Curves import ICONPATH
 
 TOOL_ICON = os.path.join(ICONPATH, 'sketch_surf.svg')
 
-# debug = _utils.debug
-debug = _utils.doNothing
+debug = _utils.debug
+# debug = _utils.doNothing
 vec = FreeCAD.Vector
 error = FreeCAD.Console.PrintError
 
@@ -309,7 +309,10 @@ class sketchOnSurface:
                             if obj.FillFaces and shapes_1[i].Edges[j].isSeam(shapes_1[i]):
                                 continue
                             ruled = Part.makeRuledSurface(shapes_1[i].Edges[j], shapes_2[i].Edges[j])
-                            ruled.check(True)
+                            try:
+                                ruled.check(True)
+                            except ValueError:
+                                continue
                             faces.append(ruled)
                             # try:
                                 # face_is_closed = False
