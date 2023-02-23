@@ -112,6 +112,27 @@ class Quad:
         self.quad.setPole(2, 2, u1[0])
 
 
+class ShapeMapper:
+    """Transfer shapes (faces, wires, edges, vertexes)
+    on a target surface.
+    """
+
+    def __init__(self, target, transfer):
+        self.Target = target
+        self.Transfer = transfer
+
+    def map_shape(self, shape, upgrade=True):
+        ...
+
+    def project(self, shape):
+        proj = self.Transfer.project(shape)
+        return proj
+
+    def map_vertexes(self, vertexes):
+        proj = self.project(vertexes)
+        return proj.Vertexes
+
+
 class MapOnFace:
     """Map a shape on a target face
     """
