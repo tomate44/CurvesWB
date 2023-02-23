@@ -121,16 +121,59 @@ class ShapeMapper:
         self.Target = target
         self.Transfer = transfer
 
+    def project(self, shapes):
+        proj = self.Transfer.project(shapes)
+        return proj  # Compound of edges
+
+    def get_pcurves(self, shapes):
+        proj = self.project(shapes)
+        cos = []
+        for e in proj.Edges:
+            cos.append(self.Transfer.curveOnSurface(e))
+        return cos
+
     def map_shape(self, shape, upgrade=True):
-        ...
+        if isinstance(shape, (list, tuple)):
+            shl = []
+            for sh in shape:
+                shl.append(self.map_shape(sh, upgrade))
+            return shl
+        elif isinstance(shape, Part.Vertex):
+            proj = self.Transfer.Surface.parameter(shape.Point)
+            if len(proj) == 2:
+                pt = self.Target.valueAt(*proj)
+                return Part.Vertex(pt)
+        if not upgrade:
+            pcurves = self.get_pcurves(shape.Edges)
+            edges = []
+            for pc, fp, lp in pcurves:
+                me = pc.toShape(self.Target, fp, lp)
+                edges.append(me)
+            return Part.Compound(edges)
+        if isinstance(shape, Part.Face):
+            wires = [self.map_shape(shape.OuterWire, True)]
+            for w in shape.Wires:
+                if not w.isSame(shape.OuterWire):
+                    wires.append(self.map_shape(w, True))
+            f = Part.Face(self.Target, wires)
+            # TODO Check and repair face
+            return f
+        elif isinstance(shape, Part.Wire):
+            comp = self.map_shape(shape.OrderedEdges, False)
+            w = Part.Wire(comp.Edges)
+            # TODO Check and repair wire
+            return w
+        elif isinstance(shape, Part.Edge):
+            pcurves = self.get_pcurves(shape.Edges)
+            if len(comp.Edges) == 1:
+                return comp.Edge1
+            w = Part.Wire(comp.Edges)
+            # TODO Check and repair wire
+            return w
+        else:
+            raise (RuntimeError, f"ShapeMapper.map_shape : {shape.ShapeType} not supported")
 
-    def project(self, shape):
-        proj = self.Transfer.project(shape)
-        return proj
 
-    def map_vertexes(self, vertexes):
-        proj = self.project(vertexes)
-        return proj.Vertexes
 
 
 class MapOnFace:
