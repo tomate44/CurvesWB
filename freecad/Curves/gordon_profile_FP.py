@@ -203,6 +203,7 @@ class GordonProfileVP:
 
     def setEdit(self, vobj, mode=0):
         if mode == 0 and check_pivy():
+            pl = self.Object.Placement
             if vobj.Selectable:
                 self.select_state = True
                 vobj.Selectable = False
@@ -213,7 +214,8 @@ class GordonProfileVP:
                     sl.append((ob, (name,)))
             shape_idx = 0
             for i in range(len(self.Object.Data)):
-                p = self.Object.Data[i]
+                tp = self.Object.Data[i]
+                p = pl.multVec(tp)
                 t = self.Object.DataType[i]
                 if t == 0:
                     pts.append(profile_editor.MarkerOnShape([p]))
