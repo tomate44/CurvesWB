@@ -51,6 +51,8 @@ class MixedCurve:
         wires = []
         for el in se:
             wires.append(Part.Wire(el))
+        if len(wires) == 1:
+            return wires[0]
         return Part.Compound(wires)
 
 
