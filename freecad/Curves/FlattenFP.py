@@ -15,6 +15,7 @@ import Part
 from math import pi
 from freecad.Curves import ICONPATH
 from freecad.Curves.nurbs_tools import KnotVector
+from freecad.Curves.map_on_face import ShapeMapper
 
 TOOL_ICON = os.path.join(ICONPATH, 'flatten.svg')
 vec3 = FreeCAD.Vector
@@ -171,6 +172,37 @@ def flatten_face(face, inPlace=False, size=0.0):
     return ff
 
 
+def flatten_face_new(face, inPlace=False, size=0.0):
+    """Returns a face that is a flat representation of the input cone or cylinder face.
+
+    Parameters
+    ----------
+    face : face of a cone or cylinder surface.
+    InPlace (bool) : If True, the output surface will be placed so that it is
+        tangent to the source face, at the seam line.
+        If False, the output surface will be in the default XY plane.
+    size (float) : Allows to specify the size of the computed surface.
+        This has now influence on the shape of the output face.
+
+    Returns
+    -------
+    a face that is the unrolled representation of the input cone or cylinder face.
+    """
+    if isinstance(face.Surface, Part.Cone):
+        if size == 0.0:
+            offset = face.Surface.parameter(face.Surface.Apex)
+            size = face.ParameterRange[3] - offset[1]
+            # print(size)
+        flatsurf = flat_cone_surface(face.Surface, inPlace, size)
+    elif isinstance(face.Surface, Part.Cylinder):
+        flatsurf = flat_cylinder_surface(face.Surface, inPlace, size)
+    else:
+        raise TypeError(f"Flattening surface of type {face.Surface.TypeId} not implemented")
+    mapper = ShapeMapper(flatsurf, face)
+    flat_face = mapper.map_shape(face, True)
+    return flat_face
+
+
 class FlattenProxy:
     def __init__(self, obj):
         """Add the properties"""
@@ -196,7 +228,7 @@ class FlattenProxy:
 
     def execute(self, obj):
         face = self.get_face(obj)
-        flat_face = flatten_face(face, obj.InPlace, obj.Size)
+        flat_face = flatten_face_new(face, obj.InPlace, obj.Size)
         obj.Shape = flat_face
 
     def onChanged(self, obj, prop):

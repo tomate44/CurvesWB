@@ -132,6 +132,25 @@ class ShapeMapper:
             cos.append(self.Transfer.curveOnSurface(e))
         return cos
 
+    def upgrade_shapes(self, shapes, surf=None):
+        if isinstance(shapes[0], Part.Edge):
+            wires = []
+            sel = Part.sortEdges(shapes)
+            for el in sel:
+                w = Part.Wire(el)
+                wires.append(w)
+            shapes = wires
+        if isinstance(shapes[0], Part.Wire):
+            if surf is None:
+                surf = self.Target.Surface
+            wires = sorted(shapes, key=lambda x: x.BoundBox.DiagonalLength)
+            ff = Part.Face(surf, wires[0])
+            ff.validate()
+            if len(wires) > 1:
+                ff.cutHoles(wires[1:])
+                ff.validate()
+            return ff
+
     def map_shape(self, shape, upgrade=True):
         if isinstance(shape, (list, tuple)):
             shl = []
@@ -159,12 +178,12 @@ class ShapeMapper:
             # TODO Check and repair face
             return f
         elif isinstance(shape, Part.Wire):
-            comp = self.map_shape(shape.OrderedEdges, False)
+            comp = self.map_shape(shape.OrderedEdges, True)
             w = Part.Wire(comp.Edges)
             # TODO Check and repair wire
             return w
         elif isinstance(shape, Part.Edge):
-            pcurves = self.get_pcurves(shape.Edges)
+            comp = self.map_shape(shape, False)
             if len(comp.Edges) == 1:
                 return comp.Edge1
             w = Part.Wire(comp.Edges)
@@ -172,6 +191,34 @@ class ShapeMapper:
             return w
         else:
             raise (RuntimeError, f"ShapeMapper.map_shape : {shape.ShapeType} not supported")
+
+
+class FlatMap:
+    """Create a Flat Map of a face.
+    """
+
+    def __init__(self, face):
+        self.Source = face
+
+    def compute(self, scaleX=1.0, scaleY=1.0):
+        u0, u1, v0, v1 = self.Source.ParameterRange
+        quad = Quad(self.Source.ParameterRange)
+        mapper = ShapeMapper(quad.Face, self.Source)
+        flat_face = mapper.Face.map_shape(self.Source, True)
+        if (scaleX == 1.0) and (scaleY == 1.0):
+            return flat_face
+        mat = FreeCAD.Matrix()
+        mat.scale(scaleX, scaleY, 1.0)
+        scaled = flat_face.transformGeometry(mat)
+        return scaled
+
+
+class FlattenFace:
+    """Flatten a face.
+    """
+
+    def __init__(self, face):
+        self.Source = face
 
 
 
