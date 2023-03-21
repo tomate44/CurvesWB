@@ -31,7 +31,7 @@ class Quad:
     def __init__(self, bounds=None):
         self.quad = Part.BSplineSurface()
         if bounds is not None:
-            self.setPoles(*bounds)
+            self.Limits = bounds
 
     @property
     def Face(self):
@@ -126,6 +126,10 @@ class ShapeMapper:
         return proj  # Compound of edges
 
     def get_pcurves(self, shapes):
+        if isinstance(shapes, Part.Edge):
+            cos = self.Transfer.curveOnSurface(shapes)
+            if len(cos) > 0:
+                return [cos]
         proj = self.project(shapes)
         cos = []
         for e in proj.Edges:
@@ -140,22 +144,25 @@ class ShapeMapper:
                 w = Part.Wire(el)
                 wires.append(w)
             shapes = wires
-        if isinstance(shapes[0], Part.Wire):
-            if surf is None:
-                surf = self.Target.Surface
-            wires = sorted(shapes, key=lambda x: x.BoundBox.DiagonalLength)
-            ff = Part.Face(surf, wires[0])
+        if surf is not None:
+            # wires = sorted(shapes, key=lambda x: x.BoundBox.DiagonalLength)
+            ff = Part.Face(surf, shapes[0])
             ff.validate()
-            if len(wires) > 1:
-                ff.cutHoles(wires[1:])
+            for w in shapes[1:]:
+                print(w.Length)
+                ff.cutHoles([w])
                 ff.validate()
-            return ff
+            if ff.isValid():
+                return ff
+        if len(shapes) == 1:
+            return shapes[0]
+        return Part.Compound(shapes)
 
     def map_shape(self, shape, upgrade=True):
         if isinstance(shape, (list, tuple)):
             shl = []
             for sh in shape:
-                shl.append(self.map_shape(sh, upgrade))
+                shl.append(self.map_shape(sh, False))
             return shl
         elif isinstance(shape, Part.Vertex):
             proj = self.Transfer.Surface.parameter(shape.Point)
@@ -170,25 +177,27 @@ class ShapeMapper:
                 edges.append(me)
             return Part.Compound(edges)
         if isinstance(shape, Part.Face):
-            wires = [self.map_shape(shape.OuterWire, True)]
+            wires = self.map_shape(shape.OuterWire, True).Wires
             for w in shape.Wires:
                 if not w.isSame(shape.OuterWire):
-                    wires.append(self.map_shape(w, True))
-            f = Part.Face(self.Target, wires)
-            # TODO Check and repair face
-            return f
+                    wires.extend(self.map_shape(w, True).Wires)
+            # f = Part.Face(self.Target, wires)
+            # # TODO Check and repair face
+            return self.upgrade_shapes(wires, self.Target)
         elif isinstance(shape, Part.Wire):
-            comp = self.map_shape(shape.OrderedEdges, True)
-            w = Part.Wire(comp.Edges)
+            edges = []
+            for e in shape.OrderedEdges:
+                edges.extend(self.map_shape(e, False).Edges)
+            # comp = Part.Compound(edges)
             # TODO Check and repair wire
-            return w
+            return self.upgrade_shapes(edges)
         elif isinstance(shape, Part.Edge):
-            comp = self.map_shape(shape, False)
-            if len(comp.Edges) == 1:
-                return comp.Edge1
-            w = Part.Wire(comp.Edges)
-            # TODO Check and repair wire
-            return w
+            return self.map_shape(shape, False)
+            # if len(comp.Edges) == 1:
+            #     return comp.Edge1
+            # w = Part.Wire(comp.Edges)
+            # # TODO Check and repair wire
+            # return w
         else:
             raise (RuntimeError, f"ShapeMapper.map_shape : {shape.ShapeType} not supported")
 
@@ -204,7 +213,7 @@ class FlatMap:
         u0, u1, v0, v1 = self.Source.ParameterRange
         quad = Quad(self.Source.ParameterRange)
         mapper = ShapeMapper(quad.Face, self.Source)
-        flat_face = mapper.Face.map_shape(self.Source, True)
+        flat_face = mapper.map_shape(self.Source, True)
         if (scaleX == 1.0) and (scaleY == 1.0):
             return flat_face
         mat = FreeCAD.Matrix()
