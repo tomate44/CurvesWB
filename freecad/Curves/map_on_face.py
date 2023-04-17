@@ -3,6 +3,14 @@ import FreeCADGui
 import Part
 
 
+DEBUG = True
+
+
+def debug(message):
+    if DEBUG:
+        FreeCAD.Console.PrintMessage(message)
+
+
 def stretched_plane(poles, param_range=[0, 2, 0, 2], extend_factor=1.0):
     s0, s1, t0, t1 = param_range
     bs = Part.BSplineSurface()
@@ -125,16 +133,73 @@ class ShapeMapper:
         proj = self.Transfer.project(shapes)
         return proj  # Compound of edges
 
+    def find_seam(self, cos, tol=1e-7):
+        pc, fp, lp = cos
+        surf = self.Transfer.Surface
+        u0, u1, v0, v1 = surf.bounds()
+        if surf.isUClosed():
+            if self.touch_u(cos, u0, tol):
+                debug(f"Pcurve is on U0={u0:3.3f} seam\n")
+                pc2 = pc.copy()
+                pc2.translate(FreeCAD.Base.Vector2d(u1 - u0, 0))
+                # pc2.reverse()
+                return pc2, fp, lp
+            if self.touch_u(cos, u1, tol):
+                debug(f"Pcurve is on U1={u1:3.3f} seam\n")
+                pc2 = pc.copy()
+                pc2.translate(FreeCAD.Base.Vector2d(u0 - u1, 0))
+                # pc2.reverse()
+                return pc2, fp, lp
+        if surf.isVClosed():
+            if self.touch_v(cos, v0, tol):
+                debug(f"Pcurve is on V0={v0:3.3f} seam\n")
+                pc2 = pc.copy()
+                pc2.translate(FreeCAD.Base.Vector2d(0, v1 - v0))
+                # pc2.reverse()
+                return pc2, fp, lp
+            if self.touch_v(cos, v1, tol):
+                debug(f"Pcurve is on V1={v1:3.3f} seam\n")
+                pc2 = pc.copy()
+                pc2.translate(FreeCAD.Base.Vector2d(0, v0 - v1))
+                # pc2.reverse()
+                return pc2, fp, lp
+
+    def touch_u(self, cos, u, tol=1e-7):
+        pc, fp, lp = cos
+        p1 = pc.value(fp)
+        p2 = pc.value(lp)
+        p3 = pc.value((fp + lp) / 2)
+        err = abs(p1.x - u) + abs(p2.x - u) + abs(p3.x - u)
+        if err < (3 * tol):
+            return True
+        return False
+
+    def touch_v(self, cos, v, tol=1e-7):
+        pc, fp, lp = cos
+        p1 = pc.value(fp)
+        p2 = pc.value(lp)
+        p3 = pc.value((fp + lp) / 2)
+        err = abs(p1.y - v) + abs(p2.y - v) + abs(p3.y - v)
+        if err < (3 * tol):
+            return True
+        return False
+
     def get_pcurves(self, shapes):
-        if isinstance(shapes, Part.Edge):
-            cos = self.Transfer.curveOnSurface(shapes)
+        pcl = []
+        for e in shapes:
+            cos = self.Transfer.curveOnSurface(e)
             if len(cos) > 0:
-                return [cos]
-        proj = self.project(shapes)
-        cos = []
-        for e in proj.Edges:
-            cos.append(self.Transfer.curveOnSurface(e))
-        return cos
+                pcl.append(cos)
+                seam = self.find_seam(cos)
+                if seam is not None:
+                    pcl.append(seam)
+        if len(pcl) > 0:
+            return pcl
+        else:
+            proj = self.project(shapes)
+            ppcl = self.get_pcurves(proj)
+            if len(ppcl) > 0:
+                return ppcl
 
     def upgrade_shapes(self, shapes, surf=None):
         if isinstance(shapes[0], Part.Edge):
@@ -143,22 +208,30 @@ class ShapeMapper:
             for el in sel:
                 w = Part.Wire(el)
                 wires.append(w)
-            shapes = wires
-        if surf is not None:
+            debug(f"Upgraded {len(shapes)} edges to {len(wires)} wires\n")
+            return Part.Compound(wires)
+        elif isinstance(shapes[0], Part.Wire):
+            debug(f"Upgrading {len(shapes)} wires to face\n")
             # wires = sorted(shapes, key=lambda x: x.BoundBox.DiagonalLength)
             ff = Part.Face(surf, shapes[0])
             ff.validate()
             for w in shapes[1:]:
                 print(w.Length)
-                ff.cutHoles([w])
-                ff.validate()
+                try:
+                    ff.cutHoles([w])
+                    ff.validate()
+                except Part.OCCError:
+                    print("cutHoles failed")
             if ff.isValid():
+                debug("... Success\n")
                 return ff
+            debug("... Failed\n")
         if len(shapes) == 1:
             return shapes[0]
         return Part.Compound(shapes)
 
     def map_shape(self, shape, upgrade=True):
+        debug(f"Map_Shape : {shape.__class__}\n")
         if isinstance(shape, (list, tuple)):
             shl = []
             for sh in shape:
@@ -169,7 +242,7 @@ class ShapeMapper:
             if len(proj) == 2:
                 pt = self.Target.valueAt(*proj)
                 return Part.Vertex(pt)
-        if not upgrade:
+        if not upgrade or isinstance(shape, Part.Edge):
             pcurves = self.get_pcurves(shape.Edges)
             edges = []
             for pc, fp, lp in pcurves:
@@ -177,33 +250,35 @@ class ShapeMapper:
                 edges.append(me)
             return Part.Compound(edges)
         if isinstance(shape, Part.Face):
-            wires = self.map_shape(shape.OuterWire, True).Wires
+            wires = []  # self.map_shape(shape.OuterWire, True).Wires
             for w in shape.Wires:
-                if not w.isSame(shape.OuterWire):
-                    wires.extend(self.map_shape(w, True).Wires)
+                # if not w.isSame(shape.OuterWire):
+                wires.extend(self.map_shape(w, True).Wires)
             # f = Part.Face(self.Target, wires)
             # # TODO Check and repair face
             return self.upgrade_shapes(wires, self.Target)
         elif isinstance(shape, Part.Wire):
             edges = []
-            for e in shape.OrderedEdges:
-                edges.extend(self.map_shape(e, False).Edges)
+            for e in shape.Edges:
+                edges.extend(self.map_shape(e).Edges)
             # comp = Part.Compound(edges)
             # TODO Check and repair wire
             return self.upgrade_shapes(edges)
-        elif isinstance(shape, Part.Edge):
-            return self.map_shape(shape, False)
-            # if len(comp.Edges) == 1:
-            #     return comp.Edge1
-            # w = Part.Wire(comp.Edges)
-            # # TODO Check and repair wire
-            # return w
         else:
             raise (RuntimeError, f"ShapeMapper.map_shape : {shape.ShapeType} not supported")
 
 
 class FlatMap:
     """Create a Flat Map of a face.
+
+from importlib import reload
+from freecad.Curves import map_on_face
+
+reload(map_on_face)
+fm = map_on_face.FlatMap(f1)
+sh = fm.compute()
+Part.show(sh)
+
     """
 
     def __init__(self, face):
