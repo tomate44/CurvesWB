@@ -81,10 +81,21 @@ class Quad:
         # self.quad.scaleKnotsToBounds(*bounds) is less precise
 
     def extend(self, *bounds):
-        if not (len(bounds) == 4):
-            raise RuntimeError("Quad need 4 bounds")
         u0, u1, v0, v1 = self.Limits
-        s0, s1, t0, t1 = bounds
+        if len(bounds) == 1:
+            s0 = u0 - bounds[0]
+            s1 = u1 + bounds[0]
+            t0 = v0 - bounds[0]
+            t1 = v1 + bounds[0]
+        elif len(bounds) == 2:
+            s0 = u0 - bounds[0]
+            s1 = u1 + bounds[0]
+            t0 = v0 - bounds[1]
+            t1 = v1 + bounds[1]
+        elif len(bounds) == 4:
+            s0, s1, t0, t1 = bounds
+        else:
+            raise RuntimeError("Quad.extend need 1,2 or 4 parameters")
         ku0, ku1, kv0, kv1 = self.Bounds
         nu0, nu1, nv0, nv1 = self.Bounds
         if s0 < u0:
@@ -95,7 +106,7 @@ class Quad:
             nv0 += (kv1 - kv0) * (t0 - v0) / (v1 - v0)
         if t1 > v1:
             nv1 += (kv1 - kv0) * (t1 - v1) / (v1 - v0)
-        self.Limits = bounds
+        self.Limits = s0, s1, t0, t1
         self.Bounds = nu0, nu1, nv0, nv1
 
     def reverseU(self):
@@ -205,23 +216,36 @@ class ShapeMapper:
         if isinstance(shapes[0], Part.Edge):
             wires = []
             sel = Part.sortEdges(shapes)
+            if surf:
+                fixface = surf.toShape()
             for el in sel:
                 w = Part.Wire(el)
+                if surf:
+                    w.fixWire(fixface)
                 wires.append(w)
             debug(f"Upgraded {len(shapes)} edges to {len(wires)} wires\n")
+            wires.sort(key=lambda x: x.Length)
+            if len(wires) > 1:
+                for w in wires[1:]:
+                    w.reverse()
             return Part.Compound(wires)
         elif isinstance(shapes[0], Part.Wire):
             debug(f"Upgrading {len(shapes)} wires to face\n")
             # wires = sorted(shapes, key=lambda x: x.BoundBox.DiagonalLength)
-            ff = Part.Face(surf, shapes[0])
-            ff.validate()
+            s = surf.Surface
+            # s.extend(1.0)
+            ff = Part.Face(s, shapes[0])
+            try:
+                ff.validate()
+            except Part.OCCError:
+                print("face validation failed")
             for w in shapes[1:]:
                 print(w.Length)
-                try:
-                    ff.cutHoles([w])
-                    ff.validate()
-                except Part.OCCError:
-                    print("cutHoles failed")
+                # try:
+                #     ff.cutHoles([w])
+                #     ff.validate()
+                # except Part.OCCError:
+                #     print("cutHoles failed")
             if ff.isValid():
                 debug("... Success\n")
                 return ff
@@ -287,6 +311,7 @@ Part.show(sh)
     def compute(self, scaleX=1.0, scaleY=1.0):
         u0, u1, v0, v1 = self.Source.ParameterRange
         quad = Quad(self.Source.ParameterRange)
+        quad.extend(1.0)
         mapper = ShapeMapper(quad.Face, self.Source)
         flat_face = mapper.map_shape(self.Source, True)
         if (scaleX == 1.0) and (scaleY == 1.0):
