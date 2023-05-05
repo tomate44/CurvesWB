@@ -8,7 +8,7 @@ DEBUG = True
 
 def debug(message):
     if DEBUG:
-        FreeCAD.Console.PrintMessage(message)
+        FreeCAD.Console.PrintMessage(message + "\n")
 
 
 def stretched_plane(poles, param_range=[0, 2, 0, 2], extend_factor=1.0):
@@ -150,26 +150,26 @@ class ShapeMapper:
         u0, u1, v0, v1 = surf.bounds()
         if surf.isUClosed():
             if self.touch_u(cos, u0, tol):
-                debug(f"Pcurve is on U0={u0:3.3f} seam\n")
+                debug(f"Pcurve is on U0={u0:3.3f} seam")
                 pc2 = pc.copy()
                 pc2.translate(FreeCAD.Base.Vector2d(u1 - u0, 0))
                 # pc2.reverse()
                 return pc2, fp, lp
             if self.touch_u(cos, u1, tol):
-                debug(f"Pcurve is on U1={u1:3.3f} seam\n")
+                debug(f"Pcurve is on U1={u1:3.3f} seam")
                 pc2 = pc.copy()
                 pc2.translate(FreeCAD.Base.Vector2d(u0 - u1, 0))
                 # pc2.reverse()
                 return pc2, fp, lp
         if surf.isVClosed():
             if self.touch_v(cos, v0, tol):
-                debug(f"Pcurve is on V0={v0:3.3f} seam\n")
+                debug(f"Pcurve is on V0={v0:3.3f} seam")
                 pc2 = pc.copy()
                 pc2.translate(FreeCAD.Base.Vector2d(0, v1 - v0))
                 # pc2.reverse()
                 return pc2, fp, lp
             if self.touch_v(cos, v1, tol):
-                debug(f"Pcurve is on V1={v1:3.3f} seam\n")
+                debug(f"Pcurve is on V1={v1:3.3f} seam")
                 pc2 = pc.copy()
                 pc2.translate(FreeCAD.Base.Vector2d(0, v0 - v1))
                 # pc2.reverse()
@@ -212,25 +212,46 @@ class ShapeMapper:
             if len(ppcl) > 0:
                 return ppcl
 
-    def upgrade_shapes(self, shapes, surf=None):
+    def upgrade_shapes(self, shapes, surf=None, fixtol=True):
         if isinstance(shapes[0], Part.Edge):
             wires = []
-            sel = Part.sortEdges(shapes)
             if surf:
                 fixface = surf.toShape()
-            for el in sel:
-                w = Part.Wire(el)
+            sel = Part.sortEdges(shapes)
+            if (len(sel) > 1) and fixtol:
+                debug(f"Edges sorted into {len(sel)} groups")
+                vertexes = Part.Compound(shapes).Vertexes
+                dist_list = []
+                for v1 in vertexes:
+                    dist = 1e50
+                    for v2 in vertexes:
+                        if not v1.isSame(v2):
+                            d = v1.Point.distanceToPoint(v2.Point)
+                            dist = min(dist, d)
+                    dist_list.append(dist)
+                tol = max(dist_list) + 1e-8
+                debug(f"Increasing Vertex Tolerance to {tol}")
+                for e in shapes:
+                    e.fixTolerance(tol, Part.Vertex)
+                w = Part.Wire(shapes)
                 if surf:
-                    w.fixWire(fixface)
-                wires.append(w)
-            debug(f"Upgraded {len(shapes)} edges to {len(wires)} wires\n")
-            wires.sort(key=lambda x: x.Length)
+                    w.fixWire(fixface, tol)
+                wires = [w, ]
+                debug(f"Reduced to {len(wires)} groups")
+            else:
+                for el in sel:
+                    w = Part.Wire(el)
+                    if surf:
+                        w.fixWire(fixface)
+                    wires.append(w)
+                debug(f"Upgraded {len(shapes)} edges to {len(wires)} wires")
             if len(wires) > 1:
+                wires.sort(key=lambda x: x.Length)
                 for w in wires[1:]:
                     w.reverse()
             return Part.Compound(wires)
         elif isinstance(shapes[0], Part.Wire):
-            debug(f"Upgrading {len(shapes)} wires to face\n")
+            debug(f"Upgrading {len(shapes)} wires to face")
             # wires = sorted(shapes, key=lambda x: x.BoundBox.DiagonalLength)
             s = surf.Surface
             # s.extend(1.0)
@@ -241,21 +262,23 @@ class ShapeMapper:
                 print("face validation failed")
             for w in shapes[1:]:
                 print(w.Length)
-                # try:
-                #     ff.cutHoles([w])
-                #     ff.validate()
-                # except Part.OCCError:
-                #     print("cutHoles failed")
+                if w.Orientation == "Forward":
+                    w.reverse()
+                try:
+                    ff.cutHoles([w])
+                    ff.validate()
+                except Part.OCCError:
+                    print("cutHoles failed")
             if ff.isValid():
-                debug("... Success\n")
+                debug("... Success")
                 return ff
-            debug("... Failed\n")
+            debug("... Failed")
         if len(shapes) == 1:
             return shapes[0]
         return Part.Compound(shapes)
 
     def map_shape(self, shape, upgrade=True):
-        debug(f"Map_Shape : {shape.__class__}\n")
+        debug(f"Map_Shape : {shape.__class__}")
         if isinstance(shape, (list, tuple)):
             shl = []
             for sh in shape:
@@ -406,10 +429,10 @@ class MapOnFace:
         if len(proj.Edges) == 0:
             raise RuntimeError("Failed to get pcurve")
         if len(proj.Edges) > 1:
-            FreeCAD.Console.PrintWarning("Projection: several pcurves\n")
+            FreeCAD.Console.PrintWarning("Projection: several pcurves")
         cos = self.quad.curveOnSurface(proj.Edge1)
         if edge.isClosed() and not cos[0].isClosed():
-            FreeCAD.Console.PrintWarning("pcurve should be closed\n")
+            FreeCAD.Console.PrintWarning("pcurve should be closed")
 
 
 

@@ -37,9 +37,9 @@ def longest_segment(e, p):
     return longest_edge(w.Edges[0], w.Edges[1])
 
 
-def join_2_edges(e1, e2):
+def join_2_edges(e1, e2, tol=1e-7):
     d, pts, info = e1.distToShape(e2)
-    if d < 1e-7:  # edges are touching
+    if d < tol:  # edges are touching
         for i in info:
             if (i[0] == "Vertex") and (i[3] == "Vertex"):  # Contact type : end to end
                 return (e1, e2)
@@ -62,7 +62,10 @@ def join_2_edges(e1, e2):
                 return (longest_segment(e1, i[2]), line, longest_segment(e2, i[5]))
 
 
-def join_multi_edges(edgelist, closed=False):
+def join_multi_edges(edge_list, closed=False, tol=1e-7):
+    edgelist = []
+    for e in edge_list:
+        edgelist.append(e.Curve.toShape(e.FirstParameter, e.LastParameter))
     good_edges = list()
     last = edgelist[0]
     remaining = edgelist[1:]
@@ -84,7 +87,7 @@ def join_multi_edges(edgelist, closed=False):
     #            closest_info = i
             else:
                 rejected.append(e)
-        res = join_2_edges(last, closest_edge)
+        res = join_2_edges(last, closest_edge, tol)
         # print(last.distToShape(closest_edge))
         last = res[-1]
         good_edges.extend(res[:-1])
@@ -108,7 +111,8 @@ def join_multi_edges(edgelist, closed=False):
 def run(closed=False):
     s = Gui.Selection.getSelection()
     ori_edges = s[0].Shape.Edges
-    return join_multi_edges(ori_edges, closed)
+    tol = s[0].Shape.getTolerance(-1, Part.Vertex)
+    return join_multi_edges(ori_edges, closed, tol)
 
 
 def show(closed=False):
