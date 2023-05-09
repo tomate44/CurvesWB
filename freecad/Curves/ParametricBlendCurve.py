@@ -65,8 +65,9 @@ class BlendCurveFP:
                     sub = obj.getSubObject(sen)
                     break
             if hasattr(obj, "getGlobalPlacement"):
-                pl = obj.getGlobalPlacement()
-                sub.Placement = pl
+                gbpl = obj.getGlobalPlacement()
+                pl = sub.Placement
+                sub.Placement = gbpl.multiply(pl)
         return sub
 
     def migrate(self, fp):
