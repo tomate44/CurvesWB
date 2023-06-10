@@ -417,6 +417,13 @@ def build_sketch(sk, fa):
     if isinstance(fa.Surface, Part.Cylinder):
         u0 *= fa.Surface.Radius
         u1 *= fa.Surface.Radius
+    elif isinstance(fa.Surface, Part.SurfaceOfExtrusion) and isinstance(fa.Surface.BasisCurve, Part.BSplineCurve):
+        u0 = 0
+        u1 = fa.Surface.BasisCurve.length()
+    elif isinstance(fa.Surface, Part.OffsetSurface) and isinstance(fa.Surface.BasisSurface, Part.SurfaceOfExtrusion) and isinstance(fa.Surface.BasisSurface.BasisCurve, Part.BSplineCurve):
+        u0 = 0
+        u1 = fa.Surface.BasisSurface.BasisCurve.length()
+
     addFaceBoundsToSketch([u0, u1, v0, v1], sk)
     # elif isinstance(fa.Surface, Part.Cone):
         # u1 = 0.5 * (fa.Edge1.Length + fa.Edge3.Length)
