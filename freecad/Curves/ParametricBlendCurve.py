@@ -3,7 +3,7 @@
 __title__ = "Blend curve"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Blend curve between two edges."
+__doc__ = "Blend curve between two edges.  Double-clic object to enable/disable freehand mouse editing."
 
 import os
 import FreeCAD
@@ -66,8 +66,9 @@ class BlendCurveFP:
                     break
             if hasattr(obj, "getGlobalPlacement"):
                 gbpl = obj.getGlobalPlacement()
-                pl = sub.Placement
-                sub.Placement = gbpl.multiply(pl)
+                # pl = sub.Placement
+                # trans = pl.multiply(gbpl)
+                sub.Placement = gbpl  # trans
         return sub
 
     def migrate(self, fp):
@@ -385,6 +386,9 @@ class BlendCurveVP:
 
             self.bc.perform()
             self.Object.Shape = self.bc.shape
+            for obj in self.Object.InList:
+                if "Curves.ParametricComb.Comb" in str(obj.Proxy):
+                    obj.Proxy.execute(obj)
             return self.bc
 
     def setEdit(self, vobj, mode=0):
