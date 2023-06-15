@@ -62,13 +62,10 @@ class BlendCurveFP:
             obj, senl = fp.getPropertyByName(prop)
             for sen in senl:
                 if ("Edge" in sen) or ("Line" in sen):
-                    sub = obj.getSubObject(sen)
+                    sh = obj.Shape.copy()
+                    sh.Placement = obj.getGlobalPlacement()
+                    sub = sh.getElement(sen)
                     break
-            if hasattr(obj, "getGlobalPlacement"):
-                gbpl = obj.getGlobalPlacement()
-                # pl = sub.Placement
-                # trans = pl.multiply(gbpl)
-                sub.Placement = gbpl  # trans
         return sub
 
     def migrate(self, fp):
