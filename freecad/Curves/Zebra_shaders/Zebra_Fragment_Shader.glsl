@@ -2,7 +2,7 @@
 
 varying vec4 eposition;
 varying vec3 normal;
-varying mat4 normmat;
+// varying mat4 normmat;
 uniform vec3 analysis_direction;
 uniform int fixed_light;
 uniform int  mode; // 0=Stripes 1=Rainbow 2=Curves
@@ -20,7 +20,7 @@ void main(void)
     vec3 dir;
     vec3 color;
     if (fixed_light == 1)
-        dir = vec3(normmat * vec4(analysis_direction, 0.0));
+        dir = vec3(gl_ModelViewMatrix * vec4(analysis_direction, 0.0));
     else
         dir = analysis_direction;
     float nDotDir = dot(normalize(normal), normalize(dir));
@@ -37,28 +37,29 @@ void main(void)
     {
         float angle = acos(nDotDir) * 180.0 / PI;
         if (angle < rainbow_angle_1)
-            color = vec3(1,1,1);
+            color = stripes_color_1;
         else if (angle > rainbow_angle_2)
-            color = vec3(0,0,0);
+            color = stripes_color_2;
         else
         {
-            float range = abs(rainbow_angle_1 - rainbow_angle_2);
+            float range = abs(rainbow_angle_2 - rainbow_angle_1);
             vec3 colors[5];
             colors[0] = vec3(1,0,0);
             colors[1] = vec3(1,1,0);
             colors[2] = vec3(0,1,0);
             colors[3] = vec3(0,1,1);
             colors[4] = vec3(0,0,1);
-            float rel_angle = (4.0 * (angle - rainbow_angle_1)) / range;
-            int floor_angle = int(floor(rel_angle));
-            float mod_angle = abs(mod(rel_angle, 1.0));
-            color = colors[floor_angle + 1] * mod_angle + colors[floor_angle] * (1.0 - mod_angle);
+            float rel_angle = (angle - rainbow_angle_1) / range;
+            float sv = 4.0 * float(stripes_number) * rel_angle;
+            int idx = int(floor(mod(sv, 4.0)));
+            float ratio = mod(sv, 1.0);
+            color = colors[idx + 1] * ratio + colors[idx] * (1.0 - ratio);
         }
     }
     if (mode == 2) // Curves
     {
         float angle = acos(nDotDir) * 180.0 / PI;
-        vec3 color = stripes_color_1;
+        color = stripes_color_1;
         for(int i=0; i<20; i++)
         {
             float a = curves_angles[i];

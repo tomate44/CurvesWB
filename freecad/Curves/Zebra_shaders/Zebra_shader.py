@@ -1,18 +1,18 @@
 import FreeCAD as App
 import FreeCADGui as Gui
 from pivy import coin
-
-shaderSearchDir = "/home/tomate/Documents/FC-Files/Zebra_shaders/"
+from os import path
 
 
 class SurfaceAnalysisShader:
 
-    def __init__(self, shaderpath, mode=0, fixed_light=0):
+    def __init__(self, mode=0, fixed_light=0):
+        shaderpath = path.dirname(path.abspath(__file__))
         self.vertexShader = coin.SoVertexShader()
-        self.vertexShader.sourceProgram.setValue(shaderpath + 'Zebra_Vertex_Shader.glsl')  # phong_vshader
+        self.vertexShader.sourceProgram.setValue(path.join(shaderpath,'Zebra_Vertex_Shader.glsl'))  # phong_vshader
 
         self.fragmentShader = coin.SoFragmentShader()
-        self.fragmentShader.sourceProgram.setValue(shaderpath + 'Zebra_Fragment_Shader.glsl')  # phong_fshader
+        self.fragmentShader.sourceProgram.setValue(path.join(shaderpath,'Zebra_Fragment_Shader.glsl'))  # phong_fshader
 
         self.analysis_direction = coin.SoShaderParameter3f()
         self.analysis_direction.name = "analysis_direction"
@@ -48,7 +48,7 @@ class SurfaceAnalysisShader:
         self.curves_tolerance.name = "curves_tolerance"
 
         self.AnalysisDirection = (1, 0, 0)
-        self.FixedLight = fixed_light
+        self.Fixed = fixed_light
         self.Mode = mode
         self.Color1 = (1, 1, 1)
         self.Color2 = (0, 0, 0)
@@ -85,11 +85,11 @@ class SurfaceAnalysisShader:
         self.analysis_direction.value = v
 
     @property
-    def FixedLight(self):
+    def Fixed(self):
         return self.fixed_light.value.getValue()
 
-    @FixedLight.setter
-    def FixedLight(self, v):
+    @Fixed.setter
+    def Fixed(self, v):
         self.fixed_light.value = v
 
     @property
@@ -150,7 +150,11 @@ class SurfaceAnalysisShader:
 
     @property
     def CurvesAngles(self):
-        return self.curves_angles.value.getValues()
+        val = []
+        for v in self.curves_angles.value.getValues():
+            if v >= 0:
+                val.append(v)
+        return val
 
     @CurvesAngles.setter
     def CurvesAngles(self, v):
@@ -172,6 +176,7 @@ class SurfaceAnalysisShader:
         return self.shaderProgram
 
 
+"""
 doc = App.newDocument()
 doc.addObject("Part::Ellipsoid", "Ellipsoid")
 doc.addObject("Part::Torus", "Torus")
@@ -182,8 +187,8 @@ view.viewIsometric()
 Gui.SendMsgToActiveView("ViewFit")
 
 root = view.getViewer().getSceneGraph()
-shader = SurfaceAnalysisShader(shaderSearchDir)
+shader = SurfaceAnalysisShader(0, 1)
 root.insertChild(shader.Shader, 0)
-
+"""
 
 
