@@ -2,7 +2,7 @@
 
 varying vec4 eposition;
 varying vec3 normal;
-// varying vec4 direction;
+varying mat4 normmat;
 uniform vec3 analysis_direction;
 uniform int fixed_light;
 uniform int  mode; // 0=Stripes 1=Rainbow 2=Curves
@@ -20,7 +20,7 @@ void main(void)
     vec3 dir;
     vec3 color;
     if (fixed_light == 1)
-        dir = vec3(gl_ModelViewMatrix * vec4(analysis_direction, 0.0));
+        dir = vec3(normmat * vec4(analysis_direction, 0.0));
     else
         dir = analysis_direction;
     float nDotDir = dot(normalize(normal), normalize(dir));

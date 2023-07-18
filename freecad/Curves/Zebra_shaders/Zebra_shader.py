@@ -1,90 +1,180 @@
-from pivy.coin import *
+import FreeCAD as App
+import FreeCADGui as Gui
+from pivy import coin
 
 shaderSearchDir = "/home/tomate/Documents/FC-Files/Zebra_shaders/"
 
 
-def createShader():
-    vertexShader = SoVertexShader()
-    vertexShader.sourceProgram.setValue(shaderSearchDir + 'Zebra_Vertex_Shader.glsl')  # phong_vshader
+class SurfaceAnalysisShader:
 
-    fragmentShader = SoFragmentShader()
-    fragmentShader.sourceProgram.setValue(shaderSearchDir + 'Zebra_Fragment_Shader.glsl')  # phong_fshader
+    def __init__(self, shaderpath, mode=0, fixed_light=0):
+        self.vertexShader = coin.SoVertexShader()
+        self.vertexShader.sourceProgram.setValue(shaderpath + 'Zebra_Vertex_Shader.glsl')  # phong_vshader
 
-    # Shader parameters 
-    """
-    uniform vec3 analysis_direction;
-    uniform int  mode; // 0=Stripes 1=Rainbow 2=Curves
-    uniform vec3 stripes_color_1;
-    uniform vec3 stripes_color_2;
-    uniform int  stripes_number;
-    uniform float rainbow_angle_1;
-    uniform float rainbow_angle_2;
-    uniform float curves_angles[20];
-    uniform float curves_tolerance;
-    """
+        self.fragmentShader = coin.SoFragmentShader()
+        self.fragmentShader.sourceProgram.setValue(shaderpath + 'Zebra_Fragment_Shader.glsl')  # phong_fshader
 
-    analysis_direction = SoShaderParameter3f()
-    analysis_direction.name = "analysis_direction"
-    analysis_direction.value = (1, 0, 0)
+        self.analysis_direction = coin.SoShaderParameter3f()
+        self.analysis_direction.name = "analysis_direction"
 
-    fixed_light = SoShaderParameter1i()
-    fixed_light.name = "fixed_light"
-    fixed_light.value = 0
+        self.fixed_light = coin.SoShaderParameter1i()
+        self.fixed_light.name = "fixed_light"
 
-    mode = SoShaderParameter1i()
-    mode.name = "mode"
-    mode.value = 1  # 0=Stripes 1=Rainbow 2=Curves
+        self.mode = coin.SoShaderParameter1i()
+        self.mode.name = "mode"
 
-    stripes_color_1 = SoShaderParameter3f()
-    stripes_color_1.name = "stripes_color_1"
-    stripes_color_1.value = (1, 1, 1)
+        self.stripes_color_1 = coin.SoShaderParameter3f()
+        self.stripes_color_1.name = "stripes_color_1"
 
-    stripes_color_2 = SoShaderParameter3f()
-    stripes_color_2.name = "stripes_color_2"
-    stripes_color_2.value = (0, 0, 0)
+        self.stripes_color_2 = coin.SoShaderParameter3f()
+        self.stripes_color_2.name = "stripes_color_2"
 
-    stripes_number = SoShaderParameter1i()
-    stripes_number.name = "stripes_number"
-    stripes_number.value = 12
+        self.stripes_number = coin.SoShaderParameter1i()
+        self.stripes_number.name = "stripes_number"
 
-    stripes_ratio = SoShaderParameter1f()
-    stripes_ratio.name = "stripes_ratio"
-    stripes_ratio.value = 0.5
+        self.stripes_ratio = coin.SoShaderParameter1f()
+        self.stripes_ratio.name = "stripes_ratio"
 
-    rainbow_angle_1 = SoShaderParameter1f()
-    rainbow_angle_1.name = "rainbow_angle_1"
-    rainbow_angle_1.value = 30.0
+        self.rainbow_angle_1 = coin.SoShaderParameter1f()
+        self.rainbow_angle_1.name = "rainbow_angle_1"
 
-    rainbow_angle_2 = SoShaderParameter1f()
-    rainbow_angle_2.name = "rainbow_angle_2"
-    rainbow_angle_2.value = 150.0
+        self.rainbow_angle_2 = coin.SoShaderParameter1f()
+        self.rainbow_angle_2.name = "rainbow_angle_2"
 
-    curves_angles = SoShaderParameterArray1f()
-    curves_angles.name = "curves_angles"
-    angles = [30.0, 60.0, 90.0, 120.0, 150.0]
-    comp = [-1] * (20 - len(angles))
-    angles += comp
-    curves_angles.value.setValues(0, len(angles), angles)
-    # print(len(angles))
+        self.curves_angles = coin.SoShaderParameterArray1f()
+        self.curves_angles.name = "curves_angles"
 
-    curves_tolerance = SoShaderParameter1f()
-    curves_tolerance.name = "curves_tolerance"
-    curves_tolerance.value = 0.4
+        self.curves_tolerance = coin.SoShaderParameter1f()
+        self.curves_tolerance.name = "curves_tolerance"
 
-    # vertexShader.parameter.set1Value(0, lightdir)
-    params = [analysis_direction, fixed_light, mode, stripes_color_1, stripes_color_2, stripes_number, stripes_ratio, rainbow_angle_1, rainbow_angle_2, curves_angles, curves_tolerance]
-    fragmentShader.parameter.setValues(0, len(params), params)
+        self.AnalysisDirection = (1, 0, 0)
+        self.FixedLight = fixed_light
+        self.Mode = mode
+        self.Color1 = (1, 1, 1)
+        self.Color2 = (0, 0, 0)
+        self.StripesNumber = 12
+        self.StripesRatio = 0.5
+        self.RainbowAngle1 = 30.0
+        self.RainbowAngle2 = 150.0
+        self.CurvesAngles = [30.0, 60.0, 90.0, 120.0, 150.0]
+        self.CurvesTolerance = 0.5
 
-    shaderProgram = SoShaderProgram()
-    shaderProgram.shaderObject.set1Value(0, vertexShader)
-    shaderProgram.shaderObject.set1Value(1, fragmentShader)
+        params = [self.analysis_direction,
+                  self.fixed_light,
+                  self.mode,
+                  self.stripes_color_1,
+                  self.stripes_color_2,
+                  self.stripes_number,
+                  self.stripes_ratio,
+                  self.rainbow_angle_1,
+                  self.rainbow_angle_2,
+                  self.curves_angles,
+                  self.curves_tolerance]
+        self.fragmentShader.parameter.setValues(0, len(params), params)
 
-    return shaderProgram
+        self.shaderProgram = coin.SoShaderProgram()
+        self.shaderProgram.shaderObject.set1Value(0, self.vertexShader)
+        self.shaderProgram.shaderObject.set1Value(1, self.fragmentShader)
+
+    @property
+    def AnalysisDirection(self):
+        return self.analysis_direction.value.getValue().getValue()
+
+    @AnalysisDirection.setter
+    def AnalysisDirection(self, v):
+        self.analysis_direction.value = v
+
+    @property
+    def FixedLight(self):
+        return self.fixed_light.value.getValue()
+
+    @FixedLight.setter
+    def FixedLight(self, v):
+        self.fixed_light.value = v
+
+    @property
+    def Mode(self):
+        return self.mode.value.getValue()
+
+    @Mode.setter
+    def Mode(self, v):
+        self.mode.value = v
+
+    @property
+    def Color1(self):
+        return self.stripes_color_1.value.getValue().getValue()
+
+    @Color1.setter
+    def Color1(self, v):
+        self.stripes_color_1.value = v
+
+    @property
+    def Color2(self):
+        return self.stripes_color_2.value.getValue().getValue()
+
+    @Color2.setter
+    def Color2(self, v):
+        self.stripes_color_2.value = v
+
+    @property
+    def StripesNumber(self):
+        return self.stripes_number.value.getValue()
+
+    @StripesNumber.setter
+    def StripesNumber(self, v):
+        self.stripes_number.value = v
+
+    @property
+    def StripesRatio(self):
+        return self.stripes_ratio.value.getValue()
+
+    @StripesRatio.setter
+    def StripesRatio(self, v):
+        self.stripes_ratio.value = v
+
+    @property
+    def RainbowAngle1(self):
+        return self.rainbow_angle_1.value.getValue()
+
+    @RainbowAngle1.setter
+    def RainbowAngle1(self, v):
+        self.rainbow_angle_1.value = v
+
+    @property
+    def RainbowAngle2(self):
+        return self.rainbow_angle_2.value.getValue()
+
+    @RainbowAngle2.setter
+    def RainbowAngle2(self, v):
+        self.rainbow_angle_2.value = v
+
+    @property
+    def CurvesAngles(self):
+        return self.curves_angles.value.getValues()
+
+    @CurvesAngles.setter
+    def CurvesAngles(self, v):
+        if len(v) < 20:
+            comp = [-1] * (20 - len(v))
+            v += comp
+        self.curves_angles.value.setValues(0, 20, v[:20])
+
+    @property
+    def CurvesTolerance(self):
+        return self.curves_tolerance.value.getValue()
+
+    @CurvesTolerance.setter
+    def CurvesTolerance(self, v):
+        self.curves_tolerance.value = v
+
+    @property
+    def Shader(self):
+        return self.shaderProgram
 
 
 doc = App.newDocument()
-doc.addObject("Part::Ellipsoid","Ellipsoid")
-doc.addObject("Part::Torus","Torus")
+doc.addObject("Part::Ellipsoid", "Ellipsoid")
+doc.addObject("Part::Torus", "Torus")
 doc.recompute()
 
 view = Gui.ActiveDocument.ActiveView
@@ -92,8 +182,8 @@ view.viewIsometric()
 Gui.SendMsgToActiveView("ViewFit")
 
 root = view.getViewer().getSceneGraph()
-shader = createShader()
-root.insertChild(shader, 0)
+shader = SurfaceAnalysisShader(shaderSearchDir)
+root.insertChild(shader.Shader, 0)
 
 
 
