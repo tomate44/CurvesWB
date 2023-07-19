@@ -85,6 +85,17 @@ class SurfaceAnalysisProxyFP:
 
 class SurfaceAnalysisProxyVP:
     def __init__(self, viewobj):
+        viewobj.addProperty("App::PropertyVector", "Direction",
+                        "Analysis", "Analysis Direction")
+        viewobj.addProperty("App::PropertyEnumeration", "Mode",
+                        "Analysis", "Analysis Mode")
+        viewobj.addProperty("App::PropertyBool", "Fixed",
+                        "Analysis", "Fix analysis direction to global coordinate system")
+        
+        viewobj.Direction = (1, 0, 0)
+        viewobj.Mode = ["Zebra", "Rainbow", "Isophote"]
+        viewobj.Mode = "Zebra"
+        viewobj.Fixed = False
         viewobj.Proxy = self
 
     def getIcon(self):
@@ -115,6 +126,16 @@ class SurfaceAnalysisProxyVP:
                 self.load_shader()
             if (not viewobj.Visibility) and self.Active:
                 self.remove_shader()
+        if prop == "Direction":
+            self.surf_analyze.AnalysisDirection = viewobj.Direction
+        if prop == "Mode":
+            modes = {"Zebra": 0, "Rainbow": 1, "Isophote": 2}
+            self.surf_analyze.Mode = modes[viewobj.Mode]
+        if prop == "Fixed":
+            if viewobj.Fixed:
+                self.surf_analyze.Fixed = 1
+            else:
+                self.surf_analyze.Fixed = 0
 
     def onDelete(self, viewobj, sub):
         self.remove_shader()
