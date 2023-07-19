@@ -15,6 +15,33 @@ uniform float rainbow_angle_2;
 uniform float curves_angles[20];
 uniform float curves_tolerance;
 
+void RainbowColor(in float t,
+                  in float t0,
+                  in float t1,
+                  in int num,
+                  inout vec3 color)
+{
+    if (t < t0)
+        color = stripes_color_1;
+    else if (t > t1)
+        color = stripes_color_2;
+    else
+    {
+        float range = abs(t1 - t0);
+        vec3 colors[5];
+        colors[0] = vec3(1,0,0);
+        colors[1] = vec3(1,1,0);
+        colors[2] = vec3(0,1,0);
+        colors[3] = vec3(0,1,1);
+        colors[4] = vec3(0,0,1);
+        float rel = (t - t0) / range;
+        float sv = 4.0 * float(num) * rel;
+        int idx = int(floor(mod(sv, 4.0)));
+        float ratio = mod(sv, 1.0);
+        color = colors[idx + 1] * ratio + colors[idx] * (1.0 - ratio);
+    }
+}
+
 void main(void)
 {
     vec3 dir;
@@ -42,18 +69,19 @@ void main(void)
             color = stripes_color_2;
         else
         {
-            float range = abs(rainbow_angle_2 - rainbow_angle_1);
-            vec3 colors[5];
-            colors[0] = vec3(1,0,0);
-            colors[1] = vec3(1,1,0);
-            colors[2] = vec3(0,1,0);
-            colors[3] = vec3(0,1,1);
-            colors[4] = vec3(0,0,1);
-            float rel_angle = (angle - rainbow_angle_1) / range;
-            float sv = 4.0 * float(stripes_number) * rel_angle;
-            int idx = int(floor(mod(sv, 4.0)));
-            float ratio = mod(sv, 1.0);
-            color = colors[idx + 1] * ratio + colors[idx] * (1.0 - ratio);
+//             float range = abs(rainbow_angle_2 - rainbow_angle_1);
+//             vec3 colors[5];
+//             colors[0] = vec3(1,0,0);
+//             colors[1] = vec3(1,1,0);
+//             colors[2] = vec3(0,1,0);
+//             colors[3] = vec3(0,1,1);
+//             colors[4] = vec3(0,0,1);
+//             float rel_angle = (angle - rainbow_angle_1) / range;
+//             float sv = 4.0 * float(stripes_number) * rel_angle;
+//             int idx = int(floor(mod(sv, 4.0)));
+//             float ratio = mod(sv, 1.0);
+//             color = colors[idx + 1] * ratio + colors[idx] * (1.0 - ratio);
+            RainbowColor(angle, rainbow_angle_1, rainbow_angle_2, stripes_number, color);
         }
     }
     if (mode == 2) // Curves
@@ -67,9 +95,29 @@ void main(void)
             {
                 float diff = abs(angle - a);
                 if (diff < curves_tolerance)
-                    color = stripes_color_2;
+                    RainbowColor(angle, curves_tolerance, (180.0-curves_tolerance), stripes_number, color);
             }
         }
     }
-    gl_FragColor = vec4(color, gl_Color.a);
+
+    // vec3 lightColor = 1.0; // (1.0, 1.0, 1.0);
+    // ambient
+    vec3 ambient = gl_FrontMaterial.ambient.rgb;
+
+    // diffuse
+    vec3 norm = normalize(normal);
+//     vec3 lightDir = normalize(lightPos - FragPos);
+    float diff = max(dot(norm, dir), 0.0);
+    vec3 diffuse = (0.6 + (diff * 0.4)) * color; //gl_FrontMaterial.diffuse.rgb;
+
+    // specular
+    vec3 view = vec3(0,0,-1);
+    vec3 reflectDir = reflect(dir, norm);
+    float spec = pow(max(dot(view, reflectDir), 0.0), 11.0); //gl_FrontMaterial.shininess);
+    vec3 specular = 0.01 * spec * vec3(1,1,1); //gl_FrontMaterial.specular.rgb;
+
+    vec4 result = vec4(ambient, 1.0) + vec4(diffuse, 1.0) + vec4(specular,1.0);
+    // FragColor = vec4(result, 1.0);
+
+    gl_FragColor = result;
 }

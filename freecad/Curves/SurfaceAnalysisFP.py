@@ -5,11 +5,12 @@ __author__ = 'Christophe Grellier (Chris_G)'
 __license__ = 'LGPL 2.1'
 __doc__ = 'Doc'
 
-import os
+# import os
 import FreeCAD
 import FreeCADGui
-from pivy import coin
+# from pivy import coin
 from os import path
+from math import pi
 from freecad.Curves import ICONPATH
 from freecad.Curves.Zebra_shaders.Zebra_shader import SurfaceAnalysisShader
 
@@ -86,17 +87,42 @@ class SurfaceAnalysisProxyFP:
 class SurfaceAnalysisProxyVP:
     def __init__(self, viewobj):
         viewobj.addProperty("App::PropertyVector", "Direction",
-                        "Analysis", "Analysis Direction")
+                            "AnalysisMode", "Analysis Direction")
         viewobj.addProperty("App::PropertyEnumeration", "Mode",
-                        "Analysis", "Analysis Mode")
+                            "AnalysisMode", "Analysis Mode")
         viewobj.addProperty("App::PropertyBool", "Fixed",
-                        "Analysis", "Fix analysis direction to global coordinate system")
-        
+                            "AnalysisMode", "Fix analysis direction to global coordinate system")
+        viewobj.addProperty("App::PropertyInteger", "StripesNumber",
+                            "AnalysisOptions", "Number of stripes (Zebra, Rainbow)")
+        viewobj.addProperty("App::PropertyFloatConstraint", "StripesRatio",
+                            "AnalysisOptions", "Relative width of stripes (Zebra)")
+        viewobj.addProperty("App::PropertyColor", "Color1",
+                            "AnalysisOptions", "First color (Zebra, Rainbow, Isophote)")
+        viewobj.addProperty("App::PropertyColor", "Color2",
+                            "AnalysisOptions", "Second color (Zebra, Rainbow, Isophote)")
+        viewobj.addProperty("App::PropertyFloatConstraint", "RainbowAngle1",
+                            "AnalysisOptions", "Start angle of the rainbow")
+        viewobj.addProperty("App::PropertyFloatConstraint", "RainbowAngle2",
+                            "AnalysisOptions", "End angle of the rainbow")
+        viewobj.addProperty("App::PropertyFloatList", "IsoAngles",
+                            "AnalysisOptions", "Angles of isophote curves")
+        viewobj.addProperty("App::PropertyFloat", "IsoTolerance",
+                            "AnalysisOptions", "Angular tolerance of isophote curves")
+        # viewobj.addProperty("App::PropertyFloatList", "DraftAngles",
+        #                     "AnalysisResult", "List of measured angles")
         viewobj.Direction = (1, 0, 0)
         viewobj.Mode = ["Zebra", "Rainbow", "Isophote"]
         viewobj.Mode = "Zebra"
         viewobj.Fixed = False
         viewobj.Proxy = self
+        viewobj.StripesNumber = 12
+        viewobj.StripesRatio = (0.5, 0.0, 1.0, 0.05)
+        viewobj.Color1 = (1.0, 1.0, 1.0)
+        viewobj.Color2 = (0.0, 0.0, 0.0)
+        viewobj.RainbowAngle1 = (0.0, 0.0, 180.0, 5.0)
+        viewobj.RainbowAngle2 = (180.0, 0.0, 180.0, 5.0)
+        viewobj.IsoAngles = [45.0, 90.0, 135.0]
+        viewobj.IsoTolerance = 0.5
 
     def getIcon(self):
         return TOOL_ICON
@@ -105,7 +131,7 @@ class SurfaceAnalysisProxyVP:
         self.Object = viewobj.Object
         self.Active = False
         self.rootnodes = []
-        self.surf_analyze = SurfaceAnalysisShader(1, 0)
+        self.surf_analyze = SurfaceAnalysisShader(0, 0)
         self.load_shader()
 
     def __getstate__(self):
@@ -136,6 +162,24 @@ class SurfaceAnalysisProxyVP:
                 self.surf_analyze.Fixed = 1
             else:
                 self.surf_analyze.Fixed = 0
+        if prop == "StripesNumber":
+            self.surf_analyze.StripesNumber = viewobj.StripesNumber
+        if prop == "StripesRatio":
+            self.surf_analyze.StripesRatio = viewobj.StripesRatio
+        if prop == "Color1":
+            self.surf_analyze.Color1 = viewobj.Color1[:3]
+        if prop == "Color2":
+            self.surf_analyze.Color2 = viewobj.Color2[:3]
+        if prop == "RainbowAngle1":
+            self.surf_analyze.RainbowAngle1 = viewobj.RainbowAngle1
+        if prop == "RainbowAngle2":
+            self.surf_analyze.RainbowAngle2 = viewobj.RainbowAngle2
+        if prop == "IsoAngles":
+            self.surf_analyze.CurvesAngles = viewobj.IsoAngles
+        if prop == "IsoTolerance":
+            self.surf_analyze.CurvesTolerance = viewobj.IsoTolerance
+        # if prop == "DraftAngles":
+        #     pass  # print(viewobj.DraftAngles)
 
     def onDelete(self, viewobj, sub):
         self.remove_shader()
@@ -165,16 +209,18 @@ class SurfaceAnalysisProxyVP:
     def addSelection(self, doc, obj, sub, pnt):  # Selection
         # FreeCAD.Console.PrintMessage("addSelection %s %s\n" % (obj, str(sub)))
         names = [o.Name for o in self.Object.Sources]
-        if self.Active and obj in names:
+        if self.Object.ViewObject.Fixed and self.Active and obj in names:
             if "Face" in sub:
                 o = FreeCAD.getDocument(doc).getObject(obj)
                 surf = o.Shape.getElement(sub).Surface
                 u, v = surf.parameter(FreeCAD.Vector(pnt))
                 n = surf.normal(u, v)
                 direc = FreeCAD.Vector(self.surf_analyze.AnalysisDirection)
-                angle = n.getAngle(direc)
-                FreeCAD.Console.PrintMessage(f"{obj}, {sub}, {pnt}, Angle: {angle} to {direc}\n")
-
+                angle = n.getAngle(direc) * 180 / pi
+                FreeCAD.Console.PrintMessage(f"{obj}.{sub} Normal Angle: {angle}\n")
+                # da = self.Object.ViewObject.DraftAngles
+                # da.insert(0, angle)
+                # self.Object.ViewObject.DraftAngles = da[:16]
 
     def removeSelection(self, doc, obj, sub):  # Delete selected object
         # FreeCAD.Console.PrintMessage("removeSelection %s %s\n" % (obj, str(sub)))
@@ -185,7 +231,7 @@ class SurfaceAnalysisProxyVP:
 
     def clearSelection(self, doc):  # If screen is clicked, delete selection
         # FreeCAD.Console.PrintMessage("clearSelection\n")
-        pass
+        pass  # self.Object.ViewObject.DraftAngles = []
 
 class SurfaceAnalysisCommand:
     """Create a ... feature"""

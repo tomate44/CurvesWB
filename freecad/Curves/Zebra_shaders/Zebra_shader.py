@@ -54,9 +54,9 @@ class SurfaceAnalysisShader:
         self.Color2 = (0, 0, 0)
         self.StripesNumber = 12
         self.StripesRatio = 0.5
-        self.RainbowAngle1 = 30.0
-        self.RainbowAngle2 = 150.0
-        self.CurvesAngles = [30.0, 60.0, 90.0, 120.0, 150.0]
+        self.RainbowAngle1 = 0.0
+        self.RainbowAngle2 = 180.0
+        self.CurvesAngles = [45.0, 90.0, 135.0]
         self.CurvesTolerance = 0.5
 
         params = [self.analysis_direction,
