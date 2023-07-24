@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = 'Title'
+__title__ = 'Surface Analysis'
 __author__ = 'Christophe Grellier (Chris_G)'
 __license__ = 'LGPL 2.1'
-__doc__ = 'Doc'
+__doc__ = 'Surface Analysis for evalute smoothness and continuity'
 
 # import os
 import FreeCAD
