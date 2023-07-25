@@ -71,7 +71,7 @@ Sketcher::PropertyConstraintList
 
 class DraftAnalysisProxyFP:
     def __init__(self, obj):
-        obj.addProperty("App::PropertyLinkList", "Sources", "Base", "Objects on which the analysis is performed")
+        obj.addProperty("App::PropertyLink", "Source", "Base", "Object on which the analysis is performed")
         obj.Proxy = self
 
     def execute(self, obj):
@@ -106,7 +106,6 @@ class DraftAnalysisProxyVP:
         viewobj.addProperty("App::PropertyFloatConstraint", "Opacity",
                             "AnalysisOptions", "Opacity of the analysis overlay")
 
-        viewobj.Direction = (0, 0, 1)
         viewobj.DraftAngle1 = (1.0, 0.0, 90.0, 0.1)
         viewobj.DraftAngle2 = (1.0, 0.0, 90.0, 0.1)
         viewobj.DraftTol1 = (0.05, 0.0, 90.0, 0.05)
@@ -118,6 +117,7 @@ class DraftAnalysisProxyVP:
         viewobj.ColorTolDraft2 = (1.0, 1.0, 0.0)
         viewobj.Opacity = (0.8, 0.0, 1.0, 0.05)
         viewobj.Proxy = self
+        viewobj.Direction = (0, 0, 1)
 
     def getIcon(self):
         return TOOL_ICON
@@ -125,7 +125,7 @@ class DraftAnalysisProxyVP:
     def attach(self, viewobj):
         self.Object = viewobj.Object
         self.Active = False
-        self.rootnodes = []
+        self.rootnode = None
         self.draft_analyzer = DraftAnalysisShader()
         self.load_shader()
 
@@ -137,7 +137,7 @@ class DraftAnalysisProxyVP:
         return None
 
     def updateData(self, fp, prop):
-        if prop == "Sources":
+        if prop == "Source":
             self.remove_shader()
             self.load_shader()
 
@@ -148,7 +148,11 @@ class DraftAnalysisProxyVP:
             if (not viewobj.Visibility) and self.Active:
                 self.remove_shader()
         if prop == "Direction":
-            self.draft_analyzer.AnalysisDirection = viewobj.Direction
+            pl = self.Object.Source.Placement
+            inv = pl.inverse()
+            d = inv.multVec(viewobj.Direction)
+            self.draft_analyzer.AnalysisDirection = d
+            print(d)
         if hasattr(self.draft_analyzer, prop):
             setattr(self.draft_analyzer, prop, getattr(viewobj, prop))
 
@@ -157,37 +161,29 @@ class DraftAnalysisProxyVP:
         return True
 
     def load_shader(self):
-        if self.Active:
+        o = self.Object.Source
+        if self.Active or (o is None):
             return
-        if len(self.Object.Sources) == 0:
-            view = FreeCADGui.ActiveDocument.ActiveView
-            self.rootnodes = [view.getViewer().getSceneGraph(), ]
+        sw = o.ViewObject.SwitchNode
+        if sw.getNumChildren() == 4:  # Std object with 4 DisplayModes
+            self.rootnode = sw.getChild(1)  # This should be the Shaded node
         else:
-            nl = []
-            for o in self.Object.Sources:
-                sw = o.ViewObject.SwitchNode
-                if sw.getNumChildren() == 4:  # Std object with 4 DisplayModes
-                    nl.append(sw.getChild(1))  # This should be the Shaded node
-                else:
-                    nl.append(o.ViewObject.RootNode)
-            self.rootnodes = nl
-        for rn in self.rootnodes:
-            rn.insertChild(self.draft_analyzer.Shader, 0)
+            self.rootnode = o.ViewObject.RootNode
+        self.rootnode.insertChild(self.draft_analyzer.Shader, 0)
         self.Active = True
         FreeCADGui.Selection.addObserver(self)
 
     def remove_shader(self):
         if not self.Active:
             return
-        for rn in self.rootnodes:
-            rn.removeChild(self.draft_analyzer.Shader)
+        self.rootnode.removeChild(self.draft_analyzer.Shader)
         self.Active = False
         FreeCADGui.Selection.removeObserver(self)
 
     def addSelection(self, doc, obj, sub, pnt):  # Selection
         # FreeCAD.Console.PrintMessage("addSelection %s %s\n" % (obj, str(sub)))
-        names = [o.Name for o in self.Object.Sources]
-        if self.Active and obj in names:
+        o = self.Object.Source
+        if self.Active and (obj == o.Name):
             if "Face" in sub:
                 o = FreeCAD.getDocument(doc).getObject(obj)
                 surf = o.Shape.getElement(sub).Surface
@@ -212,19 +208,21 @@ class DraftAnalysisProxyVP:
         pass  # self.Object.ViewObject.DraftAngles = []
 
 class DraftAnalysisCommand:
-    def makeFeature(self, sel=[]):
+    def makeFeature(self, sel):
         fp = FreeCAD.ActiveDocument.addObject("App::FeaturePython", "DraftAnalysis")
         DraftAnalysisProxyFP(fp)
         DraftAnalysisProxyVP(fp.ViewObject)
-        fp.Sources = sel
+        fp.Source = sel
         FreeCAD.ActiveDocument.recompute()
 
     def Activated(self):
         sel = FreeCADGui.Selection.getSelection()
-        self.makeFeature(sel)
+        for so in sel:
+            self.makeFeature(so)
 
     def IsActive(self):
-        if FreeCAD.ActiveDocument:
+        sel = FreeCADGui.Selection.getSelection()
+        if sel:
             return True
         else:
             return False
