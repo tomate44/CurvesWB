@@ -71,11 +71,31 @@ Sketcher::PropertyConstraintList
 
 class DraftAnalysisProxyFP:
     def __init__(self, obj):
-        obj.addProperty("App::PropertyLink", "Source", "Base", "Object on which the analysis is performed")
+        obj.addProperty("App::PropertyLink", "Source",
+                        "AnalysisOptions", "Object on which the analysis is performed")
+        obj.addProperty("App::PropertyVector", "Direction",
+                        "AnalysisOptions", "Pull direction")
+        obj.addProperty("App::PropertyFloatConstraint", "DraftAngle1",
+                        "AnalysisOptions", "Positive draft angle")
+        obj.addProperty("App::PropertyFloatConstraint", "DraftAngle2",
+                        "AnalysisOptions", "Negative draft angle")
+        obj.addProperty("App::PropertyFloatConstraint", "DraftTol1",
+                        "AnalysisOptions", "Positive draft tolerance")
+        obj.addProperty("App::PropertyFloatConstraint", "DraftTol2",
+                        "AnalysisOptions", "Negative draft tolerance")
+        obj.DraftAngle1 = (1.0, 0.0, 90.0, 0.1)
+        obj.DraftAngle2 = (1.0, 0.0, 90.0, 0.1)
+        obj.DraftTol1 = (0.05, 0.0, 90.0, 0.05)
+        obj.DraftTol2 = (0.05, 0.0, 90.0, 0.05)
+        obj.Direction = (0, 0, 1)
         obj.Proxy = self
 
     def execute(self, obj):
-        return False  # obj.Shape = None
+        sh = obj.Source.Shape
+        pl = obj.Source.Placement
+        nsh = sh.transformGeometry(pl.Matrix)
+        nsh.Placement = FreeCAD.Placement()
+        obj.Shape = nsh
 
     def onChanged(self, obj, prop):
         return False
@@ -83,51 +103,48 @@ class DraftAnalysisProxyFP:
 
 class DraftAnalysisProxyVP:
     def __init__(self, viewobj):
-        viewobj.addProperty("App::PropertyVector", "Direction",
-                            "AnalysisOptions", "Pull direction")
-        viewobj.addProperty("App::PropertyFloatConstraint", "DraftAngle1",
-                            "AnalysisOptions", "Positive draft angle")
-        viewobj.addProperty("App::PropertyFloatConstraint", "DraftAngle2",
-                            "AnalysisOptions", "Negative draft angle")
-        viewobj.addProperty("App::PropertyFloatConstraint", "DraftTol1",
-                            "AnalysisOptions", "Positive draft tolerance")
-        viewobj.addProperty("App::PropertyFloatConstraint", "DraftTol2",
-                            "AnalysisOptions", "Negative draft tolerance")
         viewobj.addProperty("App::PropertyColor", "ColorInDraft1",
-                            "Colors", "Color of the positive in-draft area")
+                            "Colors1PositiveDraft", "Color of the positive in-draft area")
+        viewobj.addProperty("App::PropertyColor", "ColorInTolerance1",
+                            "Colors1PositiveDraft", "Color of the positive tolerance area")
+        viewobj.addProperty("App::PropertyColor", "ColorOutOfDraft1",
+                            "Colors1PositiveDraft", "Color of the positive out-of-draft area")
         viewobj.addProperty("App::PropertyColor", "ColorInDraft2",
-                            "Colors", "Color of the negative in-draft area")
-        viewobj.addProperty("App::PropertyColor", "ColorOutOfDraft",
-                            "Colors", "Color of the out-of-draft area")
-        viewobj.addProperty("App::PropertyColor", "ColorTolDraft1",
-                            "Colors", "Color of the positive tolerance area")
-        viewobj.addProperty("App::PropertyColor", "ColorTolDraft2",
-                            "Colors", "Color of the negative tolerance area")
-        viewobj.addProperty("App::PropertyFloatConstraint", "Opacity",
-                            "AnalysisOptions", "Opacity of the analysis overlay")
+                            "Colors2NegativeDraft", "Color of the negative in-draft area")
+        viewobj.addProperty("App::PropertyColor", "ColorInTolerance2",
+                            "Colors2NegativeDraft", "Color of the negative tolerance area")
+        viewobj.addProperty("App::PropertyColor", "ColorOutOfDraft2",
+                            "Colors2NegativeDraft", "Color of the negative out-of-draft area")
+        viewobj.addProperty("App::PropertyFloatConstraint", "Shading",
+                            "AnalysisOptions", "Amount of shading on the analysis overlay")
 
-        viewobj.DraftAngle1 = (1.0, 0.0, 90.0, 0.1)
-        viewobj.DraftAngle2 = (1.0, 0.0, 90.0, 0.1)
-        viewobj.DraftTol1 = (0.05, 0.0, 90.0, 0.05)
-        viewobj.DraftTol2 = (0.05, 0.0, 90.0, 0.05)
         viewobj.ColorInDraft1 = (0.0, 0.0, 1.0)
         viewobj.ColorInDraft2 = (0.0, 1.0, 0.0)
-        viewobj.ColorOutOfDraft = (1.0, 0.0, 0.0)
-        viewobj.ColorTolDraft1 = (0.0, 1.0, 1.0)
-        viewobj.ColorTolDraft2 = (1.0, 1.0, 0.0)
-        viewobj.Opacity = (0.8, 0.0, 1.0, 0.05)
+        viewobj.ColorOutOfDraft1 = (1.0, 0.0, 0.0)
+        viewobj.ColorOutOfDraft2 = (1.0, 0.0, 1.0)
+        viewobj.ColorInTolerance1 = (0.0, 1.0, 1.0)
+        viewobj.ColorInTolerance2 = (1.0, 1.0, 0.0)
+        viewobj.Shading = (0.2, 0.0, 1.0, 0.05)
         viewobj.Proxy = self
-        viewobj.Direction = (0, 0, 1)
 
     def getIcon(self):
         return TOOL_ICON
+
+    def claimChildren(self):
+        return [self.Object.Source, ]
+
+    def onDelete(self, feature, subelements):
+        self.remove_shader()
+        if not self.Object.Source.ViewObject.Visibility:
+            self.Object.Source.ViewObject.Visibility = True
+        return True
 
     def attach(self, viewobj):
         self.Object = viewobj.Object
         self.Active = False
         self.rootnode = None
         self.draft_analyzer = DraftAnalysisShader()
-        self.load_shader()
+        self.load_shader(viewobj)
 
     def __getstate__(self):
         return {"name": self.Object.Name}
@@ -139,36 +156,29 @@ class DraftAnalysisProxyVP:
     def updateData(self, fp, prop):
         if prop == "Source":
             self.remove_shader()
-            self.load_shader()
+            self.load_shader(fp.ViewObject)
+        elif prop == "Direction" and (fp.Source is not None):
+            self.draft_analyzer.Direction = fp.Direction
+        elif hasattr(self.draft_analyzer, prop):
+            setattr(self.draft_analyzer, prop, getattr(fp, prop))
 
     def onChanged(self, viewobj, prop):
-        if prop == "Visibility":
-            if viewobj.Visibility and not self.Active:
-                self.load_shader()
-            if (not viewobj.Visibility) and self.Active:
-                self.remove_shader()
-        if prop == "Direction":
-            pl = self.Object.Source.Placement
-            inv = pl.inverse()
-            d = inv.multVec(viewobj.Direction)
-            self.draft_analyzer.AnalysisDirection = d
-            print(d)
+        # if prop == "Visibility":
+        #     if viewobj.Visibility and not self.Active:
+        #         self.load_shader(viewobj)
+        #     if (not viewobj.Visibility) and self.Active:
+        #         self.remove_shader()
         if hasattr(self.draft_analyzer, prop):
             setattr(self.draft_analyzer, prop, getattr(viewobj, prop))
 
-    def onDelete(self, viewobj, sub):
-        self.remove_shader()
-        return True
-
-    def load_shader(self):
-        o = self.Object.Source
-        if self.Active or (o is None):
+    def load_shader(self, vo):
+        if self.Active or (self.Object.Source is None):
             return
-        sw = o.ViewObject.SwitchNode
+        sw = vo.SwitchNode
         if sw.getNumChildren() == 4:  # Std object with 4 DisplayModes
             self.rootnode = sw.getChild(1)  # This should be the Shaded node
         else:
-            self.rootnode = o.ViewObject.RootNode
+            self.rootnode = vo.RootNode
         self.rootnode.insertChild(self.draft_analyzer.Shader, 0)
         self.Active = True
         FreeCADGui.Selection.addObserver(self)
@@ -182,7 +192,7 @@ class DraftAnalysisProxyVP:
 
     def addSelection(self, doc, obj, sub, pnt):  # Selection
         # FreeCAD.Console.PrintMessage("addSelection %s %s\n" % (obj, str(sub)))
-        o = self.Object.Source
+        o = self.Object
         if self.Active and (obj == o.Name):
             if "Face" in sub:
                 o = FreeCAD.getDocument(doc).getObject(obj)
@@ -209,10 +219,11 @@ class DraftAnalysisProxyVP:
 
 class DraftAnalysisCommand:
     def makeFeature(self, sel):
-        fp = FreeCAD.ActiveDocument.addObject("App::FeaturePython", "DraftAnalysis")
+        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "DraftAnalysis")
         DraftAnalysisProxyFP(fp)
         DraftAnalysisProxyVP(fp.ViewObject)
         fp.Source = sel
+        sel.ViewObject.Visibility = False
         FreeCAD.ActiveDocument.recompute()
 
     def Activated(self):

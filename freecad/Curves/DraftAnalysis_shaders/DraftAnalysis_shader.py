@@ -33,23 +33,26 @@ class DraftAnalysisShader:
         self.tol_angle_2 = coin.SoShaderParameter1f()
         self.tol_angle_2.name = "tol_angle_2"
 
-        self.color_1 = coin.SoShaderParameter3f()
-        self.color_1.name = "color_1"
+        self.color_indraft_pos = coin.SoShaderParameter3f()
+        self.color_indraft_pos.name = "color_indraft_pos"
 
-        self.color_2 = coin.SoShaderParameter3f()
-        self.color_2.name = "color_2"
+        self.color_indraft_neg = coin.SoShaderParameter3f()
+        self.color_indraft_neg.name = "color_indraft_neg"
 
-        self.color_3 = coin.SoShaderParameter3f()
-        self.color_3.name = "color_3"
+        self.color_outdraft_pos = coin.SoShaderParameter3f()
+        self.color_outdraft_pos.name = "color_outdraft_pos"
 
-        self.color_4 = coin.SoShaderParameter3f()
-        self.color_4.name = "color_4"
+        self.color_outdraft_neg = coin.SoShaderParameter3f()
+        self.color_outdraft_neg.name = "color_outdraft_neg"
 
-        self.color_5 = coin.SoShaderParameter3f()
-        self.color_5.name = "color_5"
+        self.color_tol_pos = coin.SoShaderParameter3f()
+        self.color_tol_pos.name = "color_tol_pos"
 
-        self.opacity = coin.SoShaderParameter1f()
-        self.opacity.name = "opacity"
+        self.color_tol_neg = coin.SoShaderParameter3f()
+        self.color_tol_neg.name = "color_tol_neg"
+
+        self.shading = coin.SoShaderParameter1f()
+        self.shading.name = "shading"
 
         self.Direction = (0, 0, 1)
         self.DraftAngle1 = 1.0
@@ -58,22 +61,24 @@ class DraftAnalysisShader:
         self.DraftTol2 = 0.05
         self.ColorInDraft1 = (0, 0, 1)
         self.ColorInDraft2 = (0, 1, 0)
-        self.ColorOutOfDraft = (1, 0, 0)
+        self.ColorOutOfDraft1 = (1, 0, 0)
+        self.ColorOutOfDraft2 = (1, 0, 1)
         self.ColorTolDraft1 = (0, 1, 1)
         self.ColorTolDraft2 = (1, 1, 0)
-        self.Opacity = 0.8
+        self.Shading = 0.2
 
         params = [self.analysis_direction,
                   self.draft_angle_1,
                   self.draft_angle_2,
                   self.tol_angle_1,
                   self.tol_angle_2,
-                  self.color_1,
-                  self.color_2,
-                  self.color_3,
-                  self.color_4,
-                  self.color_5,
-                  self.opacity]
+                  self.color_indraft_pos,
+                  self.color_indraft_neg,
+                  self.color_outdraft_pos,
+                  self.color_outdraft_neg,
+                  self.color_tol_pos,
+                  self.color_tol_neg,
+                  self.shading]
         self.fragmentShader.parameter.setValues(0, len(params), params)
 
         self.shaderProgram = coin.SoShaderProgram()
@@ -122,51 +127,59 @@ class DraftAnalysisShader:
 
     @property
     def ColorInDraft1(self):
-        return self.color_1.value.getValue().getValue()
+        return self.color_indraft_pos.value.getValue().getValue()
 
     @ColorInDraft1.setter
     def ColorInDraft1(self, v):
-        self.color_1.value = v
+        self.color_indraft_pos.value = v
 
     @property
     def ColorInDraft2(self):
-        return self.color_2.value.getValue().getValue()
+        return self.color_indraft_neg.value.getValue().getValue()
 
     @ColorInDraft2.setter
     def ColorInDraft2(self, v):
-        self.color_2.value = v
+        self.color_indraft_neg.value = v
 
     @property
-    def ColorOutOfDraft(self):
-        return self.color_3.value.getValue().getValue()
+    def ColorOutOfDraft1(self):
+        return self.color_outdraft_pos.value.getValue().getValue()
 
-    @ColorOutOfDraft.setter
-    def ColorOutOfDraft(self, v):
-        self.color_3.value = v
+    @ColorOutOfDraft1.setter
+    def ColorOutOfDraft1(self, v):
+        self.color_outdraft_pos.value = v
+
+    @property
+    def ColorOutOfDraft2(self):
+        return self.color_outdraft_neg.value.getValue().getValue()
+
+    @ColorOutOfDraft2.setter
+    def ColorOutOfDraft2(self, v):
+        self.color_outdraft_neg.value = v
 
     @property
     def ColorTolDraft1(self):
-        return self.color_4.value.getValue().getValue()
+        return self.color_tol_pos.value.getValue().getValue()
 
     @ColorTolDraft1.setter
     def ColorTolDraft1(self, v):
-        self.color_4.value = v
+        self.color_tol_pos.value = v
 
     @property
     def ColorTolDraft2(self):
-        return self.color_5.value.getValue().getValue()
+        return self.color_tol_neg.value.getValue().getValue()
 
     @ColorTolDraft2.setter
     def ColorTolDraft2(self, v):
-        self.color_5.value = v
+        self.color_tol_neg.value = v
 
     @property
-    def Opacity(self):
-        return self.opacity.value.getValue()
+    def Shading(self):
+        return self.shading.value.getValue()
 
-    @Opacity.setter
-    def Opacity(self, v):
-        self.opacity.value = v
+    @Shading.setter
+    def Shading(self, v):
+        self.shading.value = v
 
     @property
     def Shader(self):
