@@ -62,7 +62,7 @@ class DraftAnalysisShader:
         self.ColorInDraft1 = (0, 0, 1)
         self.ColorInDraft2 = (0, 1, 0)
         self.ColorOutOfDraft1 = (1, 0, 0)
-        self.ColorOutOfDraft2 = (1, 0, 1)
+        self.ColorOutOfDraft2 = (1, 0, 0)
         self.ColorTolDraft1 = (0, 1, 1)
         self.ColorTolDraft2 = (1, 1, 0)
         self.Shading = 0.2
