@@ -8,6 +8,7 @@ __doc__ = 'Draft Analysis for injection molding'
 # import os
 import FreeCAD
 import FreeCADGui
+import Part
 # from pivy import coin
 from os import path
 from math import pi
@@ -76,11 +77,14 @@ class DraftAnalysisProxyFP:
         obj.Proxy = self
 
     def execute(self, obj):
-        sh = obj.Source.Shape.copy()
-        pl = obj.Source.Placement
-        sh.transformShape(pl.Matrix, True, False)
-        sh.Placement = FreeCAD.Placement()
-        obj.Shape = sh
+        if hasattr(obj.Source, "Shape"):
+            sh = obj.Source.Shape.copy()
+            pl = obj.Source.Placement
+            sh.transformShape(pl.Matrix, True, False)
+            sh.Placement = FreeCAD.Placement()
+            obj.Shape = sh
+        else:
+            obj.Shape = Part.Shape()
 
     def onChanged(self, obj, prop):
         if prop == "Source" and (obj.Source is not None):
