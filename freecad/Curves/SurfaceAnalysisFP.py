@@ -108,8 +108,8 @@ class SurfaceAnalysisProxyVP:
                             "AnalysisOptions", "Angles of isophote curves")
         viewobj.addProperty("App::PropertyFloat", "IsoTolerance",
                             "AnalysisOptions", "Angular tolerance of isophote curves")
-        # viewobj.addProperty("App::PropertyFloatList", "DraftAngles",
-        #                     "AnalysisResult", "List of measured angles")
+        viewobj.addProperty("App::PropertyFloatConstraint", "Shading",
+                            "AnalysisMode", "Amount of shading on the analysis overlay")
         viewobj.Direction = (1, 0, 0)
         viewobj.Mode = ["Zebra", "Rainbow", "Isophote"]
         viewobj.Mode = "Zebra"
@@ -123,6 +123,7 @@ class SurfaceAnalysisProxyVP:
         viewobj.RainbowAngle2 = (180.0, 0.0, 180.0, 5.0)
         viewobj.IsoAngles = [45.0, 90.0, 135.0]
         viewobj.IsoTolerance = 0.5
+        viewobj.Shading = (0.2, 0.0, 1.0, 0.05)
 
     def getIcon(self):
         return TOOL_ICON
@@ -178,8 +179,8 @@ class SurfaceAnalysisProxyVP:
             self.surf_analyze.CurvesAngles = viewobj.IsoAngles
         if prop == "IsoTolerance":
             self.surf_analyze.CurvesTolerance = viewobj.IsoTolerance
-        # if prop == "DraftAngles":
-        #     pass  # print(viewobj.DraftAngles)
+        if prop == "Shading":
+            self.surf_analyze.Shading = viewobj.Shading
 
     def onDelete(self, viewobj, sub):
         self.remove_shader()

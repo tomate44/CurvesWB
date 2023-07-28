@@ -47,6 +47,9 @@ class SurfaceAnalysisShader:
         self.curves_tolerance = coin.SoShaderParameter1f()
         self.curves_tolerance.name = "curves_tolerance"
 
+        self.shading = coin.SoShaderParameter1f()
+        self.shading.name = "shading"
+
         self.AnalysisDirection = (1, 0, 0)
         self.Fixed = fixed_light
         self.Mode = mode
@@ -58,6 +61,7 @@ class SurfaceAnalysisShader:
         self.RainbowAngle2 = 180.0
         self.CurvesAngles = [45.0, 90.0, 135.0]
         self.CurvesTolerance = 0.5
+        self.Shading = 0.2
 
         params = [self.analysis_direction,
                   self.fixed_light,
@@ -69,7 +73,8 @@ class SurfaceAnalysisShader:
                   self.rainbow_angle_1,
                   self.rainbow_angle_2,
                   self.curves_angles,
-                  self.curves_tolerance]
+                  self.curves_tolerance,
+                  self.shading]
         self.fragmentShader.parameter.setValues(0, len(params), params)
 
         self.shaderProgram = coin.SoShaderProgram()
@@ -170,6 +175,14 @@ class SurfaceAnalysisShader:
     @CurvesTolerance.setter
     def CurvesTolerance(self, v):
         self.curves_tolerance.value = v
+
+    @property
+    def Shading(self):
+        return self.shading.value.getValue()
+
+    @Shading.setter
+    def Shading(self, v):
+        self.shading.value = v
 
     @property
     def Shader(self):
