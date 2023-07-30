@@ -3,71 +3,19 @@
 __title__ = 'Draft Analysis'
 __author__ = 'Christophe Grellier (Chris_G)'
 __license__ = 'LGPL 2.1'
-__doc__ = 'Draft Analysis for injection molding'
+__doc__ = '''Create a colored overlay on an object to visualize draft angles.
+Tool options are in the View tab.
+Mouse clics in the colored areas print measured draft angle in the Report View.'''
 
-# import os
 import FreeCAD
 import FreeCADGui
 import Part
-# from pivy import coin
 from os import path
 from math import pi
 from freecad.Curves import ICONPATH
 from freecad.Curves.DraftAnalysis_shaders.DraftAnalysis_shader import DraftAnalysisShader
 
 TOOL_ICON = path.join(ICONPATH, 'draft_analysis.svg')
-# debug = _utils.debug
-# debug = _utils.doNothing
-
-
-props = """
-App::PropertyBool
-App::PropertyBoolList
-App::PropertyFloat
-App::PropertyFloatList
-App::PropertyFloatConstraint
-App::PropertyQuantity
-App::PropertyQuantityConstraint
-App::PropertyAngle
-App::PropertyDistance
-App::PropertyLength
-App::PropertySpeed
-App::PropertyAcceleration
-App::PropertyForce
-App::PropertyPressure
-App::PropertyInteger
-App::PropertyIntegerConstraint
-App::PropertyPercent
-App::PropertyEnumeration
-App::PropertyIntegerList
-App::PropertyIntegerSet
-App::PropertyMap
-App::PropertyString
-App::PropertyUUID
-App::PropertyFont
-App::PropertyStringList
-App::PropertyLink
-App::PropertyLinkSub
-App::PropertyLinkList
-App::PropertyLinkSubList
-App::PropertyMatrix
-App::PropertyVector
-App::PropertyVectorList
-App::PropertyPlacement
-App::PropertyPlacementLink
-App::PropertyColor
-App::PropertyColorList
-App::PropertyMaterial
-App::PropertyPath
-App::PropertyFile
-App::PropertyFileIncluded
-App::PropertyPythonObject
-Part::PropertyPartShape
-Part::PropertyGeometryList
-Part::PropertyShapeHistory
-Part::PropertyFilletEdges
-Sketcher::PropertyConstraintList
-"""
 
 
 class DraftAnalysisProxyFP:
@@ -96,7 +44,7 @@ class DraftAnalysisProxyFP:
 class DraftAnalysisProxyVP:
     def __init__(self, viewobj):
         viewobj.addProperty("App::PropertyVector", "Direction",
-                            "AnalysisOptions", "Pull direction")
+                            "AnalysisOptions", "Anaysis direction")
         viewobj.addProperty("App::PropertyFloatConstraint", "DraftAngle1",
                             "AnalysisOptions", "Positive draft angle")
         viewobj.addProperty("App::PropertyFloatConstraint", "DraftAngle2",
@@ -165,11 +113,6 @@ class DraftAnalysisProxyVP:
             self.load_shader(fp.ViewObject)
 
     def onChanged(self, viewobj, prop):
-        # if prop == "Visibility":
-        #     if viewobj.Visibility and not self.Active:
-        #         self.load_shader(viewobj)
-        #     if (not viewobj.Visibility) and self.Active:
-        #         self.remove_shader()
         if prop == "Direction" and (self.Object.Source is not None):
             self.draft_analyzer.Direction = viewobj.Direction
         if hasattr(self.draft_analyzer, prop):
@@ -183,7 +126,7 @@ class DraftAnalysisProxyVP:
             return
         sw = vo.SwitchNode
         if sw.getNumChildren() == 4:  # Std object with 4 DisplayModes
-            self.rootnode = sw.getChild(1)  # This should be the Shaded node
+            self.rootnode = sw.getChild(1)  # This should be the "Shaded" node
         else:
             self.rootnode = vo.RootNode
         self.rootnode.insertChild(self.draft_analyzer.Shader, 0)
@@ -209,20 +152,7 @@ class DraftAnalysisProxyVP:
                 direc = FreeCAD.Vector(self.draft_analyzer.Direction)
                 angle = n.getAngle(direc) * 180 / pi
                 FreeCAD.Console.PrintMessage(f"{obj}.{sub} Normal Angle: {angle}\n")
-                # da = self.Object.ViewObject.DraftAngles
-                # da.insert(0, angle)
-                # self.Object.ViewObject.DraftAngles = da[:16]
 
-    def removeSelection(self, doc, obj, sub):  # Delete selected object
-        # FreeCAD.Console.PrintMessage("removeSelection %s %s\n" % (obj, str(sub)))
-        pass
-
-    def setPreselection(self, doc, obj, sub):
-        pass
-
-    def clearSelection(self, doc):  # If screen is clicked, delete selection
-        # FreeCAD.Console.PrintMessage("clearSelection\n")
-        pass  # self.Object.ViewObject.DraftAngles = []
 
 class DraftAnalysisCommand:
     def makeFeature(self, sel):

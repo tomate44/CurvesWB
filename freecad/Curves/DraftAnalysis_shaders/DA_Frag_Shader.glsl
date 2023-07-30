@@ -38,7 +38,6 @@ void PickColor(in float t,
     colors[7] = color_indraft_neg;
     for (int i=0; i<6; i++)
     {
-        // float diff = knots[i] - t;
         if ((t >= (knots[i] + tol)) && (t <= (knots[i+1] - tol)))
         {
             color = colors[i + 1];

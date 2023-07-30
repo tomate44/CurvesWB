@@ -1,10 +1,15 @@
-import FreeCAD as App
-import FreeCADGui as Gui
 from pivy import coin
 from os import path
 
 
 class DraftAnalysisShader:
+    """
+    Draft analysis shader interface.
+    Example:
+    root = FreeCAD.ActiveDocument.ActiveObject.ViewObject.RootNode
+    shader = SurfaceAnalysisShader()
+    root.insertChild(shader.Shader, 0)
+    """
 
     def __init__(self):
         shaderpath = path.dirname(path.abspath(__file__))
@@ -87,6 +92,7 @@ class DraftAnalysisShader:
 
     @property
     def Direction(self):
+        "Draft analysis direction"
         return self.analysis_direction.value.getValue().getValue()
 
     @Direction.setter
@@ -95,6 +101,7 @@ class DraftAnalysisShader:
 
     @property
     def DraftAngle1(self):
+        "Positive draft angle (0->90 degrees)"
         return self.draft_angle_1.value.getValue()
 
     @DraftAngle1.setter
@@ -103,6 +110,7 @@ class DraftAnalysisShader:
 
     @property
     def DraftAngle2(self):
+        "Negative draft angle (0->90 degrees)"
         return self.draft_angle_2.value.getValue()
 
     @DraftAngle2.setter
@@ -111,6 +119,7 @@ class DraftAnalysisShader:
 
     @property
     def DraftTol1(self):
+        "Positive draft angle tolerance (0->90 degrees)"
         return self.tol_angle_1.value.getValue()
 
     @DraftTol1.setter
@@ -119,6 +128,7 @@ class DraftAnalysisShader:
 
     @property
     def DraftTol2(self):
+        "Negative draft angle tolerance (0->90 degrees)"
         return self.tol_angle_2.value.getValue()
 
     @DraftTol2.setter
@@ -127,6 +137,7 @@ class DraftAnalysisShader:
 
     @property
     def ColorInDraft1(self):
+        "Color of the positive In-Draft area (normalized (r, g, b))"
         return self.color_indraft_pos.value.getValue().getValue()
 
     @ColorInDraft1.setter
@@ -135,6 +146,7 @@ class DraftAnalysisShader:
 
     @property
     def ColorInDraft2(self):
+        "Color of the negative In-Draft area (normalized (r, g, b))"
         return self.color_indraft_neg.value.getValue().getValue()
 
     @ColorInDraft2.setter
@@ -143,6 +155,7 @@ class DraftAnalysisShader:
 
     @property
     def ColorOutOfDraft1(self):
+        "Color of the positive Out-of-Draft area (normalized (r, g, b))"
         return self.color_outdraft_pos.value.getValue().getValue()
 
     @ColorOutOfDraft1.setter
@@ -151,6 +164,7 @@ class DraftAnalysisShader:
 
     @property
     def ColorOutOfDraft2(self):
+        "Color of the negative Out-of-Draft area (normalized (r, g, b))"
         return self.color_outdraft_neg.value.getValue().getValue()
 
     @ColorOutOfDraft2.setter
@@ -159,6 +173,7 @@ class DraftAnalysisShader:
 
     @property
     def ColorTolDraft1(self):
+        "Color of the positive tolerance area (normalized (r, g, b))"
         return self.color_tol_pos.value.getValue().getValue()
 
     @ColorTolDraft1.setter
@@ -167,6 +182,7 @@ class DraftAnalysisShader:
 
     @property
     def ColorTolDraft2(self):
+        "Color of the negative tolerance area (normalized (r, g, b))"
         return self.color_tol_neg.value.getValue().getValue()
 
     @ColorTolDraft2.setter
@@ -175,6 +191,7 @@ class DraftAnalysisShader:
 
     @property
     def Shading(self):
+        "Amount of original shape shading (0.0->1.0)"
         return self.shading.value.getValue()
 
     @Shading.setter
@@ -184,22 +201,3 @@ class DraftAnalysisShader:
     @property
     def Shader(self):
         return self.shaderProgram
-
-
-"""
-doc = App.newDocument()
-doc.addObject("Part::Ellipsoid", "Ellipsoid")
-doc.addObject("Part::Torus", "Torus")
-doc.recompute()
-
-view = Gui.ActiveDocument.ActiveView
-view.viewIsometric()
-Gui.SendMsgToActiveView("ViewFit")
-
-root = view.getViewer().getSceneGraph()
-# shader = SurfaceAnalysisShader(0, 1)
-shader = PhongShader()
-root.insertChild(shader.Shader, 0)
-"""
-
-
