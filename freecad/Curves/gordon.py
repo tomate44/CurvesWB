@@ -30,13 +30,13 @@ import Part
 from freecad.Curves.BSplineAlgorithms import BSplineAlgorithms
 from freecad.Curves import curve_network_sorter
 
-DEBUG = True
+DEBUG = False
 warn = FreeCAD.Console.PrintWarning
 
 
 def debug(o):
     if not DEBUG:
-        return()
+        return
     if isinstance(o, Part.BSplineCurve):
         # warn("\nBSplineCurve\n")
         warn("\nDegree: {} / NbPoles: {}\n".format(o.Degree, o.NbPoles))
@@ -74,6 +74,7 @@ def find(val, array, tol=1e-5):
 
 class GordonSurfaceBuilder(object):
     """Build a Gordon surface from a network of curves"""
+
     def __init__(self, profiles, guides,
                  params_u, params_v,
                  tol=1e-7, par_tol=1e-12):
@@ -100,7 +101,7 @@ class GordonSurfaceBuilder(object):
 
     def perform(self):
         if self.has_performed:
-            return()
+            return
         self.create_gordon_surface()
         self.has_performed = True
 
@@ -228,7 +229,7 @@ class GordonSurfaceBuilder(object):
         #  create common knot vector for all three surfaces
         surfaces_vector = bsa.createCommonKnotsVectorSurface(surfaces_vector_unmod, self.par_tol)
 
-        assert(len(surfaces_vector) == 3)
+        assert (len(surfaces_vector) == 3)
 
         self.skinningSurfGuides = surfaces_vector[0]
         self.skinningSurfProfiles = surfaces_vector[1]
@@ -243,8 +244,8 @@ class GordonSurfaceBuilder(object):
         debug("skinningSurfProfiles : {} x {}".format(self.skinningSurfProfiles.NbUPoles, self.skinningSurfProfiles.NbVPoles))
         debug("tensorProdSurf : {} x {}".format(self.tensorProdSurf.NbUPoles, self.tensorProdSurf.NbVPoles))
 
-        assert(self.skinningSurfGuides.NbUPoles == self.skinningSurfProfiles.NbUPoles and self.skinningSurfProfiles.NbUPoles == self.tensorProdSurf.NbUPoles)
-        assert(self.skinningSurfGuides.NbVPoles == self.skinningSurfProfiles.NbVPoles and self.skinningSurfProfiles.NbVPoles == self.tensorProdSurf.NbVPoles)
+        assert (self.skinningSurfGuides.NbUPoles == self.skinningSurfProfiles.NbUPoles and self.skinningSurfProfiles.NbUPoles == self.tensorProdSurf.NbUPoles)
+        assert (self.skinningSurfGuides.NbVPoles == self.skinningSurfProfiles.NbVPoles and self.skinningSurfProfiles.NbVPoles == self.tensorProdSurf.NbVPoles)
 
         self.gordonSurf = self.skinningSurfProfiles.copy()
 
@@ -293,6 +294,7 @@ class GordonSurfaceBuilder(object):
 
 class InterpolateCurveNetwork(object):
     """Bspline surface interpolating a network of curves"""
+
     def __init__(self, profiles, guides, tol=1e-5, tol2=1e-10):
         self.tolerance = 1e-5
         self.par_tolerance = 1e-10
@@ -408,8 +410,7 @@ class InterpolateCurveNetwork(object):
         for spline_u_idx in range(len(self.profiles)):
             for spline_v_idx in range(len(self.guides)):
                 debug("{}x{} = ({:08.3f}, {:08.3f})".format(spline_u_idx, spline_v_idx,
-                                                      intersection_params_u[spline_u_idx][spline_v_idx],
-                                                      intersection_params_v[spline_u_idx][spline_v_idx]))
+                                                            intersection_params_u[spline_u_idx][spline_v_idx], intersection_params_v[spline_u_idx][spline_v_idx]))
 
     def sort_curves(self, intersection_params_u, intersection_params_v):
         sorterObj = curve_network_sorter.CurveNetworkSorter(self.profiles, self.guides, intersection_params_u, intersection_params_v)
@@ -431,7 +432,7 @@ class InterpolateCurveNetwork(object):
         # std::transform(sorterObj.Guides().begin(), sorterObj.Guides().end(), m_guides.begin(), caster);
         self.profiles = sorterObj.profiles
         self.guides = sorterObj.guides
-        return(intersection_params_u, intersection_params_v)
+        return intersection_params_u, intersection_params_v
 
     def make_curves_compatible(self):
         #  reparametrize into [0,1]
@@ -504,7 +505,7 @@ class InterpolateCurveNetwork(object):
         try:
             progressbar = FreeCAD.Base.ProgressIndicator()
             hasProgressBar = True
-        except:
+        except Exception:
             hasProgressBar = False
         if hasProgressBar:
             progressbar.start("Computing Gordon surface ...", nProfiles + nGuides)

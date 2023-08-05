@@ -11,12 +11,12 @@ from math import pi
 from freecad.Curves.BSplineApproxInterp import BSplineApproxInterp
 
 vec2d = Base.Vector2d
-DEBUG = True
+DEBUG = False
 
 
 def debug(o):
     if not DEBUG:
-        return()
+        return
     if isinstance(o, Part.BSplineCurve):
         FreeCAD.Console.PrintWarning("\nBSplineCurve\n")
         FreeCAD.Console.PrintWarning("Degree: {}\n".format(o.Degree))
@@ -46,7 +46,7 @@ def IsInsideTolerance(array, value, tolerance=1e-15):
     Else return -1"""
     for i in range(len(array)):
         if abs(array[i] - value) <= tolerance:
-            return(i)
+            return i
     return -1
 
 
@@ -83,15 +83,15 @@ class SurfAdapterView(object):
 
     @property
     def NbKnots(self):
-        return(self.getNKnots())
+        return self.getNKnots()
 
     @property
     def NbPoles(self):
-        return(self.getNPoles())
+        return self.getNPoles()
 
     @property
     def Degree(self):
-        return(self.getDegree())
+        return self.getDegree()
 
     def insertKnot(self, knot, mult, tolerance=1e-15):
         try:
@@ -105,27 +105,27 @@ class SurfAdapterView(object):
 
     def getKnot(self, idx):
         if self.d == 0:
-            return(self.s.getUKnot(idx))
+            return self.s.getUKnot(idx)
         else:
-            return(self.s.getVKnot(idx))
+            return self.s.getVKnot(idx)
 
     def getKnots(self):
         if self.d == 0:
-            return(self.s.getUKnots())
+            return self.s.getUKnots()
         else:
-            return(self.s.getVKnots())
+            return self.s.getVKnots()
 
     def getMultiplicities(self):
         if self.d == 0:
-            return(self.s.getUMultiplicities())
+            return self.s.getUMultiplicities()
         else:
-            return(self.s.getVMultiplicities())
+            return self.s.getVMultiplicities()
 
     def increaseMultiplicity(self, idx, mult):
         if self.d == 0:
-            return(self.s.increaseUMultiplicity(idx, mult))
+            return self.s.increaseUMultiplicity(idx, mult)
         else:
-            return(self.s.increaseVMultiplicity(idx, mult))
+            return self.s.increaseVMultiplicity(idx, mult)
 
     def getMult(self, idx):
         if self.d == 0:
@@ -134,35 +134,36 @@ class SurfAdapterView(object):
             return self.s.getVMultiplicity(idx)
 
     def getMultiplicity(self, idx):
-        return(self.getMult(idx))
+        return self.getMult(idx)
 
     def getNKnots(self):
         if self.d == 0:
-            return(self.s.NbUKnots)
+            return self.s.NbUKnots
         else:
-            return(self.s.NbVKnots)
+            return self.s.NbVKnots
 
     def getNPoles(self):
         if self.d == 0:
-            return(self.s.NbUPoles)
+            return self.s.NbUPoles
         else:
-            return(self.s.NbVPoles)
+            return self.s.NbVPoles
 
     def getDegree(self):
         if self.d == 0:
-            return(int(self.s.UDegree))
+            return int(self.s.UDegree)
         else:
-            return(int(self.s.VDegree))
+            return int(self.s.VDegree)
 
     def isPeriodic(self):
         if self.d == 0:
-            return(self.s.isUPeriodic())
+            return self.s.isUPeriodic()
         else:
-            return(self.s.isVPeriodic())
+            return self.s.isVPeriodic()
 
 
 class BSplineAlgorithms(object):
     """Various BSpline algorithms"""
+
     def __init__(self, tol=1e-8):
         self.REL_TOL_CLOSED = tol
         if tol > 0.0:
@@ -272,28 +273,28 @@ class BSplineAlgorithms(object):
         if not self.haveSameDegree(splines_vector):
             self.error("B-splines don't have the same degree at least in one direction (u / v) in method createCommonKnotsVectorImpl!")
 
-        ## The parametric tolerance must be smaller than half of the minimum knot distance
-        #for spline in splines_vector:
-            #for idx in range(spline.NbKnots - 1):
-                #knot_dist = spline.getKnot(idx + 2) - spline.getKnot(idx + 1)
-                #par_tolerance = min(par_tolerance, knot_dist / 2.0)
-
-        ## insert all knots in first spline
-        #firstSpline = splines_vector[0]
-        #for spline in splines_vector[1:]:
-            #for knot_idx in range(1, spline.NbKnots + 1):
-                #knot = spline.getKnot(knot_idx)
-                #mult = spline.getMultiplicity(knot_idx)
-                #firstSpline.insertKnot(knot, mult, par_tolerance)
-
-        ## now insert knots from first into all others
-        #for spline in splines_vector[1:]:
-            #for knot_idx in range(1, firstSpline.NbKnots + 1):
-                #knot = firstSpline.getKnot(knot_idx)
-                #mult = firstSpline.getMultiplicity(knot_idx)
-                #spline.insertKnot(knot, mult, par_tolerance)
-            #if not (spline.NbKnots == firstSpline.NbKnots):
-                #self.error("Unexpected error in Algorithm makeGeometryCompatibleImpl.\nPlease contact the developers.")
+        # # The parametric tolerance must be smaller than half of the minimum knot distance
+        # for spline in splines_vector:
+        #     for idx in range(spline.NbKnots - 1):
+        #         knot_dist = spline.getKnot(idx + 2) - spline.getKnot(idx + 1)
+        #         par_tolerance = min(par_tolerance, knot_dist / 2.0)
+        #
+        # # insert all knots in first spline
+        # firstSpline = splines_vector[0]
+        # for spline in splines_vector[1:]:
+        #     for knot_idx in range(1, spline.NbKnots + 1):
+        #         knot = spline.getKnot(knot_idx)
+        #         mult = spline.getMultiplicity(knot_idx)
+        #         firstSpline.insertKnot(knot, mult, par_tolerance)
+        #
+        # # now insert knots from first into all others
+        # for spline in splines_vector[1:]:
+        #     for knot_idx in range(1, firstSpline.NbKnots + 1):
+        #         knot = firstSpline.getKnot(knot_idx)
+        #         mult = firstSpline.getMultiplicity(knot_idx)
+        #         spline.insertKnot(knot, mult, par_tolerance)
+        #     if not (spline.NbKnots == firstSpline.NbKnots):
+        #         self.error("Unexpected error in Algorithm makeGeometryCompatibleImpl.\nPlease contact the developers.")
 
         # create a vector of all knots in chosen direction (u or v) of all splines
         resultKnots = list()
@@ -526,7 +527,7 @@ class BSplineAlgorithms(object):
                 cpSurf[cpUIdx][i] = interpSpline.getPole(i + 1)
 
             # check degree always the same
-            assert(degreeV == interpSpline.Degree)
+            assert (degreeV == interpSpline.Degree)
 
         knotsU = firstCurve.getKnots()
         multsU = firstCurve.getMultiplicities()
@@ -581,7 +582,7 @@ class BSplineAlgorithms(object):
         reparametrizing_spline = Part.Geom2d.BSplineCurve2d()
         try:
             reparametrizing_spline.interpolate(Points=old_parameters_pnts, Parameters=new_parameters, PeriodicFlag=False, Tolerance=self.tol)
-        except:
+        except Exception:
             self.error("reparametrizing_spline failed")
             self.error("nb_pts = %d" % (len(old_parameters_pnts)))
             self.error("nb_par = %d" % (len(new_parameters)))

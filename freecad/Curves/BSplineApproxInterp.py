@@ -10,12 +10,12 @@ import numpy as np
 from freecad.Curves import nurbs_tools
 #  from math import pi
 
-DEBUG = True
+DEBUG = False
 
 
 def debug(o):
     if not DEBUG:
-        return()
+        return
     if isinstance(o, Part.BSplineCurve):
         FreeCAD.Console.PrintWarning("\nBSplineCurve\n")
         FreeCAD.Console.PrintWarning("Degree: {}\n".format(o.Degree))
@@ -40,13 +40,12 @@ def debug(o):
         FreeCAD.Console.PrintMessage("{}\n".format(str(o)))
 
 
-#  TODO is this the good square_distance function ???
 def square_distance(v1, v2):
-    return square_magnitude(v1.sub(v2))
+    return pow(v2.x - v1.x, 2) + pow(v2.y - v1.y, 2)
 
 
 def square_magnitude(v1):
-    return v1.dot(v1)
+    return pow(v1.x, 2) + pow(v1.y, 2)
 
 
 def find(val, array, tol=1e-5):
@@ -54,7 +53,7 @@ def find(val, array, tol=1e-5):
     Else return -1"""
     for i in range(len(array)):
         if abs(val - array[i]) < tol:
-            return(int(i))
+            return int(i)
     return -1
 
 
@@ -113,13 +112,14 @@ def bsplineBasisMat(degree, knots, params, derivOrder):
             # mx[iparm] = bspl_basis[derivOrder] #   mx.Set(iparm, iparm, basis_start_index, basis_start_index + degree, bspl_basis);
         for i in range(len(bspl_basis[derivOrder])):
             mx[iparm][basis_start_index + i] = bspl_basis[derivOrder][i]
-    return(mx)
+    return mx
 
 
 class BSplineApproxInterp(object):
     """BSpline curve approximating a list of points
     Some points can be interpolated, or be set as C0 kinks"""
     #  used in BSplineAlgorithms.reparametrizeBSplineContinuouslyApprox
+
     def __init__(self, points, nControlPoints, degree, continuous_if_closed):
         self.pnts = points
         self.indexOfApproximated = list(range(len(points)))
@@ -184,7 +184,7 @@ class BSplineApproxInterp(object):
         #  calc total arc length: dt^2 = dx^2 + dy^2
         for i in range(1, nPoints):
             len2 = square_distance(self.pnts[i - 1], self.pnts[i])
-            sum += pow(len2, alpha / 2.)
+            sum += pow(len2, alpha)  # / 2.)
             t.append(sum)
         #  normalize parameter with maximum
         tmax = t[-1]
@@ -388,7 +388,7 @@ class BSplineApproxInterp(object):
             dx = np.array([0.] * (n_intpolated + n_continuityConditions))
             dy = np.array([0.] * (n_intpolated + n_continuityConditions))
             dz = np.array([0.] * (n_intpolated + n_continuityConditions))
-            if(n_intpolated > 0):
+            if (n_intpolated > 0):
                 interpParams = [0] * n_intpolated
                 # intpIndex = 0
                 # for (std::vector<size_t>::const_iterator it_idx = m_indexOfInterpolated.begin() it_idx != m_indexOfInterpolated.end() ++it_idx) {
