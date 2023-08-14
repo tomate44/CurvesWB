@@ -502,13 +502,20 @@ class Gordon:
 
     @property
     def Surface(self):
-        # self.input_surfaces_match()
+        self.input_surfaces_match()
         self.match_degrees_and_knots()
         return self.gordon()
 
 
 class CurvesOn2Rails:
-    """Surface defined by a series of curves on 2 rails"""
+    """Surface defined by a series of curves on 2 rails
+    Example :
+    from freecad.Curves import curves_to_surface as cts
+    cl = [e.Curve for e in el]
+    s2r = cts.CurvesOn2Rails(cl[2:], cl[:2])
+    s2r.check_isocurves()
+    surf = s2r.build_surface()
+    Part.show(surf.toShape())"""
 
     def __init__(self, curves, rails):
         self.tol2d = 1e-15
@@ -531,8 +538,10 @@ class CurvesOn2Rails:
     def check_isocurves(self):
         "Check if the curves are intersecting both rails at the same parameter"
         for c in self.curves:
-            par1 = self.rails[0].parameter(c.intersect(self.rails[0], self.tol3d)[0])
-            par2 = self.rails[1].parameter(c.intersect(self.rails[1], self.tol3d)[0])
+            p1 = c.intersect(self.rails[0], self.tol3d)[0]
+            p2 = c.intersect(self.rails[1], self.tol3d)[0]
+            par1 = self.rails[0].parameter(FreeCAD.Vector(p1.X, p1.Y, p1.Z))
+            par2 = self.rails[1].parameter(FreeCAD.Vector(p2.X, p2.Y, p2.Z))
             if abs(par2 - par1) > self.tol2d:
                 return False
         return True
