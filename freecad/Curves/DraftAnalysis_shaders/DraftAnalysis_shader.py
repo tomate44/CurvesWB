@@ -12,6 +12,9 @@ class DraftAnalysisShader:
     """
 
     def __init__(self):
+        self._angles = [1.0, 1.0, 0.05, 0.05]
+        self._colors = [(0, 0, 1), (0, 1, 1), (1, 0, 0),
+                        (1, 0, 0), (1, 1, 0), (0, 1, 0)]
         shaderpath = path.dirname(path.abspath(__file__))
         self.vertexShader = coin.SoVertexShader()
         self.vertexShader.sourceProgram.setValue(path.join(shaderpath, 'DA_Vert_Shader.glsl'))
@@ -26,63 +29,23 @@ class DraftAnalysisShader:
         self.analysis_direction = coin.SoShaderParameter3f()
         self.analysis_direction.name = "analysis_direction"
 
-        self.draft_angle_1 = coin.SoShaderParameter1f()
-        self.draft_angle_1.name = "draft_angle_1"
+        self.angles = coin.SoShaderParameterArray1f()
+        self.angles.name = "angles"
 
-        self.draft_angle_2 = coin.SoShaderParameter1f()
-        self.draft_angle_2.name = "draft_angle_2"
-
-        self.tol_angle_1 = coin.SoShaderParameter1f()
-        self.tol_angle_1.name = "tol_angle_1"
-
-        self.tol_angle_2 = coin.SoShaderParameter1f()
-        self.tol_angle_2.name = "tol_angle_2"
-
-        self.color_indraft_pos = coin.SoShaderParameter3f()
-        self.color_indraft_pos.name = "color_indraft_pos"
-
-        self.color_indraft_neg = coin.SoShaderParameter3f()
-        self.color_indraft_neg.name = "color_indraft_neg"
-
-        self.color_outdraft_pos = coin.SoShaderParameter3f()
-        self.color_outdraft_pos.name = "color_outdraft_pos"
-
-        self.color_outdraft_neg = coin.SoShaderParameter3f()
-        self.color_outdraft_neg.name = "color_outdraft_neg"
-
-        self.color_tol_pos = coin.SoShaderParameter3f()
-        self.color_tol_pos.name = "color_tol_pos"
-
-        self.color_tol_neg = coin.SoShaderParameter3f()
-        self.color_tol_neg.name = "color_tol_neg"
+        self.colors = coin.SoShaderParameterArray3f()
+        self.colors.name = "colors"
 
         self.shading = coin.SoShaderParameter1f()
         self.shading.name = "shading"
 
         self.Direction = (0, 0, 1)
-        self.DraftAngle1 = 1.0
-        self.DraftAngle2 = 1.0
-        self.DraftTol1 = 0.05
-        self.DraftTol2 = 0.05
-        self.ColorInDraft1 = (0, 0, 1)
-        self.ColorInDraft2 = (0, 1, 0)
-        self.ColorOutOfDraft1 = (1, 0, 0)
-        self.ColorOutOfDraft2 = (1, 0, 0)
-        self.ColorTolDraft1 = (0, 1, 1)
-        self.ColorTolDraft2 = (1, 1, 0)
         self.Shading = 0.2
+        self.set_angles()
+        self.set_colors()
 
         params = [self.analysis_direction,
-                  self.draft_angle_1,
-                  self.draft_angle_2,
-                  self.tol_angle_1,
-                  self.tol_angle_2,
-                  self.color_indraft_pos,
-                  self.color_indraft_neg,
-                  self.color_outdraft_pos,
-                  self.color_outdraft_neg,
-                  self.color_tol_pos,
-                  self.color_tol_neg,
+                  self.angles,
+                  self.colors,
                   self.shading]
         self.fragmentShader.parameter.setValues(0, len(params), params)
 
@@ -99,95 +62,119 @@ class DraftAnalysisShader:
     def Direction(self, v):
         self.analysis_direction.value = v
 
+    def set_angles(self):
+        angle_list = [0.0,
+                      90.0 - self._angles[0] - self._angles[2],
+                      90.0 - self._angles[0],
+                      90.0,
+                      90.0 + self._angles[1],
+                      90.0 + self._angles[1] + self._angles[3],
+                      180.0]
+        self.angles.value.setValues(0, len(angle_list), angle_list)
+
     @property
-    def DraftAngle1(self):
+    def DraftAnglePos(self):
         "Positive draft angle (0->90 degrees)"
-        return self.draft_angle_1.value.getValue()
+        return self._angles[0]
 
-    @DraftAngle1.setter
-    def DraftAngle1(self, v):
-        self.draft_angle_1.value = v
+    @DraftAnglePos.setter
+    def DraftAnglePos(self, v):
+        self._angles[0] = v
+        self.set_angles()
 
     @property
-    def DraftAngle2(self):
+    def DraftAngleNeg(self):
         "Negative draft angle (0->90 degrees)"
-        return self.draft_angle_2.value.getValue()
+        return self._angles[1]
 
-    @DraftAngle2.setter
-    def DraftAngle2(self, v):
-        self.draft_angle_2.value = v
+    @DraftAngleNeg.setter
+    def DraftAngleNeg(self, v):
+        self._angles[1] = v
+        self.set_angles()
 
     @property
-    def DraftTol1(self):
+    def DraftTolPos(self):
         "Positive draft angle tolerance (0->90 degrees)"
-        return self.tol_angle_1.value.getValue()
+        return self._angles[2]
 
-    @DraftTol1.setter
-    def DraftTol1(self, v):
-        self.tol_angle_1.value = v
+    @DraftTolPos.setter
+    def DraftTolPos(self, v):
+        self._angles[2] = v
+        self.set_angles()
 
     @property
-    def DraftTol2(self):
+    def DraftTolNeg(self):
         "Negative draft angle tolerance (0->90 degrees)"
-        return self.tol_angle_2.value.getValue()
+        return self._angles[3]
 
-    @DraftTol2.setter
-    def DraftTol2(self, v):
-        self.tol_angle_2.value = v
+    @DraftTolNeg.setter
+    def DraftTolNeg(self, v):
+        self._angles[3] = v
+        self.set_angles()
+
+    def set_colors(self):
+        color_list = [self._colors[0]] + self._colors + [self._colors[-1]]
+        self.colors.value.setValues(0, len(color_list), color_list)
 
     @property
-    def ColorInDraft1(self):
+    def ColorInDraftPos(self):
         "Color of the positive In-Draft area (normalized (r, g, b))"
-        return self.color_indraft_pos.value.getValue().getValue()
+        return self._colors[0]
 
-    @ColorInDraft1.setter
-    def ColorInDraft1(self, v):
-        self.color_indraft_pos.value = v
+    @ColorInDraftPos.setter
+    def ColorInDraftPos(self, v):
+        self._colors[0] = v
+        self.set_colors()
 
     @property
-    def ColorInDraft2(self):
+    def ColorInDraftNeg(self):
         "Color of the negative In-Draft area (normalized (r, g, b))"
-        return self.color_indraft_neg.value.getValue().getValue()
+        return self._colors[5]
 
-    @ColorInDraft2.setter
-    def ColorInDraft2(self, v):
-        self.color_indraft_neg.value = v
+    @ColorInDraftNeg.setter
+    def ColorInDraftNeg(self, v):
+        self._colors[5] = v
+        self.set_colors()
 
     @property
-    def ColorOutOfDraft1(self):
+    def ColorOutOfDraftPos(self):
         "Color of the positive Out-of-Draft area (normalized (r, g, b))"
-        return self.color_outdraft_pos.value.getValue().getValue()
+        return self._colors[2]
 
-    @ColorOutOfDraft1.setter
-    def ColorOutOfDraft1(self, v):
-        self.color_outdraft_pos.value = v
+    @ColorOutOfDraftPos.setter
+    def ColorOutOfDraftPos(self, v):
+        self._colors[2] = v
+        self.set_colors()
 
     @property
-    def ColorOutOfDraft2(self):
+    def ColorOutOfDraftNeg(self):
         "Color of the negative Out-of-Draft area (normalized (r, g, b))"
-        return self.color_outdraft_neg.value.getValue().getValue()
+        return self._colors[3]
 
-    @ColorOutOfDraft2.setter
-    def ColorOutOfDraft2(self, v):
-        self.color_outdraft_neg.value = v
+    @ColorOutOfDraftNeg.setter
+    def ColorOutOfDraftNeg(self, v):
+        self._colors[3] = v
+        self.set_colors()
 
     @property
-    def ColorTolDraft1(self):
+    def ColorInTolerancePos(self):
         "Color of the positive tolerance area (normalized (r, g, b))"
-        return self.color_tol_pos.value.getValue().getValue()
+        return self._colors[1]
 
-    @ColorTolDraft1.setter
-    def ColorTolDraft1(self, v):
-        self.color_tol_pos.value = v
+    @ColorInTolerancePos.setter
+    def ColorInTolerancePos(self, v):
+        self._colors[1] = v
+        self.set_colors()
 
     @property
-    def ColorTolDraft2(self):
+    def ColorInToleranceNeg(self):
         "Color of the negative tolerance area (normalized (r, g, b))"
-        return self.color_tol_neg.value.getValue().getValue()
+        return self._colors[4]
 
-    @ColorTolDraft2.setter
-    def ColorTolDraft2(self, v):
-        self.color_tol_neg.value = v
+    @ColorInToleranceNeg.setter
+    def ColorInToleranceNeg(self, v):
+        self._colors[4] = v
+        self.set_colors()
 
     @property
     def Shading(self):

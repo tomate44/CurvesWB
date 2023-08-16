@@ -113,13 +113,21 @@ class DraftAnalysisProxyVP:
             self.load_shader(fp.ViewObject)
 
     def onChanged(self, viewobj, prop):
+        mod_prop = "badname"
         if prop == "Direction" and (self.Object.Source is not None):
             self.draft_analyzer.Direction = viewobj.Direction
-        if hasattr(self.draft_analyzer, prop):
-            if "Color" in prop:
-                setattr(self.draft_analyzer, prop, getattr(viewobj, prop)[:3])
+        elif prop == "Shading":
+            self.draft_analyzer.Shading = viewobj.Shading
+        elif prop[-1] == "1":
+            mod_prop = prop[:-1] + "Pos"
+        elif prop[-1] == "2":
+            mod_prop = prop[:-1] + "Neg"
+        # print(f"setting {prop} - {mod_prop}")
+        if hasattr(self.draft_analyzer, mod_prop):
+            if "Color" in mod_prop:
+                setattr(self.draft_analyzer, mod_prop, getattr(viewobj, prop)[:3])
             else:
-                setattr(self.draft_analyzer, prop, getattr(viewobj, prop))
+                setattr(self.draft_analyzer, mod_prop, getattr(viewobj, prop))
 
     def load_shader(self, vo):
         if self.Active or (self.Object.Source is None):
