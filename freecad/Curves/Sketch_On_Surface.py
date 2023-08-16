@@ -337,7 +337,7 @@ class sketchOnSurface:
                             shapes.extend(faces)
                     else:
                         ruled = Part.makeRuledSurface(shapes_1[i].Wires[0], shapes_2[i].Wires[0])
-                        ruled.check(True)
+                        ruled.check(False)
                         shapes.append(ruled)
                 # shapes.append(quad)
                 if shapes:
