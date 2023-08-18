@@ -74,9 +74,9 @@ class ProfileSupportFP:
                         "Sources", "Tooltip")
         obj.addProperty("App::PropertyLink", "Rail2",
                         "Sources", "Tooltip")
-        obj.addProperty("App::PropertyDistance", "Distance1",
+        obj.addProperty("App::PropertyFloatConstraint", "Position1",
                         "Settings", "Tooltip")
-        obj.addProperty("App::PropertyDistance", "Distance2",
+        obj.addProperty("App::PropertyFloatConstraint", "Position2",
                         "Settings", "Tooltip")
         obj.addProperty("App::PropertyFloatConstraint", "NormalPosition",
                         "Settings", "Tooltip")
@@ -86,10 +86,13 @@ class ProfileSupportFP:
                         "Info", "Tooltip")
         obj.addProperty("App::PropertyDistance", "Rail2Length",
                         "Info", "Tooltip")
-        obj.setPropertyStatus("ChordLength", "Output")
-        obj.setPropertyStatus("Rail1Length", "Output")
-        obj.setPropertyStatus("Rail2Length", "Output")
+        # obj.setPropertyStatus("ChordLength", "Output")
+        # obj.setPropertyStatus("Rail1Length", "Output")
+        # obj.setPropertyStatus("Rail2Length", "Output")
         obj.NormalPosition = (0.0, 0.0, 1.0, 0.05)
+        obj.Position1 = (0.0, 0.0, 1.0, 0.05)
+        obj.Position2 = (-0.05, -0.05, 1.0, 0.05)
+        obj.setEditorMode("Position2", 2)
         obj.Rail1 = sel[0]
         if len(sel) > 1:
             obj.Rail2 = sel[1]
@@ -103,7 +106,7 @@ class ProfileSupportFP:
             e2 = obj.Rail1.Shape.Edge2
         obj.Rail1Length = e1.Length
         obj.Rail2Length = e2.Length
-        p1 = e1.getParameterByLength(obj.Distance1)
+        p1 = e1.getParameterByLength(obj.Position1 * e1.Length)
         origin = e1.valueAt(p1)
         rs = Part.makeRuledSurface(e1, e2)
         u0, v0 = rs.Surface.parameter(origin)
@@ -125,12 +128,12 @@ class ProfileSupportFP:
         obj.Placement = FreeCAD.Placement(m)
 
     def onChanged(self, obj, prop):
-        if prop == "Distance1":
-            e1 = obj.Rail1.Shape.Edge1
-            if obj.Distance1 > e1.Length:
-                obj.Distance1 = e1.Length
-            elif obj.Distance1 < -e1.Length:
-                obj.Distance1 = -e1.Length
+        if prop == "Position1":
+            # e1 = obj.Rail1.Shape.Edge1
+            # if obj.Position1 > e1.Length:
+            #     obj.Position1 = e1.Length
+            # elif obj.Position1 < -e1.Length:
+            #     obj.Position1 = -e1.Length
             self.execute(obj)
         if prop == "NormalPosition":
             self.execute(obj)

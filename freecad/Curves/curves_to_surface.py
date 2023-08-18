@@ -173,6 +173,73 @@ def shift_origin(c1, c2, num=36):
         print("shift_origin: failed to insert knot")
 
 
+def orient_surface(surf1, surf2, tol=1e-7):
+    """Modify surf2 to have surf1 orientation
+    with a combination of ReverseU, ReverseV, SwapUV
+    """
+    def match(p1, p2):
+        return p1.distanceToPoint(p2) < tol
+    # surface params O, X, Y
+    params = ((0.0, 0.0), (1.0, 0.0), (0.0, 1.0))
+    pts1 = [surf1.value(u, v) for u, v in params]
+    pts2 = [surf2.value(u, v) for u, v in params]
+    # O match O and X match Y
+    if match(pts1[0], pts2[0]):
+        if match(pts1[1], pts2[2]):
+            surf2.exchangeUV()
+        return
+    # O match X
+    elif match(pts1[0], pts2[1]):
+        # reverse U
+        c = surf2.uIso(0.0)
+        c.reverse()
+        uknots = c.getKnots()
+        umults = c.getMultiplicities()
+        vknots = surf2.getVKnots()
+        vmults = surf2.getVMultiplicities()
+        poles = surf2.getPoles()
+        poles.reverse()
+        weights = surf2.getWeights()
+        weights.reverse()
+        nbs = Part.BSplineSurface()
+        nbs.buildFromPolesMultsKnots(poles,
+                                     umults, vmults,
+                                     uknots, vknots,
+                                     c.isPeriodic(), surf2.isVPeriodic(),
+                                     c.Ddegree, surf2.VDegree,
+                                     weights)
+        # Y match O
+        if match(pts1[2], pts2[0]):
+            nbs.exchangeUV()
+        surf2 = nbs
+        return
+    # O match Y
+    elif match(pts1[0], pts2[1]):
+        # reverse V
+        c = surf2.vIso(0.0)
+        c.reverse()
+        vknots = c.getKnots()
+        vmults = c.getMultiplicities()
+        uknots = surf2.getUKnots()
+        umults = surf2.getUMultiplicities()
+        poles = surf2.getPoles()
+        poles = [row.reverse() for row in poles]
+        weights = surf2.getWeights()
+        weights = [row.reverse() for row in weights]
+        nbs = Part.BSplineSurface()
+        nbs.buildFromPolesMultsKnots(poles,
+                                     umults, vmults,
+                                     uknots, vknots,
+                                     surf2.isUPeriodic(), c.isPeriodic(),
+                                     surf2.UDdegree, c.Degree,
+                                     weights)
+        # X match O
+        if match(pts1[2], pts2[0]):
+            nbs.exchangeUV()
+        surf2 = nbs
+        return
+
+
 def ruled_surface(e1, e2, normalize=False, autotwist=0):
     """creates a ruled surface between 2 edges, with automatic orientation.
     If normalize is True, the surface will be normalized in U direction
@@ -435,6 +502,12 @@ class Gordon:
         self.s1 = s1
         self.s2 = s2
         self.s3 = s3
+        self.tol3D = 1e-7
+
+    def normalize_surfaces(self):
+        for surf in [self.s1, self.s2, self.s3]:
+            if not surf.bounds() == (0.0, 1.0, 0.0, 1.0):
+                surf.scaleKnotsToBounds(0.0, 1.0, 0.0, 1.0)
 
     def check_bounds(self):
         u0, u1, v0, v1 = self.s1.bounds()
@@ -502,7 +575,9 @@ class Gordon:
 
     @property
     def Surface(self):
-        # self.input_surfaces_match()
+        self.normalize_surfaces()
+        orient_surface(self.s1, self.s2, self.tol3D)
+        orient_surface(self.s1, self.s3, self.tol3D)
         self.match_degrees_and_knots()
         return self.gordon()
 
@@ -541,11 +616,11 @@ class CurvesOn2Rails:
         cts = CurvesToSurface(self.curves)
         s1 = cts.Surface
         s2 = ruled_surface(self.rails[0].toShape(), self.rails[1].toShape(), True).Surface
-        s2.exchangeUV()
+        #s2.exchangeUV()
         s3 = U_linear_surface(s1)
         gordon = Gordon(s1, s2, s3)
-        if gordon.input_surfaces_match():
-            return gordon.Surface
+        # if gordon.input_surfaces_match():
+        #     return gordon.Surface
         return gordon.Surface
 
 
