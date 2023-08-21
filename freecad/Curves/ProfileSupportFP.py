@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = 'Title'
+__title__ = 'Profile Support'
 __author__ = 'Christophe Grellier (Chris_G)'
 __license__ = 'LGPL 2.1'
-__doc__ = 'Doc'
+__doc__ = 'Creates a support shape between two rails'
 
 import os
 import FreeCAD
@@ -12,7 +12,7 @@ import Part
 # from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
 
-TOOL_ICON = os.path.join(ICONPATH, 'icon.svg')
+TOOL_ICON = os.path.join(ICONPATH, 'profile_support.svg')
 # debug = _utils.debug
 # debug = _utils.doNothing
 
@@ -80,6 +80,8 @@ class ProfileSupportFP:
                         "Settings", "Tooltip")
         obj.addProperty("App::PropertyFloatConstraint", "NormalPosition",
                         "Settings", "Tooltip")
+        obj.addProperty("App::PropertyBool", "NormalReverse",
+                        "Settings", "Tooltip")
         obj.addProperty("App::PropertyDistance", "ChordLength",
                         "Info", "Tooltip")
         obj.addProperty("App::PropertyDistance", "Rail1Length",
@@ -102,6 +104,8 @@ class ProfileSupportFP:
         e1 = obj.Rail1.Shape.Edge1
         if obj.Rail2:
             e2 = obj.Rail2.Shape.Edge1
+        elif len(obj.Rail1.Shape.Edges) == 4:
+            e2 = obj.Rail1.Shape.Edge3
         else:
             e2 = obj.Rail1.Shape.Edge2
         obj.Rail1Length = e1.Length
@@ -111,11 +115,15 @@ class ProfileSupportFP:
         rs = Part.makeRuledSurface(e1, e2)
         u0, v0 = rs.Surface.parameter(origin)
         normal = rs.Surface.normal(u0, obj.NormalPosition)
+        if obj.NormalReverse:
+            normal = -normal
         uiso = rs.Surface.uIso(u0)
         width = uiso.length()
         obj.ChordLength = width
         tangent = uiso.tangent(obj.NormalPosition)[0]
         bino = -normal.cross(tangent)
+        # if obj.NormalReverse:
+        #     bino = -bino
         m = FreeCAD.Matrix(tangent.x, normal.x, bino.x, origin.x,
                            tangent.y, normal.y, bino.y, origin.y,
                            tangent.z, normal.z, bino.z, origin.z,
@@ -160,7 +168,7 @@ class ProfileSupportVP:
 class ProfileSupportCommand:
     """Create a ... feature"""
     def makeFeature(self, sel=None):
-        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "ProfileSupport")
+        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "Profile Support")
         ProfileSupportFP(fp, sel)
         ProfileSupportVP(fp.ViewObject)
         fp.ViewObject.PointSize = 5

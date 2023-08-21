@@ -7,6 +7,7 @@ __doc__ = "Interpolate curves to surface"
 
 import FreeCAD
 import Part
+from freecad.Curves import _utils
 
 
 PrintError = FreeCAD.Console.PrintError
@@ -89,12 +90,13 @@ def match_knots(curves, tolerance=1e-15):
 def U_linear_surface(surf):
     "Returns a copy of surf that is linear in the U direction"
     poles = [surf.getPoles()[0], surf.getPoles()[-1]]
+    weights = [surf.getWeights()[0], surf.getWeights()[-1]]
     bs = Part.BSplineSurface()
     bs.buildFromPolesMultsKnots(poles,
                                 [2, 2], surf.getVMultiplicities(),
                                 [0, 1], surf.getVKnots(),
                                 False, surf.isVPeriodic(),
-                                1, surf.VDegree)
+                                1, surf.VDegree, weights)
     return bs
 
 
@@ -173,73 +175,6 @@ def shift_origin(c1, c2, num=36):
         print("shift_origin: failed to insert knot")
 
 
-def orient_surface(surf1, surf2, tol=1e-7):
-    """Modify surf2 to have surf1 orientation
-    with a combination of ReverseU, ReverseV, SwapUV
-    """
-    def match(p1, p2):
-        return p1.distanceToPoint(p2) < tol
-    # surface params O, X, Y
-    params = ((0.0, 0.0), (1.0, 0.0), (0.0, 1.0))
-    pts1 = [surf1.value(u, v) for u, v in params]
-    pts2 = [surf2.value(u, v) for u, v in params]
-    # O match O and X match Y
-    if match(pts1[0], pts2[0]):
-        if match(pts1[1], pts2[2]):
-            surf2.exchangeUV()
-        return
-    # O match X
-    elif match(pts1[0], pts2[1]):
-        # reverse U
-        c = surf2.uIso(0.0)
-        c.reverse()
-        uknots = c.getKnots()
-        umults = c.getMultiplicities()
-        vknots = surf2.getVKnots()
-        vmults = surf2.getVMultiplicities()
-        poles = surf2.getPoles()
-        poles.reverse()
-        weights = surf2.getWeights()
-        weights.reverse()
-        nbs = Part.BSplineSurface()
-        nbs.buildFromPolesMultsKnots(poles,
-                                     umults, vmults,
-                                     uknots, vknots,
-                                     c.isPeriodic(), surf2.isVPeriodic(),
-                                     c.Ddegree, surf2.VDegree,
-                                     weights)
-        # Y match O
-        if match(pts1[2], pts2[0]):
-            nbs.exchangeUV()
-        surf2 = nbs
-        return
-    # O match Y
-    elif match(pts1[0], pts2[1]):
-        # reverse V
-        c = surf2.vIso(0.0)
-        c.reverse()
-        vknots = c.getKnots()
-        vmults = c.getMultiplicities()
-        uknots = surf2.getUKnots()
-        umults = surf2.getUMultiplicities()
-        poles = surf2.getPoles()
-        poles = [row.reverse() for row in poles]
-        weights = surf2.getWeights()
-        weights = [row.reverse() for row in weights]
-        nbs = Part.BSplineSurface()
-        nbs.buildFromPolesMultsKnots(poles,
-                                     umults, vmults,
-                                     uknots, vknots,
-                                     surf2.isUPeriodic(), c.isPeriodic(),
-                                     surf2.UDdegree, c.Degree,
-                                     weights)
-        # X match O
-        if match(pts1[2], pts2[0]):
-            nbs.exchangeUV()
-        surf2 = nbs
-        return
-
-
 def ruled_surface(e1, e2, normalize=False, autotwist=0):
     """creates a ruled surface between 2 edges, with automatic orientation.
     If normalize is True, the surface will be normalized in U direction
@@ -260,8 +195,85 @@ def ruled_surface(e1, e2, normalize=False, autotwist=0):
     return Part.makeRuledSurface(c1.toShape(), c2.toShape())
 
 
+def orient_surface(surf1, surf2, tol=1e-7):
+    """Modify surf2 to have surf1 orientation
+    with a combination of ReverseU, ReverseV, SwapUV
+    """
+    def match(p1, p2):
+        return p1.distanceToPoint(p2) < tol
+    FreeCAD.Console.PrintMessage("---\n")
+    # surface params O, X, Y
+    params = ((0.0, 0.0), (1.0, 0.0), (0.0, 1.0))
+    pts1 = [surf1.value(u, v) for u, v in params]
+    pts2 = [surf2.value(u, v) for u, v in params]
+    # O match O and X match Y
+    if match(pts1[0], pts2[0]):
+        if match(pts1[1], pts2[2]):
+            surf2.exchangeUV()
+            FreeCAD.Console.PrintMessage("exchange UV\n")
+        return surf2
+    # O match X
+    elif match(pts1[0], pts2[1]):
+        # reverse U
+        FreeCAD.Console.PrintMessage("reverse U\n")
+        c = surf2.vIso(0.0)
+        c.reverse()
+        uknots = c.getKnots()
+        umults = c.getMultiplicities()
+        vknots = surf2.getVKnots()
+        vmults = surf2.getVMultiplicities()
+        poles = surf2.getPoles()
+        poles.reverse()
+        weights = surf2.getWeights()
+        weights.reverse()
+        nbs = Part.BSplineSurface()
+        nbs.buildFromPolesMultsKnots(poles,
+                                     umults, vmults,
+                                     uknots, vknots,
+                                     c.isPeriodic(), surf2.isVPeriodic(),
+                                     c.Degree, surf2.VDegree,
+                                     weights)
+        # Y match O
+        if match(pts1[2], pts2[0]):
+            nbs.exchangeUV()
+            FreeCAD.Console.PrintMessage("exchange UV\n")
+        surf2 = nbs
+        return nbs
+    # O match Y
+    elif match(pts1[0], pts2[1]):
+        # reverse V
+        FreeCAD.Console.PrintMessage("reverse V\n")
+        c = surf2.uIso(0.0)
+        c.reverse()
+        vknots = c.getKnots()
+        vmults = c.getMultiplicities()
+        uknots = surf2.getUKnots()
+        umults = surf2.getUMultiplicities()
+        poles = surf2.getPoles()
+        poles = [row.reverse() for row in poles]
+        weights = surf2.getWeights()
+        weights = [row.reverse() for row in weights]
+        nbs = Part.BSplineSurface()
+        nbs.buildFromPolesMultsKnots(poles,
+                                     umults, vmults,
+                                     uknots, vknots,
+                                     surf2.isUPeriodic(), c.isPeriodic(),
+                                     surf2.UDegree, c.Degree,
+                                     weights)
+        # X match O
+        if match(pts1[2], pts2[0]):
+            nbs.exchangeUV()
+            FreeCAD.Console.PrintMessage("exchange UV\n")
+        surf2 = nbs
+        return nbs
+    else:
+        return surf2
+
+
 class CurvesToSurface:
-    def __init__(self, curves):
+    def __init__(self, curves, tol2d=1e-15, tol3d=1e-7):
+        self.tol2d = tol2d
+        self.tol3d = tol3d
         self.curves = self._convert_to_bsplines(curves)
         self._periodic = False
         self._params = None
@@ -315,9 +327,14 @@ class CurvesToSurface:
         nc = []
         for c in curves:
             if isinstance(c, Part.Edge):
-                nc.append(c.Curve.toBSpline())
+                nc.append(c.Curve.toBSpline(c.FirstParameter, c.LastParameter))
             elif isinstance(c, Part.Wire):
                 nc.append(c.approximate())
+            elif isinstance(c, FreeCAD.Vector):
+                bs = Part.BSplineCurve()
+                bs.setPole(1, c)
+                bs.setPole(2, c)
+                nc.append(bs)
             else:
                 nc.append(c.toBSpline())
         return nc
@@ -332,12 +349,11 @@ class CurvesToSurface:
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__, len(self.curves))
 
-    def repeated_points(self, pts, tol=1e-7):
-        d = 0
+    def repeated_points(self, pts):
         for i in range(len(pts) - 1):
-            d += pts[i].distanceToPoint(pts[i + 1])
-        if d < tol * len(pts):
-            return True
+            d = pts[i].distanceToPoint(pts[i + 1])
+            if d < self.tol3d:
+                return True
         return False
 
     def check_all_closed(self):
@@ -383,17 +399,17 @@ class CurvesToSurface:
         for c in self.curves:
             c.scaleKnotsToBounds()
 
-    def match_knots(self, tol=1e-15):
+    def match_knots(self):
         self.normalize_knots()
         for c in self.curves[1:]:
-            self.curves[0].insertKnots(c.getKnots(), c.getMultiplicities(), tol, False)
+            self.curves[0].insertKnots(c.getKnots(), c.getMultiplicities(), self.tol2d, False)
         for c in self.curves[1:]:
-            c.insertKnots(self.curves[0].getKnots(), self.curves[0].getMultiplicities(), tol, False)
+            c.insertKnots(self.curves[0].getKnots(), self.curves[0].getMultiplicities(), self.tol2d, False)
 
-    def match_curves(self, tol=1e-15):
+    def match_curves(self):
         self.match_degrees()
         self.normalize_knots()
-        self.match_knots(tol)
+        self.match_knots()
 
     def _parameters_at_poleidx(self, fac=1.0, idx=1):
         """Compute the parameters list from parametrization factor fac (in [0.0, 1.0])
@@ -451,7 +467,7 @@ class CurvesToSurface:
                 bs.interpolate(Points=pts, Parameters=self.Parameters, PeriodicFlag=self.Periodic)
                 poles_array.append(bs.getPoles())
             except Part.OCCError:
-                if self.repeated_points(pts, 1e-5):
+                if self.repeated_points(pts):
                     # print(f"Repeated points detected at Pole #{pole_idx}")
                     poles_array.append(self.interpolate_multipoints(pts))
                 else:
@@ -491,18 +507,18 @@ class CurvesToSurface:
         self.match_curves()
         self.auto_orient()
         self.auto_twist()
-        self.set_parameters(1.0)
         self.interpolate()
 
 
 class Gordon:
     """Gordon Surface algorithm on 3 surfaces : S1 + S2 - S3"""
 
-    def __init__(self, s1, s2, s3):
+    def __init__(self, s1, s2, s3, tol2d=1e-15, tol3d=1e-7):
         self.s1 = s1
         self.s2 = s2
         self.s3 = s3
-        self.tol3D = 1e-7
+        self.tol2d = tol2d
+        self.tol3d = tol3d
 
     def normalize_surfaces(self):
         for surf in [self.s1, self.s2, self.s3]:
@@ -519,31 +535,31 @@ class Gordon:
             return False
         return True
 
-    def check_corner(self, uv, tol=1e-7):
+    def check_corner(self, uv):
         check = True
         u, v = uv
         p1 = self.s1.value(u, v)
         p2 = self.s2.value(u, v)
-        if p2.distanceToPoint(p1) > tol:
+        if p2.distanceToPoint(p1) > self.tol3d:
             print("S1 and S2 points @({}, {}) don't match".format(u, v))
             print(f"{p1} != {p2}")
             check = False
         p3 = self.s3.value(u, v)
-        if p3.distanceToPoint(p1) > tol:
+        if p3.distanceToPoint(p1) > self.tol3d:
             print("S1 and S3 points @({}, {}) don't match".format(u, v))
             print(f"{p1} != {p3}")
             check = False
         return check
 
-    def check_corners(self, tolerance=1e-7):
+    def check_corners(self):
         u0, u1, v0, v1 = self.s1.bounds()
         check = True
         for p in [(u0, v0), (u0, v1), (u1, v0), (u1, v1)]:
-            check = check and self.check_corner(p, tol=tolerance)
+            check = check and self.check_corner(p)
         return check
 
-    def input_surfaces_match(self, tol=1e-7):
-        return self.check_bounds() and self.check_corners(tol)
+    def input_surfaces_match(self):
+        return self.check_bounds() and self.check_corners()
 
     def match_degrees_and_knots(self):
         max_Udegree = 0
@@ -557,11 +573,11 @@ class Gordon:
         ad1 = SurfaceAdapter(self.s1, 0)
         ad2 = SurfaceAdapter(self.s2, 0)
         ad3 = SurfaceAdapter(self.s3, 0)
-        match_knots([ad1, ad2, ad3])
+        match_knots([ad1, ad2, ad3], self.tol2d)
         ad1.direction = 1
         ad2.direction = 1
         ad3.direction = 1
-        match_knots([ad1, ad2, ad3])
+        match_knots([ad1, ad2, ad3], self.tol2d)
         self.s1 = ad1.surface
         self.s2 = ad2.surface
         self.s3 = ad3.surface
@@ -570,14 +586,24 @@ class Gordon:
         ns = self.s1.copy()
         for i in range(1, len(self.s1.getPoles()) + 1):
             for j in range(1, len(self.s1.getPoles()[0]) + 1):
-                ns.setPole(i, j, self.s1.getPole(i, j) + self.s2.getPole(i, j) - self.s3.getPole(i, j))
+                w1 = self.s1.getWeight(i, j)
+                w2 = self.s2.getWeight(i, j)
+                w3 = self.s3.getWeight(i, j)
+                p1 = self.s1.getPole(i, j) * w1
+                p2 = self.s2.getPole(i, j) * w2
+                p3 = self.s3.getPole(i, j) * w3
+                nw = w1 + w2 - w3
+                np = (p1 + p2 - p3) / nw
+                ns.setPole(i, j, np)
+                ns.setWeight(i, j, nw)
         return ns
 
     @property
     def Surface(self):
         self.normalize_surfaces()
-        orient_surface(self.s1, self.s2, self.tol3D)
-        orient_surface(self.s1, self.s3, self.tol3D)
+        if not self.input_surfaces_match():
+            self.s2 = orient_surface(self.s1, self.s2, self.tol3d)
+            self.s3 = orient_surface(self.s1, self.s3, self.tol3d)
         self.match_degrees_and_knots()
         return self.gordon()
 
@@ -612,15 +638,42 @@ class CurvesOn2Rails:
                 return False
         return True
 
+    def sort_curves(self, s):
+        intersect = []
+        for c in self.curves:
+            u1, v1 = s.parameter(c.value(c.FirstParameter))
+            u2, v2 = s.parameter(c.value(c.LastParameter))
+            if abs(v1 - v2) > self.tol2d:
+                FreeCAD.Console.PrintMessage("Curve is not Iso\n")
+            if u1 > u2:
+                c.reverse()
+                FreeCAD.Console.PrintMessage("Reversing curve\n")
+            intersect.append((v1, c))
+        intersect.sort()
+        if abs(intersect[0][0]) > self.tol3d:
+            FreeCAD.Console.PrintMessage("Inserting point profile at 0.0\n")
+            intersect.insert(0, (0.0, s.vIso(0.0)))
+        if abs(intersect[-1][0] - 1.0) > self.tol3d:
+            FreeCAD.Console.PrintMessage("Inserting point profile at 1.0\n")
+            intersect.append((1.0, s.vIso(1.0)))
+        params = [tup[0] for tup in intersect]
+        curves = [tup[1] for tup in intersect]
+        return params, curves
+
     def build_surface(self):
-        cts = CurvesToSurface(self.curves)
+        try:
+            ruled = _utils.ruled_surface(self.rails[0].toShape(), self.rails[1].toShape(), True)
+        except Part.OCCError:
+            ruled = ruled_surface(self.rails[0].toShape(), self.rails[1].toShape(), True)
+        s2 = ruled.Surface
+        s2.exchangeUV()
+        # self.ruled = s2.toShape()
+        params, curves = self.sort_curves(s2)
+        cts = CurvesToSurface(curves)
+        cts.Parameters = params
         s1 = cts.Surface
-        s2 = ruled_surface(self.rails[0].toShape(), self.rails[1].toShape(), True).Surface
-        #s2.exchangeUV()
         s3 = U_linear_surface(s1)
-        gordon = Gordon(s1, s2, s3)
-        # if gordon.input_surfaces_match():
-        #     return gordon.Surface
+        gordon = Gordon(s1, s2, s3, self.tol2d, self.tol3d)
         return gordon.Surface
 
 
