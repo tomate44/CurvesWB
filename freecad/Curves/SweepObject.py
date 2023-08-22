@@ -4,6 +4,10 @@ class ProfileShape:
     def __init__(self, shape, tol=1e-7):
         self.BaseShape = shape
         self.tol3d = tol
+        self.full_bspline = None
+        self.polygon = None
+        self.BSplines = []
+        self.compute_BSplines()
 
     @property
     def NbFaces(self):
@@ -21,46 +25,74 @@ class ProfileShape:
     def NbVertexes(self):
         return len(self.BaseShape.Vertexes)
 
-    def get_max_edge_gap(self):
-        maxgap = 0.0
-        for i in range(self.NbEdges - 1):
-            e = self.BaseShape.Edges[i]
-            comp = Part.Compound(self.BaseShape.Edges[:i] + self.BaseShape.Edges[i + 1:])
-            dist, pts, info = e.distToShape(comp)
-            maxgap = max(maxgap, dist)
-        return maxgap
+    # def get_max_edge_gap(self):
+    #     maxgap = 0.0
+    #     for i in range(self.NbEdges - 1):
+    #         e = self.BaseShape.Edges[i]
+    #         comp = Part.Compound(self.BaseShape.Edges[:i] + self.BaseShape.Edges[i + 1:])
+    #         dist, pts, info = e.distToShape(comp)
+    #         maxgap = max(maxgap, dist)
+    #     return maxgap
 
-    def get_BSpline(self, rational=False):
+    def compute_BSplines(self, rational=False):
+        self.BSplines = []
         # Shape is a single Vertex
         if (self.NbEdges == 0):
             bs = Part.BSplineCurve()
             bs.setPole(1, self.BaseShape.Vertex1.Point)
             bs.setPole(2, self.BaseShape.Vertex1.Point)
-            return bs
-        # Shape is a single Wire
-        if (self.NbWires == 1):
-            shape = self.BaseShape.Wire1
-            if rational:
-                shape = self.BaseShape.Wire1.toNurbs().Wire1
-            e0 = shape.OrderedEdges[0]
-            c0 = e0.Curve.toBSpline(e0.FirstParameter, e0.LastParameter)
-            for e in shape.OrderedEdges[1:]:
-                c = e.Curve.toBSpline(e.FirstParameter, e.LastParameter)
-                c0.join(c)
-            return c0
+            self.BSplines.append(bs)
         # Shape is a single Edge
         if (self.NbEdges == 1):
             e = self.BaseShape.Edge1
             if rational:
                 e = self.BaseShape.Edge1.toNurbs().Edge1
             c = e.Curve.toBSpline(e.FirstParameter, e.LastParameter)
-            return c
+            self.BSplines.append(c)
+        # Shape is a single Wire
+        elif (self.NbWires == 1):
+            shape = self.BaseShape.Wire1
+            if rational:
+                shape = self.BaseShape.Wire1.toNurbs().Wire1
+            for e in shape.OrderedEdges:
+                c = e.Curve.toBSpline(e.FirstParameter, e.LastParameter)
+                self.BSplines.append(c)
+        c0 = self.BSplines[0]
+        if len(self.BSplines) > 1:
+            for c in self.BSplines[1:]:
+                c0.join(c)
+        self.full_bspline = c0
+        self.compute_uniform_polygon()
+        return self.full_bspline
+
+    def compute_uniform_polygon(self):
+        p = self.full_bspline.FirstParameter
+        pts = [self.full_bspline.value(p)]
+        pars = [0.0]
+        if len(self.BSplines) > 1:
+            for i, v in enumerate(self.BaseShape.OrderedVertexes[1:-1]):
+                print(i)
+                p = self.full_bspline.parameter(v.Point)
+                print(p)
+                pts.append(self.full_bspline.value(p))
+                pars.append(float(i + 1))
+        p = self.full_bspline.LastParameter
+        pts.append(self.full_bspline.value(p))
+        pars.append(pars[-1] + 1)
+        mults = [1] * (len(pars))
+        mults[0] = 2
+        mults[-1] = 2
+        bs = Part.BSplineCurve()
+        print(pts, mults, pars)
+        bs.buildFromPolesMultsKnots(pts, mults, pars, False, 1)
+        self.polygon = bs
+        return self.polygon
 
 
 
 sel = FreeCADGui.Selection.getSelection()
 o = sel[0]
 swob = ProfileShape(o.Shape)
-print(swob.get_max_edge_gap())
-Part.show(swob.get_BSpline().toShape())
-Part.show(swob.get_BSpline(True).toShape())
+# print(swob.get_max_edge_gap())
+Part.show(swob.full_bspline.toShape())
+Part.show(swob.polygon.toShape())
