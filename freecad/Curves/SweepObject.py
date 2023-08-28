@@ -1,3 +1,6 @@
+vec2 = FreeCAD.Base.Vector2d
+
+
 class ProfileShape:
     """Wrapper for shapes that will be used in a surfacing operation"""
 
@@ -87,6 +90,57 @@ class ProfileShape:
         bs.buildFromPolesMultsKnots(pts, mults, pars, False, 1)
         self.polygon = bs
         return self.polygon
+
+
+class Path2Rails:
+    def __init__(self, rail1, rail2):
+        self.Rail1 = ProfileShape(rail1)
+        self.Rail2 = ProfileShape(rail2)
+        # self.Face1 = face1
+        # self.Face2 = face2
+        # self.TangentToFaces = False
+        self.ReversedNormal = False
+        ruled = Part.makeRuledSurface(self.Rail1.full_bspline.toShape(),
+                                      self.Rail2.full_bspline.toShape())
+        self.Surface = ruled.Surface
+        self.Surface.scaleKnotsToBounds(0.0, 1.0)
+
+    def origin(self):
+        return self.Surface.value(u1, 0.0)
+
+    def XPoint(self):
+        return self.Surface.value(u2, 1.0)
+
+    def get_transform_matrix(self, u1, u2, position=0.0):
+        # obj.Rail1Length = e1.Length
+        # obj.Rail2Length = e2.Length
+        # p1 = e1.getParameterByLength(obj.Position1 * e1.Length)
+        par1 = (u1, 0.0)
+        par2 = (u2, 1.0)
+        origin = self.Surface.value(u1, 0.0)
+        ptX = self.Surface.value(u2, 1.0)
+        rs = Part.makeRuledSurface(e1, e2)
+        u0, v0 = rs.Surface.parameter(origin)
+        normal = rs.Surface.normal(u0, obj.NormalPosition)
+        if obj.NormalReverse:
+            normal = -normal
+        uiso = rs.Surface.uIso(u0)
+        width = uiso.length()
+        obj.ChordLength = width
+        tangent = uiso.tangent(obj.NormalPosition)[0]
+        bino = -normal.cross(tangent)
+        # if obj.NormalReverse:
+        #     bino = -bino
+        m = FreeCAD.Matrix(tangent.x, normal.x, bino.x, origin.x,
+                           tangent.y, normal.y, bino.y, origin.y,
+                           tangent.z, normal.z, bino.z, origin.z,
+                           0, 0, 0, 1)
+        # print(m.analyze())
+        line1 = Part.makeLine(FreeCAD.Vector(), FreeCAD.Vector(width, 0.0, 0.0))
+        pt = FreeCAD.Vector(obj.NormalPosition * width, 0.0, 0.0)
+        line2 = Part.makeLine(pt, pt + FreeCAD.Vector(0.0, width, 0.00))
+        obj.Shape = Part.Compound([line1, line2])
+        obj.Placement = FreeCAD.Placement(m)
 
 
 

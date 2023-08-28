@@ -74,6 +74,8 @@ class ProfileSupportFP:
                         "Sources", "Tooltip")
         obj.addProperty("App::PropertyLink", "Rail2",
                         "Sources", "Tooltip")
+        obj.addProperty("App::PropertyLink", "ProfileShape",
+                        "Sources", "Tooltip")
         obj.addProperty("App::PropertyFloatConstraint", "Position1",
                         "Settings", "Tooltip")
         obj.addProperty("App::PropertyFloatConstraint", "Position2",
