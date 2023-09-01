@@ -11,6 +11,7 @@ import FreeCADGui
 import Part
 # from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
+from freecad.Curves import SweepObject
 
 TOOL_ICON = os.path.join(ICONPATH, 'profile_support.svg')
 # debug = _utils.debug
@@ -98,8 +99,9 @@ class ProfileSupportFP:
         obj.Position2 = (-0.05, -0.05, 1.0, 0.05)
         obj.setEditorMode("Position2", 2)
         obj.Rail1 = sel[0]
-        if len(sel) > 1:
+        if len(sel) == 3:
             obj.Rail2 = sel[1]
+        obj.ProfileShape = sel[-1]
         obj.Proxy = self
 
     def execute(self, obj):
@@ -112,30 +114,42 @@ class ProfileSupportFP:
             e2 = obj.Rail1.Shape.Edge2
         obj.Rail1Length = e1.Length
         obj.Rail2Length = e2.Length
-        p1 = e1.getParameterByLength(obj.Position1 * e1.Length)
-        origin = e1.valueAt(p1)
-        rs = Part.makeRuledSurface(e1, e2)
-        u0, v0 = rs.Surface.parameter(origin)
-        normal = rs.Surface.normal(u0, obj.NormalPosition)
-        if obj.NormalReverse:
-            normal = -normal
-        uiso = rs.Surface.uIso(u0)
-        width = uiso.length()
-        obj.ChordLength = width
-        tangent = uiso.tangent(obj.NormalPosition)[0]
-        bino = -normal.cross(tangent)
-        # if obj.NormalReverse:
-        #     bino = -bino
-        m = FreeCAD.Matrix(tangent.x, normal.x, bino.x, origin.x,
-                           tangent.y, normal.y, bino.y, origin.y,
-                           tangent.z, normal.z, bino.z, origin.z,
-                           0, 0, 0, 1)
-        # print(m.analyze())
-        line1 = Part.makeLine(FreeCAD.Vector(), FreeCAD.Vector(width, 0.0, 0.0))
-        pt = FreeCAD.Vector(obj.NormalPosition * width, 0.0, 0.0)
-        line2 = Part.makeLine(pt, pt + FreeCAD.Vector(0.0, width, 0.00))
-        obj.Shape = Part.Compound([line1, line2])
+        path2R = SweepObject.Path2Rails(e1, e2)
+        path2R.ReversedNormal = obj.NormalReverse
+        sh = obj.ProfileShape.Shape.copy()
+        prof = SweepObject.ProfileShape(obj.ProfileShape.Shape)
+        sp, ep = prof.end_points()
+        size = (ep - sp).Length
+        m, width = path2R.get_transform_matrix(obj.Position1, obj.Position2, obj.NormalPosition)
+        sh = obj.ProfileShape.Shape.copy()
+        sh.scale(width / size, sp)
+        prof = SweepObject.ProfileShape(sh)
+        obj.Shape = prof.BaseShape
         obj.Placement = FreeCAD.Placement(m)
+        # p1 = e1.getParameterByLength(obj.Position1 * e1.Length)
+        # origin = e1.valueAt(p1)
+        # rs = Part.makeRuledSurface(e1, e2)
+        # u0, v0 = rs.Surface.parameter(origin)
+        # normal = rs.Surface.normal(u0, obj.NormalPosition)
+        # if obj.NormalReverse:
+        #     normal = -normal
+        # uiso = rs.Surface.uIso(u0)
+        # width = uiso.length()
+        # obj.ChordLength = width
+        # tangent = uiso.tangent(obj.NormalPosition)[0]
+        # bino = -normal.cross(tangent)
+        # # if obj.NormalReverse:
+        # #     bino = -bino
+        # m = FreeCAD.Matrix(tangent.x, normal.x, bino.x, origin.x,
+        #                    tangent.y, normal.y, bino.y, origin.y,
+        #                    tangent.z, normal.z, bino.z, origin.z,
+        #                    0, 0, 0, 1)
+        # # print(m.analyze())
+        # line1 = Part.makeLine(FreeCAD.Vector(), FreeCAD.Vector(width, 0.0, 0.0))
+        # pt = FreeCAD.Vector(obj.NormalPosition * width, 0.0, 0.0)
+        # line2 = Part.makeLine(pt, pt + FreeCAD.Vector(0.0, width, 0.00))
+        # obj.Shape = Part.Compound([line1, line2])
+        # obj.Placement = FreeCAD.Placement(m)
 
     def onChanged(self, obj, prop):
         if prop == "Position1":
@@ -161,6 +175,9 @@ class ProfileSupportVP:
 
     def __getstate__(self):
         return {"name": self.Object.Name}
+
+    def claimChildren(self):
+        return [self.Object.ProfileShape, ]
 
     def __setstate__(self, state):
         self.Object = FreeCAD.ActiveDocument.getObject(state["name"])

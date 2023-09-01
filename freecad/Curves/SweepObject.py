@@ -1,3 +1,5 @@
+import FreeCAD
+import Part
 vec2 = FreeCAD.Base.Vector2d
 
 
@@ -36,6 +38,21 @@ class ProfileShape:
     #         dist, pts, info = e.distToShape(comp)
     #         maxgap = max(maxgap, dist)
     #     return maxgap
+
+    def end_points(self):
+        sp = FreeCAD.Vector()
+        ep = FreeCAD.Vector()
+        ma = 0.0
+        mi = 0.0
+        for v in self.BaseShape.Vertexes:
+            if v.Y == 0.0:
+                if v.X > ma:
+                    ma = v.X
+                    ep = v.Point
+                if v.X < mi:
+                    mi = v.X
+                    sp = v.Point
+        return sp, ep
 
     def compute_BSplines(self, rational=False):
         self.BSplines = []
@@ -111,23 +128,27 @@ class Path2Rails:
     def XPoint(self):
         return self.Surface.value(u2, 1.0)
 
-    def get_transform_matrix(self, u1, u2, position=0.0):
+    def get_transform_matrix(self, u1, u2=-1, position=0.0):
         # obj.Rail1Length = e1.Length
         # obj.Rail2Length = e2.Length
         # p1 = e1.getParameterByLength(obj.Position1 * e1.Length)
+        if u2 < 0.0 or u2 > 1.0:
+            u2 = u1
         par1 = (u1, 0.0)
         par2 = (u2, 1.0)
-        origin = self.Surface.value(u1, 0.0)
-        ptX = self.Surface.value(u2, 1.0)
-        rs = Part.makeRuledSurface(e1, e2)
-        u0, v0 = rs.Surface.parameter(origin)
-        normal = rs.Surface.normal(u0, obj.NormalPosition)
-        if obj.NormalReverse:
+        origin = self.Surface.value(*par1)
+        ptX = self.Surface.value(*par2)
+        tangent = ptX - origin
+        width = tangent.Length
+        tangent.normalize()
+        # tan1 = self.Surface.tangent(*par1)[0]
+        # tan2 = self.Surface.tangent(*par2)[0]
+        # tangent = (1.0 - position) * tan1 + position * tan2
+        nor1 = self.Surface.normal(*par1)
+        nor2 = self.Surface.normal(*par2)
+        normal = (1.0 - position) * nor1 + position * nor2
+        if self.ReversedNormal:
             normal = -normal
-        uiso = rs.Surface.uIso(u0)
-        width = uiso.length()
-        obj.ChordLength = width
-        tangent = uiso.tangent(obj.NormalPosition)[0]
         bino = -normal.cross(tangent)
         # if obj.NormalReverse:
         #     bino = -bino
@@ -136,17 +157,14 @@ class Path2Rails:
                            tangent.z, normal.z, bino.z, origin.z,
                            0, 0, 0, 1)
         # print(m.analyze())
-        line1 = Part.makeLine(FreeCAD.Vector(), FreeCAD.Vector(width, 0.0, 0.0))
-        pt = FreeCAD.Vector(obj.NormalPosition * width, 0.0, 0.0)
-        line2 = Part.makeLine(pt, pt + FreeCAD.Vector(0.0, width, 0.00))
-        obj.Shape = Part.Compound([line1, line2])
-        obj.Placement = FreeCAD.Placement(m)
+        return m, width
 
 
-
+"""
 sel = FreeCADGui.Selection.getSelection()
 o = sel[0]
 swob = ProfileShape(o.Shape)
 # print(swob.get_max_edge_gap())
 Part.show(swob.full_bspline.toShape())
 Part.show(swob.polygon.toShape())
+"""
