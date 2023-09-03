@@ -337,9 +337,9 @@ class Sweep:
     def loftProfiles(self):
         cl = [c.Curve for c in self.Profiles]
         debug(f"{cl}\n")
-        cts = CTS.CurvesToSurface(cl)
+        cts = CTS.CurvesToSurface(cl, self.Tol2D, self.Tol3D)
         cts.Periodic = self.Path.Curve.isPeriodic()
-        cts.match_curves(self.Tol2D)
+        cts.match_curves()
         cts.Parameters = self.profile_parameters()
         debug(f"loftProfiles : {vec2str(cts.Parameters)}")
         cts.interpolate()
@@ -549,8 +549,8 @@ class SweepInterpolator:
     def interpolate_local_profiles(self):
         self.sort_profiles()
         locprofs = self.profile_curves()
-        cts = CTS.CurvesToSurface(locprofs)
-        cts.match_curves(self.Sweep.Tol2D)
+        cts = CTS.CurvesToSurface(locprofs, self.Sweep.Tol2D, self.Sweep.Tol3D)
+        cts.match_curves()
         cts.Parameters = self.profile_parameters()
         cts.interpolate()
         self.localLoft = cts._surface
