@@ -452,6 +452,36 @@ class CurvesToSurface:
         bs.interpolate(Points=fpts, Parameters=self.Parameters, PeriodicFlag=self.Periodic)
         return [pts[0]] * bs.NbPoles
 
+    def pts_weights_interp(self, idx):
+        bs = Part.BSplineCurve()
+        pts = []
+        wpts = []
+        op = []
+        ow = []
+        for i, c in enumerate(self.curves):
+            w = c.getWeight(idx)
+            wpts.append(FreeCAD.Vector(i, w, 0.0))
+            pts.append(c.getPole(idx) * w)
+        try:
+            bs.interpolate(Points=pts, Parameters=self.Parameters, PeriodicFlag=self.Periodic)
+            op = bs.getPoles()
+        except Part.OCCError:
+            if self.repeated_points(pts):
+                # print(f"Repeated points detected at Pole #{pole_idx}")
+                op = self.interpolate_multipoints(pts)
+            else:
+                print("Curve interpolation error. Bad data :")
+                for d in (pts, self.Parameters, self.Periodic):
+                    print(d)
+        try:
+            bs.interpolate(Points=wpts, Parameters=self.Parameters, PeriodicFlag=self.Periodic)
+            ow = [p.y for p in bs.getPoles()]
+        except Part.OCCError:
+            print("Weight interpolation error.")
+        for i in range(len(op)):
+            op[i] /= ow[i]
+        return op, ow, bs
+
     def interpolate(self):
         "interpolate the poles of the curves and build the surface"
         if self.Parameters is None:
@@ -459,38 +489,28 @@ class CurvesToSurface:
         # nbp = [c.NbPoles for c in self.curves]
         # print(nbp)
         poles_array = []
-        bs = Part.BSplineCurve()
+        weights_array = []
         for pole_idx in range(1, self.curves[0].NbPoles + 1):
-            pts = [c.getPole(pole_idx) for c in self.curves]
-            # print(pts, self.Parameters)
-            try:
-                bs.interpolate(Points=pts, Parameters=self.Parameters, PeriodicFlag=self.Periodic)
-                poles_array.append(bs.getPoles())
-            except Part.OCCError:
-                if self.repeated_points(pts):
-                    # print(f"Repeated points detected at Pole #{pole_idx}")
-                    poles_array.append(self.interpolate_multipoints(pts))
-                else:
-                    print("Curve interpolation error. Bad data :")
-                    for d in (pts, self.Parameters, self.Periodic):
-                        print(d)
+            op, ow, bs = self.pts_weights_interp(pole_idx)
+            poles_array.append(op)
+            weights_array.append(ow)
         maxlen = 0
         for poles in poles_array:
             maxlen = max(maxlen, len(poles))
-        weights = []
+        # weights = []
         poles = []
         for p in poles_array:
             if len(p) < maxlen:
                 poles.append([p[0]] * maxlen)
             else:
                 poles.append(p)
-            weights.append([1.0] * maxlen)
+            # weights.append([1.0] * maxlen)
         self._surface = Part.BSplineSurface()
         args = (poles_array,
                 self.curves[0].getMultiplicities(), bs.getMultiplicities(),
                 self.curves[0].getKnots(), bs.getKnots(),
                 self.curves[0].isPeriodic(), bs.isPeriodic(),
-                self.curves[0].Degree, bs.Degree, weights)
+                self.curves[0].Degree, bs.Degree, weights_array)
         try:
             self._surface.buildFromPolesMultsKnots(*args)
         except Part.OCCError as exc:
