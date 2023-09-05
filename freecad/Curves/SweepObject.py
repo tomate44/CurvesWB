@@ -42,10 +42,10 @@ class ProfileShape:
     def end_points(self):
         sp = FreeCAD.Vector()
         ep = FreeCAD.Vector()
-        ma = 0.0
-        mi = 0.0
+        ma = -1e100
+        mi = 1e100
         for v in self.BaseShape.Vertexes:
-            if v.Y == 0.0:
+            if abs(v.Y) < self.tol3d:
                 if v.X > ma:
                     ma = v.X
                     ep = v.Point

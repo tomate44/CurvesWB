@@ -82,8 +82,12 @@ class Sweep2RailsObjProxy:
     def get_curves(self, linklist):
         curves = []
         for link in linklist:
-            e = link.Shape.Edge1
-            c = e.Curve.toBSpline(e.FirstParameter, e.LastParameter)
+            if link.Shape.Wires:
+                e = link.Shape.Wire1
+                c = e.approximate(1e-7, 1e-6, 999, 5)
+            else:
+                e = link.Shape.Edge1
+                c = e.Curve.toBSpline(e.FirstParameter, e.LastParameter)
             # c = e.Curve
             # c.trim(e.FirstParameter, e.LastParameter)
             curves.append(c)
