@@ -116,9 +116,9 @@ class ProfileSupportFP:
         obj.Rail2Length = e2.Length
         path2R = SweepObject.Path2Rails(e1, e2)
         path2R.ReversedNormal = obj.NormalReverse
-        sh = obj.ProfileShape.Shape.copy()
+        # sh = obj.ProfileShape.Shape.copy()
         prof = SweepObject.ProfileShape(obj.ProfileShape.Shape)
-        sp, ep = prof.end_points()
+        sp, ep = prof.end_points_2D()
         size = (ep - sp).Length
         m, width = path2R.get_transform_matrix(obj.Position1, obj.Position2, obj.NormalPosition)
         sh = obj.ProfileShape.Shape.copy()

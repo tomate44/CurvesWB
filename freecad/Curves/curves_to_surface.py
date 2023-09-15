@@ -46,21 +46,24 @@ class SurfaceAdapter:
         elif self.direction == 1:
             return self.surface.increaseVMultiplicity(idx, mult)
 
-    def insertKnot(self, k, mult, tol=0.0):
+    def insertKnot(self, k, mult, tol=1e-9):
         if self.direction == 0:
             return self.surface.insertUKnot(k, mult, tol)
         elif self.direction == 1:
-            return self.surface.insertVKnot(k, mult, tol)
+            try:
+                return self.surface.insertVKnot(k, mult, tol)
+            except:
+                PrintError(f"insertVKnot error, {k}, {mult}\n")
+                PrintError(f"{self.surface.getVKnots()}\n")
 
-
-def _find_knot(curve, knot, tolerance=1e-15):
+def _find_knot(curve, knot, tolerance=1e-9):
     for i in range(1, curve.NbKnots + 1):
         if abs(knot - curve.getKnot(i)) < tolerance:
             return i
     return -1
 
 
-def match_knots(curves, tolerance=1e-15):
+def match_knots(curves, tolerance=1e-9):
     "Set the knot sequence of each curve to a common one"
     first = curves[0]
     for cur_idx in range(1, len(curves)):
@@ -74,7 +77,7 @@ def match_knots(curves, tolerance=1e-15):
                     first.increaseMultiplicity(fk, mult)
                     print("Increased mult of knot # {} from {} to {}".format(fk, om, mult))
             else:
-                first.insertKnot(k, mult)
+                first.insertKnot(k, mult, tolerance)
                 print("Inserting knot {} mult {}".format(k, mult))
     for cur_idx in range(1, len(curves)):
         for kno_idx in range(1, first.NbKnots + 1):
@@ -84,7 +87,7 @@ def match_knots(curves, tolerance=1e-15):
             if fk > -1:
                 curves[cur_idx].increaseMultiplicity(fk, mult)
             else:
-                curves[cur_idx].insertKnot(k, mult)
+                curves[cur_idx].insertKnot(k, mult, tolerance)
 
 
 def U_linear_surface(surf):
@@ -168,7 +171,7 @@ def shift_origin(c1, c2, num=36):
             good_offset = offset_idx
     knot = c2.parameter(pts2[good_offset])
     c2.insertKnot(knot, 1)
-    fk = _find_knot(c2, knot, 1e-15)
+    fk = _find_knot(c2, knot, 1e-9)
     if fk > -1:
         c2.setOrigin(fk)
     else:
@@ -271,7 +274,7 @@ def orient_surface(surf1, surf2, tol=1e-7):
 
 
 class CurvesToSurface:
-    def __init__(self, curves, tol2d=1e-15, tol3d=1e-7):
+    def __init__(self, curves, tol2d=1e-9, tol3d=1e-7):
         self.tol2d = tol2d
         self.tol3d = tol3d
         self.curves = self._convert_to_bsplines(curves)
@@ -533,7 +536,7 @@ class CurvesToSurface:
 class Gordon:
     """Gordon Surface algorithm on 3 surfaces : S1 + S2 - S3"""
 
-    def __init__(self, s1, s2, s3, tol2d=1e-15, tol3d=1e-7):
+    def __init__(self, s1, s2, s3, tol2d=1e-9, tol3d=1e-7):
         self.s1 = s1
         self.s2 = s2
         self.s3 = s3
@@ -632,7 +635,7 @@ class CurvesOn2Rails:
     """Surface defined by a series of curves on 2 rails"""
 
     def __init__(self, curves, rails):
-        self.tol2d = 1e-15
+        self.tol2d = 1e-9
         self.tol3d = 1e-7
         self.curves = self.curve_convert(curves)
         self.rails = self.curve_convert(rails)
@@ -646,6 +649,7 @@ class CurvesOn2Rails:
                 bs.setPole(2, geo)
                 curves.append(bs)
             else:
+                geo.scaleKnotsToBounds()
                 curves.append(geo)
         return curves
 
@@ -671,10 +675,10 @@ class CurvesOn2Rails:
             intersect.append((v1, c))
         intersect.sort()
         if abs(intersect[0][0]) > self.tol3d:
-            FreeCAD.Console.PrintMessage("Inserting point profile at 0.0\n")
+            FreeCAD.Console.PrintMessage("Inserting flat profile at 0.0\n")
             intersect.insert(0, (0.0, s.vIso(0.0)))
         if abs(intersect[-1][0] - 1.0) > self.tol3d:
-            FreeCAD.Console.PrintMessage("Inserting point profile at 1.0\n")
+            FreeCAD.Console.PrintMessage("Inserting flat profile at 1.0\n")
             intersect.append((1.0, s.vIso(1.0)))
         params = [tup[0] for tup in intersect]
         curves = [tup[1] for tup in intersect]

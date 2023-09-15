@@ -10,6 +10,7 @@ import FreeCAD
 import FreeCADGui
 import Part
 from freecad.Curves import curves_to_surface
+from freecad.Curves import SweepObject
 from freecad.Curves import ICONPATH
 
 TOOL_ICON = os.path.join(ICONPATH, 'sweep2rails.svg')
@@ -79,23 +80,27 @@ class Sweep2RailsObjProxy:
         obj.Profiles = sel[2:]
         obj.Proxy = self
 
-    def get_curves(self, linklist):
+    def get_profiles(self, linklist):
         curves = []
+        isWire = False
         for link in linklist:
             if link.Shape.Wires:
-                e = link.Shape.Wire1
-                c = e.approximate(1e-7, 1e-6, 999, 5)
+                e = SweepObject.ProfileShape(link.Shape.Wire1)
+                # c = e.approximate(1e-7, 1e-6, 999, 5)
+                c = e.full_bspline
+                isWire = True
             else:
-                e = link.Shape.Edge1
-                c = e.Curve.toBSpline(e.FirstParameter, e.LastParameter)
+                e = SweepObject.ProfileShape(link.Shape.Edge1)
+                # c = e.Curve.toBSpline(e.FirstParameter, e.LastParameter)
+                c = e.full_bspline
             # c = e.Curve
             # c.trim(e.FirstParameter, e.LastParameter)
             curves.append(c)
-        return curves
+        return curves, isWire
 
     def execute(self, obj):
-        rails = self.get_curves(obj.Rails)
-        profiles = self.get_curves(obj.Profiles)
+        rails, _ = self.get_curves(obj.Rails)
+        profiles, isWire = self.get_curves(obj.Profiles)
         s2r = curves_to_surface.CurvesOn2Rails(profiles, rails)
         s = s2r.build_surface()
         obj.Shape = s.toShape()

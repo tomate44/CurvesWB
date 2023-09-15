@@ -1,6 +1,7 @@
 import FreeCAD
 import Part
 vec2 = FreeCAD.Base.Vector2d
+from freecad.Curves import curves_to_surface
 
 
 class ProfileShape:
@@ -30,6 +31,10 @@ class ProfileShape:
     def NbVertexes(self):
         return len(self.BaseShape.Vertexes)
 
+    @property
+    def NbCurves(self):
+        return len(self.BSplines)
+
     # def get_max_edge_gap(self):
     #     maxgap = 0.0
     #     for i in range(self.NbEdges - 1):
@@ -39,7 +44,7 @@ class ProfileShape:
     #         maxgap = max(maxgap, dist)
     #     return maxgap
 
-    def end_points(self):
+    def end_points_2D(self):
         sp = FreeCAD.Vector()
         ep = FreeCAD.Vector()
         ma = -1e100
@@ -53,6 +58,11 @@ class ProfileShape:
                     mi = v.X
                     sp = v.Point
         return sp, ep
+
+    def end_points(self):
+        ov = self.BaseShape.OrderedVertexes
+        vl = (ov[0], ov[-1])
+        return [v.Point for v in vl]
 
     def compute_BSplines(self, rational=False):
         self.BSplines = []
@@ -77,7 +87,7 @@ class ProfileShape:
             for e in shape.OrderedEdges:
                 c = e.Curve.toBSpline(e.FirstParameter, e.LastParameter)
                 self.BSplines.append(c)
-        c0 = self.BSplines[0]
+        c0 = self.BSplines[0].copy()
         if len(self.BSplines) > 1:
             for c in self.BSplines[1:]:
                 c0.join(c)
@@ -110,9 +120,9 @@ class ProfileShape:
 
 
 class Path2Rails:
-    def __init__(self, rail1, rail2):
-        self.Rail1 = ProfileShape(rail1)
-        self.Rail2 = ProfileShape(rail2)
+    def __init__(self, rail1, rail2, tol=1e-7):
+        self.Rail1 = ProfileShape(rail1, tol)
+        self.Rail2 = ProfileShape(rail2, tol)
         # self.Face1 = face1
         # self.Face2 = face2
         # self.TangentToFaces = False
@@ -122,11 +132,11 @@ class Path2Rails:
         self.Surface = ruled.Surface
         self.Surface.scaleKnotsToBounds(0.0, 1.0)
 
-    def origin(self):
-        return self.Surface.value(u1, 0.0)
+    def origin(self, u):
+        return self.Surface.value(u, 0.0)
 
-    def XPoint(self):
-        return self.Surface.value(u2, 1.0)
+    def XPoint(self, u):
+        return self.Surface.value(u, 1.0)
 
     def get_transform_matrix(self, u1, u2=-1, position=0.0):
         # obj.Rail1Length = e1.Length
@@ -158,6 +168,51 @@ class Path2Rails:
                            0, 0, 0, 1)
         # print(m.analyze())
         return m, width
+
+
+class TopoSweep2Rails:
+    """Sweep Topo Shapes on 2 rails"""
+
+    def __init__(self, rails, profiles, tol=1e-7):
+        # rl = [SweepObject(r) for r in rails]
+        self.Profiles = [ProfileShape(p, tol) for p in profiles]
+        self.Rails = [ProfileShape(r, tol) for r in rails]
+        # self.Path = Path2Rails(*rails, tol)
+        self.tol3d = tol
+
+    def sweep(self):
+        nb_curves_list = [p.NbCurves for p in self.Profiles]
+        compat_prof = (len(set(nb_curves_list)) == 1)
+        r1 = self.Rails[0].full_bspline
+        r2 = self.Rails[1].full_bspline
+        if compat_prof:
+            nb_curves = self.Profiles[0].NbCurves
+            poly_profs = [p.polygon for p in self.Profiles]
+            poly_rails = [r1, r2]
+            s2r = curves_to_surface.CurvesOn2Rails(poly_profs, poly_rails)
+            s = s2r.build_surface()
+            # return s.toShape()
+            full_rails = [r1]
+            for i in range(nb_curves - 1):
+                p = s.uIso((i + 1) / nb_curves)
+                full_rails.append(p)
+            full_rails.append(r2)
+            rail_shapes = [r.toShape() for r in full_rails]
+            # return Part.Compound(rail_shapes)
+            surfs = []
+            for i in range(nb_curves):
+                profs = [p.BSplines[i] for p in self.Profiles]
+                rails = full_rails[i:i + 2]
+                s2r = curves_to_surface.CurvesOn2Rails(profs, rails)
+                surfs.append(s2r.build_surface())
+            faces = [s.toShape() for s in surfs]
+            shell = Part.Shell(faces)
+            return shell
+        profs = [p.full_bspline for p in self.Profiles]
+        rails = [r1, r2]
+        s2r = curves_to_surface.CurvesOn2Rails(profs, rails)
+        s = s2r.build_surface()
+        return s.toShape()
 
 
 """
