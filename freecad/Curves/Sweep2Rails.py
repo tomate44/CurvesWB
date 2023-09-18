@@ -1,3 +1,7 @@
+__doc__ = 'Create a sweep profiles on two rails'
+__usage__ = """Select flat surface and 2 (or more) lines.
+Activate the tool."""
+
 import os
 import FreeCAD
 import FreeCADGui
@@ -214,7 +218,7 @@ class s2rCommand:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': 'Sweep2Rails',
-                'ToolTip': 'Sweep profiles on 2 rails'}
+                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
 
 FreeCADGui.addCommand('sw2r', s2rCommand())

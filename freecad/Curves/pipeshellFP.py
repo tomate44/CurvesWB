@@ -4,6 +4,9 @@ __title__ = 'Pipeshell'
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = 'Creates a PipeShell sweep object'
+__usage__ = """Select path (curve, line, arc, ...) in the 3D View or Tree View.
+Select Profile object (created by Pipeshell profile command) in the Tree View.
+Activate the tool."""
 
 import os
 import FreeCAD
@@ -376,7 +379,7 @@ class pipeShellCommand:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': __title__,
-                'ToolTip': __doc__}
+                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
 
 FreeCADGui.addCommand('pipeshell', pipeShellCommand())

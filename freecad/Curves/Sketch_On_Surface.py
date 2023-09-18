@@ -4,6 +4,9 @@ __title__ = "Sketch on surface"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = "Map a sketch on a surface"
+__usage__ = """Select surface in the 3D View.
+Activate the tool.
+Object Mapped_Sketch contains a rectangle - a stretched surface."""
 
 import os
 import FreeCAD
@@ -475,7 +478,7 @@ class SoS:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': __title__,
-                'ToolTip': __doc__}
+                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
 
 FreeCADGui.addCommand('SoS', SoS())

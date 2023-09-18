@@ -4,6 +4,8 @@ __title__ = 'Pipeshell profile'
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = 'Creates a Profile object for PipeShell'
+__usage__ = """Select object (line, curve, circle, ...) in the 3D View or Tree View.
+Activate the tool."""
 
 import os
 import FreeCAD
@@ -164,6 +166,6 @@ class profileCommand:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': __title__,
-                'ToolTip': __doc__}
+                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
 FreeCADGui.addCommand('profile', profileCommand())

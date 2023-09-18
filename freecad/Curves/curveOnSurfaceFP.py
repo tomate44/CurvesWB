@@ -4,6 +4,8 @@ __title__ = "Curve on surface"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = "Creates a parametric curve on surface object."
+__usage__ = """Select curve (or edge of line) and surface by CTRL button in the 3D View.
+Activate the tool."""
 
 import os
 import FreeCAD
@@ -137,6 +139,6 @@ class cosCommand:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': 'CurveOnSurface',
-                'ToolTip': 'Create a curve on surface object'}
+                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
 FreeCADGui.addCommand('cos', cosCommand())

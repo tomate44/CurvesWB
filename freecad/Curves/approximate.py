@@ -4,6 +4,8 @@ __title__ = "Approximate"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = "Approximate a set of points."
+__usage__ = """Select points by CTRL button or Discretized_Edge object or Sweep2Rails object.
+Activate the tool."""
 
 import os
 import FreeCAD
@@ -395,7 +397,7 @@ class approx:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': 'Approximate',
-                'ToolTip': 'Approximate points to NURBS curve or surface'}
+                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
 
 FreeCADGui.addCommand('Approximate', approx())

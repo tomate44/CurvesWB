@@ -162,6 +162,6 @@ class ZebraTool:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': 'ZebraTool',
-                'ToolTip': 'Zebra texture for surface inspection'}
+                'ToolTip': 'Zebra texture for surface inspection.<br>Just activate the tool.'}
 
 FreeCADGui.addCommand('ZebraTool', ZebraTool())

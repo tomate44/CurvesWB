@@ -2,10 +2,8 @@
 
 __title__="Macro IsoCurves"
 __author__ = "Chris_G"
-__doc__ = '''
-Macro IsoCurves.
-Creates a parametric isoCurve from a face
-
+__doc__ = "Creates a parametric isoCurve from a face"
+__doc2__ = '''
 Instructions:
 Select a face in the 3D View.
 Then, in Py console:
@@ -14,6 +12,9 @@ import IsoCurves
 IsoCurves.run()
 
 '''
+__usage__ = """Select one or more surfaces in the 3D View.
+Activate the tool."""
+
 import os
 import FreeCAD as App
 if App.GuiUp:
@@ -194,7 +195,7 @@ class CommandMacroIsoCurve:
         return {'Pixmap'  : TOOL_ICON,
                 'MenuText': "IsoCurve",
                 'Accel': "",
-                'ToolTip': "IsoCurve: Create an IsoCurve from a face"}
+                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
     def Activated(self):
         run()

@@ -3,7 +3,9 @@
 __title__ = "Blend curve"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Blend curve between two edges.  Double-clic object to enable/disable freehand mouse editing."
+__doc__ = "Blend curve between two edges.  Double-click object to enable/disable freehand mouse editing."
+__usage__ = """Select 2 lines by CTRL button in the 3D View.
+Activate the tool."""
 
 import os
 import FreeCAD
@@ -707,7 +709,7 @@ class ParametricBlendCurve:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': __title__,
-                'ToolTip': __doc__}
+                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
 
 FreeCADGui.addCommand('ParametricBlendCurve', ParametricBlendCurve())

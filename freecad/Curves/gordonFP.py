@@ -4,6 +4,8 @@ __title__ = "Parametric Gordon surface"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = "Creates a surface that skins a network of curves."
+__usage__ = """Select several lines located on the surface.
+Activate the tool."""
 
 # from importlib import reload
 import os
@@ -211,7 +213,7 @@ class gordonCommand:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': 'Gordon surface',
-                'ToolTip': 'Creates a surface that skins a network of curves'}
+                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
 
 FreeCADGui.addCommand('gordon', gordonCommand())

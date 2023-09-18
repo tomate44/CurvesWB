@@ -4,6 +4,8 @@ __title__ = 'Profile support plane'
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = 'Creates a support plane for sketches'
+__usage__ = """Select 2 elements (curves or edges) in the 3D View.
+Activate the tool."""
 
 import os
 import FreeCAD
@@ -149,7 +151,7 @@ class profSupCommand:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': __title__,
-                'ToolTip': __doc__}
+                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
 
 FreeCADGui.addCommand('profileSupportCmd', profSupCommand())
