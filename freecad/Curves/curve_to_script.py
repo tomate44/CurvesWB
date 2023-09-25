@@ -3,9 +3,9 @@
 __title__ = "BSpline to script"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Creates a python script to build the selected BSpline curves."
-__usage__ = """Select some Bezier or BSpline curves in the 3D View and activate the tool.
-The selected curves will be re-created with commands in the python console."""
+__doc__ = "Creates a python script to build the selected BSpline or Bezier geometries."
+__usage__ = """Select some Bezier or BSpline curves or surfaces in the 3D View and activate the tool.
+The selected curves  or surfaces will be re-created with commands in the python console."""
 
 import os
 import FreeCAD
@@ -16,7 +16,7 @@ from freecad.Curves import ICONPATH
 TOOL_ICON = os.path.join(ICONPATH, 'curve_to_console.svg')
 
 
-def curve_to_script(i, c):
+def nurbs_to_script(i, c):
     com = ["import FreeCAD",
            "from FreeCAD import Vector",
            "import Part", ""]
@@ -43,6 +43,38 @@ def curve_to_script(i, c):
                 com.append("be{}.setWeight({},{})".format(i, j + 1, w[j]))
         com.append('obj{} = FreeCAD.ActiveDocument.addObject("Part::Spline","BezierCurve{}")'.format(i, i))
         com.append("obj{}.Shape = be{}.toShape()".format(i, i))
+    elif isinstance(c, Part.BSplineSurface):
+        com.append("poles{} = {}".format(i, c.getPoles()))
+        com.append("umults{} = {}".format(i, c.getUMultiplicities()))
+        com.append("vmults{} = {}".format(i, c.getVMultiplicities()))
+        com.append("uknots{} = {}".format(i, c.getUKnots()))
+        com.append("vknots{} = {}".format(i, c.getVKnots()))
+        com.append("uperiodic{} = {}".format(i, c.isUPeriodic()))
+        com.append("vperiodic{} = {}".format(i, c.isVPeriodic()))
+        com.append("udegree{} = {}".format(i, c.UDegree))
+        com.append("vdegree{} = {}".format(i, c.VDegree))
+        com.append("weights{} = {}".format(i, c.getWeights()))
+        com.append("bsp{} = Part.BSplineSurface()".format(i))
+        com.append("bsp{}.buildFromPolesMultsKnots(poles{}, umults{}, vmults{},uknots{},vknots{},uperiodic{},vperiodic{}, udegree{}, vdegree{}, weights{})".format(i, i, i, i, i, i, i, i, i, i, i))
+        #com.append("Part.show(bsp.toShape(), 'BSplineSurface{}')".format(i))
+        com.append('obj{} = FreeCAD.ActiveDocument.addObject("Part::Spline","BSplineSurface{}")'.format(i, i))
+        com.append("obj{}.Shape = bsp{}.toShape()".format(i, i))
+    elif isinstance(c, Part.BezierSurface):
+        com.append("poles{} = {}".format(i, c.getPoles()))
+        com.append("uperiodic{} = {}".format(i, c.isUPeriodic()))
+        com.append("vperiodic{} = {}".format(i, c.isVPeriodic()))
+        com.append("udegree{} = {}".format(i, c.UDegree))
+        com.append("vdegree{} = {}".format(i, c.VDegree))
+        com.append("weights{} = {}".format(i, c.getWeights()))
+        com.append("bsp{} = Part.BezierSurface()".format(i))
+        com.append("bsp{}.increase(udegree{}, vdegree{})".format(i, i, i))
+        # com.append("bsp{}.setUPeriodic(uperiodic{})".format(i, i))
+        # com.append("bsp{}.setVPeriodic(vperiodic{})".format(i, i))
+        for j in range(c.UDegree + 1):
+            com.append("bsp{}.setPoleRow({}, poles{}[{}])".format(i, j + 1, i, j))
+            com.append("bsp{}.setWeightRow({}, weights{}[{}])".format(i, j + 1, i, j))
+        com.append('obj{} = FreeCAD.ActiveDocument.addObject("Part::Spline","BezierSurface{}")'.format(i, i))
+        com.append("obj{}.Shape = bsp{}.toShape()".format(i, i))
     com.append("")
 
     for s in com:
@@ -62,9 +94,13 @@ class NurbsToConsole:
         i = 0
         for so in s:
             for sso in so.SubObjects:
+                geom = ""
                 if hasattr(sso, "Curve"):
-                    c = sso.Curve
-                    curve_to_script(i, c)
+                    geom = sso.Curve
+                elif hasattr(sso, "Surface"):
+                    geom = sso.Surface
+                if ("Bezier" in str(geom)) or ("BSpline" in str(geom)):
+                    nurbs_to_script(i, geom)
                     i += 1
         if i == 0:
             FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
