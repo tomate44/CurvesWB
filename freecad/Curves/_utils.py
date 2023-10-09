@@ -62,31 +62,31 @@ def getShape(obj, prop, shape_type):
         prop_link = obj.getPropertyByName(prop)
         if obj.getTypeIdOfProperty(prop) == "App::PropertyLinkSub":
             if shape_type in prop_link[1][0]:
-                # try:  # FC 0.19+
-                # return prop_link[0].getSubObject(prop_link[1][0])
-                # except AttributeError:  # FC 0.18 (stable)
-                n = eval(obj.getPropertyByName(prop)[1][0].lstrip(shape_type))
-                osh = obj.getPropertyByName(prop)[0].Shape
-                sh = osh.copy()
-                if sh and (not shape_type == "Vertex") and hasattr(obj.getPropertyByName(prop)[0], "getGlobalPlacement"):
-                    pl = obj.getPropertyByName(prop)[0].getGlobalPlacement()
-                    sh.Placement = pl
-                return getSubShape(sh, shape_type, n)
+                try:  # FC 0.19+ to make links work without getGlobalPlacement()
+                    return prop_link[0].getSubObject(prop_link[1][0])
+                except AttributeError:  # FC 0.18 (stable)
+                    n = eval(obj.getPropertyByName(prop)[1][0].lstrip(shape_type))
+                    osh = obj.getPropertyByName(prop)[0].Shape
+                    sh = osh.copy()
+                    if sh and (not shape_type == "Vertex") and hasattr(obj.getPropertyByName(prop)[0], "getGlobalPlacement"):
+                        pl = obj.getPropertyByName(prop)[0].getGlobalPlacement()
+                        sh.Placement = pl
+                    return getSubShape(sh, shape_type, n)
 
         elif obj.getTypeIdOfProperty(prop) == "App::PropertyLinkSubList":
             res = []
             for tup in prop_link:
                 for ss in tup[1]:
                     if shape_type in ss:
-                        # try:  # FC 0.19+
-                        # res.append(tup[0].getSubObject(ss))
-                        # except AttributeError:  # FC 0.18 (stable)
-                        n = eval(ss.lstrip(shape_type))
-                        sh = tup[0].Shape.copy()
-                        if sh and (not shape_type == "Vertex") and hasattr(tup[0], "getGlobalPlacement"):
-                            pl = tup[0].getGlobalPlacement()
-                            sh.Placement = pl
-                        res.append(getSubShape(sh, shape_type, n))
+                        try:  # FC 0.19+
+                            res.append(tup[0].getSubObject(ss))
+                        except AttributeError:  # FC 0.18 (stable)
+                            n = eval(ss.lstrip(shape_type))
+                            sh = tup[0].Shape.copy()
+                            if sh and (not shape_type == "Vertex") and hasattr(tup[0], "getGlobalPlacement"):
+                                pl = tup[0].getGlobalPlacement()
+                                sh.Placement = pl
+                            res.append(getSubShape(sh, shape_type, n))
             return res
         else:
             FreeCAD.Console.PrintError("CurvesWB._utils.getShape: wrong property type.\n")
