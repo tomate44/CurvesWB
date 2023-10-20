@@ -105,17 +105,17 @@ class cosCommand:
     def Activated(self):
         edge = None
         face = None
-        sel = FreeCADGui.Selection.getSelectionEx()
+        sel = FreeCADGui.Selection.getSelectionEx('',0)
         if sel == []:
             FreeCAD.Console.PrintError("Select an edge and its supporting face \n")
         for selobj in sel:
-            if selobj.HasSubObjects:
-                for i in range(len(selobj.SubObjects)):
-                    if isinstance(selobj.SubObjects[i], Part.Edge):
-                        edge = (selobj.Object, selobj.SubElementNames[i])
-                        #selobj.Object.ViewObject.Visibility = False
-                    elif isinstance(selobj.SubObjects[i], Part.Face):
-                        face = (selobj.Object, selobj.SubElementNames[i])
+            for path in selobj.SubElementNames if selobj.SubElementNames else ['']:
+                shape = selobj.Object.getSubObject(path)
+                if isinstance(shape, Part.Edge):
+                    edge = (selobj.Object, path)
+                elif isinstance(shape, Part.Face):
+                    face = (selobj.Object, path)
+
         #debug(edge)
         #debug(face)
         if edge and face:
