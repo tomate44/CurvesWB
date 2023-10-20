@@ -64,12 +64,12 @@ class lineCommand:
 
     def Activated(self):
         verts = []
-        sel = FreeCADGui.Selection.getSelectionEx()
+        sel = FreeCADGui.Selection.getSelectionEx('',0)
         for selobj in sel:
-            if selobj.HasSubObjects:
-                for i in range(len(selobj.SubObjects)):
-                    if isinstance(selobj.SubObjects[i], Part.Vertex):
-                        verts.append((selobj.Object, selobj.SubElementNames[i]))
+            for path in selobj.SubElementNames if selobj.SubElementNames else ['']:
+                shape = selobj.Object.getSubObject(path)
+                if shape.ShapeType == 'Vertex':
+                    verts.append((selobj.Object, path))
         if len(verts) == 2:
             self.makeLineFeature(verts)
         else:
