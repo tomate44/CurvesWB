@@ -44,6 +44,29 @@ def stretched_plane(poles, param_range=[0, 2, 0, 2], extend_factor=1.0):
                                 False, False, 1, 1)
     return bs
 
+def validated_face(w, surf=None):
+    ''' Attempt to create valid surface by increasing tolerance if required up to
+    maxtol. On failure return a null face
+    '''
+    maxtol = 1e-4
+    tol = w.getTolerance(1)
+    while tol < maxtol:
+        if surf is not None:
+            f = Part.Face(surf, w)
+        else:
+            f = Part.Face(w)
+        try:
+            f.validate()
+            break
+        except Part.OCCError:
+            tol *= 2
+            w.fixTolerance(tol)
+    if tol < maxtol:
+        return f
+    else:
+        debug('Face validation failed')
+        return Part.Face()  #null face
+
 
 class BoundarySorter:
     def __init__(self, wires, surface=None, only_closed=False):
@@ -61,12 +84,9 @@ class BoundarySorter:
         self.done = False
 
     def fine_check_inside(self, w1, w2):
-        if self.surface is not None:
-            f = Part.Face(self.surface, w2)
-        else:
-            f = Part.Face(w2)
-        if not f.isValid():
-            f.validate()
+        f = validated_face(w2, self.surface)
+        if f.isNull():
+            return False
         if f.isValid():
             pt = w1.Vertex1.Point
             u, v = f.Surface.parameter(pt)
@@ -170,7 +190,7 @@ class sketchOnSurface:
         bs = BoundarySorter(wl, face.Surface, True)
         for i, wirelist in enumerate(bs.sort()):
             # print(wirelist)
-            f = Part.Face(face.Surface, wirelist[0])
+            f = validated_face(wirelist[0], face.Surface) #should valid or null...
             try:
                 f.check()
             except Exception as e:
@@ -184,6 +204,8 @@ class sketchOnSurface:
                     f.validate()
                 except AttributeError:
                     error("Faces with holes require FC 0.19 or higher\nIgnoring holes\n")
+                except Part.OCCError:
+                    error("Unable to cut hole in face")
             # f.sewShape()
             # f.check(True)
             # print_tolerance(f)
