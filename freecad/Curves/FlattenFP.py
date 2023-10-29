@@ -41,6 +41,35 @@ def arclength_approx(curve, num=100):
     return bs
 
 
+def XY_Compound(face):
+    fel = []
+    for e in face.OuterWire.OrderedEdges:
+        cos = face.curveOnSurface(e)
+        fe = cos[0].toShape(cos[1], cos[2])
+        fel.append(fe)
+    comp = Part.Compound(fel)
+    return comp
+
+
+def parametric_bounds(shape):
+    bb = shape.BoundBox
+    return bb.XMin, bb.YMin, bb.XMax, bb.YMax
+
+
+def seam_indices(shape):
+    xi, yi, xa, ya = parametric_bounds(shape)
+    left_seams = []
+    right_seams = []
+    for i, fe in enumerate(shape.Edges):
+        bb = fe.BoundBox
+        if bb.XLength < 1e-7:
+            if abs(bb.XMin - xi) < 1e-7:
+                left_seams.append(i)
+            if abs(bb.XMax - xa) < 1e-7:
+                right_seams.append(i)
+    return left_seams, right_seams
+
+
 def flat_cylinder_surface(cyl, inPlace=False, size=0.0):
     """Returns a BSpline surface that is a flat representation of the input Cylinder.
 
@@ -58,7 +87,7 @@ def flat_cylinder_surface(cyl, inPlace=False, size=0.0):
     a square BSpline surface that matches the parametric space of the input cylinder.
     """
     if size == 0.0:
-        size = cyl.Radius * 4 * pi
+        size = 1.1 * cyl.Radius * 4 * pi
     hs = size / 2
     bs = Part.BSplineSurface()
     bs.setPole(1, 1, vec3(-hs, -hs))
@@ -96,25 +125,27 @@ def flat_cone_surface(cone, inPlace=False, size=0.0):
         size = cone.Radius
     fp = cone.value(0, 0)
     hyp = Part.LineSegment(fp, cone.Apex)
-    axis = Part.Line(cone.Center, cone.Axis)
+    axis = Part.Line()
+    axis.Location = cone.Center
+    axis.Direction = cone.Axis
     if axis.parameter(cone.Apex) < 0:
         ci = Part.Circle(vec3(), vec3(0, 0, 1), size)
         cimir = ci.copy()
         cimir.mirror(cimir.Center)
-        # print("Opening cone")
+        print("Opening cone")
         rs = Part.makeRuledSurface(cimir.toShape(), ci.toShape()).Surface
         start = -size - hyp.length()
     else:
         ci = Part.Circle(vec3(), vec3(0, 0, -1), size)
         cimir = ci.copy()
         cimir.mirror(cimir.Center)
-        # print("Closing cone")
+        print("Closing cone")
         rs = Part.makeRuledSurface(ci.toShape(), cimir.toShape()).Surface
         start = -size + hyp.length()
     end = start + 2 * size
     u0, u1, v0, v1 = rs.bounds()
-    if hasattr(rs, "setBounds"):
-        rs.setBounds(u0, 2 * pi * hyp.length() / cone.Radius, start, end)
+    if hasattr(rs, "scaleKnotsToBounds"):
+        rs.scaleKnotsToBounds(u0, 2 * pi * hyp.length() / cone.Radius, start, end)
     else:
         rs.setVKnots([start, end])
         knots = rs.getUKnots()
@@ -150,6 +181,8 @@ def flat_extrusion_surface(extr, inPlace=False, size=0.0):
     """
     size = 1e10
     basc = extr.BasisCurve
+    # if basc.isPeriodic():
+    #     basc.setNotPeriodic()
     based = basc.toShape()
     # Part.show(based, "BasisCurve")
 
@@ -171,11 +204,15 @@ def flat_extrusion_surface(extr, inPlace=False, size=0.0):
 
     alc = arclength_approx(pe)
     sof = Part.SurfaceOfExtrusion(alc, extr.Direction)
+    # return sof
     u0, u1, v0, v1 = sof.bounds()
     nts = Part.RectangularTrimmedSurface(sof, u0, u1, -size, size)
     nface = nts.toShape()
 
     proj2 = nface.project([based])
+    if not proj2.Edges:
+        print("Flatten : Failed to create flat_extrusion_surface")
+        return nts
     pe = proj2.Edge1
     cos, fp, lp = nface.curveOnSurface(pe)
     flatbasc = cos.toShape(fp, lp)
@@ -211,9 +248,14 @@ def flatten_face(face, inPlace=False, size=0.0):
     a face that is the unrolled representation of the input cone or cylinder face.
     """
     if isinstance(face.Surface, Part.Cone):
-        if size == 0.0:
-            offset = face.Surface.parameter(face.Surface.Apex)
-            size = face.ParameterRange[3] - offset[1]
+        if size <= 0.0:
+            comp = XY_Compound(face)
+            u, v = face.Surface.parameter(face.Surface.Apex)
+            vert = Part.Vertex(FreeCAD.Vector(u, v, 0))
+            comp.add(vert)
+            size = 1.01 * max(abs(comp.BoundBox.YMax), abs(comp.BoundBox.YLength))
+            # offset = face.Surface.parameter(face.Surface.Apex)
+            # size = abs(face.ParameterRange[3] - offset[1])
             # print(size)
         flatsurf = flat_cone_surface(face.Surface, inPlace, size)
     elif isinstance(face.Surface, Part.Cylinder):
@@ -270,9 +312,14 @@ def flatten_face_new(face, inPlace=False, size=0.0):
     a face that is the unrolled representation of the input cone or cylinder face.
     """
     if isinstance(face.Surface, Part.Cone):
-        if size == 0.0:
-            offset = face.Surface.parameter(face.Surface.Apex)
-            size = face.ParameterRange[3] - offset[1]
+        if size <= 0.0:
+            comp = XY_Compound(face)
+            u, v = face.Surface.parameter(face.Surface.Apex)
+            vert = Part.Vertex(FreeCAD.Vector(u, v, 0))
+            comp.add(vert)
+            size = 1.01 * comp.BoundBox.YMax
+            # offset = face.Surface.parameter(face.Surface.Apex)
+            # size = abs(face.ParameterRange[3] - offset[1])
             # print(size)
         flatsurf = flat_cone_surface(face.Surface, inPlace, size)
     elif isinstance(face.Surface, Part.Cylinder):
@@ -311,7 +358,7 @@ class FlattenProxy:
 
     def execute(self, obj):
         face = self.get_face(obj)
-        flat_face = flatten_face_new(face, obj.InPlace, obj.Size)
+        flat_face = flatten_face(face, obj.InPlace, obj.Size)
         obj.Shape = flat_face
 
     def onChanged(self, obj, prop):
@@ -325,15 +372,15 @@ class FlattenViewProxy:
     def getIcon(self):
         return TOOL_ICON
 
-    def attach(self, viewobj):
-        self.Object = viewobj.Object
-
-    def __getstate__(self):
-        return {"name": self.Object.Name}
-
-    def __setstate__(self, state):
-        self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
-        return None
+    # def attach(self, viewobj):
+    #     self.Object = viewobj.Object
+    # 
+    # def __getstate__(self):
+    #     return {"name": self.Object.Name}
+    # 
+    # def __setstate__(self, state):
+    #     self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
+    #     return None
 
 
 class Curves_Flatten_Face_Cmd:

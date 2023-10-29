@@ -121,7 +121,7 @@ class BlendSurf2Command:
         FreeCAD.ActiveDocument.recompute()
 
     def Activated(self):
-        sel = FreeCADGui.Selection.getSelectionEx()
+        sel = FreeCADGui.Selection.getSelectionEx('', 0)
         sources = []
         for selobj in sel:
             for sen in selobj.SubElementNames:
