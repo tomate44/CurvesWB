@@ -87,23 +87,23 @@ class Sweep2RailsObjProxy:
             if link.Shape.Wires:
                 e = SweepObject.ProfileShape(link.Shape.Wire1)
                 # c = e.approximate(1e-7, 1e-6, 999, 5)
-                c = e.full_bspline
+                c = link.Shape.Wire1
                 isWire = True
             else:
                 e = SweepObject.ProfileShape(link.Shape.Edge1)
                 # c = e.Curve.toBSpline(e.FirstParameter, e.LastParameter)
-                c = e.full_bspline
+                c = link.Shape.Edge1
             # c = e.Curve
             # c.trim(e.FirstParameter, e.LastParameter)
             curves.append(c)
         return curves, isWire
 
     def execute(self, obj):
-        rails, _ = self.get_curves(obj.Rails)
-        profiles, isWire = self.get_curves(obj.Profiles)
-        s2r = curves_to_surface.CurvesOn2Rails(profiles, rails)
-        s = s2r.build_surface()
-        obj.Shape = s.toShape()
+        rails, _ = self.get_profiles(obj.Rails)
+        profiles, isWire = self.get_profiles(obj.Profiles)
+        s2r = SweepObject.TopoSweep2Rails(rails, profiles)
+        s = s2r.sweep()
+        obj.Shape = s
 
     def onChanged(self, obj, prop):
         pass
