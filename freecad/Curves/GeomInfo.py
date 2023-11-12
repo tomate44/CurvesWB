@@ -9,6 +9,7 @@ It displays poles, knots and weights of Bezier and BSpline curves and surfaces i
 
 
 import os
+import re
 import FreeCAD
 import FreeCADGui
 import Part
@@ -363,6 +364,9 @@ def surfNode(surf):
 class GeomInfo:
     "this class displays info about the geometry of the selected shape"
 
+    def __init__(self):
+        self.pat = re.compile(r"<([a-zA-Z_][a-zA-Z0-9_]*) object>")
+
     def Activated(self, index=0):
 
         if index == 1:
@@ -542,6 +546,12 @@ class GeomInfo:
             ret.append(s)
         return ret
 
+    def _formatObj(self, obj):
+        str_val = str(obj)
+        if match := self.pat.match(str_val):
+            return match.group(1)
+        return str_val
+
     def getCurvInfo(self, edge):
         curve = edge.Curve
         ret = []
@@ -587,8 +597,8 @@ class GeomInfo:
             ret.append(s)
         pclist = _utils.get_pcurves(edge)
         for pc in pclist:
-            s = "{} on {} ".format(str(pc[0])[1:-8],
-                                   str(pc[1])[1:-8])
+            s = "{} on {} ".format(self._formatObj(pc[0]),
+                                   self._formatObj(pc[1]))
             ret.append(s)
         return ret
 
