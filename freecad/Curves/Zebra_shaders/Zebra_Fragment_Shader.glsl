@@ -22,9 +22,9 @@ void RainbowColor(in float t,
                   in int num,
                   inout vec3 color)
 {
-    if (t < t0)
+    if (t <= t0)
         color = stripes_color_1;
-    else if (t > t1)
+    else if (t >= t1)
         color = stripes_color_2;
     else
     {
@@ -54,7 +54,8 @@ void main(void)
     float nDotDir = dot(normalize(normal), normalize(dir));
     if (mode == 0) // Stripes
     {
-        float multDot = 0.5 * float(stripes_number) * nDotDir;
+        // float multDot = 0.5 * float(stripes_number) * nDotDir;
+        float multDot = 0.49999 * float(stripes_number) * (nDotDir + 0.000001);
         float modulo = mod(multDot, 1.0);
         if (modulo > stripes_ratio)
             color = stripes_color_1;
