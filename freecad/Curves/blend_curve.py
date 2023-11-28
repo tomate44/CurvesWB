@@ -721,7 +721,10 @@ class EdgeOnFace:
         if isinstance(pt, FreeCAD.Vector):
             par = self._edge.Curve.parameter(pt)
             if par < self._edge.FirstParameter and self._edge.Curve.isClosed():
-                par += self._edge.LastParameter - self._edge.FirstParameter
+                if self._edge.Curve.isPeriodic():
+                    pass
+                else:
+                    par += self._edge.LastParameter - self._edge.FirstParameter
             return self.value(abs_par=par)
 
     def value(self, abs_par=None, rel_par=None, dist_par=None):
