@@ -445,7 +445,13 @@ def build_sketch(sk, fa):
     elif isinstance(fa.Surface, Part.OffsetSurface) and isinstance(fa.Surface.BasisSurface, Part.SurfaceOfExtrusion) and isinstance(fa.Surface.BasisSurface.BasisCurve, Part.BSplineCurve):
         u0 = 0
         u1 = fa.Surface.BasisSurface.BasisCurve.length()
-
+    elif isinstance(fa.Surface, Part.SurfaceOfRevolution) and isinstance(fa.Surface.BasisCurve, Part.BSplineCurve):
+        u1 = fa.Surface.BasisCurve.length()
+        v1 = fa.Area / u1
+    elif isinstance(fa.Surface, Part.OffsetSurface) and isinstance(fa.Surface.BasisSurface, Part.SurfaceOfRevolution) and isinstance(fa.Surface.BasisCurve.BasisCurve, Part.BSplineCurve):
+        u1 = fa.Surface.BasisSurface.BasisCurve.length()
+        v1 = fa.Area / u1
+    
     addFaceBoundsToSketch([u0, u1, v0, v1], sk)
     # elif isinstance(fa.Surface, Part.Cone):
         # u1 = 0.5 * (fa.Edge1.Length + fa.Edge3.Length)
