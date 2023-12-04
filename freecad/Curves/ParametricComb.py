@@ -376,12 +376,21 @@ class Comb:
             debug("Comb : Samples Property changed")
             self.execute(fp)
 
-    def __getstate__(self):
-        self.edges = False
-        return dict()
+    if (FreeCAD.Version()[0]+'.'+FreeCAD.Version()[1]) >= '0.22':
+        def dumps(self):
+          self.edges = False
+          return dict()
 
-    def __setstate__(self, state):
-        return None
+        def loads(self, state):
+            return None
+
+    else:
+        def __getstate__(self):
+          self.edges = False
+          return dict()
+
+        def __setstate__(self, state):
+            return None
 
 class ViewProviderComb:
     def __init__(self, obj):
@@ -509,12 +518,21 @@ class ViewProviderComb:
     def getIcon(self):
         return TOOL_ICON
 
-    def __getstate__(self):
-        return {"name": self.Object.Name}
+    if (FreeCAD.Version()[0]+'.'+FreeCAD.Version()[1]) >= '0.22':
+        def dumps(self):
+            return {"name": self.Object.Name}
 
-    def __setstate__(self, state):
-        self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
-        return None
+        def loads(self, state):
+            self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
+            return None
+
+    else:
+        def __getstate__(self):
+            return {"name": self.Object.Name}
+
+        def __setstate__(self, state):
+            self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
+            return None
 
 
 class ParametricComb:

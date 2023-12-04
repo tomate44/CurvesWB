@@ -489,12 +489,21 @@ class BlendCurveVP:
             FreeCAD.ActiveDocument.recompute()
         return True
 
-    def __getstate__(self):
-        return {"name": self.Object.Name}
+    if (FreeCAD.Version()[0]+'.'+FreeCAD.Version()[1]) >= '0.22':
+        def dumps(self):
+            return {"name": self.Object.Name}
 
-    def __setstate__(self, state):
-        self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
-        return None
+        def loads(self, state):
+            self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
+            return None
+
+    else:
+        def __getstate__(self):
+            return {"name": self.Object.Name}
+
+        def __setstate__(self, state):
+            self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
+            return None
 
     def getChildren(self):
         return [self.Object.Edge1[0], self.Object.Edge2[0]]
@@ -600,14 +609,25 @@ class oldBlendCurveVP:
         # return(_utils.iconsPath() + '/blend2.svg')
         return TOOL_ICON
 
-    def __getstate__(self):
-        return({"name": self.Object.Name})
+    if (FreeCAD.Version()[0]+'.'+FreeCAD.Version()[1]) >= '0.22':
+        def dumps(self):
+            return {"name": self.Object.Name}
 
-    def __setstate__(self, state):
-        debug("setstate")
-        self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
-        self.build()
-        return None
+        def loads(self, state):
+          debug("setstate")
+          self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
+          self.build()
+          return None
+
+    else:
+        def __getstate__(self):
+            return {"name": self.Object.Name}
+
+        def __setstate__(self, state):
+          debug("setstate")
+          self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
+          self.build()
+          return None
 
     def onDelete(self, feature, subelements):
         if hasattr(self, 'active'):

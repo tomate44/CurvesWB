@@ -173,15 +173,24 @@ class ProfileSupportVP:
     def attach(self, viewobj):
         self.Object = viewobj.Object
 
-    def __getstate__(self):
-        return {"name": self.Object.Name}
-
     def claimChildren(self):
         return [self.Object.ProfileShape, ]
 
-    def __setstate__(self, state):
-        self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
-        return None
+    if (FreeCAD.Version()[0]+'.'+FreeCAD.Version()[1]) >= '0.22':
+        def dumps(self):
+            return {"name": self.Object.Name}
+
+        def loads(self, state):
+            self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
+            return None
+
+    else:
+        def __getstate__(self):
+            return {"name": self.Object.Name}
+
+        def __setstate__(self, state):
+            self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
+            return None
 
 
 class ProfileSupportCommand:

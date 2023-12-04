@@ -85,11 +85,19 @@ class profileSupportVP:
         self.ViewObject = vobj
         self.Object = vobj.Object
 
-    def __getstate__(self):
-        return None
+    if (FreeCAD.Version()[0]+'.'+FreeCAD.Version()[1]) >= '0.22':
+        def dumps(self):
+            return None
 
-    def __setstate__(self, state):
-        return None
+        def loads(self, state):
+            return None
+
+    else:
+        def __getstate__(self):
+            return None
+
+        def __setstate__(self, state):
+            return None
 
     # def claimChildren(self):
         # return None #[self.Object.Base, self.Object.Tool]

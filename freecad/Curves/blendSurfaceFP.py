@@ -264,6 +264,20 @@ class blendSurfVP:
     def __setstate__(self,state):
         return None
 
+    if (FreeCAD.Version()[0]+'.'+FreeCAD.Version()[1]) >= '0.22':
+        def dumps(self):
+            return None
+
+        def loads(self, state):
+            return None
+
+    else:
+        def __getstate__(self):
+            return None
+
+        def __setstate__(self, state):
+            return None
+
     def claimChildren(self):
         a = [self.Object.Edge1, self.Object.Edge2]
         return a
