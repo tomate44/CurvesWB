@@ -132,11 +132,19 @@ class plateSurfFP:
             if fp.Tol3d > 0.002:
                 fp.Tol3d = 0.002
 
-    def __getstate__(self):
-        return None
+    if (FreeCAD.Version()[0]+'.'+FreeCAD.Version()[1]) >= '0.22':
+        def dumps(self):
+            return None
 
-    def __setstate__(self,state):
-        return None
+        def loads(self, state):
+            return None
+
+    else:
+        def __getstate__(self):
+            return None
+
+        def __setstate__(self, state):
+            return None
 
 
 class Plate:

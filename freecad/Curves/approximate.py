@@ -310,12 +310,21 @@ class Approximate:
             else:
                 fp.setEditorMode("StartOffset", 2)
 
-    def __getstate__(self):
-        self.Points = False
-        return dict()
+    if (FreeCAD.Version()[0]+'.'+FreeCAD.Version()[1]) >= '0.22':
+        def dumps(self):
+            self.Points = False
+            return dict()
 
-    def __setstate__(self, state):
-        return None
+        def loads(self, state):
+            return None
+
+    else:
+        def __getstate__(self):
+            self.Points = False
+            return dict()
+
+        def __setstate__(self, state):
+            return None
 
 
 class ViewProviderApp:
@@ -334,12 +343,21 @@ class ViewProviderApp:
     def unsetEdit(self, vobj, mode):
         return
 
-    def __getstate__(self):
-        return {"name": self.Object.Name}
+    if (FreeCAD.Version()[0]+'.'+FreeCAD.Version()[1]) >= '0.22':
+        def dumps(self):
+            return {"name": self.Object.Name}
 
-    def __setstate__(self, state):
-        self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
-        return None
+        def loads(self, state):
+            self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
+            return None
+
+    else:
+        def __getstate__(self):
+            return {"name": self.Object.Name}
+
+        def __setstate__(self, state):
+            self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
+            return None
 
     def claimChildren(self):
         return [self.Object.PointObject]
