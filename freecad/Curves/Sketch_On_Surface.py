@@ -427,6 +427,7 @@ def addFaceBoundsToSketch(para_range, sk):
     o = int(sk.GeometryCount)
     sk.addGeometry(geoList, False)
 
+    conList.append(Sketcher.Constraint('Coincident', o + 0, 1, -1, 1))
     conList.append(Sketcher.Constraint('Coincident', o + 0, 2, o + 1, 1))
     conList.append(Sketcher.Constraint('Coincident', o + 1, 2, o + 2, 1))
     conList.append(Sketcher.Constraint('Coincident', o + 2, 2, o + 3, 1))
@@ -437,35 +438,19 @@ def addFaceBoundsToSketch(para_range, sk):
     conList.append(Sketcher.Constraint('Vertical', o + 3))
     conList.append(Sketcher.Constraint('DistanceX', o + 2, 2, o + 2, 1, u1 - u0))
     conList.append(Sketcher.Constraint('DistanceY', o + 1, 1, o + 1, 2, v1 - v0))
-    conList.append(Sketcher.Constraint('DistanceX', o + 0, 1, -1, 1, -u0))
-    conList.append(Sketcher.Constraint('DistanceY', o + 0, 1, -1, 1, -v0))
+    # conList.append(Sketcher.Constraint('DistanceX', o + 0, 1, -1, 1, -u0))
+    # conList.append(Sketcher.Constraint('DistanceY', o + 0, 1, -1, 1, -v0))
     sk.addConstraint(conList)
 
 
 def build_sketch(sk, fa):
     #  add the bounding box of the face to the sketch
     u0, u1, v0, v1 = fa.ParameterRange
-    if isinstance(fa.Surface, Part.Cylinder):
-        u0 *= fa.Surface.Radius
-        u1 *= fa.Surface.Radius
-    elif isinstance(fa.Surface, Part.SurfaceOfExtrusion) and isinstance(fa.Surface.BasisCurve, Part.BSplineCurve):
-        u0 = 0
-        u1 = fa.Surface.BasisCurve.length()
-    elif isinstance(fa.Surface, Part.OffsetSurface) and isinstance(fa.Surface.BasisSurface, Part.SurfaceOfExtrusion) and isinstance(fa.Surface.BasisSurface.BasisCurve, Part.BSplineCurve):
-        u0 = 0
-        u1 = fa.Surface.BasisSurface.BasisCurve.length()
-
-    addFaceBoundsToSketch([u0, u1, v0, v1], sk)
-    # elif isinstance(fa.Surface, Part.Cone):
-        # u1 = 0.5 * (fa.Edge1.Length + fa.Edge3.Length)
-        # addFaceBoundsToSketch([u0,u1,v0,v1], sk)
-    # elif len(fa.Edges) == 4:
-        # u1 = 0.5 * (fa.Edge1.Length + fa.Edge3.Length)
-        # v1 = 0.5 * (fa.Edge2.Length + fa.Edge4.Length)
-        # addFaceBoundsToSketch([0,u1,0,v1], sk)
-    # else:
-        # for w in fa.Wires:
-            # addFaceWireToSketch(fa, w, sk)
+    rts = Part.RectangularTrimmedSurface(fa.Surface, u0, u1, v0, v1)
+    bb = rts.toShape()
+    u = max([bb.Edge2.Length, bb.Edge4.Length])
+    v = max([bb.Edge1.Length, bb.Edge3.Length])
+    addFaceBoundsToSketch([0.0, u, 0.0, v], sk)
     for i in range(int(sk.GeometryCount)):
         sk.toggleConstruction(i)
 
