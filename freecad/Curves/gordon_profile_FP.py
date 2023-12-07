@@ -133,6 +133,8 @@ class GordonProfileFP:
             o = FreeCADGui.ActiveDocument.getInEdit().Object
             if o == obj:
                 return
+        except AttributeError:
+            pass
         except:
             FreeCAD.Console.PrintWarning("execute is disabled during editing\n")
         pts = self.get_points(obj)
