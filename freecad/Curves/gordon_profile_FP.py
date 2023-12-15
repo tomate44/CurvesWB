@@ -49,7 +49,7 @@ class GordonProfileFP:
         """Add the properties"""
         obj.addProperty("App::PropertyLinkSubList", "Support", "Profile", "Constraint shapes").Support = s
         obj.addProperty("App::PropertyFloatConstraint", "Parametrization", "Profile", "Parametrization factor")
-        obj.addProperty("App::PropertyFloat", "Tolerance", "Profile", "Tolerance").Tolerance = 1e-5
+        obj.addProperty("App::PropertyFloat", "Tolerance", "Profile", "Tolerance").Tolerance = 1e-7
         obj.addProperty("App::PropertyBool", "Periodic", "Profile", "Periodic curve").Periodic = False
         obj.addProperty("App::PropertyVectorList", "Data", "Profile", "Data list").Data = d
         obj.addProperty("App::PropertyVectorList", "Tangents", "Profile", "Tangents list")
