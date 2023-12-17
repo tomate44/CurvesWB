@@ -31,6 +31,8 @@ class TruncateExtendFP:
                         "Settings", "The distance to truncate (if negative) or extend (if positive)")
         obj.addProperty("App::PropertyBool", "Refine",
                         "Settings", "Refine shape (clean up redundant edges)")
+        obj.addProperty("App::PropertyBool", "Reverse",
+                        "Settings", "Reverse cutter plane normal")
         obj.Distance = 10.0
         obj.Proxy = self
 
@@ -43,8 +45,8 @@ class TruncateExtendFP:
             solids = obj.Source.Shape.Solids
         cutter = obj.Cutter.Shape.Face1
         extends = []
-        for so in solids:
-            extender = Truncate_Extend.TruncateExtend(so, cutter, obj.Distance)
+        for solid in solids:
+            extender = Truncate_Extend.TruncateExtend(solid, cutter, obj.Distance, obj.Reverse)
             extends.append(extender.Shape)
         if len(extends) == 1:
             sh = extends[0]
