@@ -111,7 +111,10 @@ class join:
         edges = self.getEdges(obj)
         tmp = list()
         for e in edges:
-            tmp += e.toNurbs().Edges
+            if not isinstance(e.Curve, Part.BSplineCurve):
+                tmp += e.toNurbs().Edges
+            else:
+                tmp.append(e)
         curves = list()
         for e in tmp:
             c = e.Curve

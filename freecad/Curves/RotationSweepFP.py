@@ -73,6 +73,29 @@ class RotsweepProxyFP:
     def execute(self, obj):
         path = self.getCurve(obj.Path)[0]
         profiles = self.getCurves(obj.Profiles)
+        params_intersect = []
+        for p in profiles:
+            dist, pts, info = p.distToShape(path)
+            for i in info:
+                if i[0] == "Edge":
+                    par = i[2]
+                    if par > p.FirstParameter and par < p.LastParameter:
+                        params_intersect.append(par)
+        if not len(params_intersect) == len(profiles):
+            obj.Shape = self.get_sweep_face(obj, path, profiles)
+        else:
+            pro1 = []
+            pro2 = []
+            for pro, par in zip(profiles, params_intersect):
+                c1 = pro.Curve.trim(pro.FirstParameter, par)
+                pro1.append(c1.toShape())
+                c2 = pro.Curve.trim(par, pro.LastParameter)
+                pro2.append(c2.toShape())
+            sh1 = self.get_sweep_face(obj, path, pro1)
+            sh2 = self.get_sweep_face(obj, path, pro2)
+            obj.Shape = Part.Shell(sh1.Faces + sh2.Faces)
+
+    def get_sweep_face(self, obj, path, profiles):
         reload(SweepPath)
         rs = SweepPath.RotationSweep(path, profiles, obj.TrimPath)
         rs.set_curves()
@@ -98,9 +121,9 @@ class RotsweepProxyFP:
             f = s.toShape()
         if obj.ViewProfiles:
             shl = [f] + [p.Shape for p in rs.Profiles]
-            obj.Shape = Part.Compound(shl)
+            return Part.Compound(shl)
         else:
-            obj.Shape = f
+            return f
 
     def onChanged(self, obj, prop):
         if 'Restore' in obj.State:
