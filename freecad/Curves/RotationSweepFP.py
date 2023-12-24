@@ -81,6 +81,8 @@ class RotsweepProxyFP:
                     par = i[2]
                     if par > p.FirstParameter and par < p.LastParameter:
                         params_intersect.append(par)
+                        break
+        print(params_intersect)
         if not len(params_intersect) == len(profiles):
             obj.Shape = self.get_sweep_face(obj, path, profiles)
         else:
@@ -167,9 +169,10 @@ class RotsweepProxyVP:
 class RotsweepFPCommand:
     """Create a ... feature"""
 
-    def makeFeature(self, sel=None):
-        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython",
-                                              "Rotation Sweep")
+    def makeFeature(self, sel, container=None):
+        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "Rotation Sweep")
+        if container:
+            container.addObject(fp)
         RotsweepProxyFP(fp)
         fp.Path = sel[0]
         fp.Profiles = sel[1:]
@@ -177,20 +180,28 @@ class RotsweepFPCommand:
         FreeCAD.ActiveDocument.recompute()
 
     def Activated(self):
+        container = None
         links = []
         sel = FreeCADGui.Selection.getSelectionEx('', 0)
-        for so in sel:
-            if so.HasSubObjects:
-                links.append((so.Object, so.SubElementNames))
-            else:
-                links.append((so.Object, [""]))
-        if len(links) < 2:
-            FreeCAD.Console.PrintError("Select Path and Profiles first !\n")
+        if len(sel) == 1:
+            container = sel[0].Object
+            for sen in sel[0].SubElementNames:
+                names = sen.split(".")
+                if len(names) == 2:
+                    links.append((container.getObject(names[0]), names[1]))
+                else:
+                    links.append((container.getObject(names[0]), [""]))
         else:
-            self.makeFeature(links)
+            for so in sel:
+                if so.HasSubObjects:
+                    links.append((so.Object, so.SubElementNames))
+                else:
+                    links.append((so.Object, [""]))
+        self.makeFeature(links, container)
 
     def IsActive(self):
-        if FreeCAD.ActiveDocument:
+        sel = FreeCADGui.Selection.getSelectionEx('', 0)
+        if sel:
             return True
         else:
             return False
