@@ -132,6 +132,9 @@ class RotsweepProxyFP:
             edges = self.getCurves(obj.Profiles)
             if len(edges) == 1:
                 obj.ExtraProfiles = 1
+        if prop == "FaceSupport":
+            if obj.FaceSupport and obj.ExtraProfiles == 0:
+                obj.ExtraProfiles = 10
 
 
 class RotsweepProxyVP:
