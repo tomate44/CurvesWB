@@ -447,9 +447,15 @@ def build_sketch(sk, fa):
     #  add the bounding box of the face to the sketch
     u0, u1, v0, v1 = fa.ParameterRange
     rts = Part.RectangularTrimmedSurface(fa.Surface, u0, u1, v0, v1)
-    bb = rts.toShape()
-    u = max([bb.Edge2.Length, bb.Edge4.Length])
-    v = max([bb.Edge1.Length, bb.Edge3.Length])
+    lu1 = rts.uIso(u0)
+    lu2 = rts.uIso(0.5 * (u0 + u1))
+    lu3 = rts.uIso(u1)
+    lv1 = rts.vIso(v0)
+    lv2 = rts.vIso(0.5 * (v0 + v1))
+    lv3 = rts.vIso(v1)
+    # bb = rts.toShape()
+    u = max([lv1.length(), lv2.length(), lv3.length()])
+    v = max([lu1.length(), lu2.length(), lu3.length()])
     addFaceBoundsToSketch([0.0, u, 0.0, v], sk)
     for i in range(int(sk.GeometryCount)):
         sk.toggleConstruction(i)

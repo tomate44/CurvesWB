@@ -125,6 +125,7 @@ class TruncateExtendCommand:
             if parent and (parent.TypeId == "PartDesign::Body") and (t1 == "PartDesign::Plane"):
                 self.makePDFeature(parent, sel[0])
         elif len(sel) == 2:
+            
             self.makePartFeature(sel)
         else:
             FreeCAD.Console.PrintError("Wrong Selection\n")

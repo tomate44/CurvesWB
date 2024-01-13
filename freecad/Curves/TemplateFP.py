@@ -13,67 +13,23 @@ import FreeCADGui
 from freecad.Curves import ICONPATH
 
 TOOL_ICON = os.path.join(ICONPATH, 'icon.svg')
-# debug = _utils.debug
-# debug = _utils.doNothing
 
-props = """
-App::PropertyBool
-App::PropertyBoolList
-App::PropertyFloat
-App::PropertyFloatList
-App::PropertyFloatConstraint
-App::PropertyQuantity
-App::PropertyQuantityConstraint
-App::PropertyAngle
-App::PropertyDistance
-App::PropertyLength
-App::PropertySpeed
-App::PropertyAcceleration
-App::PropertyForce
-App::PropertyPressure
-App::PropertyInteger
-App::PropertyIntegerConstraint
-App::PropertyPercent
-App::PropertyEnumeration
-App::PropertyIntegerList
-App::PropertyIntegerSet
-App::PropertyMap
-App::PropertyString
-App::PropertyUUID
-App::PropertyFont
-App::PropertyStringList
-App::PropertyLink
-App::PropertyLinkSub
-App::PropertyLinkList
-App::PropertyLinkSubList
-App::PropertyMatrix
-App::PropertyVector
-App::PropertyVectorList
-App::PropertyPlacement
-App::PropertyPlacementLink
-App::PropertyColor
-App::PropertyColorList
-App::PropertyMaterial
-App::PropertyPath
-App::PropertyFile
-App::PropertyFileIncluded
-App::PropertyPythonObject
-Part::PropertyPartShape
-Part::PropertyGeometryList
-Part::PropertyShapeHistory
-Part::PropertyFilletEdges
-Sketcher::PropertyConstraintList
+
+# Reminder : Available properties
+"""
+obj = FreeCAD.ActiveDocument.addObject("App::FeaturePython", "FeaturePython")
+for prop in obj.supportedProperties():
+    print(prop)
+
 """
 
 
-class FaceMapFP:
+class TemplateFP:
     """Creates a ..."""
     def __init__(self, obj):
         """Add the properties"""
-        obj.addProperty("App::PropertyLinkList", "Sources",
-                        "Group", "Tooltip")
-        obj.addProperty("App::PropertyFloat", "float",
-                        "Group", "Tooltip")
+        obj.addProperty("App::PropertyLinkList", "Sources", "Group", "Tooltip")
+        obj.addProperty("App::PropertyFloat", "float", "Group", "Tooltip")
         obj.Proxy = self
 
     def execute(self, obj):

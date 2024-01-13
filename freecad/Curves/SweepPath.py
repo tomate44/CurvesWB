@@ -454,7 +454,7 @@ class RotationSweep(Sweep):
             if par1 > par2:
                 c.segment(par2, par1)
                 c.reverse()
-            else:
+            elif par1 < par2:
                 c.segment(par1, par2)
             c.scaleKnotsToBounds()
             npar = self.Path.Curve.parameter(pts2[0][1])

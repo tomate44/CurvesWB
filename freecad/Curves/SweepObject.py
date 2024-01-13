@@ -7,13 +7,13 @@ from freecad.Curves import curves_to_surface
 class ProfileShape:
     """Wrapper for shapes that will be used in a surfacing operation"""
 
-    def __init__(self, shape, tol=1e-7):
+    def __init__(self, shape, tol=1e-7, rational=False):
         self.BaseShape = shape
         self.tol3d = tol
         self.full_bspline = None
         self.polygon = None
         self.BSplines = []
-        self.compute_BSplines()
+        self.compute_BSplines(rational)
 
     @property
     def NbFaces(self):
