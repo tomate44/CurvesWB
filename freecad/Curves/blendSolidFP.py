@@ -101,19 +101,18 @@ class BlendSolidProxy:
         if None in [f1, f2, sh1, sh2]:
             return
         blso = blendSolids.BlendSolid(f1, f2, sh1, sh2)
-        if obj.Algo == "ManualMatch" and len(obj.MatchingShapes) > 1:
-            blso.match_shapes(*self.get_orientation_shapes(obj))
-            obj.Offset = [FreeCAD.Vector(*tup) for tup in blso.offset]
-        else:
-            blso.offset = obj.Offset
-        blso.set_continuity([obj.Continuity1, obj.Continuity2])
+        # if obj.Algo == "ManualMatch" and len(obj.MatchingShapes) > 1:
+        #     blso.match_shapes(*self.get_orientation_shapes(obj))
+        #     obj.Offset = [FreeCAD.Vector(*tup) for tup in blso.offset]
+        # else:
+        #     blso.offset = obj.Offset
+        # blso.set_continuity([obj.Continuity1, obj.Continuity2])
         if obj.AutoScale == "Manual":
             blso.set_size(obj.Scale1, obj.Scale2)
-        else:
-            if obj.AutoScale == "RegularPoles":
-                blso.auto_scale(obj.ScaleSamples)
-            elif obj.AutoScale == "MinimizeCurvature":
-                blso.minimize_curvature(obj.ScaleSamples)
+        elif obj.AutoScale == "RegularPoles":
+            blso.auto_scale(obj.ScaleSamples)
+        elif obj.AutoScale == "MinimizeCurvature":
+            blso.minimize_curvature(obj.ScaleSamples)
         blso.update_surfaces(obj.Samples)
         obj.Scale1 = blso.surfaces()[0].edge1.size.values
         obj.Scale2 = blso.surfaces()[0].edge2.size.values
