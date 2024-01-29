@@ -109,7 +109,10 @@ class RotsweepProxyFP:
             if obj.SmoothTop:
                 inter.setSmoothTop()
             if obj.FaceSupport is not None:
-                fs = obj.FaceSupport[0].getSubObject(obj.FaceSupport[1])[0]
+                if obj.FaceSupport[1]:
+                    fs = obj.FaceSupport[0].getSubObject(obj.FaceSupport[1])[0]
+                else:
+                    fs = obj.FaceSupport[0].Shape.Face1
                 # FreeCAD.Console.PrintMessage(fs)
                 inter.FaceSupport = fs
             inter.compute()

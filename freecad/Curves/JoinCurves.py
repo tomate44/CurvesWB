@@ -109,6 +109,8 @@ class join:
 
     def execute(self, obj):
         edges = self.getEdges(obj)
+        if not edges:
+            return
         tmp = list()
         for e in edges:
             if not isinstance(e.Curve, Part.BSplineCurve):

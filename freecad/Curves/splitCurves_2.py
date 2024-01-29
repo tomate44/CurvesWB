@@ -143,7 +143,7 @@ class split:
             else:
                 obj.Shape = e
             return
-
+        params = list(set(params))
         params.sort()
         if params[0] > e.FirstParameter:
             params.insert(0, e.FirstParameter)
