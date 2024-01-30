@@ -241,24 +241,42 @@ class MatchFaces:
         wire_pairs = zip(wl1, wl2)
         return wire_pairs
 
+    def edge_midpoint(self, e):
+        p = 0.5 * (e.FirstParameter + e.LastParameter)
+        return e.valueAt(p)
+
     def wire_offset(self, w1, w2):
-        max_offset = len(w2.Vertexes)
+        max_offset = len(w2.Edges)
         dl = []
         for off in range(max_offset):
             d = 0
-            for idx in range(len(w1.Vertexes)):
-                d += w1.Vertexes[idx].Point.distanceToPoint(w2.Vertexes[(idx + off) % max_offset].Point)
+            for idx in range(len(w1.Edges)):
+                p1 = self.edge_midpoint(w1.Edges[idx])
+                p2 = self.edge_midpoint(w2.Edges[(idx + off) % max_offset])
+                d += p1.distanceToPoint(p2)
             dl.append(d)
             d = 0
-            for idx in range(len(w1.Vertexes)):
-                d += w1.Vertexes[idx].Point.distanceToPoint(w2.Vertexes[(-idx + off) % max_offset].Point)
+            for idx in range(len(w1.Edges)):
+                p1 = self.edge_midpoint(w1.Edges[idx])
+                p2 = self.edge_midpoint(w2.Edges[(-idx + off) % max_offset])
+                d += p1.distanceToPoint(p2)
             dl.append(d)
-        for d in dl:
-            print(d)
-        mi = min(dl)
-        fid = dl.index(mi)
-        print(fid)
-        return fid
+        # for d in dl:
+        #     print(d)
+        mini = min(dl)
+        maxi = max(dl)
+        fid = dl.index(mini)
+        offset = int(fid / 2)
+        if fid % 2 == 0:
+            inc = 1
+        else:
+            inc = -1
+        dl.pop(fid)
+        second = min(dl)
+        ratio = (second - mini) / (maxi - mini)
+        score = int(ratio * 100)
+        print(f"Blendsolid: Edge matching score = {score}%")
+        return offset, inc
 
 
 class BlendSolid:
@@ -274,29 +292,6 @@ class BlendSolid:
         self.surflist = []
         self.offset = []
 
-    def face_LCS(self):
-        "Returns the LCS matrices of the 2 faces"
-        cog1 = self.face1.CenterOfGravity
-        u, v = self.face1.Surface.parameter(cog1)
-        norm1 = self.face1.normalAt(u, v)
-        pl1 = Part.Plane(cog1, norm1)
-
-        cog2 = self.face2.CenterOfGravity
-        u, v = self.face2.Surface.parameter(cog2)
-        norm2 = -self.face2.normalAt(u, v)
-        pl2 = Part.Plane(cog2, norm2)
-
-        inter = pl1.intersectSS(pl2)
-        if len(inter) > 0:
-            yaxis = inter[0].Direction
-        else:
-            yaxis = pl1.uIso(0.0).tangentAt(0.0)
-        xaxis1 = yaxis.cross(norm1)
-        xaxis2 = yaxis.cross(norm2)
-        m1 = FreeCAD.Matrix(xaxis1, yaxis, norm1, cog1)
-        m2 = FreeCAD.Matrix(xaxis2, yaxis, norm2, cog2)
-        return m1, m2
-
     def get_wire_pairs(self):
         # TODO Eventually add a Wire Sorter
         wl1 = self.face1.Wires
@@ -304,40 +299,29 @@ class BlendSolid:
         if (len(wl1) > 2) or (len(wl2) > 2):
             print("BlendSolid: Warning, matching wires not yet implemented")
         wire_pairs = zip(wl1, wl2)
+        # print(wire_pairs)
         return wire_pairs
-
-    def build_surfaces_old(self):
-        self.surflist = []
-        for idx, tup in enumerate(self.get_wire_pairs()):
-            sorter = MatchWires(*tup)
-            if idx < len(self.offset):
-                sorter.offset_code = self.offset[idx]
-            for e1, e2 in sorter.edge_pairs:
-                of1 = other_face(self.shape1, self.face1, e1)
-                of2 = other_face(self.shape2, self.face2, e2)
-                bs = bc.BlendSurface(e1, of1, e2, of2)
-                self.surflist.append(bs)
 
     def build_surfaces(self):
         self.surflist = []
         mf = MatchFaces(self.face1, self.face2)
         mf.normalize_faces()
+        # Part.show(mf.face1)
+        # Part.show(mf.face2)
         wire_pairs = list(self.get_wire_pairs())
         for idx, tup in enumerate(mf.get_wire_pairs()):
-            offset_code = mf.wire_offset(*tup)
-            offset = int(offset_code / 2)
-            if offset_code % 2 == 0:
-                inc = 1
-            else:
-                inc = -1
+            # print(f"wire pair {idx}")
+            offset, inc = mf.wire_offset(*tup)
             for i in range(len(tup[0].Edges)):
                 j = (inc * i + offset) % len(tup[0].Edges)
                 e1 = wire_pairs[idx][0].Edges[i]
                 e2 = wire_pairs[idx][1].Edges[j]
+                # print(e1, e2)
                 of1 = other_face(self.shape1, self.face1, e1)
                 of2 = other_face(self.shape2, self.face2, e2)
                 bs = bc.BlendSurface(e1, of1, e2, of2)
                 self.surflist.append(bs)
+        # print("build surface OK")
 
     def surfaces(self):
         if not len(self.surflist) == min(len(self.face1.Edges), len(self.face2.Edges)):
@@ -381,6 +365,7 @@ class BlendSolid:
 
     def auto_scale(self, num=3):
         for surf in self.surfaces():
+            # print("surf.auto_scale")
             surf.auto_scale(num)
 
     def set_size(self, sc1, sc2):
