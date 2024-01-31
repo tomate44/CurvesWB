@@ -4,8 +4,7 @@ __title__ = "BlendSolid"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = "Create a solid between two faces with some continuity with their support shapes"
-__usage__ = """You must select at least 2 faces in the 3D View.
-Additionally, in order to prevent twisting, you can also select 2 consecutive edges, on each wire of each face."""
+__usage__ = "Select a face on each of the two solids to blend, in the 3D View."
 
 import os
 import FreeCAD
@@ -28,12 +27,12 @@ class BlendSolidProxy:
                         "Settings", "Number of samples to generate each surface")
         obj.addProperty("App::PropertyBool", "Fuse",
                         "Settings", "Fuse the 3 solids together")
-        obj.addProperty("App::PropertyEnumeration", "Algo",
-                        "Untwist", "Method used to untwist the wires")
-        obj.addProperty("App::PropertyLinkSubList", "MatchingShapes",
-                        "Untwist", "User selected matching edges or vertexes")
-        obj.addProperty("App::PropertyVectorList", "Offset",
-                        "Untwist", "Offset edge indices")
+        # obj.addProperty("App::PropertyEnumeration", "Algo",
+        #                 "Untwist", "Method used to untwist the wires")
+        # obj.addProperty("App::PropertyLinkSubList", "MatchingShapes",
+        #                 "Untwist", "User selected matching edges or vertexes")
+        # obj.addProperty("App::PropertyVectorList", "Offset",
+        #                 "Untwist", "Offset edge indices")
         obj.addProperty("App::PropertyInteger", "Continuity1",
                         "Continuity", "Continuity order G... with shape 1")
         obj.addProperty("App::PropertyInteger", "Continuity2",
@@ -59,8 +58,8 @@ class BlendSolidProxy:
         obj.AutoScale = "RegularPoles"
         obj.setEditorMode("Scale1", 2)
         obj.setEditorMode("Scale2", 2)
-        obj.Algo = ["ManualMatch", "ManualValues"]
-        obj.Algo = "ManualValues"
+        # obj.Algo = ["ManualMatch", "ManualValues"]
+        # obj.Algo = "ManualValues"
         obj.Proxy = self
 
     def get_input_shapes(self, obj):
@@ -73,22 +72,22 @@ class BlendSolidProxy:
                 return f1, f2, s1[0].Shape, s2[0].Shape
         return None, None, None, None
 
-    def get_orientation_shapes(self, obj):
-        vl1 = []
-        vl2 = []
-        if hasattr(obj, "MatchingShapes") and len(obj.MatchingShapes) > 1:
-            s1 = obj.MatchingShapes[0]
-            s2 = obj.MatchingShapes[1]
-            if s1[0] == obj.Sources[1][0]:
-                s1 = obj.MatchingShapes[1]
-                s2 = obj.MatchingShapes[0]
-            for n1 in s1[1]:
-                sh1 = s1[0].getSubObject(n1)
-                vl1.append(sh1)
-            for n2 in s2[1]:
-                sh2 = s2[0].getSubObject(n2)
-                vl2.append(sh2)
-        return vl1, vl2
+    # def get_orientation_shapes(self, obj):
+    #     vl1 = []
+    #     vl2 = []
+    #     if hasattr(obj, "MatchingShapes") and len(obj.MatchingShapes) > 1:
+    #         s1 = obj.MatchingShapes[0]
+    #         s2 = obj.MatchingShapes[1]
+    #         if s1[0] == obj.Sources[1][0]:
+    #             s1 = obj.MatchingShapes[1]
+    #             s2 = obj.MatchingShapes[0]
+    #         for n1 in s1[1]:
+    #             sh1 = s1[0].getSubObject(n1)
+    #             vl1.append(sh1)
+    #         for n2 in s2[1]:
+    #             sh2 = s2[0].getSubObject(n2)
+    #             vl2.append(sh2)
+    #     return vl1, vl2
 
     def other_face(self, sh, f, e):
         anc = sh.ancestorsOfType(e, Part.Face)
@@ -101,20 +100,25 @@ class BlendSolidProxy:
         if None in [f1, f2, sh1, sh2]:
             return
         blso = blendSolids.BlendSolid(f1, f2, sh1, sh2)
-        if obj.Algo == "ManualMatch" and len(obj.MatchingShapes) > 1:
-            blso.match_shapes(*self.get_orientation_shapes(obj))
-            obj.Offset = [FreeCAD.Vector(*tup) for tup in blso.offset]
-        else:
-            blso.offset = obj.Offset
+        # print(blso)
+        # if obj.Algo == "ManualMatch" and len(obj.MatchingShapes) > 1:
+        #     blso.match_shapes(*self.get_orientation_shapes(obj))
+        #     obj.Offset = [FreeCAD.Vector(*tup) for tup in blso.offset]
+        # else:
+        #     blso.offset = obj.Offset
         blso.set_continuity([obj.Continuity1, obj.Continuity2])
+        # print("continuity set")
         if obj.AutoScale == "Manual":
             blso.set_size(obj.Scale1, obj.Scale2)
-        else:
-            if obj.AutoScale == "RegularPoles":
-                blso.auto_scale(obj.ScaleSamples)
-            elif obj.AutoScale == "MinimizeCurvature":
-                blso.minimize_curvature(obj.ScaleSamples)
+            # print("set_size OK")
+        elif obj.AutoScale == "RegularPoles":
+            blso.auto_scale(obj.ScaleSamples)
+            # print("auto_scale OK")
+        elif obj.AutoScale == "MinimizeCurvature":
+            blso.minimize_curvature(obj.ScaleSamples)
+        # print("updating surfaces")
         blso.update_surfaces(obj.Samples)
+        # print("surfaces updated")
         obj.Scale1 = blso.surfaces()[0].edge1.size.values
         obj.Scale2 = blso.surfaces()[0].edge2.size.values
         shape = blso.Shape
@@ -142,15 +146,14 @@ class BlendSolidProxy:
                 obj.setEditorMode("ScaleSamples", 0)
                 obj.setEditorMode("Scale1", 2)
                 obj.setEditorMode("Scale2", 2)
-        if prop == "Algo":
-            if obj.Algo == "ManualMatch":
-                obj.setEditorMode("Offset", 1)
-                obj.setEditorMode("MatchingShapes", 0)
-            else:
-                obj.setEditorMode("Offset", 0)
-                obj.setEditorMode("MatchingShapes", 2)
-        if prop in ["Offset", "MatchingShapes",
-                    "Continuity1", "Continuity2"]:
+        # if prop == "Algo":
+        #     if obj.Algo == "ManualMatch":
+        #         obj.setEditorMode("Offset", 1)
+        #         obj.setEditorMode("MatchingShapes", 0)
+        #     else:
+        #         obj.setEditorMode("Offset", 0)
+        #         obj.setEditorMode("MatchingShapes", 2)
+        if prop in ["Continuity1", "Continuity2"]:
             self.execute(obj)
 
 
@@ -201,29 +204,29 @@ class BlendSolidViewProxy:
 
 class BlendSolidCommand:
     """Create a BlendSurface FeaturePython object"""
-    def makeFeature(self, sel=[], untwist=[]):
+    def makeFeature(self, sel=[]):  # , untwist=[]):
         fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "Blend Solid")
         BlendSolidProxy(fp)
         BlendSolidViewProxy(fp.ViewObject)
         fp.Sources = sel
         FreeCAD.ActiveDocument.recompute()
-        if untwist:
-            fp.Algo = "ManualMatch"
-            fp.MatchingShapes = untwist
+        # if untwist:
+        #     fp.Algo = "ManualMatch"
+        #     fp.MatchingShapes = untwist
         FreeCAD.ActiveDocument.recompute()
 
     def Activated(self):
         sel = FreeCADGui.Selection.getSelectionEx()
         sources = []
-        untwist = []
+        # untwist = []
         for selobj in sel:
             for sen in selobj.SubElementNames:
-                if ("Edge" in sen) or ("Vertex" in sen):
-                    untwist.append((selobj.Object, sen))
-                elif "Face" in sen:
+                # if ("Edge" in sen) or ("Vertex" in sen):
+                #     untwist.append((selobj.Object, sen))
+                if "Face" in sen:
                     sources.append((selobj.Object, sen))
         if len(sources) == 2:
-            self.makeFeature(sources, untwist)
+            self.makeFeature(sources)  # , untwist)
         else:
             FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
 
