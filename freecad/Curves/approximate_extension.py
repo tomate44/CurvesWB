@@ -65,11 +65,9 @@ class ApproximateExtension:
         obj.Active = False
 
     def setTolerance(self, obj):
-        try:
-            dl = obj.Shape.BoundBox.DiagonalLength
-            obj.ApproxTolerance = dl / 10000.0
-        except:
-            obj.ApproxTolerance = 0.001
+        obj.ApproxTolerance = 1e-3
+        if not obj.Shape.isNull():
+            obj.ApproxTolerance *= obj.Shape.BoundBox.DiagonalLength
 
     def approximate(self, obj, input_shape):
         if not obj.Active:
