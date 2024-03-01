@@ -35,18 +35,31 @@ class MixedCurve:
         else:
             raise ValueError("Vector is null")
 
+    def trimmed_surface(self, face):
+        u0, u1, v0, v1 = face.ParameterRange
+        # print(face.ParameterRange)
+        rts = Part.RectangularTrimmedSurface(face.Surface, u0, u1, -1e50, 1e50)
+        # print(rts)
+        return rts
+
     def shape(self):
-        proj1 = self.shape1.toNurbs().extrude(self.dir1)
-        proj2 = self.shape2.toNurbs().extrude(self.dir2)
+        proj1 = self.shape1.extrude(self.dir1)
+        proj2 = self.shape2.extrude(self.dir2)
         curves = list()
         for f1 in proj1.Faces:
+            rts1 = self.trimmed_surface(f1)
             for f2 in proj2.Faces:
-                curves += f1.Surface.intersectSS(f2.Surface)
+                rts2 = self.trimmed_surface(f2)
+                inter = rts1.intersectSS(rts2)
+                # print(inter)
+                curves += inter
+        # print(curves)
         intersect = [c.toShape() for c in curves]
         edges = []
         for sh in intersect:
             if isinstance(sh, Part.Edge) and sh.Length > 1e-7:
                 edges.append(sh)
+        # Part.show(Part.Compound(edges))
         se = Part.sortEdges(edges)
         wires = []
         for el in se:
@@ -84,7 +97,7 @@ class MixedCurveFP:
             d2 = obj.Direction2
         cc = MixedCurve(s1, s2, d1, d2)
 
-        if hasattr(obj, "ExtensionProxy"):
+        if hasattr(obj, "Active") and obj.Active:
             mixed = obj.ExtensionProxy.approximate(obj, cc.shape())
         else:
             mixed = cc.shape()
