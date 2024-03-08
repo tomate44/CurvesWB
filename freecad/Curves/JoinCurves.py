@@ -187,21 +187,18 @@ class joinVP:
     def attach(self, vobj):
         self.Object = vobj.Object
 
-    if (FreeCAD.Version()[0]+'.'+FreeCAD.Version()[1]) >= '0.22':
-        def dumps(self):
-            return {"name": self.Object.Name}
+    def dumps(self):
+        return {"name": self.Object.Name}
 
-        def loads(self, state):
-            self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
-            return None
+    def loads(self, state):
+        self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
 
-    else:
+    if (FreeCAD.Version()[0] == '0') and ('.'.join(FreeCAD.Version()[1:3]) < '21.2'):
         def __getstate__(self):
-            return {"name": self.Object.Name}
+            return self.dumps()
 
         def __setstate__(self, state):
-            self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
-            return None
+            self.loads(state)
 
     # def claimChildren(self):
         # return None #[self.Object.Base, self.Object.Tool]
