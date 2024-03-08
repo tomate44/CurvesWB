@@ -279,8 +279,12 @@ class sketchOnSurface:
         u0, u1, v0, v1 = (bb.XMin, bb.XMax, bb.YMin, bb.YMax)
         debug("Sketch bounds = {}".format((u0, u1, v0, v1)))
         try:
-            n = eval(obj.Sketch.Support[0][1][0].lstrip('Face'))
-            face = obj.Sketch.Support[0][0].Shape.Faces[n - 1]
+            if hasattr(obj.Sketch, "Support"):
+                supp = obj.Sketch.Support
+            if hasattr(obj.Sketch, "AttachmentSupport"):
+                supp = obj.Sketch.AttachmentSupport
+            n = eval(supp[0][1][0].lstrip('Face'))
+            face = supp[0][0].Shape.Faces[n - 1]
             # face.Placement = obj.Sketch.Support[0][0].getGlobalPlacement()
         except (IndexError, AttributeError, SyntaxError) as e:
             error("{}\n".format(e))
@@ -482,7 +486,7 @@ class SoS:
             return
         if not sketch:
             sketch = doc.addObject('Sketcher::SketchObject', 'Mapped_Sketch')
-            sketch.Support = face_link
+            sketch.AttachmentSupport = face_link
             n = eval(face_link[1][0].lstrip('Face'))
             fa = face_link[0].Shape.Faces[n-1]
             build_sketch(sketch, fa)
