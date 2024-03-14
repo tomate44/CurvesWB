@@ -486,7 +486,10 @@ class SoS:
             return
         if not sketch:
             sketch = doc.addObject('Sketcher::SketchObject', 'Mapped_Sketch')
-            sketch.AttachmentSupport = face_link
+            if hasattr(sketch, "AttachmentSupport"):
+                sketch.AttachmentSupport = face_link
+            else:
+                sketch.Support = face_link
             n = eval(face_link[1][0].lstrip('Face'))
             fa = face_link[0].Shape.Faces[n-1]
             build_sketch(sketch, fa)
