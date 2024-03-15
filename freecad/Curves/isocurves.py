@@ -110,12 +110,14 @@ class isoCurve:
                 prange = [l2d.parameter(Base.Vector2d(sortedPts[0][0], sortedPts[0][1])), l2d.parameter(Base.Vector2d(sortedPts[-1][0], sortedPts[-1][1]))]
             else:
                 FreeCAD.Console.PrintMessage("No intersection points")
-        e = l2d.toShape(self.face, prange[0], prange[1])
+        e = None
+        if (prange[1] - prange[0]) > 1e-9:
+            e = l2d.toShape(self.face, prange[0], prange[1])
         if isinstance(e, Part.Edge):
-            return(e)
-        else:
-            FreeCAD.Console.PrintMessage("Failed to create isoCurve shape")
-            return(None)
+            return e
+        # else:
+            # FreeCAD.Console.PrintMessage("Failed to create isoCurve shape\n")
+            # return None
 
 
 class multiIso:

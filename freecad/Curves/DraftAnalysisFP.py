@@ -100,7 +100,7 @@ class DraftAnalysisProxyVP:
         self.draft_analyzer = DraftAnalysisShader()
         self.load_shader(viewobj)
 
-    if (FreeCAD.Version()[0]+'.'+FreeCAD.Version()[1]) >= '0.22':
+    if FreeCAD.Version()[0] == '0' and '.'.join(FreeCAD.Version()[1:3]) >= '21.2':
         def dumps(self):
             return {"name": self.Object.Name}
 
@@ -168,7 +168,7 @@ class DraftAnalysisProxyVP:
                 n = surf.normal(u, v)
                 direc = FreeCAD.Vector(self.draft_analyzer.Direction)
                 angle = n.getAngle(direc) * 180 / pi
-                FreeCAD.Console.PrintMessage(f"{obj}.{sub} Normal Angle: {angle}\n")
+                FreeCAD.Console.PrintMessage(f"{obj}.{sub} Normal={angle:3.2f}° Draft={(90-angle):3.2f}°\n")
 
 
 class DraftAnalysisCommand:

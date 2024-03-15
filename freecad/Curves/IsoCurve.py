@@ -181,7 +181,7 @@ class ViewProviderIsoCurve:
     def attach(self, vobj):
         self.Object = vobj.Object
 
-    if (App.Version()[0]+'.'+App.Version()[1]) >= '0.22':
+    if App.Version()[0] == '0' and '.'.join(App.Version()[1:3]) >= '21.2':
         def dumps(self):
             return {"name": self.Object.Name}
 

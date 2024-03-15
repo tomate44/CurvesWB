@@ -142,7 +142,7 @@ class ReflectLinesVP:
     def cameramove(self, *args):
         self.Object.ViewDir = FreeCADGui.ActiveDocument.ActiveView.getCameraOrientation().multVec(FreeCAD.Vector(0,0,1))
 
-    if (FreeCAD.Version()[0]+'.'+FreeCAD.Version()[1]) >= '0.22':
+    if FreeCAD.Version()[0] == '0' and '.'.join(FreeCAD.Version()[1:3]) >= '21.2':
         def dumps(self):
             return {"name": self.Object.Name}
 

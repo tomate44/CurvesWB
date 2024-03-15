@@ -132,7 +132,7 @@ class plateSurfFP:
             if fp.Tol3d > 0.002:
                 fp.Tol3d = 0.002
 
-    if (FreeCAD.Version()[0]+'.'+FreeCAD.Version()[1]) >= '0.22':
+    if FreeCAD.Version()[0] == '0' and '.'.join(FreeCAD.Version()[1:3]) >= '21.2':
         def dumps(self):
             return None
 

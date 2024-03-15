@@ -168,7 +168,7 @@ class BlendSolidViewProxy:
     def attach(self, viewobj):
         self.Object = viewobj.Object
 
-    if (FreeCAD.Version()[0]+'.'+FreeCAD.Version()[1]) >= '0.22':
+    if FreeCAD.Version()[0] == '0' and '.'.join(FreeCAD.Version()[1:3]) >= '21.2':
         def dumps(self):
             return {"name": self.Object.Name}
 

@@ -489,7 +489,7 @@ class BlendCurveVP:
             FreeCAD.ActiveDocument.recompute()
         return True
 
-    if (FreeCAD.Version()[0]+'.'+FreeCAD.Version()[1]) >= '0.22':
+    if FreeCAD.Version()[0] == '0' and '.'.join(FreeCAD.Version()[1:3]) >= '21.2':
         def dumps(self):
             return {"name": self.Object.Name}
 
@@ -609,7 +609,7 @@ class oldBlendCurveVP:
         # return(_utils.iconsPath() + '/blend2.svg')
         return TOOL_ICON
 
-    if (FreeCAD.Version()[0]+'.'+FreeCAD.Version()[1]) >= '0.22':
+    if FreeCAD.Version()[0] == '0' and '.'.join(FreeCAD.Version()[1:3]) >= '21.2':
         def dumps(self):
             return {"name": self.Object.Name}
 
