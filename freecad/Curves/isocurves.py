@@ -72,44 +72,44 @@ class isoCurve:
                         edges2d.append((pc[0], pc[-2], pc[-1]))
             else:
                 edges2d.append(self.face.curveOnSurface(edge3d))
-        return(edges2d)
+        return edges2d
 
     def getIntersectionPoints(self, l2d, bounds):
         pts = []
         for c2d in bounds:
             try:
                 inter = l2d.intersectCC(c2d[0])
-                for pt in inter:
-                    pts.append((pt.x, pt.y))
+                pts.extend(inter)
             except RuntimeError:
                 pass
-        return(pts)
+        return pts
 
     def toShape(self):
+        ext = 0.0
         bounds = self.faceBounds2d()
         prange = [0, 1]
         if self.direction == 'U':
             self.curve = self.face.Surface.uIso(self.parameter)
-            v1 = Base.Vector2d(self.parameter, self.bounds[2])
-            v2 = Base.Vector2d(self.parameter, self.bounds[3])
+            v1 = Base.Vector2d(self.parameter, self.bounds[2] - ext)
+            v2 = Base.Vector2d(self.parameter, self.bounds[3] + ext)
             l2d = Part.Geom2d.Line2dSegment(v1, v2)
             pts = self.getIntersectionPoints(l2d, bounds)
             if pts:
-                sortedPts = sorted(pts, key=itemgetter(1))
-                prange = [l2d.parameter(Base.Vector2d(sortedPts[0][0], sortedPts[0][1])), l2d.parameter(Base.Vector2d(sortedPts[-1][0], sortedPts[-1][1]))]
+                sortedPts = sorted(pts, key=lambda v: v.y)
+                prange = [l2d.parameter(sortedPts[0]), l2d.parameter(sortedPts[-1])]
             else:
-                FreeCAD.Console.PrintMessage("No intersection points")
+                FreeCAD.Console.PrintMessage("No intersection points\n")
         elif self.direction == 'V':
             self.curve = self.face.Surface.vIso(self.parameter)
-            v1 = Base.Vector2d(self.bounds[0], self.parameter)
-            v2 = Base.Vector2d(self.bounds[1], self.parameter)
+            v1 = Base.Vector2d(self.bounds[0] - ext, self.parameter)
+            v2 = Base.Vector2d(self.bounds[1] + ext, self.parameter)
             l2d = Part.Geom2d.Line2dSegment(v1, v2)
             pts = self.getIntersectionPoints(l2d, bounds)
             if pts:
-                sortedPts = sorted(pts, key=itemgetter(0))
-                prange = [l2d.parameter(Base.Vector2d(sortedPts[0][0], sortedPts[0][1])), l2d.parameter(Base.Vector2d(sortedPts[-1][0], sortedPts[-1][1]))]
+                sortedPts = sorted(pts, key=lambda v: v.x)
+                prange = [l2d.parameter(sortedPts[0]), l2d.parameter(sortedPts[-1])]
             else:
-                FreeCAD.Console.PrintMessage("No intersection points")
+                FreeCAD.Console.PrintMessage("No intersection points\n")
         e = None
         if (prange[1] - prange[0]) > 1e-9:
             e = l2d.toShape(self.face, prange[0], prange[1])
