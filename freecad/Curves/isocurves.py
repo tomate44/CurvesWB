@@ -68,10 +68,14 @@ class isoCurve:
         for edge3d in self.face.OuterWire.Edges:
             if edge3d.isSeam(self.face):
                 for pc in _utils.get_pcurves(edge3d):
-                    if _utils.geom_equal(pc[1], self.face.Surface):
+                    s = pc[1]
+                    s.transform(pc[2].Matrix)
+                    match_surf = _utils.geom_equal(s, self.face.Surface)
+                    if match_surf:
                         edges2d.append((pc[0], pc[-2], pc[-1]))
             else:
                 edges2d.append(self.face.curveOnSurface(edge3d))
+        print(edges2d)
         return edges2d
 
     def getIntersectionPoints(self, l2d, bounds):
@@ -85,7 +89,7 @@ class isoCurve:
         return pts
 
     def toShape(self):
-        ext = 0.0
+        ext = 0.01
         bounds = self.faceBounds2d()
         prange = [0, 1]
         if self.direction == 'U':
