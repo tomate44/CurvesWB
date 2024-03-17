@@ -255,6 +255,17 @@ class sketchOnSurface:
         else:
             return wirelist
 
+    def offset_face(self, face, offset):
+        """makeOffsetShape generates a plane from any planar surface.
+        But we want to keep the parametric space of the original surface."""
+        if face.Surface.isPlanar():
+            u0, u1, v0, v1 = face.ParameterRange
+            n = face.normalAt(u0, v0)
+            nf = face.copy()
+            nf.translate(n * offset)
+            return nf
+        return face.makeOffsetShape(offset, 1e-7)
+
     def execute(self, obj):
         if not obj.Sketch:
             error("No Sketch attached")
@@ -312,14 +323,14 @@ class sketchOnSurface:
         if (obj.Offset == 0):
             shapes_1 = self.map_shapelist(imput_shapes, quad, face, obj.FillFaces)
         else:
-            f1 = face.makeOffsetShape(obj.Offset, 1e-7)
+            f1 = self.offset_face(face, obj.Offset)
             shapes_1 = self.map_shapelist(imput_shapes, quad, f1.Face1, obj.FillFaces)
         if (obj.Thickness == 0):
             if shapes_1:
                 obj.Shape = Part.Compound(shapes_1)
             return
         else:
-            f2 = face.makeOffsetShape(obj.Offset+obj.Thickness, 1e-7)
+            f2 = self.offset_face(face, obj.Offset + obj.Thickness)
             shapes_2 = self.map_shapelist(imput_shapes, quad, f2.Face1, obj.FillFaces)
             if not obj.FillExtrusion:
                 if shapes_1 or shapes_2:
