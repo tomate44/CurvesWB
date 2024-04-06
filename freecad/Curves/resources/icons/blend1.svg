@@ -1,75 +1,155 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
 <svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
+   width="64"
+   height="64"
+   id="svg2869"
    version="1.1"
-   id="svg2963"
-   height="64px"
-   width="64px">
+   viewBox="0 0 64 64"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
   <defs
-     id="defs2965">
+     id="defs2871">
     <linearGradient
-       id="linearGradient3354">
+       id="linearGradient5">
       <stop
-         id="stop3356"
+         style="stop-color:#ef2929;stop-opacity:1;"
          offset="0"
-         style="stop-color:#2157c7;stop-opacity:1;" />
+         id="stop19" />
       <stop
-         id="stop3358"
+         style="stop-color:#ef2929;stop-opacity:0;"
          offset="1"
-         style="stop-color:#6daaff;stop-opacity:1;" />
+         id="stop20" />
+    </linearGradient>
+    <linearGradient
+       id="swatch18">
+      <stop
+         style="stop-color:#ef2929;stop-opacity:1;"
+         offset="0"
+         id="stop18" />
+    </linearGradient>
+    <linearGradient
+       id="swatch15">
+      <stop
+         style="stop-color:#3d0000;stop-opacity:1;"
+         offset="0"
+         id="stop15" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient5-1">
+      <stop
+         style="stop-color:#ef2929;stop-opacity:1;"
+         offset="0"
+         id="stop5" />
+      <stop
+         style="stop-color:#ef2929;stop-opacity:0;"
+         offset="1"
+         id="stop6" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient3836-9">
+      <stop
+         style="stop-color:#a40000;stop-opacity:1"
+         offset="0"
+         id="stop3838-8" />
+      <stop
+         style="stop-color:#ef2929;stop-opacity:1"
+         offset="1"
+         id="stop3840-1" />
     </linearGradient>
   </defs>
   <metadata
-     id="metadata2968">
+     id="metadata2874">
     <rdf:RDF>
       <cc:Work
          rdf:about="">
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>[maxwxyz]</dc:title>
+          </cc:Agent>
+        </dc:creator>
+        <dc:relation>https://www.freecad.org/wiki/index.php?title=Artwork</dc:relation>
+        <dc:publisher>
+          <cc:Agent>
+            <dc:title>FreeCAD</dc:title>
+          </cc:Agent>
+        </dc:publisher>
+        <dc:identifier>FreeCAD/src/</dc:identifier>
+        <dc:rights>
+          <cc:Agent>
+            <dc:title>FreeCAD LGPL2+</dc:title>
+          </cc:Agent>
+        </dc:rights>
+        <dc:date>2024</dc:date>
       </cc:Work>
     </rdf:RDF>
   </metadata>
   <g
-     id="layer1">
-    <path
-       id="path3349"
-       d="M 2,60.943662 C 9.8445503,31.7221 45.124999,2.0000005 45.124999,2.0000005"
-       style="fill:none;fill-rule:evenodd;stroke:#999999;stroke-width:1.99999988;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
-    <path
-       id="path3351"
-       d="M 61.999999,62 C 55.625741,36.859155 21.166667,2.4225357 21.166667,2.4225357"
-       style="fill:none;fill-rule:evenodd;stroke:#999999;stroke-width:1.99999988;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
-    <path
-       id="path3353"
-       d="M 9.393986,43.771584 C 19.88067,25.114067 41.710254,21.209099 53.820607,43.56566"
-       style="fill:none;fill-rule:evenodd;stroke:#44aa00;stroke-width:3.99999976;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3.99999976;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="M 2,60.943662 C 3.7594897,55.51264 6.5718913,48.912141 9.393986,43.771584"
-       id="path3355" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3.99999976;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="M 61.999999,62 C 60.230147,56.383124 57.050679,49.434174 53.820607,43.56566"
-       id="path3357" />
-    <ellipse
-       ry="3.9569278"
-       rx="3.9019704"
-       cy="43.771584"
-       cx="9.3939857"
-       id="circle4562"
-       style="opacity:1;fill:#66ff00;fill-opacity:1;stroke:none;stroke-width:1.99999988;stroke-miterlimit:4;stroke-dasharray:none" />
-    <ellipse
-       ry="3.9569278"
-       rx="3.9019704"
-       style="opacity:1;fill:#66ff00;fill-opacity:1;stroke:none;stroke-width:1.99999988;stroke-miterlimit:4;stroke-dasharray:none"
-       id="circle4161"
-       cx="53.820606"
-       cy="43.565659" />
+     id="layer3"
+     style="display:inline">
+    <g
+       id="layer1">
+      <path
+         id="path5"
+         d="M 3.902654,59.258214 C 11.249051,31.821228 44.289081,3.9142734 44.289081,3.9142734"
+         style="fill:none;fill-rule:evenodd;stroke:#eeeeec;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1;stroke-dasharray:none" />
+      <path
+         id="path6"
+         d="M 60.092466,60.250041 C 54.122993,36.644561 21.852178,4.3110041 21.852178,4.3110041"
+         style="fill:none;fill-rule:evenodd;stroke:#eeeeec;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1;stroke-dasharray:none" />
+      <path
+         id="path7"
+         d="M 10.827099,43.134844 C 20.647846,25.616751 41.091183,21.950262 52.432491,42.941496"
+         style="fill:none;fill-rule:evenodd;stroke:#eeeeec;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1;stroke-dasharray:none" />
+      <path
+         style="fill:none;fill-rule:evenodd;stroke:#eeeeec;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1;stroke-dasharray:none"
+         d="m 3.902654,59.258214 c 1.6477566,-5.099347 4.2815619,-11.29675 6.924445,-16.12337"
+         id="path8" />
+      <path
+         style="fill:none;fill-rule:evenodd;stroke:#eeeeec;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1;stroke-dasharray:none"
+         d="M 60.092466,60.250041 C 58.435005,54.97619 55.457443,48.451616 52.432491,42.941496"
+         id="path9" />
+      <path
+         id="path3349"
+         d="M 3.902654,59.258214 C 11.249051,31.821228 44.289081,3.9142734 44.289081,3.9142734"
+         style="fill:none;fill-rule:evenodd;stroke:#888a85;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1" />
+      <path
+         id="path3351"
+         d="M 60.092466,60.250041 C 54.122993,36.644561 21.852178,4.3110041 21.852178,4.3110041"
+         style="fill:none;fill-rule:evenodd;stroke:#888a85;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1" />
+      <path
+         id="path3353"
+         d="M 10.827099,43.134844 C 20.647846,25.616751 41.091183,21.950262 52.432491,42.941496"
+         style="fill:none;fill-rule:evenodd;stroke:#4e9a06;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1" />
+      <path
+         style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1"
+         d="m 3.902654,59.258214 c 1.6477566,-5.099347 4.2815619,-11.29675 6.924445,-16.12337"
+         id="path3355" />
+      <path
+         style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1"
+         d="M 60.092466,60.250041 C 58.435005,54.97619 55.457443,48.451616 52.432491,42.941496"
+         id="path3357" />
+      <ellipse
+         ry="3.715276"
+         rx="3.6541831"
+         cy="43.134842"
+         cx="10.827098"
+         id="circle4562"
+         style="opacity:1;fill:#8ae234;fill-opacity:1;stroke:#17220c;stroke-width:1.5;stroke-miterlimit:4;stroke-dasharray:none;stroke-linejoin:round;stroke-linecap:round;stroke-opacity:1" />
+      <ellipse
+         ry="3.715276"
+         rx="3.6541831"
+         style="opacity:1;fill:#8ae234;fill-opacity:1;stroke:#17220c;stroke-width:1.5;stroke-miterlimit:4;stroke-dasharray:none;stroke-linejoin:round;stroke-linecap:round;stroke-opacity:1"
+         id="circle4161"
+         cx="52.432487"
+         cy="42.941494" />
+    </g>
   </g>
 </svg>
