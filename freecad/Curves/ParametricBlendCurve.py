@@ -143,6 +143,10 @@ class BlendCurveFP:
                 w = w.approximate(1e-7, 1e-7, 99, 9).toShape()
         else:
             w = bc.shape
+        parent = fp.getParent()
+        if parent:
+            glopl = parent.getGlobalPlacement()
+            w = w.transformGeometry(glopl.inverse().Matrix)
         fp.Shape = w
 
     def onChanged(self, fp, prop):
@@ -382,9 +386,14 @@ class BlendCurveVP:
             self.bc.scale2 = -self.t2.parameter
 
             self.bc.perform()
-            self.Object.Shape = self.bc.shape
+            sh = self.bc.shape
+            parent = self.Object.getParent()
+            if parent:
+                glopl = parent.getGlobalPlacement()
+                sh = sh.transformGeometry(glopl.inverse().Matrix)
+            self.Object.Shape = sh
             for obj in self.Object.InList:
-                if "Curves.ParametricComb.Comb" in str(obj.Proxy):
+                if hasattr(obj, "Proxy") and "Curves.ParametricComb.Comb" in str(obj.Proxy):
                     obj.Proxy.execute(obj)
             return self.bc
 

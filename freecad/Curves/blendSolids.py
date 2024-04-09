@@ -246,6 +246,8 @@ class MatchFaces:
         return e.valueAt(p)
 
     def wire_offset(self, w1, w2):
+        if len(w1.Edges) == 1:
+            return 0, 1
         max_offset = len(w2.Edges)
         dl = []
         for off in range(max_offset):

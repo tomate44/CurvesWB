@@ -2,7 +2,7 @@
 <package format="1">
   <name>Curves workbench</name>
   <description>A collection of tools mainly dedicated to NURBS curves and surfaces modeling.</description>
-  <version>0.6.29</version>
+  <version>0.6.30</version>
   <maintainer email="cg@grellier.fr">Christophe Grellier</maintainer>
   <license file="LICENSE">LGPL-2.1</license>
   <url type="repository" branch="master">https://github.com/tomate44/CurvesWB</url>
@@ -13,7 +13,7 @@
       <name>Curves workbench</name>
       <classname>CurvesWorkbench</classname>
       <description>A collection of tools mainly dedicated to NURBS curves and surfaces modeling.</description>
-      <version>0.6.29</version>
+      <version>0.6.30</version>
       <subdirectory>./</subdirectory>
       <icon>freecad/Curves/resources/icons/blendSurf.svg</icon>
       <freecadmin>0.20.0</freecadmin>
