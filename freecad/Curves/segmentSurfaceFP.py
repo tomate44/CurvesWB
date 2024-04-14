@@ -23,18 +23,21 @@ TOOL_ICON = os.path.join(ICONPATH, 'segment_surface.svg')
 
 
 class SegmentSurface:
-    """Creates a ..."""
+    """SegmentSurface feature proxy"""
+
     def __init__(self, obj, face):
         """Add the properties"""
         obj.addProperty("App::PropertyLinkSub", "Source", "Base", "Initial Face").Source = face
         obj.addProperty("App::PropertyEnumeration", "Option", "Base", "Option list").Option = ["Auto", "Custom"]
         obj.addProperty("App::PropertyEnumeration", "Direction", "OptionAuto", "Segmenting direction").Direction = ["U", "V", "Both"]
-        obj.addProperty("App::PropertyFloatList", "KnotsU", "OptionCustom", "Splitting parameters in U direction")
-        obj.addProperty("App::PropertyFloatList", "KnotsV", "OptionCustom", "Splitting parameters in V direction")
-        obj.addProperty("App::PropertyLink", "KnotsUProvider", "OptionCustom", "Object generating normalized parameters in U direction")
-        obj.addProperty("App::PropertyLink", "KnotsVProvider", "OptionCustom", "Object generating normalized parameters in V direction")
+        obj.addProperty("App::PropertyFloatList", "KnotsU", "UDirection", "Splitting parameters in U direction")
+        obj.addProperty("App::PropertyFloatList", "KnotsV", "VDirection", "Splitting parameters in V direction")
+        obj.addProperty("App::PropertyInteger", "NumberU", "UDirection", "Split the U parameter range in the given number of segments").NumberU = 2
+        obj.addProperty("App::PropertyInteger", "NumberV", "VDirection", "Split the V parameter range in the given number of segments").NumberV = 2
+        obj.addProperty("App::PropertyLink", "KnotsUProvider", "UDirection", "Object generating normalized parameters in U direction")
+        obj.addProperty("App::PropertyLink", "KnotsVProvider", "VDirection", "Object generating normalized parameters in V direction")
         obj.Proxy = self
-        obj.Option = "Auto"
+        obj.Option = "Custom"
 
     def get_intervals(self, knots, mults):
         ml = list(set(mults))
@@ -99,6 +102,16 @@ class SegmentSurface:
             for k in vknots:
                 if (k > v0) and (k < v1):
                     cutKnotsV.append(k)
+
+            if hasattr(obj, "NumberU") and (obj.NumberU > 1):
+                par_range = u1 - u0
+                uk = [(u0 + i * par_range / obj.NumberU) for i in range(1, obj.NumberU)]
+                cutKnotsU.extend(uk)
+            if hasattr(obj, "NumberV") and (obj.NumberV > 1):
+                par_range = v1 - v0
+                vk = [(v0 + i * par_range / obj.NumberV) for i in range(1, obj.NumberV)]
+                cutKnotsV.extend(vk)
+
             cutKnotsU = list(set(cutKnotsU))
             cutKnotsV = list(set(cutKnotsV))
             cutKnotsU.sort()
@@ -131,19 +144,17 @@ class SegmentSurface:
         # f.transformShape(mat)
         obj.Shape = bs.toShape()
 
-    def setOption(self, obj, prop):
-        for p in obj.PropertiesList:
-            group = obj.getGroupOfProperty(p)
-            if prop in group:
-                option = obj.getPropertyByName(prop)
-                if group == prop + option:
-                    obj.setEditorMode(p, 0)
-                else:
-                    obj.setEditorMode(p, 2)
-
     def onChanged(self, obj, prop):
         if prop == "Option":
-            self.setOption(obj, prop)
+            grp1 = [p for p in obj.PropertiesList if "Direction" in obj.getGroupOfProperty(p)]
+            if obj.Option == "Auto":
+                for p in grp1:
+                    obj.setEditorMode(p, 2)
+                obj.setEditorMode("Direction", 0)
+            elif obj.Option == "Custom":
+                for p in grp1:
+                    obj.setEditorMode(p, 0)
+                obj.setEditorMode("Direction", 2)
 
 
 class SegmentSurfaceVP:
@@ -181,7 +192,8 @@ class SegmentSurfaceVP:
 
 
 class SegSurfCommand:
-    """Creates a ..."""
+    """SegmentSurface command"""
+
     def makeFeature(self, s):
         fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "Segment_Surface")
         SegmentSurface(fp, (s.Object, s.SubElementNames[0]))
