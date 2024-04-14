@@ -9,15 +9,19 @@ multi  = isocurves.multiIso(face,10,20)
 Part.show(multi.toShape())
 '''
 
-from operator import itemgetter
+# from operator import itemgetter
 import FreeCAD
 from FreeCAD import Base
 import Part
 from freecad.Curves import _utils
 
 
+TOL3D = FreeCAD.Base.Precision.confusion()
+
+
 class curve(object):
     '''Base class of nurbs curves'''
+
     def __init__(self, edge=None):
         if edge is None:
             v1 = FreeCAD.Vector(0, 0, 0)
@@ -45,6 +49,7 @@ class curveOnSurface(curve):
 
 class isoCurve:
     '''isoCurve of a surface'''
+
     def __init__(self, face, direc='U', param=0):
         self.face = None
         self.direction = 'U'
@@ -75,7 +80,7 @@ class isoCurve:
                         edges2d.append((pc[0], pc[-2], pc[-1]))
             else:
                 edges2d.append(self.face.curveOnSurface(edge3d))
-        print(edges2d)
+        # print(edges2d)
         return edges2d
 
     def getIntersectionPoints(self, l2d, bounds):
@@ -126,6 +131,7 @@ class isoCurve:
 
 class multiIso:
     '''defines a set of multiple iso curves on a face'''
+
     def __init__(self, face, numu=0, numv=0):
         self.face = None
         self.paramu = []
@@ -162,30 +168,46 @@ class multiIso:
             c.append(u.toShape())
         for v in self.viso:
             c.append(v.toShape())
-        return(Part.Compound(c))
+        return Part.Compound(c)
 
     def paramList(self, n, fp, lp):
-        rang = lp-fp
+        par_range = lp - fp
         params = []
         if n == 1:
-            params = [fp + rang / 2.0]
+            params = [fp + par_range / 2.0]
         elif n == 2:
             params = [fp, lp]
         elif n > 2:
             for i in range(n):
-                params.append(fp + 1.0 * i * rang / (n - 1))
+                params.append(fp + 1.0 * i * par_range / (n - 1))
         return params
 
     def setNumberU(self, n):
         fp = self.bounds[0]
         lp = self.bounds[1]
-        self.paramu = self.paramList(n, fp, lp)
+        closed = False
+        if self.face.Surface.isUClosed():
+            if (abs(lp - fp - self.face.Surface.UPeriod()) < TOL3D):
+                closed = True
+                # print("U Closed")
+        if closed:
+            self.paramu = self.paramList(n + 1, fp, lp)[:-1]
+        else:
+            self.paramu = self.paramList(n, fp, lp)
         self.computeU()
 
     def setNumberV(self, n):
         fp = self.bounds[2]
         lp = self.bounds[3]
-        self.paramv = self.paramList(n, fp, lp)
+        closed = False
+        if self.face.Surface.isVClosed():
+            if (abs(lp - fp - self.face.Surface.VPeriod()) < TOL3D):
+                closed = True
+                # print("V Closed")
+        if closed:
+            self.paramv = self.paramList(n + 1, fp, lp)[:-1]
+        else:
+            self.paramv = self.paramList(n, fp, lp)
         self.computeV()
 
     def setNumbers(self, nu, nv):
