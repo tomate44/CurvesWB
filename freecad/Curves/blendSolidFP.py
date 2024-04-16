@@ -98,6 +98,7 @@ class BlendSolidProxy:
     def execute(self, obj):
         f1, f2, sh1, sh2 = self.get_input_shapes(obj)
         if None in [f1, f2, sh1, sh2]:
+            print("Input Error\n", f1, f2, sh1, sh2)
             return
         blso = blendSolids.BlendSolid(f1, f2, sh1, sh2)
         # print(blso)

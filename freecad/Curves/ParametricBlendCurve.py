@@ -146,8 +146,9 @@ class BlendCurveFP:
         parent = fp.getParent()
         if parent:
             glopl = parent.getGlobalPlacement()
-            w = w.transformGeometry(glopl.inverse().Matrix)
+            w.transformShape(glopl.inverse().Matrix)
         fp.Shape = w
+        fp.Placement = glopl.inverse()
 
     def onChanged(self, fp, prop):
         if 'Restore' in fp.State:
@@ -390,8 +391,9 @@ class BlendCurveVP:
             parent = self.Object.getParent()
             if parent:
                 glopl = parent.getGlobalPlacement()
-                sh = sh.transformGeometry(glopl.inverse().Matrix)
+                sh.transformShape(glopl.inverse().Matrix)
             self.Object.Shape = sh
+            self.Object.Placement = glopl.inverse()
             for obj in self.Object.InList:
                 if hasattr(obj, "Proxy") and "Curves.ParametricComb.Comb" in str(obj.Proxy):
                     obj.Proxy.execute(obj)

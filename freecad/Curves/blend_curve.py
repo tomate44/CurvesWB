@@ -19,6 +19,8 @@ from . import _utils
 from . import curves_to_surface
 
 CAN_MINIMIZE = True
+TOL3D = FreeCAD.Base.Precision.confusion()
+TOL2D = FreeCAD.Base.Precision.parametric(TOL3D)
 
 try:
     from scipy.optimize import minimize
@@ -426,6 +428,9 @@ class ValueOnEdge:
         self._edge = edge
         self._curve = Part.BSplineCurve()
         self._pts = []
+        self._closed = edge.isClosed()
+        self._first_param_picked = False
+        self._last_param_picked = False
         if value is not None:
             self.set(value)
 
@@ -464,7 +469,31 @@ class ValueOnEdge:
             # if abs(dist_par) <= self._edge.Length:
             return self._edge.getParameterByLength(dist_par)
         elif point is not None:
-            return self._edge.Curve.parameter(point)
+            p = self._edge.Curve.parameter(point)
+            if self._closed:
+                # print(f"Closed - {p}")
+                # print(abs(p - self._edge.Curve.FirstParameter))
+                # print(abs(p - self._edge.Curve.LastParameter))
+                is_first = abs(p - self._edge.Curve.FirstParameter) < TOL3D
+                is_last = abs(p - self._edge.Curve.LastParameter) < TOL3D
+                if is_first:
+                    if self._first_param_picked:
+                        # print("first parameter already picked")
+                        p = self._edge.Curve.LastParameter
+                        self._last_param_picked = True
+                    else:
+                        self._first_param_picked = True
+                if is_last:
+                    if self._last_param_picked:
+                        # print("last parameter already picked")
+                        p = self._edge.Curve.FirstParameter
+                        self._first_param_picked = True
+                    else:
+                        self._last_param_picked = True
+                if self._first_param_picked and self._last_param_picked:
+                    self._first_param_picked = False
+                    self._last_param_picked = False
+            return p
         else:
             raise ValueError("No parameter")
 
@@ -490,6 +519,8 @@ class ValueOnEdge:
             return
         par = [p.x for p in self._pts]
         if self._edge.isClosed() and self._edge.Curve.isPeriodic() and len(self._pts) > 2:
+            # print(self._pts[:-1])
+            # print(par)
             self._curve.interpolate(Points=self._pts[:-1], Parameters=par, PeriodicFlag=True)
         else:
             self._curve.interpolate(Points=self._pts, Parameters=par, PeriodicFlag=False)
@@ -809,6 +840,9 @@ class BlendSurface:
         s2.exchangeUV()
         s3 = curves_to_surface.U_linear_surface(s1)
         gordon = curves_to_surface.Gordon(s1, s2, s3)
+        # Part.show(s1.toShape())
+        # Part.show(s2.toShape())
+        # Part.show(s3.toShape())
         self._surface = gordon.Surface
         return self._surface
 
@@ -825,7 +859,7 @@ class BlendSurface:
     @property
     def ruled_surface(self):
         if self._ruled_surface is None:
-            self._ruled_surface = _utils.ruled_surface(self.edge1._edge, self.edge2._edge, True).Surface
+            self._ruled_surface = curves_to_surface.ruled_surface(self.edge1._edge, self.edge2._edge, True).Surface
         return self._ruled_surface
 
     def sample(self, num=3):
@@ -859,6 +893,7 @@ class BlendSurface:
         for p in self.sample(arg):
             bc = self.blendcurve_at(p)
             bc.auto_scale()
+            # print(f"{bc.point1.size}, {e1.value(p)}")
             self.edge1.size.add(val=bc.point1.size, point=e1.value(p))
             self.edge2.size.add(val=bc.point2.size, point=e2.value(p))
             # print("Auto scaling @ {:3.3f} = ({:3.3f}, {:3.3f})".format(p, bc.point1.size, bc.point2.size))
@@ -874,7 +909,7 @@ class BlendSurface:
 
 
 def test_blend_surface():
-    doc1 = FreeCAD.openDocument('/home/tomate/Documents/FC-Files/test_BlendSurface_1.FCStd')
+    doc1 = FreeCAD.ActiveDocument  # test_BlendSurface_1.FCStd
     o1 = doc1.getObject('Ruled_Surface001')
     e1 = o1.Shape.Edge1
     f1 = o1.Shape.Face1

@@ -69,6 +69,7 @@ def other_face(sh, f, e):
     try:
         anc = sh.ancestorsOfType(e, Part.Face)
     except Part.OCCError:
+        print("ancestorsOfType Failed")
         anc = []
     for af in anc:
         if not af.isPartner(f):
@@ -311,7 +312,7 @@ class BlendSolid:
         # Part.show(mf.face1)
         # Part.show(mf.face2)
         wire_pairs = list(self.get_wire_pairs())
-        for idx, tup in enumerate(mf.get_wire_pairs()):
+        for idx, tup in enumerate(wire_pairs):
             # print(f"wire pair {idx}")
             offset, inc = mf.wire_offset(*tup)
             for i in range(len(tup[0].Edges)):
@@ -322,6 +323,7 @@ class BlendSolid:
                 of1 = other_face(self.shape1, self.face1, e1)
                 of2 = other_face(self.shape2, self.face2, e2)
                 bs = bc.BlendSurface(e1, of1, e2, of2)
+                # print(e1, of1, e2, of2)
                 self.surflist.append(bs)
         # print("build surface OK")
 

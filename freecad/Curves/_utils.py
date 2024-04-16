@@ -175,14 +175,11 @@ def rootNode(shape, mode=2, deviation=0.3, angle=0.4):
 def ruled_surface(e1, e2, normalize=False):
     """creates a ruled surface between 2 edges or wires, with automatic orientation."""
     def wire_and_endpoints(sh):
+        pts = sh.discretize(10)
         if isinstance(sh, Part.Edge):
-            fp1 = sh.firstVertex(True).Point
-            lp1 = sh.lastVertex(True).Point
-            return Part.Wire([sh]), fp1, lp1
+            return Part.Wire([sh]), pts[1], pts[-2]
         else:
-            fp1 = sh.OrderedVertexes[0].Point
-            lp1 = sh.OrderedVertexes[-1].Point
-            return sh, fp1, lp1
+            return sh, pts[1], pts[-2]
 
     w1, fp1, lp1 = wire_and_endpoints(e1)
     w2, fp2, lp2 = wire_and_endpoints(e2)

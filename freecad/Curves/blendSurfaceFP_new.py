@@ -125,7 +125,10 @@ class BlendSurf2Command:
     def makeFeature(self, sel=None):
         fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "Blend Surface")
         BlendSurfaceFP2(fp)
-        BlendSurfaceVP2(fp.ViewObject)
+        if FreeCAD.GuiUp:
+            BlendSurfaceVP2(fp.ViewObject)
+        else:
+            fp.ViewObject.Proxy = 0
         fp.Sources = sel
         FreeCAD.ActiveDocument.recompute()
 
@@ -155,4 +158,5 @@ class BlendSurf2Command:
                 'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
 
-FreeCADGui.addCommand('Curves_BlendSurf2', BlendSurf2Command())
+if FreeCAD.GuiUp:
+    FreeCADGui.addCommand('Curves_BlendSurf2', BlendSurf2Command())

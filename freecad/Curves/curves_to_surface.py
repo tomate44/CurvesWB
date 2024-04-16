@@ -119,18 +119,18 @@ def orient_curves(c1, c2):
         else:
             return c.value(p)
 
-    def test_params(c1):
-        if c1.isClosed():
-            fp1 = 0.75 * c1.FirstParameter + 0.25 * c1.LastParameter
-            lp1 = 0.25 * c1.FirstParameter + 0.75 * c1.LastParameter
+    def test_params(cu):
+        if cu.isClosed():
+            fp = 0.75 * cu.FirstParameter + 0.25 * cu.LastParameter
+            lp = 0.25 * cu.FirstParameter + 0.75 * cu.LastParameter
         else:
-            fp1 = c1.FirstParameter
-            lp1 = c1.LastParameter
-        return fp1, lp1
+            fp = cu.FirstParameter
+            lp = cu.LastParameter
+        return fp, lp
 
-    def line(c1, par1, c2, par2):
-        p1 = value(c1, par1)
-        p2 = value(c2, par2)
+    def line(cu1, par1, cu2, par2):
+        p1 = value(cu1, par1)
+        p2 = value(cu2, par2)
         if p1.distanceToPoint(p2) < 1e-7:
             return Part.Vertex(p1)
         return Part.makeLine(p1, p2)
@@ -183,8 +183,8 @@ def ruled_surface(e1, e2, normalize=False, autotwist=0):
     If normalize is True, the surface will be normalized in U direction
     If curves are closed and autotwist is True,
     origin of edge e2 will be moved to minimize twist"""
-    c1 = e1.Curve.toBSpline()
-    c2 = e2.Curve.toBSpline()
+    c1 = e1.Curve.toBSpline(e1.FirstParameter, e1.LastParameter)
+    c2 = e2.Curve.toBSpline(e2.FirstParameter, e2.LastParameter)
     orient_curves(c1, c2)
     if c1.isClosed and c2.isClosed and autotwist:
         shift_origin(c1, c2, autotwist)
