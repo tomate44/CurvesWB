@@ -66,9 +66,23 @@ class solid:
                         "ShapeStatus",
                         "Solid",
                         "Status of the created shape")
+        obj.addProperty("App::PropertyBool",
+                        "ShowOpenEdges",
+                        "Debug",
+                        "If the output shape in not a solid, this will output the open edges")
         obj.ShapeStatus = ""
         obj.setEditorMode("ShapeStatus", 1)
         obj.Proxy = self
+
+    def find_open_edges(self, shape):
+        open_edges = []
+        for e in shape.Edges:
+            aot = shape.ancestorsOfType(e, Part.Face)
+            if len(aot) < 2:
+                open_edges.append(e)
+        if open_edges:
+            return Part.Compound(open_edges)
+        return shape
 
     def execute(self, obj):
         faces = _utils.getShape(obj, "Faces", "Face")
@@ -91,6 +105,8 @@ class solid:
             obj.ShapeStatus = "Shell"
         else:
             obj.ShapeStatus = "Compound"
+        if hasattr(obj, "ShowOpenEdges") and obj.ShowOpenEdges:
+            shape = self.find_open_edges(shape)
         obj.Shape = shape
 
     def onDocumentRestored(self, fp):
