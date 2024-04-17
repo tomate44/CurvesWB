@@ -17,6 +17,7 @@ from . import _utils
 from . import ICONPATH
 from pivy import coin
 from . import CoinNodes as coinNodes
+from . import TOL3D
 
 
 TOOL_ICON = os.path.join(ICONPATH, 'info.svg')
@@ -182,7 +183,6 @@ def curveNode(cur):
 def surfNode(surf):
     bspline = False
     rational = False
-    tol3d = FreeCAD.Base.Precision.confusion()
     try:
         poles = surf.getPoles()
         weights = surf.getWeights()
@@ -260,7 +260,7 @@ def surfNode(surf):
         for k in uknots:
             try:
                 uIso = surf.uIso(k)
-                if uIso.length() > tol3d:
+                if uIso.length() > TOL3D:
                     epts = uIso.toShape().discretize(np)
                     for p in epts:
                         uknotPoints.append((p.x, p.y, p.z))
@@ -282,7 +282,7 @@ def surfNode(surf):
         for k in vknots:
             try:
                 vIso = surf.vIso(k)
-                if vIso.length() > tol3d:
+                if vIso.length() > TOL3D:
                     epts = vIso.toShape().discretize(np)
                     for p in epts:
                         vknotPoints.append((p.x, p.y, p.z))

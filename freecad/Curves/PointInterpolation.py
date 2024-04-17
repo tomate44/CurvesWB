@@ -1,6 +1,7 @@
 import FreeCAD
 import FreeCADGui
 import Part
+from . import TOL3D
 
 """
 from freecad.Curves import PointInterpolation
@@ -20,7 +21,7 @@ class PointInterpolation:
             self.Points = [v.Point for v in points]
         else:
             self.Points = points
-        self.Tolerance = FreeCAD.Base.Precision.confusion()
+        self.Tolerance = TOL3D
         self.Periodic = periodic
         self.check_duplicates()
         if self.Periodic and (not self.Duplicates) and self.are_closed():

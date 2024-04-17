@@ -17,10 +17,9 @@ import numpy as np
 from .gordon import GordonSurfaceBuilder
 from . import _utils
 from . import curves_to_surface
+from . import TOL3D, TOL2D
 
 CAN_MINIMIZE = True
-TOL3D = FreeCAD.Base.Precision.confusion()
-TOL2D = FreeCAD.Base.Precision.parametric(TOL3D)
 
 try:
     from scipy.optimize import minimize

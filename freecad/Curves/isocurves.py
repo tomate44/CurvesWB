@@ -14,9 +14,7 @@ import FreeCAD
 from FreeCAD import Base
 import Part
 from freecad.Curves import _utils
-
-
-TOL3D = FreeCAD.Base.Precision.confusion()
+from . import TOL3D
 
 
 class curve(object):

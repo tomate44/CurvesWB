@@ -1,8 +1,8 @@
 from math import pi
 import Part
-tol = Part.Precision.confusion()
+from . import TOL3D
 
-def fit_edge_to_point(e1, pt, tol=1e-7):
+def fit_edge_to_point(e1, pt, tol=TOL3D):
     """Transform an edge by rotation / scaling so that its nearest end match point.
     The opposite end is not moved.
     """
@@ -37,7 +37,7 @@ for s in sel:
 
 
 # sort edges. Requires FC 0.22
-sort_tol = tol
+sort_tol = TOL3D
 sortedges = Part.sortEdges(edges, sort_tol)
 while len(sortedges) > 1:
     sort_tol *= 2
