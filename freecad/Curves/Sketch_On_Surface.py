@@ -258,13 +258,15 @@ class sketchOnSurface:
     def offset_face(self, face, offset):
         """makeOffsetShape generates a plane from any planar surface.
         But we want to keep the parametric space of the original surface."""
+        u0, u1, v0, v1 = face.ParameterRange
         if face.Surface.isPlanar():
-            u0, u1, v0, v1 = face.ParameterRange
             n = face.normalAt(u0, v0)
             nf = face.copy()
             nf.translate(n * offset)
             return nf
-        return face.makeOffsetShape(offset, 1e-7)
+        offsurf = Part.OffsetSurface(face.Surface, offset)
+        rts = Part.RectangularTrimmedSurface(offsurf, u0, u1, v0, v1)
+        return rts.toShape()
 
     def execute(self, obj):
         if not obj.Sketch:
