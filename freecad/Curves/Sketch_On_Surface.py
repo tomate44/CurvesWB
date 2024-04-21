@@ -349,7 +349,7 @@ class sketchOnSurface:
                                 continue
                             ruled = Part.makeRuledSurface(shapes_1[i].Edges[j], shapes_2[i].Edges[j])
                             try:
-                                ruled.check(True)
+                                ruled.check(False)
                             except ValueError:
                                 continue
                             faces.append(ruled)
