@@ -381,7 +381,9 @@ class GeomInfo:
             self.cam.viewportMapping = coin.SoCamera.LEAVE_ALONE
 
             self.trans = coin.SoTranslation()
-            self.trans.translation = (-0.98, 0.90, 0)
+            left_margin = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves").GetFloat('GeomInfoLeftMargin', 0.02)
+            top_margin = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves").GetFloat('GeomInfoTopMargin', 0.1)
+            self.trans.translation = (-1.0 + left_margin * 2, 1.0 - top_margin * 2, 0)
 
             self.myFont = coin.SoFont()
             f_name = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves").GetString('GeomInfoFontString', "FreeMono,FreeSans,sans")
