@@ -264,6 +264,8 @@ class sketchOnSurface:
             nf = face.copy()
             nf.translate(n * offset)
             return nf
+        if face.Orientation == "Reversed":
+            offset = -offset
         offsurf = Part.OffsetSurface(face.Surface, offset)
         rts = Part.RectangularTrimmedSurface(offsurf, u0, u1, v0, v1)
         return rts.toShape()
@@ -318,22 +320,28 @@ class sketchOnSurface:
         if obj.SwapUV:
             bs.exchangeUV()
         quad = bs.toShape()
-        quad.Placement = obj.Sketch.getGlobalPlacement()
-        imput_shapes = [obj.Sketch.Shape] + [o.Shape for o in obj.ExtraObjects]
+        m = obj.Sketch.getGlobalPlacement().Matrix
+        m.invert()
+        inp_sh = [obj.Sketch.Shape.copy()] + [o.Shape.copy() for o in obj.ExtraObjects]
+        input_shapes = []
+        for sh in inp_sh:
+            if not sh.isNull():
+                sh.transformShape(m)
+                input_shapes.append(sh)
         shapes_1 = []
         shapes_2 = []
         if (obj.Offset == 0):
-            shapes_1 = self.map_shapelist(imput_shapes, quad, face, obj.FillFaces)
+            shapes_1 = self.map_shapelist(input_shapes, quad, face, obj.FillFaces)
         else:
             f1 = self.offset_face(face, obj.Offset)
-            shapes_1 = self.map_shapelist(imput_shapes, quad, f1.Face1, obj.FillFaces)
+            shapes_1 = self.map_shapelist(input_shapes, quad, f1.Face1, obj.FillFaces)
         if (obj.Thickness == 0):
             if shapes_1:
                 obj.Shape = Part.Compound(shapes_1)
             return
         else:
             f2 = self.offset_face(face, obj.Offset + obj.Thickness)
-            shapes_2 = self.map_shapelist(imput_shapes, quad, f2.Face1, obj.FillFaces)
+            shapes_2 = self.map_shapelist(input_shapes, quad, f2.Face1, obj.FillFaces)
             if not obj.FillExtrusion:
                 if shapes_1 or shapes_2:
                     obj.Shape = Part.Compound(shapes_1 + shapes_2)
