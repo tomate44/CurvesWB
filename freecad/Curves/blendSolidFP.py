@@ -226,10 +226,15 @@ class BlendSolidCommand:
                 #     untwist.append((selobj.Object, sen))
                 if "Face" in sen:
                     sources.append((selobj.Object, sen))
-        if len(sources) == 2:
-            self.makeFeature(sources)  # , untwist)
-        else:
+        if not len(sources) == 2:
             FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
+        else:
+            f1 = sources[0][0].getSubObject(sources[0][1])
+            f2 = sources[1][0].getSubObject(sources[1][1])
+            if len(f1.Edges) == len(f2.Edges):
+                self.makeFeature(sources)
+            else:
+                FreeCAD.Console.PrintError("BlendSolid : The two faces must have the same number of edges\n")
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:

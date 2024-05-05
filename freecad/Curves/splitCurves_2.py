@@ -42,6 +42,10 @@ class split:
                         "Values",
                         "Split",
                         "List of splitting locations\n% and units are allowed\nNegative values are computed from edge end")
+        obj.addProperty("App::PropertyInteger",
+                        "Number",
+                        "Split",
+                        "Number of equal segments").Number = 2
         obj.addProperty("App::PropertyLinkList",
                         "CuttingObjects",
                         "Split",
@@ -54,6 +58,10 @@ class split:
                         "NormalizedParameters",
                         "Output",
                         "Normalized parameters list")
+        obj.addProperty("App::PropertyBool",
+                        "KeepSolid",
+                        "Split",
+                        "Rebuild and output the complete solid")
         obj.setEditorMode("NormalizedParameters", 2)
 
     def getShape(self, fp):
@@ -137,6 +145,10 @@ class split:
                         debug('adding param : {}'.format(inf[2]))
                         params.append(inf[2])
 
+        if hasattr(obj, "Number") and obj.Number > 1:
+            pts = e.discretize(obj.Number + 1)
+            for pt in pts:
+                params.append(e.Curve.parameter(pt))
         if params == []:
             if w:
                 obj.Shape = obj.Source[0].Shape
@@ -171,23 +183,56 @@ class split:
                             # print(se)
                         w = Part.Wire(se[0])
         else:
-            edges = []
-            print(params)
-            for i in range(len(params) - 1):
-                c = e.Curve.trim(params[i], params[i + 1])
-                edges.append(c.toShape())
-
-        se = Part.sortEdges(edges)
-        if len(se) > 1:
-            FreeCAD.Console.PrintError("Split curve : failed to build final Wire !")
-            wires = []
-            for el in se:
-                wires.append(Part.Wire(el))
-            w = Part.Compound(wires)
-        else:
-            w = Part.Wire(se[0])
+            w = e.split(params[1:-1])
+            w.Placement = e.Placement
+        #     edges = []
+        #     print(params)
+        #     for i in range(1, len(params) - 1):
+        #         c = e.Curve.trim(params[i], params[i + 1])
+        #         edges.append(c.toShape())
+        #
+        # se = Part.sortEdges(edges)
+        # if len(se) > 1:
+        #     FreeCAD.Console.PrintError("Split curve : failed to build final Wire !")
+        #     wires = []
+        #     for el in se:
+        #         wires.append(Part.Wire(el))
+        #     w = Part.Compound(wires)
+        # else:
+        #     w = Part.Wire(se[0])
+        if e.Orientation == "Reversed":
+            el = [e.reversed() for e in w.Edges]
+            w = Part.Wire(el)
         if w.isValid():
-            obj.Shape = w
+            # obj.Shape = w
+            if hasattr(obj, "KeepSolid") and obj.KeepSolid:
+                o = obj.Source[0]
+                sh = o.Shape  # .copy()
+                edgename = obj.Source[1][0]
+                n = int(edgename.lstrip("Edge"))
+                nsh = sh
+                if len(e.Vertexes) == 1:
+                    nsh = sh.replaceShape([(e, w), (e.Vertex1, w.Vertexes[0])])
+                    debug("Replacing closed edge")
+                elif len(e.Vertexes) == 2:
+                    if e.Vertex1.Point.distanceToPoint(w.Vertexes[0].Point) < 1e-7:
+                        nsh = sh.replaceShape([(e, w), (e.Vertex1, w.Vertexes[0]), (e.Vertex2, w.Vertexes[-1])])
+                        debug("Replacing open edge, ordered vertexes")
+                    elif e.Vertex1.Point.distanceToPoint(w.Vertexes[-1].Point) < 1e-7:
+                        nsh = sh.replaceShape([(e, w), (e.Vertex1, w.Vertexes[-1]), (e.Vertex2, w.Vertexes[0])])
+                        debug("Replacing open edge, reversed vertexes")
+                try:
+                    fix = Part.ShapeFix.Shape(nsh)
+                    fix.perform()
+                    nsh = fix.shape()
+                    nsh.check(True)
+                    obj.Shape = nsh
+                except Exception as exc:
+                    FreeCAD.Console.PrintError(f"Split curve : Failed to rebuild complete shape\n{exc}")
+                    obj.Shape = w
+                obj.Placement = sh.Placement
+            else:
+                obj.Shape = w
             obj.NormalizedParameters = KnotVector(params).normalize()
         else:
             FreeCAD.Console.PrintError("Split curve : Invalid Wire !")
@@ -586,7 +631,7 @@ class splitCommand:
         split(splitCurve, e)
         splitVP(splitCurve.ViewObject)
         FreeCAD.ActiveDocument.recompute()
-        splitCurve.Values = ["50%"]
+        splitCurve.Values = []
         splitCurve.ViewObject.PointSize = 5.0
 
     def Activated(self):

@@ -278,7 +278,7 @@ class MatchFaces:
         second = min(dl)
         ratio = (second - mini) / (maxi - mini)
         score = int(ratio * 100)
-        print(f"Blendsolid: Edge matching score = {score}%")
+        # print(f"Blendsolid: Edge matching score = {score}%")
         return offset, inc
 
 
