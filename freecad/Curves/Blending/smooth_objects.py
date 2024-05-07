@@ -16,9 +16,11 @@ import numpy as np
 # from scipy.linalg import solve
 
 from math import pi
+from .. import TOL3D, TOL2D
 from .. import _utils
 from .. import curves_to_surface
 from ..nurbs_tools import nurbs_quad
+
 
 
 def printError(string):
@@ -603,6 +605,33 @@ class SmoothEdgeOnFace(SmoothEdge):
         if outs is not False:
             self.aux_curve = EdgeInterpolator(self._edge)
             self.aux_curve.set_value((0, outs))
+
+    def other_edge(self, v):
+        el = self._face.ancestorsOfType(v, Part.Edge)
+        for e in el:
+            if not e.isSame(self._edge):
+                return e
+
+    def neighbour_tangents(self):
+        v1 = self._edge.firstVertex()
+        e1 = self.other_edge(v1)
+        v2 = self._edge.lastVertex()
+        e2 = self.other_edge(v2)
+        if v1.Point.distanceToPoint(e1.valueAt(e1.FirstParameter)) <= TOL3D:
+            tan1 = -e1.tangentAt(e1.FirstParameter)
+        elif v1.Point.distanceToPoint(e1.valueAt(e1.LastParameter)) <= TOL3D:
+            tan1 = e1.tangentAt(e1.LastParameter)
+        if v2.Point.distanceToPoint(e2.valueAt(e2.FirstParameter)) <= TOL3D:
+            tan2 = -e2.tangentAt(e2.FirstParameter)
+        elif v2.Point.distanceToPoint(e2.valueAt(e2.LastParameter)) <= TOL3D:
+            tan2 = e2.tangentAt(e2.LastParameter)
+        return tan1, tan2
+
+    def setTangentToNeighbours(self):
+        t1, t2 = self.neighbour_tangents()
+
+        self.aux_curve = EdgeInterpolator(self._edge)
+        self.aux_curve.set_value((0, outs))
 
     def frenetPlaneAt(self, par):
         o = self._edge.valueAt(par)
