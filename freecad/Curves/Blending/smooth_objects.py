@@ -118,6 +118,8 @@ def get_surface_derivatives(surface, location, direction=(), target=None, cont=1
         x, y, z = coords_to_UVW(dirv, du, dv)
     elif isinstance(direction, FreeCAD.Vector):
         x, y, z = coords_to_UVW(direction, du, dv)
+    elif isinstance(direction, (list, tuple)) and len(direction) == 3:
+        x, y, z = coords_to_UVW(vec3(direction), du, dv)
     else:
         x, y = coords2d(direction)
     d1 = x * du + y * dv
@@ -256,10 +258,11 @@ class EdgeInterpolator:
         if len(self.values) <= 1:
             self._curve = self.default_curve(self.values[0].Value)
             return True
-        sorval = sorted(self.values)
+        sorval = sorted(self.values, key=lambda x: x.Param)
         # print(sorval)
         par = [v.Param for v in sorval]
         # print(par)
+        print(sorval[0].Value)
         pts = [FreeCAD.Vector(*v.Value) for v in sorval]
         # print(pts)
         if (len(pts) == 2) and (pts[0].distanceToPoint(pts[1]) < 1e-6):
@@ -571,6 +574,16 @@ class SmoothEdgeOnFace(SmoothEdge):
         else:
             self._face = face
 
+    def tangent_plane_at(self, param, origin=None):
+        cos, fp, lp = self._face.curveOnSurface(self._edge)
+        if origin is None:
+            origin = self._edge.valueAt(param)
+        loc2d = cos.value(param)
+        tan = self._edge.tangent(param)
+        norm = self._face.normalAt(*loc2d)
+        bino = norm.cross(tan)
+        pl = Part.Plane(origin, origin + tan, origin + bino)
+
     def getOutside(self, par=0.5, eps=1e-3):
         p = self._fp + par * (self._lp - self._fp)
         o = self._edge.valueAt(p)
@@ -584,8 +597,11 @@ class SmoothEdgeOnFace(SmoothEdge):
         # Part.show(c3d)
         # Part.show(self._face)
         d, pts, info = self._face.distToShape(c3d)
+        print(info)
         if len(pts) == 1:
             int_par = info[0][5]
+            if int_par is None:
+                return -1
             if int_par < pi:
                 return -1
             else:
@@ -625,13 +641,22 @@ class SmoothEdgeOnFace(SmoothEdge):
             tan2 = -e2.tangentAt(e2.FirstParameter)
         elif v2.Point.distanceToPoint(e2.valueAt(e2.LastParameter)) <= TOL3D:
             tan2 = e2.tangentAt(e2.LastParameter)
+        print(tan1, tan2)
         return tan1, tan2
 
     def setTangentToNeighbours(self):
         t1, t2 = self.neighbour_tangents()
-
+        pl1 = self.tangent_plane_at(self._edge.FirstParameter, FreeCAD.Vector())
+        pl2 = self.tangent_plane_at(self._edge.LastParameter, FreeCAD.Vector())
+        tan1 = pl1.parameter(t1)
+        tan2 = pl2.parameter(t2)
+        # tan1 = get_surface_derivatives(self._face.Surface, location=p1, direction=t1)
+        # tan2 = get_surface_derivatives(self._face.Surface, location=p2, direction=t2)
+        # Part.show(Part.makeLine(tan1[0], tan1[0] + tan1[1] * 10))
+        # Part.show(Part.makeLine(tan2[0], tan2[0] + tan2[1] * 10))
         self.aux_curve = EdgeInterpolator(self._edge)
-        self.aux_curve.set_value((0, outs))
+        self.aux_curve.set_start_value(tan1)
+        self.aux_curve.set_end_value(tan2)
 
     def frenetPlaneAt(self, par):
         o = self._edge.valueAt(par)
@@ -662,7 +687,8 @@ class SmoothEdgeOnFace(SmoothEdge):
 
     def valueAt(self, par):
         location = self._face.Surface.parameter(self._edge.valueAt(par))
-        pt = self.crossDirAt(par)
+        pt = vec3(self.crossDirAt(par))
+        print(location, pt)
         sd = get_surface_derivatives(self._face.Surface, location, target=pt, cont=self.continuity)
         size = self.size.valueAt(par)[0]
         # print(size)
@@ -845,13 +871,14 @@ vec2 = FreeCAD.Base.Vector2d
 from freecad.Curves.Blending import smooth_objects
 reload(smooth_objects)
 sme1 = smooth_objects.SmoothEdgeOnFace(e1, f1, 3)
-sme1.setOutside()
-sp = sme1.valueAt(0.5)
+sme1.setTangentToNeighbours()
+# sp = sme1.valueAt(0.5)
+Part.show(sme1.shape(20))
 
-Part.show(sme1.shape(50))
 sme2 = smooth_objects.SmoothEdgeOnFace(e2, f2, 3)
-sme2.setOutside(True)
-Part.show(sme2.shape(50))
+sme2.setTangentToNeighbours(True)
+Part.show(sme2.shape(20))
+
 
 bls = smooth_objects.BlendSurface(e1, f1, e2, f2)
 bls.continuity = 3
