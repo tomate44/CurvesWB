@@ -263,7 +263,7 @@ class EdgeInterpolator:
         par = [v.Param for v in sorval]
         # print(par)
         print(sorval[0].Value)
-        pts = [FreeCAD.Vector(*v.Value) for v in sorval]
+        pts = [FreeCAD.Vector(v.Value[0]) for v in sorval]
         # print(pts)
         if (len(pts) == 2) and (pts[0].distanceToPoint(pts[1]) < 1e-6):
             self._curve = self.default_curve(pts[0])
@@ -277,6 +277,8 @@ class EdgeInterpolator:
         elif self._edge.isClosed() and self._edge.Curve.isPeriodic() and len(pts) > 2:
             self._curve.interpolate(Points=pts[:-1], Parameters=par, PeriodicFlag=True)
         else:
+            print(pts)
+            print(par)
             self._curve.interpolate(Points=pts, Parameters=par, PeriodicFlag=False)
         return True
 
@@ -735,6 +737,8 @@ class BlendSurface:
         iv0, iv1 = self.rails
         self.edge1 = SmoothEdgeOnFace(iv0.toShape(), face1)
         self.edge2 = SmoothEdgeOnFace(iv1.toShape(), face2)
+        self.edge1.setTangentToNeighbours()
+        self.edge2.setTangentToNeighbours()
         self._surface = None
         self._curves = []
 
@@ -773,7 +777,7 @@ class BlendSurface:
     @property
     def surface(self):
         "Returns the BSpline surface that represent the BlendSurface"
-        # self.perform()
+        self.perform()
         guides = [bezier.toBSpline() for bezier in self._curves]
         cts = curves_to_surface.CurvesToSurface(guides)
         cts.Parameters = self._params
@@ -852,6 +856,7 @@ class BlendSurface:
     def perform(self, arg=20, size1=0.0, size2=0.0):
         bc_list = []
         bs = Part.BezierCurve()
+        print(self.edge1._fp, self.edge1._lp, arg)
         params1 = np.linspace(self.edge1._fp, self.edge1._lp, arg)
         params2 = np.linspace(self.edge2._fp, self.edge2._lp, arg)
         for i in range(len(params1)):
@@ -883,7 +888,7 @@ Part.show(sme2.shape(20))
 bls = smooth_objects.BlendSurface(e1, f1, e2, f2)
 bls.continuity = 3
 print(bls)
-bls.set_mutual_target()
+# bls.set_mutual_target()
 # bls.set_outside()
 bls.auto_scale(6)
 bls.perform(20)
