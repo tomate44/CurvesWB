@@ -27,6 +27,48 @@ def printError(string):
 #     return f"Vector({v.x:6.2f}, {v.y:6.2f}, {v.z:6.2f})"
 
 
+class ProfileWire:
+    def __init__(self, shape):
+        self.Shape = shape
+        self.WireProfiles = [ProfileWire(w) for w in shape.Wires]
+        self._default_indices = list(range(len(shape.Wires)))
+        self._wireid = self.default_indices
+
+    def Wires(self, idx):
+        assert (sorted(self._wireid) == self._default_indices)
+        return self.Shape.WireProfiles[self._wireid[idx]]
+
+    def toShape(self):
+        edges = [wp.toShape() for wp in self.WireProfiles]
+        return Part.Wire(edges)
+
+
+class ProfileWires:
+    def __init__(self, shape):
+        self.Shape = shape
+        self.WireProfiles = [ProfileWire(w) for w in shape.Wires]
+        self._default_indices = list(range(len(shape.Wires)))
+        self._wireid = self.default_indices
+
+    def Wires(self, idx):
+        assert (sorted(self._wireid) == self._default_indices)
+        return self.Shape.WireProfiles[self._wireid[idx]]
+
+    def toShape(self):
+        wires = [wp.toShape() for wp in self.WireProfiles]
+        return Part.Compound(wires)
+
+
+class ProfileFace(ProfileWires):
+    def __init__(self, shape):
+        super().__init__(shape)
+
+    def toShape(self):
+        wires = [wp.toShape() for wp in self.WireProfiles]
+        f = Part.Face(self.Shape.Face1.Surface, wires)
+        return f
+
+
 class Profile:
     def __init__(self, shape, matrix=None):
         self.Shape = shape
@@ -67,7 +109,7 @@ class Profile:
 
 
 class ProfileMatcher:
-    def __init__(self, shapes):
+    def __init__(self, shapes, verttol=0.1, removeC1=True, angTol=0.1):
         self.Profiles = []
         for sh in shapes:
             if hasattr(sh, "WireProfiles"):
@@ -75,8 +117,12 @@ class ProfileMatcher:
             elif hasattr(sh, "Solids"):
                 self.Profiles.append(Profile(sh))
 
+    @property
+    def Shape(self):
+        return Part.Compound([p.Shape for p in self.Profiles])
+
 def test():
     sel = FreeCADGui.Selection.getSelection()
-    return ProfileMatcher([o.Shape for o in sel])
+    return ProfileMatcher([o.toShape() for o in sel])
 
 
