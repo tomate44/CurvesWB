@@ -88,7 +88,7 @@ class ProfileMatcherGuiProxy:
 class ProfileMatcherCommand:
     """Create a ... feature"""
     def makeFeature(self, sel=None):
-        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "")
+        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "ProfileMatcher")
         ProfileMatcherAppProxy(fp, sel)
         ProfileMatcherGuiProxy(fp.ViewObject)
         FreeCAD.ActiveDocument.recompute()
@@ -100,7 +100,11 @@ class ProfileMatcherCommand:
         else:
             links = []
             for sel in selobj:
-                links.append((sel.Object, sel.SubElementNames))
+                if sel.SubElementNames:
+                    links.append([sel.Object, sel.SubElementNames])
+                else:
+                    links.append(sel.Object)
+            # print(links)
             self.makeFeature(links)
 
     def IsActive(self):
