@@ -55,12 +55,14 @@ class ProfileWire:
         if self.Normal:
             return Part.Line(self.Center, self.Normal)
 
-    def transform(self):
+    def transform(self, normalize=False):
         self.Matrix.setCol(0, self.AxisX)
         self.Matrix.setCol(1, self.Normal.cross(self.AxisX))
-        self.Matrix.setCol(3, self.Normal)
-        self.Matrix.setCol(4, self.Center)
-        self.XYShape = self.Shape.transformGeometry(self.Matrix)
+        self.Matrix.setCol(2, self.Normal)
+        self.Matrix.setCol(3, self.Center)
+        self.XYShape = self.Shape.transformGeometry(self.Matrix.inverse())
+        if normalize:
+            self.normalize_size()
 
     def normalize_size(self):
         bb = self.XYShape.BoundBox
@@ -72,9 +74,31 @@ class ProfileWire:
         m = FreeCAD.Matrix()
         m.move(-bb.Center)
         m.scale(xfac, yfac, 1.0)
-        self.XYShape = self.Shape.transformGeometry(m)
+        self.XYShape = self.XYShape.transformGeometry(m)
 
-    def toShape(self):
+    def set_normal_towards(self, other):
+        if self.Normal:
+            if self.normal_line().parameter(other.Center) < 0.0:
+                self.Normal = -self.Normal
+            return
+        ml = Part.makeLine(self.Center, other.Center)
+        self.Normal = ml.Curve.Direction
+
+    def set_xaxis_with(self, other):
+        pl1 = Part.Plane(self.Center, self.Normal)
+        pl2 = Part.Plane(other.Center, other.Normal)
+        inters = pl1.intersectSS(pl2)
+        if inters:
+            self.AxisX = inters[0].Direction
+            other.AxisX = inters[0].Direction
+
+    def match_with(self, other):
+        self.transform(True)
+        other.transform(True)
+
+    def toShape(self, xy=False):
+        if xy:
+            return self.XYShape
         return self.Shape
 
 
@@ -120,7 +144,7 @@ class ProfileMatcher:
 
     @property
     def Shape(self):
-        return Part.Compound([p.toShape() for p in self.Profiles])
+        return Part.Compound([p.toShape(True) for p in self.Profiles])
 
     def create_profile(self, shape):
         if isinstance(shape, Part.Face):
@@ -137,19 +161,16 @@ class ProfileMatcher:
             return True
         return False
 
+    def all_normals_defined(self):
+        nl = [isinstance(p.Normal, FreeCAD.Vector) for p in self.Profiles]
+        return all(nl)
+
     def auto_orient(self):
         for i in range(len(self.Profiles) - 1):
             pro1 = self.Profiles[i]
             pro2 = self.Profiles[i + 1]
-            if pro1.Normal and pro2.Normal:
-                if pro1.normal_line().parameter(pro2.Center) < 0.0:
-                    pro1.Normal.reverse()
-                pl1 = Part.Plane(pro1.Center, pro1.Normal)
-                pl2 = Part.Plane(pro2.Center, pro2.Normal)
-                inters = pl1.intersectSS(pl2)
-                if inters:
-                    pro1.AxisX = inters[0].Direction
-                    pro2.AxisX = inters[0].Direction
+            pro1.set_normal_towards(pro2)
+            pro1.set_xaxis_with(pro2)
         return
 
     def find_C1_vertexes(self):

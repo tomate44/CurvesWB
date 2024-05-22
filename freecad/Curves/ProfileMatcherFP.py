@@ -52,6 +52,7 @@ class ProfileMatcherAppProxy:
                 shapes.append(source.Shape)
         reload(ProfileMatcher)
         pm = ProfileMatcher.ProfileMatcher(shapes, obj.VertexTolerance, obj.RemoveC1Vertexes, obj.AngularTolerance)
+        pm.match()
         obj.Shape = pm.Shape
 
     def onChanged(self, obj, prop):
