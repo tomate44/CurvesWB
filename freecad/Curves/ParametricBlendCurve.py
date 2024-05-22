@@ -143,11 +143,12 @@ class BlendCurveFP:
                 w = w.approximate(1e-7, 1e-7, 99, 9).toShape()
         else:
             w = bc.shape
-        parent = fp.getParent()
-        if parent:
-            glopl = parent.getGlobalPlacement()
-            w.transformShape(glopl.inverse().Matrix)
-            fp.Placement = glopl.inverse()
+        if hasattr(fp, "getParent"):
+            parent = fp.getParent()
+            if parent:
+                glopl = parent.getGlobalPlacement()
+                w.transformShape(glopl.inverse().Matrix)
+                fp.Placement = glopl.inverse()
         fp.Shape = w
 
     def onChanged(self, fp, prop):

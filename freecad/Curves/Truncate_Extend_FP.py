@@ -121,11 +121,11 @@ class TruncateExtendCommand:
         sel = FreeCADGui.Selection.getSelection()
         if len(sel) == 1:
             t1 = sel[0].TypeId
-            parent = sel[0].getParentGeoFeatureGroup()
-            if parent and (parent.TypeId == "PartDesign::Body") and (t1 == "PartDesign::Plane"):
-                self.makePDFeature(parent, sel[0])
+            if hasattr(sel[0], "getParentGeoFeatureGroup"):
+                parent = sel[0].getParentGeoFeatureGroup()
+                if parent and (parent.TypeId == "PartDesign::Body") and (t1 == "PartDesign::Plane"):
+                    self.makePDFeature(parent, sel[0])
         elif len(sel) == 2:
-            
             self.makePartFeature(sel)
         else:
             FreeCAD.Console.PrintError("Wrong Selection\n")
