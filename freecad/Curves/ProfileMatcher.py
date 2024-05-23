@@ -60,7 +60,7 @@ class ProfileWire:
         self.Matrix.setCol(1, self.Normal.cross(self.AxisX))
         self.Matrix.setCol(2, self.Normal)
         self.Matrix.setCol(3, self.Center)
-        self.XYShape = self.Shape.transformGeometry(self.Matrix.inverse())
+        self.XYShape = self.Shape.transformGeometry(self.Matrix.inverse()).Wire1
         if normalize:
             self.normalize_size()
 
@@ -74,12 +74,14 @@ class ProfileWire:
         m = FreeCAD.Matrix()
         m.move(-bb.Center)
         m.scale(xfac, yfac, 1.0)
-        self.XYShape = self.XYShape.transformGeometry(m)
+        self.XYShape = self.XYShape.transformGeometry(m).Wire1
 
-    def set_normal_towards(self, other):
+    def set_normals_towards(self, other):
         if self.Normal:
             if self.normal_line().parameter(other.Center) < 0.0:
                 self.Normal = -self.Normal
+            if other.normal_line().parameter(self.Center) < 0.0:
+                other.Normal = -other.Normal
             return
         ml = Part.makeLine(self.Center, other.Center)
         self.Normal = ml.Curve.Direction
@@ -89,12 +91,60 @@ class ProfileWire:
         pl2 = Part.Plane(other.Center, other.Normal)
         inters = pl1.intersectSS(pl2)
         if inters:
-            self.AxisX = inters[0].Direction
-            other.AxisX = inters[0].Direction
+            axis = inters[0].Direction
+        else:  # profiles have parallel normals
+            if pl1.normal(0, 0).dot(FreeCAD.Vector(1, 0, 0)) < 0.5:
+                axis = pl1.normal(0, 0).cross(FreeCAD.Vector(1, 0, 0))
+            else:
+                axis = pl1.normal(0, 0).cross(FreeCAD.Vector(0, 1, 0))
+        self.AxisX = axis
+        other.AxisX = axis
+
+    def shift_origin(self, other):
+        v = other.XYShape.Edge1.firstVertex()
+        comp = Part.Compound([e.firstVertex() for e in self.XYShape.Edges])
+        d, pts, info = comp.distToShape(v)
+        new_origin = info[0][1]
+        if new_origin > 0:
+            print(f"Shifting origin to vertex {new_origin}")
+            edges = self.Shape.Edges[new_origin:] + self.Shape.Edges[:new_origin]
+            self.Shape = Part.Wire(edges)
+            self.transform(True)
+
+    def orient_with_openwire(self, other):
+        v = other.XYShape.Edge1.Vertex1
+        comp = Part.Compound([self.XYShape.Edges[0].Vertexes[0], self.XYShape.Edges[-1].Vertexes[-1]])
+        d, pts, info = comp.distToShape(v)
+        new_origin = info[0][1]
+        print(new_origin)
+        if new_origin == 1:
+            print(f"Reversing open profile")
+            self.Shape = Part.Wire(self.Shape.Edges[::-1])
+            self.transform(True)
+
+    def match_points(self, pts1, pts2):
+        idx = []
+        vl = Part.Compound([Part.Vertex(p) for p in pts2])
+        for p in pts1:
+            v = Part.Vertex(p)
+            d, pts, info = vl.distToShape(v)
+            idx.append(info[0][1])
+        return idx
 
     def match_with(self, other):
         self.transform(True)
         other.transform(True)
+        if self.Shape.isClosed() and other.Shape.isClosed():
+            self.shift_origin(other)
+            pts1 = self.XYShape.discretize(5)[1:-1]
+            pts2 = other.XYShape.discretize(5)[1:-1]
+            idx = self.match_points(pts1, pts2)
+            if idx == [3, 2, 1]:
+                print(f"Reversing closed profile")
+                self.Shape = Part.Wire(self.Shape.Edges[::-1])
+                self.transform(True)
+        else:
+            self.orient_with_openwire(other)
 
     def toShape(self, xy=False):
         if xy:
@@ -167,10 +217,12 @@ class ProfileMatcher:
 
     def auto_orient(self):
         for i in range(len(self.Profiles) - 1):
+            print(f"Orienting profile {i + 1}")
             pro1 = self.Profiles[i]
             pro2 = self.Profiles[i + 1]
-            pro1.set_normal_towards(pro2)
+            pro1.set_normals_towards(pro2)
             pro1.set_xaxis_with(pro2)
+            pro2.match_with(pro1)
         return
 
     def find_C1_vertexes(self):
