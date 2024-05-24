@@ -15,7 +15,7 @@ import Part
 # import numpy as np
 # from scipy.linalg import solve
 
-# from .. import _utils
+from . import nurbs_tools
 # from .. import curves_to_surface
 # from ..nurbs_tools import nurbs_quad
 
@@ -29,14 +29,23 @@ def printError(string):
 
 class ProfileWire:
     def __init__(self, shape):
-        self.Shape = shape
-        self.XYShape = shape
+        self.Shape = self.cleanup(shape)
+        self.XYShape = self.Shape
         self.Matrix = FreeCAD.Matrix()
         self.Normal = self.get_normal()
         self.Center = self.Shape.CenterOfGravity
         self.AxisX = None
-        # self._default_indices = list(range(len(shape.Edges)))
+        # self._default_indices = list(range(len(self.Shape.Edges)))
         # self._edgeid = self._default_indices
+
+    def cleanup(self, wire):
+        edges = []
+        for e in wire.Edges:
+            c = e.Curve.trim(e.FirstParameter, e.LastParameter)
+            if e.Orientation == "Reversed":
+                c.reverse()
+            edges.append(c.toShape())
+        return Part.Wire(edges)
 
     def get_normal(self):
         pl = self.Shape.findPlane()
@@ -50,6 +59,7 @@ class ProfileWire:
             tn += v1.cross(v2)
         if tn.Length > 1e-5:
             return tn.normalize()
+        print("Failed to get a normal vector")
 
     def normal_line(self):
         if self.Normal:
@@ -90,6 +100,8 @@ class ProfileWire:
         pl1 = Part.Plane(self.Center, self.Normal)
         pl2 = Part.Plane(other.Center, other.Normal)
         inters = pl1.intersectSS(pl2)
+        axis = self.Normal.cross(other.Normal)
+
         if inters:
             axis = inters[0].Direction
         else:  # profiles have parallel normals
@@ -215,13 +227,100 @@ class ProfileMatcher:
         nl = [isinstance(p.Normal, FreeCAD.Vector) for p in self.Profiles]
         return all(nl)
 
+    def cog_interpolation(self):
+        """Returns the curve interpolating the profiles Centers of gravity,
+        and the corresponding parameters"""
+        pts = [p.Center for p in self.Profiles]
+        params = nurbs_tools.parameterization(pts, 0.5)
+        for i in range(len(self.Profiles)):
+            self.Profiles[i].Parameter = params[i]
+        bs = Part.BSplineCurve()
+        bs.interpolate(Points=pts, Parameters=params)
+        return bs, params
+
+    def harmonize_normals(self):
+        bs, params = self.cog_interpolation()
+        for i in range(len(self.Profiles)):
+            dot = self.Profiles[i].Normal.dot(bs.tangent(params[i])[0])
+            if dot < 0:
+                print(f"Reversing normal of profile {i}")
+                self.Profiles[i].Normal = -self.Profiles[i].Normal
+
+    def set_binormals(self):
+        print("setting binormals")
+        found = 0
+        last_axis = None
+        for i in range(len(self.Profiles) - 1):
+            pro1 = self.Profiles[i]
+            pro2 = self.Profiles[i + 1]
+            n = pro1.Normal.cross(pro2.Normal)
+            if n.Length > 1e-5:
+                pro1.AxisX = n
+                found += 1
+                last_axis = n
+
+        if found == 0:
+            pl1 = Part.Plane(self.Profiles[0].Center, self.Profiles[0].Normal)
+            binor = pl1.tangent(0, 0)[0]
+            for p in self.Profiles:
+                p.AxisX = binor
+            return
+
+        if found == 1:
+            for p in self.Profiles:
+                p.AxisX = last_axis
+            return
+
+        old_binor = self.Profiles[0].AxisX
+        for i in range(1, len(self.Profiles)):
+            pro1 = self.Profiles[i]
+            if (old_binor is not None) and (pro1.AxisX is not None):
+                dot = old_binor.dot(pro1.AxisX)
+                if dot < 0:
+                    pro1.AxisX = -pro1.AxisX
+                    old_binor = pro1.AxisX
+            if (old_binor is None) and (pro1.AxisX is not None):
+                old_binor = pro1.AxisX
+
+        # populate binormals at the end of profiles list
+        old_binor = None
+        for p in self.Profiles:
+            if p.AxisX is not None:
+                old_binor = p.AxisX
+            if (p.AxisX is None) and (old_binor is not None):
+                p.AxisX = old_binor
+
+        # populate binormals at the beginning of profiles list
+        old_binor = None
+        for p in self.Profiles[::-1]:
+            if p.AxisX is not None:
+                old_binor = p.AxisX
+            if (p.AxisX is None) and (old_binor is not None):
+                p.AxisX = old_binor
+
+        # interpolate existing binormals
+        pts = []
+        params = []
+        for p in self.Profiles:
+            if p.AxisX is not None:
+                pts.append(p.AxisX + p.Center)
+                params.append(p.Parameter)
+        bs = Part.BSplineCurve()
+        print(pts, params)
+        bs.interpolate(Points=pts, Parameters=params)
+
+        # populate remaining binormals
+        for p in self.Profiles:
+            if p.AxisX is None:
+                p.AxisX = bs.value(p.Parameter) - p.Center
+
     def auto_orient(self):
         for i in range(len(self.Profiles) - 1):
             print(f"Orienting profile {i + 1}")
             pro1 = self.Profiles[i]
             pro2 = self.Profiles[i + 1]
-            pro1.set_normals_towards(pro2)
-            pro1.set_xaxis_with(pro2)
+            # pro1.set_normals_towards(pro2)
+            # pro1.set_xaxis_with(pro2)
             pro2.match_with(pro1)
         return
 
@@ -238,6 +337,8 @@ class ProfileMatcher:
         return
 
     def match(self):
+        self.harmonize_normals()
+        self.set_binormals()
         if self.AutoOrient:
             self.auto_orient()
         if self.compatible_profiles():
