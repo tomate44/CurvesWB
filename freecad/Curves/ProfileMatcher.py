@@ -29,7 +29,7 @@ def printError(string):
 
 class ProfileWire:
     def __init__(self, shape):
-        self.Shape = self.cleanup(shape)
+        self.Shape = shape  # self.cleanup(shape)
         self.XYShape = self.Shape
         self.Matrix = FreeCAD.Matrix()
         self.Normal = self.get_normal()
@@ -76,8 +76,8 @@ class ProfileWire:
             return Part.Line(self.Center, self.Normal)
 
     def transform(self, normalize=False):
-        self.Matrix.setCol(0, self.AxisX)
-        self.Matrix.setCol(1, self.Normal.cross(self.AxisX))
+        self.Matrix.setCol(1, self.AxisX)
+        self.Matrix.setCol(0, self.Normal.cross(self.AxisX))
         self.Matrix.setCol(2, self.Normal)
         self.Matrix.setCol(3, self.Center)
         self.XYShape = self.Shape.transformGeometry(self.Matrix.inverse()).Wire1
@@ -92,7 +92,7 @@ class ProfileWire:
         if bb.YLength > 1e-5:
             yfac = 1 / bb.YLength
         m = FreeCAD.Matrix()
-        m.move(-bb.Center)
+        # m.move(-bb.Center)
         m.scale(xfac, yfac, 1.0)
         self.XYShape = self.XYShape.transformGeometry(m).Wire1
 
@@ -123,19 +123,20 @@ class ProfileWire:
         other.AxisX = axis
 
     def shift_origin(self, other=None):
+        self.transform(True)
         if other is None:
-            ml = Part.makeLine(FreeCAD.Vector(), FreeCAD.Vector(2, 0, 0))
-            d, pts, info = self.XYShape.distToShape(ml)
+            v = Part.Vertex(FreeCAD.Vector(1, 0, 0))
+            d, pts, info = self.XYShape.distToShape(v)
+            idx = 0
             if info[0][0] == "Edge":
                 idx = info[0][1]
-                edges = self.Shape.Edges[idx:] + self.Shape.Edges[:idx]
-                self.Shape = Part.Wire(edges)
             elif info[0][0] == "Vertex":
+                # A more robust method is needed here
                 idx = info[0][1]
-                edges = self.Shape.Edges[idx:] + self.Shape.Edges[:idx]
-                self.Shape = Part.Wire(edges)
-            else:
-                print(f"Shift Origin error : {info}")
+            print(f"Shifting origin to edge {idx}")
+            edges = self.Shape.Edges[idx:] + self.Shape.Edges[:idx]
+            self.Shape = Part.Wire(edges)
+            self.transform(True)
             return
 
         v = other.XYShape.Edge1.firstVertex()
@@ -190,6 +191,7 @@ class ProfileWire:
 
     def toShape(self, xy=False):
         if xy:
+            self.transform(True)
             return self.XYShape
         return self.Shape
 
@@ -236,8 +238,8 @@ class ProfileMatcher:
 
     @property
     def Shape(self):
-        # return self.CompoundLCS()
-        return Part.Compound([p.toShape(True) for p in self.Profiles])
+        return self.CompoundLCS()
+        return Part.Compound([p.toShape(False) for p in self.Profiles])
 
     def CompoundLCS(self):
         return Part.Compound([p.LCS_Shape() for p in self.Profiles])
@@ -279,6 +281,7 @@ class ProfileMatcher:
             if dot < 0:
                 print(f"Reversing normal of profile {i}")
                 self.Profiles[i].Normal = -self.Profiles[i].Normal
+                # self.Profiles[i].transform()
 
     def set_binormals(self):
         print("setting binormals")
@@ -359,7 +362,7 @@ class ProfileMatcher:
             pro2 = self.Profiles[i + 1]
             # pro1.set_normals_towards(pro2)
             # pro1.set_xaxis_with(pro2)
-            pro2.match_with(pro1)
+            # pro2.match_with(pro1)
         return
 
     def find_C1_vertexes(self):
