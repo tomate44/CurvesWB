@@ -34,9 +34,19 @@ class ProfileWire:
         self.Matrix = FreeCAD.Matrix()
         self.Normal = self.get_normal()
         self.Center = self.Shape.CenterOfGravity
-        self.AxisX = None
+        self._axisX = None
         # self._default_indices = list(range(len(self.Shape.Edges)))
         # self._edgeid = self._default_indices
+
+    @property
+    def AxisX(self):
+        return self._axisX
+
+    @AxisX.setter
+    def AxisX(self, val):
+        self._axisX = val
+        if isinstance(self._axisX, FreeCAD.Vector):
+            self._axisX.normalize()
 
     def cleanup(self, wire):
         edges = []
@@ -112,7 +122,22 @@ class ProfileWire:
         self.AxisX = axis
         other.AxisX = axis
 
-    def shift_origin(self, other):
+    def shift_origin(self, other=None):
+        if other is None:
+            ml = Part.makeLine(FreeCAD.Vector(), FreeCAD.Vector(2, 0, 0))
+            d, pts, info = self.XYShape.distToShape(ml)
+            if info[0][0] == "Edge":
+                idx = info[0][1]
+                edges = self.Shape.Edges[idx:] + self.Shape.Edges[:idx]
+                self.Shape = Part.Wire(edges)
+            elif info[0][0] == "Vertex":
+                idx = info[0][1]
+                edges = self.Shape.Edges[idx:] + self.Shape.Edges[:idx]
+                self.Shape = Part.Wire(edges)
+            else:
+                print(f"Shift Origin error : {info}")
+            return
+
         v = other.XYShape.Edge1.firstVertex()
         comp = Part.Compound([e.firstVertex() for e in self.XYShape.Edges])
         d, pts, info = comp.distToShape(v)
@@ -157,6 +182,11 @@ class ProfileWire:
                 self.transform(True)
         else:
             self.orient_with_openwire(other)
+
+    def LCS_Shape(self):
+        l1 = Part.makeLine(self.Center, self.Center + self.Normal * 20)
+        l2 = Part.makeLine(self.Center, self.Center + self.AxisX * 40)
+        return Part.Compound([l1, l2])
 
     def toShape(self, xy=False):
         if xy:
@@ -206,7 +236,11 @@ class ProfileMatcher:
 
     @property
     def Shape(self):
+        # return self.CompoundLCS()
         return Part.Compound([p.toShape(True) for p in self.Profiles])
+
+    def CompoundLCS(self):
+        return Part.Compound([p.LCS_Shape() for p in self.Profiles])
 
     def create_profile(self, shape):
         if isinstance(shape, Part.Face):
@@ -315,6 +349,10 @@ class ProfileMatcher:
                 p.AxisX = bs.value(p.Parameter) - p.Center
 
     def auto_orient(self):
+        for i, p in enumerate(self.Profiles):
+            print(f"shift origin profile {i}")
+            p.shift_origin()
+        return
         for i in range(len(self.Profiles) - 1):
             print(f"Orienting profile {i + 1}")
             pro1 = self.Profiles[i]
