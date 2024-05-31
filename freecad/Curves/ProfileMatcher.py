@@ -35,6 +35,9 @@ class ProfileWire:
         self.Normal = self.get_normal()
         self.Center = self.Shape.CenterOfGravity
         self._axisX = None
+        if not self.Shape.isClosed():
+            pts = self.XYShape.discretize(2)
+            self._axisX = pts[1] - pts[0]
         # self._default_indices = list(range(len(self.Shape.Edges)))
         # self._edgeid = self._default_indices
 
@@ -124,6 +127,8 @@ class ProfileWire:
 
     def shift_origin(self, other=None):
         self.transform(True)
+        if not self.Shape.isClosed():
+            return
         if other is None:
             v = Part.Vertex(FreeCAD.Vector(1, 0, 0))
             d, pts, info = self.XYShape.distToShape(v)
@@ -146,6 +151,23 @@ class ProfileWire:
         if new_origin > 0:
             print(f"Shifting origin to vertex {new_origin}")
             edges = self.Shape.Edges[new_origin:] + self.Shape.Edges[:new_origin]
+            self.Shape = Part.Wire(edges)
+            self.transform(True)
+
+    def orient(self):
+        if not self.Shape.isClosed():
+            pts = self.XYShape.discretize(2)
+            # print(pts)
+            rev = pts[0].y > pts[1].y
+        else:
+            pts = self.XYShape.discretize(5)
+            rev = pts[1].y < pts[3].y
+        if rev:
+            print("Reversing profile")
+            edges = []
+            for e in self.Shape.Edges[::-1]:
+                e.reverse()
+                edges.append(e)
             self.Shape = Part.Wire(edges)
             self.transform(True)
 
@@ -238,7 +260,7 @@ class ProfileMatcher:
 
     @property
     def Shape(self):
-        return self.CompoundLCS()
+        # return self.CompoundLCS()
         return Part.Compound([p.toShape(False) for p in self.Profiles])
 
     def CompoundLCS(self):
@@ -288,13 +310,13 @@ class ProfileMatcher:
         found = 0
         last_axis = None
         for i in range(len(self.Profiles) - 1):
-            pro1 = self.Profiles[i]
-            pro2 = self.Profiles[i + 1]
-            n = pro1.Normal.cross(pro2.Normal)
-            if n.Length > 1e-5:
-                pro1.AxisX = n
+            if not isinstance(self.Profiles[i].AxisX, FreeCAD.Vector):
+                n = self.Profiles[i].Normal.cross(self.Profiles[i + 1].Normal)
+                if n.Length > 1e-5:
+                    self.Profiles[i].AxisX = n
+            if isinstance(self.Profiles[i].AxisX, FreeCAD.Vector):
                 found += 1
-                last_axis = n
+                last_axis = self.Profiles[i].AxisX
 
         if found == 0:
             pl1 = Part.Plane(self.Profiles[0].Center, self.Profiles[0].Normal)
@@ -308,6 +330,7 @@ class ProfileMatcher:
                 p.AxisX = last_axis
             return
 
+    def orient_binormals(self):
         old_binor = self.Profiles[0].AxisX
         for i in range(1, len(self.Profiles)):
             pro1 = self.Profiles[i]
@@ -355,14 +378,15 @@ class ProfileMatcher:
         for i, p in enumerate(self.Profiles):
             print(f"shift origin profile {i}")
             p.shift_origin()
+            p.orient()
         return
-        for i in range(len(self.Profiles) - 1):
-            print(f"Orienting profile {i + 1}")
-            pro1 = self.Profiles[i]
-            pro2 = self.Profiles[i + 1]
-            # pro1.set_normals_towards(pro2)
-            # pro1.set_xaxis_with(pro2)
-            # pro2.match_with(pro1)
+        # for i in range(len(self.Profiles) - 1):
+        #     print(f"Orienting profile {i + 1}")
+        #     pro1 = self.Profiles[i]
+        #     pro2 = self.Profiles[i + 1]
+        #     pro1.set_normals_towards(pro2)
+        #     pro1.set_xaxis_with(pro2)
+        #     pro2.match_with(pro1)
         return
 
     def find_C1_vertexes(self):
@@ -380,6 +404,7 @@ class ProfileMatcher:
     def match(self):
         self.harmonize_normals()
         self.set_binormals()
+        self.orient_binormals()
         if self.AutoOrient:
             self.auto_orient()
         if self.compatible_profiles():
