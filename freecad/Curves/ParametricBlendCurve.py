@@ -64,7 +64,7 @@ class BlendCurveFP:
                 if ("Edge" in sen) or ("Line" in sen):
                     sh = obj.Shape.copy()
                     sh.Placement = obj.getGlobalPlacement()
-                    sub = sh.getElement(sen)
+                    sub = sh.getElement(sh.getElementName(sen))
                     break
         return sub
 
