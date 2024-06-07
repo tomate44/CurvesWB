@@ -581,10 +581,13 @@ class SmoothEdgeOnFace(SmoothEdge):
         if origin is None:
             origin = self._edge.valueAt(param)
         loc2d = cos.value(param)
-        tan = self._edge.tangent(param)
-        norm = self._face.normalAt(*loc2d)
-        bino = norm.cross(tan)
+        tan = self._edge.tangentAt(param)
+        norm = self._face.normalAt(loc2d.x, loc2d.y)
+        bino = -norm.cross(tan)
         pl = Part.Plane(origin, origin + tan, origin + bino)
+        poly = Part.makePolygon([origin + tan, origin, origin + bino])
+        Part.show(poly, "Tangent Plane")
+        return pl
 
     def getOutside(self, par=0.5, eps=1e-3):
         p = self._fp + par * (self._lp - self._fp)
@@ -631,9 +634,9 @@ class SmoothEdgeOnFace(SmoothEdge):
                 return e
 
     def neighbour_tangents(self):
-        v1 = self._edge.firstVertex()
+        v1 = self._edge.Vertex1
         e1 = self.other_edge(v1)
-        v2 = self._edge.lastVertex()
+        v2 = self._edge.Vertex2
         e2 = self.other_edge(v2)
         if v1.Point.distanceToPoint(e1.valueAt(e1.FirstParameter)) <= TOL3D:
             tan1 = -e1.tangentAt(e1.FirstParameter)
@@ -648,10 +651,11 @@ class SmoothEdgeOnFace(SmoothEdge):
 
     def setTangentToNeighbours(self):
         t1, t2 = self.neighbour_tangents()
-        pl1 = self.tangent_plane_at(self._edge.FirstParameter, FreeCAD.Vector())
-        pl2 = self.tangent_plane_at(self._edge.LastParameter, FreeCAD.Vector())
-        tan1 = pl1.parameter(t1)
-        tan2 = pl2.parameter(t2)
+        pl1 = self.tangent_plane_at(self._edge.FirstParameter)
+        pl2 = self.tangent_plane_at(self._edge.LastParameter)
+        tan1 = pl1.parameter(t1 + pl1.Position)
+        tan2 = pl2.parameter(t2 + pl2.Position)
+        print(tan1, tan2)
         # tan1 = get_surface_derivatives(self._face.Surface, location=p1, direction=t1)
         # tan2 = get_surface_derivatives(self._face.Surface, location=p2, direction=t2)
         # Part.show(Part.makeLine(tan1[0], tan1[0] + tan1[1] * 10))
@@ -731,12 +735,33 @@ class SmoothEdgeOnFace(SmoothEdge):
 
 class BlendSurface:
     """BSpline surface that smoothly interpolates two EdgeOnFace objects"""
+
     def __init__(self, edge1, face1, edge2, face2):
         self._ruled_surface = None
+        edge2.reverse()
         self.ruled_surface(edge1, edge2)
-        iv0, iv1 = self.rails
-        self.edge1 = SmoothEdgeOnFace(iv0.toShape(), face1)
-        self.edge2 = SmoothEdgeOnFace(iv1.toShape(), face2)
+        shell = Part.Shell([face1, self._ruled_surface.toShape(), face2])
+
+        f1, f2, f3 = shell.Faces
+        for e in f2.Edges:
+            for oe in f1.Edges:
+                if e.isSame(oe):
+                    print("E1 found")
+                    e1 = e
+                    break
+            for oe in f3.Edges:
+                if e.isSame(oe):
+                    print("E2 found")
+                    e2 = e
+                    break
+        # e2.reverse()
+        Part.show(shell)
+        Part.show(e1)
+        Part.show(f1)
+        Part.show(e2)
+        Part.show(f3)
+        self.edge1 = SmoothEdgeOnFace(e1, f1)
+        self.edge2 = SmoothEdgeOnFace(e2, f3)
         self.edge1.setTangentToNeighbours()
         self.edge2.setTangentToNeighbours()
         self._surface = None
@@ -806,6 +831,7 @@ class BlendSurface:
             chk2 = e2.isClosed() and e2.Curve.isPeriodic()
             if chk1 and chk2:
                 self._ruled_surface.setUPeriodic()
+            # self._ruled_surface.scaleKnotsToBounds()
         return self._ruled_surface
 
     def set_mutual_target(self):
@@ -881,10 +907,13 @@ sme1.setTangentToNeighbours()
 Part.show(sme1.shape(20))
 
 sme2 = smooth_objects.SmoothEdgeOnFace(e2, f2, 3)
-sme2.setTangentToNeighbours(True)
+sme2.setTangentToNeighbours()
 Part.show(sme2.shape(20))
 
 
+from importlib import reload
+from freecad.Curves.Blending import smooth_objects
+reload(smooth_objects)
 bls = smooth_objects.BlendSurface(e1, f1, e2, f2)
 bls.continuity = 3
 print(bls)
