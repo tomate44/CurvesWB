@@ -52,6 +52,8 @@ class Discretization:
     def edgeBounds(self, obj):
         o = obj.Edge[0]
         e = obj.Edge[1][0]
+        e = e.split(";")[-1]
+        e = e.split(".")[-1]
         n = eval(e.lstrip('Edge'))
         try:
             edge = o.Shape.Edges[n - 1]
