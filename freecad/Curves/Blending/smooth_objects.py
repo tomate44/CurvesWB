@@ -824,16 +824,22 @@ sme2 = smooth_objects.SmoothEdgeOnFace(e2, f2, 3)
 sme2.setOutside(True)
 Part.show(sme2.shape(50))
 
+
+
+from importlib import reload
+vec3 = FreeCAD.Vector
+vec2 = FreeCAD.Base.Vector2d
+from freecad.Curves.Blending import smooth_objects
+reload(smooth_objects)
 bls = smooth_objects.BlendSurface(e1, f1, e2, f2)
 bls.continuity = 3
 print(bls)
 bls.set_mutual_target()
 # bls.set_outside()
-bls.auto_scale(6)
+# bls.auto_scale(6)
 bls.perform(20)
 Part.show(bls.face)
 
-sme1.continuity_with(bls.surface, 20, 1e-5)
 
 """
 

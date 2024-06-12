@@ -50,6 +50,10 @@ class split:
                         "CuttingObjects",
                         "Split",
                         "List of objects that cut the curve")
+        obj.addProperty("App::PropertyBool",
+                        "CutAtVertexes",
+                        "Split",
+                        "Create a split point at nearest of each vertex of the cutting objects")
         obj.addProperty("App::PropertyDistance",
                         "Distance",
                         "Split",
@@ -61,7 +65,7 @@ class split:
         obj.addProperty("App::PropertyBool",
                         "KeepSolid",
                         "Split",
-                        "Rebuild and output the complete solid")
+                        "Rebuild and output the complete shape")
         obj.setEditorMode("NormalizedParameters", 2)
 
     def getShape(self, fp):
@@ -138,8 +142,14 @@ class split:
         if val:
             params = self.parse_values(e, val)
         if hasattr(obj, "CuttingObjects"):
-            for o in obj.CuttingObjects:
-                d, pts, info = e.distToShape(o.Shape)
+            shapes = []
+            if hasattr(obj, "CutAtVertexes") and obj.CutAtVertexes:
+                for o in obj.CuttingObjects:
+                    shapes.extend(o.Shape.Vertexes)
+            else:
+                shapes = [o.Shape for o in obj.CuttingObjects]
+            for o in shapes:
+                d, pts, info = e.distToShape(o)
                 for inf in info:
                     if inf[0] == 'Edge':
                         debug('adding param : {}'.format(inf[2]))
@@ -208,8 +218,8 @@ class split:
             if hasattr(obj, "KeepSolid") and obj.KeepSolid:
                 o = obj.Source[0]
                 sh = o.Shape  # .copy()
-                edgename = obj.Source[1][0]
-                n = int(edgename.lstrip("Edge"))
+                # edgename = obj.Source[1][0]
+                # n = int(edgename.lstrip("Edge"))
                 nsh = sh
                 if len(e.Vertexes) == 1:
                     nsh = sh.replaceShape([(e, w), (e.Vertex1, w.Vertexes[0])])
