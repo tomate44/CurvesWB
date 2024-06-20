@@ -27,7 +27,7 @@ def printError(string):
 #     return f"Vector({v.x:6.2f}, {v.y:6.2f}, {v.z:6.2f})"
 
 
-class ProfileWire:
+class Profile:
     def __init__(self, shape):
         self.Shape = shape  # self.cleanup(shape)
         self.XYShape = self.Shape
@@ -35,11 +35,6 @@ class ProfileWire:
         self.Normal = self.get_normal()
         self.Center = self.Shape.CenterOfGravity
         self._axisX = None
-        if not self.Shape.isClosed():
-            pts = self.XYShape.discretize(2)
-            self._axisX = pts[1] - pts[0]
-        # self._default_indices = list(range(len(self.Shape.Edges)))
-        # self._edgeid = self._default_indices
 
     @property
     def AxisX(self):
@@ -51,14 +46,54 @@ class ProfileWire:
         if isinstance(self._axisX, FreeCAD.Vector):
             self._axisX.normalize()
 
-    def cleanup(self, wire):
-        edges = []
-        for e in wire.Edges:
-            c = e.Curve.trim(e.FirstParameter, e.LastParameter)
-            if e.Orientation == "Reversed":
-                c.reverse()
-            edges.append(c.toShape())
-        return Part.Wire(edges)
+    def get_normal(self):
+        pl = self.Shape.findPlane()
+        if pl is not None:
+            return pl.Axis
+
+    def normal_line(self):
+        return Part.Line(self.Center, self.Normal)
+
+    def transform(self, normalize=False):
+        self.Matrix.setCol(1, self.AxisX)
+        self.Matrix.setCol(0, self.Normal.cross(self.AxisX))
+        self.Matrix.setCol(2, self.Normal)
+        self.Matrix.setCol(3, self.Center)
+        self.XYShape = self.Shape.transformGeometry(self.Matrix.inverse())
+        if normalize:
+            self.normalize_size()
+
+    def normalize_size(self):
+        bb = self.XYShape.BoundBox
+        xfac, yfac = 1.0, 1.0
+        if bb.XLength > 1e-5:
+            xfac = 1 / bb.XLength
+        if bb.YLength > 1e-5:
+            yfac = 1 / bb.YLength
+        m = FreeCAD.Matrix()
+        # m.move(-bb.Center)
+        m.scale(xfac, yfac, 1.0)
+        self.XYShape = self.XYShape.transformGeometry(m)
+
+
+class ProfileWire(Profile):
+    def __init__(self, shape):
+        super().__init__(shape)
+        if self.Normal is None:
+            self.Normal = self.get_normal()
+        if not self.Shape.isClosed():
+            pts = self.XYShape.discretize(2)
+            self._axisX = pts[1] - pts[0]
+        # self._default_indices = list(range(len(self.Shape.Edges)))
+        # self._edgeid = self._default_indices
+
+    def transform(self, normalize=False):
+        super().transform(normalize)
+        self.XYShape = self.XYShape.Wire1
+
+    def normalize_size(self):
+        super().normalize_size()
+        self.XYShape = self.XYShape.Wire1
 
     def get_normal(self):
         pl = self.Shape.findPlane()
@@ -73,31 +108,6 @@ class ProfileWire:
         if tn.Length > 1e-5:
             return tn.normalize()
         print("Failed to get a normal vector")
-
-    def normal_line(self):
-        if self.Normal:
-            return Part.Line(self.Center, self.Normal)
-
-    def transform(self, normalize=False):
-        self.Matrix.setCol(1, self.AxisX)
-        self.Matrix.setCol(0, self.Normal.cross(self.AxisX))
-        self.Matrix.setCol(2, self.Normal)
-        self.Matrix.setCol(3, self.Center)
-        self.XYShape = self.Shape.transformGeometry(self.Matrix.inverse()).Wire1
-        if normalize:
-            self.normalize_size()
-
-    def normalize_size(self):
-        bb = self.XYShape.BoundBox
-        xfac, yfac = 1.0, 1.0
-        if bb.XLength > 1e-5:
-            xfac = 1 / bb.XLength
-        if bb.YLength > 1e-5:
-            yfac = 1 / bb.YLength
-        m = FreeCAD.Matrix()
-        # m.move(-bb.Center)
-        m.scale(xfac, yfac, 1.0)
-        self.XYShape = self.XYShape.transformGeometry(m).Wire1
 
     def set_normals_towards(self, other):
         if self.Normal:
@@ -218,12 +228,12 @@ class ProfileWire:
         return self.Shape
 
 
-class ProfileWires:
+class ProfileWires(Profile):
     def __init__(self, shape):
-        self.Shape = shape
+        super().__init__(shape)
         self.WireProfiles = [ProfileWire(w) for w in shape.Wires]
         self._default_indices = list(range(len(shape.Wires)))
-        self._wireid = self.default_indices
+        self._wireid = self._default_indices
 
     def Wires(self, idx):
         assert (sorted(self._wireid) == self._default_indices)
