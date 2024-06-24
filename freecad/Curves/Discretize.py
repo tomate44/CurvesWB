@@ -69,7 +69,10 @@ class Discretization:
             gpl = obj.getGlobalPlacement()
             sh.Placement = gpl
         try:
-            edge = sh.getElement(sh.getElementName(ssname))
+            if hasattr(sh, "getElementName"):
+                edge = sh.getElement(sh.getElementName(ssname))
+            else:
+                edge = sh.getElement(ssname)
             fp.setEditorMode("Target", 2)
             for w in sh.Wires:
                 for e in w.Edges:
