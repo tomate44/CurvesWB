@@ -148,7 +148,7 @@ class BlendCurveFP:
             w = bc.shape
         if hasattr(fp, "getParent"):
             parent = fp.getParent()
-            if parent:
+            if parent and hasattr(parent, "getGlobalPlacement"):
                 glopl = parent.getGlobalPlacement()
                 w.transformShape(glopl.inverse().Matrix)
                 fp.Placement = glopl.inverse()
@@ -393,7 +393,7 @@ class BlendCurveVP:
             self.bc.perform()
             sh = self.bc.shape
             parent = self.Object.getParent()
-            if parent:
+            if parent and hasattr(parent, "getGlobalPlacement"):
                 glopl = parent.getGlobalPlacement()
                 sh.transformShape(glopl.inverse().Matrix)
                 self.Object.Placement = glopl.inverse()
