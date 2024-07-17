@@ -79,7 +79,11 @@ class split:
                 # double tol3d = 0.0001;
                 # int maxseg=10, maxdeg=3;
                 # static char* kwds_approx[] = {"Tol2d","Tol3d","MaxSegments","MaxDegree",NULL};
+            elif fp.Source[0].Shape.Edges:
+                e = fp.Source[0].Shape.Edge1
+                w = None
             else:
+                FreeCAD.Console.PrintError("SplitCurve : Input shape has no wires or edges\n")
                 return None, None
         else:
             e = _utils.getShape(fp, "Source", "Edge")
