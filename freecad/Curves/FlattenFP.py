@@ -25,6 +25,20 @@ preferences = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves")
 if 'FlattenDefaultInPlace' not in preferences.GetBools():
     preferences.SetBool("FlattenDefaultInPlace", True)
 
+"""
+poles (sequence of sequence of Base.Vector), umults, vmults, [uknots, vknots, uperiodic, vperiodic, udegree, vdegree, weights (sequence of sequence of float)]
+"""
+
+
+def ruled_surface(curve1, curve2):
+    bs1 = curve1.toBSpline()
+    bs2 = curve2.toBSpline()
+    surf = Part.BSplineSurface()
+    poles = list(zip(bs1.getPoles(), bs2.getPoles()))
+    mults = bs1.getMultiplicities()
+    surf.buildFromPolesMultsKnots(poles, mults, [2, 2], [0, 1], [0, 1], False, False, bs1.Degree, 1)
+    return surf
+
 
 def arclength_approx(curve, num=100):
     """Returns an arc-length approximation BSpline of a curve or edge
@@ -133,14 +147,16 @@ def flat_cone_surface(cone, inPlace=False, size=0.0):
         cimir = ci.copy()
         cimir.mirror(cimir.Center)
         print("Opening cone")
-        rs = Part.makeRuledSurface(cimir.toShape(), ci.toShape()).Surface
+        # rs = Part.makeRuledSurface(cimir.toShape(), ci.toShape()).Surface
+        rs = ruled_surface(cimir, ci)
         start = -size - hyp.length()
     else:
         ci = Part.Circle(vec3(), vec3(0, 0, -1), size)
         cimir = ci.copy()
         cimir.mirror(cimir.Center)
         print("Closing cone")
-        rs = Part.makeRuledSurface(ci.toShape(), cimir.toShape()).Surface
+        # rs = Part.makeRuledSurface(ci.toShape(), cimir.toShape()).Surface
+        rs = ruled_surface(ci, cimir)
         start = -size + hyp.length()
     end = start + 2 * size
     u0, u1, v0, v1 = rs.bounds()
@@ -372,19 +388,10 @@ class FlattenViewProxy:
     def getIcon(self):
         return TOOL_ICON
 
-    # def attach(self, viewobj):
-    #     self.Object = viewobj.Object
-    # 
-    # def __getstate__(self):
-    #     return {"name": self.Object.Name}
-    # 
-    # def __setstate__(self, state):
-    #     self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
-    #     return None
-
 
 class Curves_Flatten_Face_Cmd:
     """Create a flatten face feature"""
+
     def makeFeature(self, sel=None):
         fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "Flatten")
         FlattenProxy(fp)
