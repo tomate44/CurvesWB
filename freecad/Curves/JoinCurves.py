@@ -111,16 +111,18 @@ class join:
         edges = self.getEdges(obj)
         if not edges:
             return
-        tmp = list()
-        for e in edges:
-            if not isinstance(e.Curve, Part.BSplineCurve):
-                tmp += e.toNurbs().Edges
-            else:
-                tmp.append(e)
+        # tmp = list()
+        # for e in edges:
+        #     if not isinstance(e.Curve, Part.BSplineCurve):
+        #         tmp += e.toNurbs().Edges
+        #     else:
+        #         tmp.append(e)
         curves = list()
-        for e in tmp:
-            c = e.Curve
-            if not isinstance(e.Curve, Part.BSplineCurve):
+        for e in edges:
+            try:
+                c = e.toNurbs().Edge1.Curve
+            except Exception as exc:
+                debug(f"JoinCurve : Nurbs conversion error\n{exc}\n")
                 c = e.Curve.toBSpline()
             c.segment(e.FirstParameter, e.LastParameter)
             curves.append(c)

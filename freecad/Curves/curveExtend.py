@@ -9,12 +9,11 @@ def error(s):
 
 def getTrimmedCurve(e):
     """Get a trimmed BSpline curve from an edge."""
-    edges = e.toNurbs().Edges
-    c = edges[0].Curve.copy()
-    if len(edges) > 1:
-        FreeCAD.Console.PrintWarning("Trimming input edge returns multiple edges !\n")
-        for edge in edges[1:]:
-            c.join(edge.Curve)
+    try:
+        c = e.toNurbs().Edge1.Curve
+    except Exception as exc:
+        error(f"CurveExtend : Nurbs conversion error\n{exc}\n")
+        c = e.Curve.toBSpline()
     if (not e.FirstParameter == c.FirstParameter) or (not e.LastParameter == c.LastParameter):
         FreeCAD.Console.PrintWarning("Segmenting input curve\n")
         c.segment(e.FirstParameter, e.LastParameter)
@@ -31,7 +30,7 @@ def trim(curve, min_, max_, length, tol):
     r = None
     if abs(c.length() - length) < tol:
         # print("Found at %f"%mid)
-        return(c)
+        return c
     elif c.length() < length:
         r = trim(curve, mid, max_, length, tol)
     elif c.length() > length:
@@ -42,14 +41,14 @@ def trim(curve, min_, max_, length, tol):
 def trimToLength(ed, le, tol=1e-5):
     """Trim an edge to a given length."""
     if le > ed.Length:
-        return(False)
+        return False
     r = trim(ed.Curve, ed.Curve.FirstParameter, ed.Curve.LastParameter, le, tol)
     return r.toShape()
 
 
 def extendCurve(curve, end=1, scale=1, degree=1):
     if scale <= 0:
-        return(curve)
+        return curve
     if end == 0:
         p = curve.FirstParameter
         sc = -scale
@@ -76,7 +75,7 @@ def extendCurve(curve, end=1, scale=1, degree=1):
     except Part.OCCError:
         # the curve is probably straight
         bez.setPoles([val, val.add(tan / 2), val.add(tan)])
-        return(bez)
+        return bez
     radius = cur * pow(tan.Length, 2) * degree / (degree - 1)
     # radius = 2 * cur * pow( tan.Length, 2)
     opp = math.sqrt(abs(pow(scale, 2) - pow(radius, 2)))
