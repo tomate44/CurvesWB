@@ -36,7 +36,7 @@ def ruled_surface(curve1, curve2):
     surf = Part.BSplineSurface()
     poles = list(zip(bs1.getPoles(), bs2.getPoles()))
     mults = bs1.getMultiplicities()
-    surf.buildFromPolesMultsKnots(poles, mults, [2, 2], [0, 1], [0, 1], False, False, bs1.Degree, 1)
+    surf.buildFromPolesMultsKnots(poles, mults, [2, 2], bs1.getKnots(), [0, 1], False, False, bs1.Degree, 1)
     return surf
 
 
