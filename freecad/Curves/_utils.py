@@ -194,8 +194,11 @@ def ruled_surface(e1, e2, normalize=False):
     # if (line21.Length + line22.Length) < (line11.Length + line12.Length):
     if d1 < d2:
         w3.reverse()
-    print(w1, w3)
-    ruled = Part.makeRuledSurface(w1, w3)
+    # print(w1, w3)
+    try:
+        ruled = Part.makeRuledSurface(path=w1, profile=w3, orientation=1)
+    except TypeError:
+        ruled = Part.makeRuledSurface(w1, w3)
     if normalize:
         faces = []
         for f in ruled.Faces:

@@ -21,6 +21,13 @@ vec = FreeCAD.Vector
 error = FreeCAD.Console.PrintError
 
 
+def ruled_surface(sh1, sh2):
+    try:
+        return Part.makeRuledSurface(path=sh1, profile=sh2, orientation=1)
+    except TypeError:
+        return Part.makeRuledSurface(sh1, sh2)
+
+
 def stretched_plane(poles, param_range=[0, 2, 0, 2], extend_factor=1.0):
     s0, s1, t0, t1 = param_range
     bs = Part.BSplineSurface()
@@ -349,13 +356,14 @@ class sketchOnSurface:
             else:
                 shapes = []
                 for i in range(len(shapes_1)):
+                    if not (len(shapes_1[i].Edges) == len(shapes_2[i].Edges)):
+                        continue
                     if isinstance(shapes_1[i], Part.Face):
                         faces = shapes_1[i].Faces + shapes_2[i].Faces
-                        # error_wires = []
                         for j in range(len(shapes_1[i].Edges)):
                             if obj.FillFaces and shapes_1[i].Edges[j].isSeam(shapes_1[i]):
                                 continue
-                            ruled = Part.makeRuledSurface(shapes_1[i].Edges[j], shapes_2[i].Edges[j])
+                            ruled = ruled_surface(shapes_1[i].Edges[j], shapes_2[i].Edges[j])
                             try:
                                 ruled.check(False)
                             except ValueError:
@@ -380,12 +388,15 @@ class sketchOnSurface:
                             solid.fixTolerance(1e-5)
                             shapes.append(solid)
                         except Exception:
-                            FreeCAD.Console.PrintWarning("Sketch on surface : failed to create solid # {}.\n".format(i+1))
+                            FreeCAD.Console.PrintWarning("Sketch on surface : failed to create solid # {}.\n".format(i + 1))
                             shapes.extend(faces)
                     else:
-                        ruled = Part.makeRuledSurface(shapes_1[i].Wires[0], shapes_2[i].Wires[0])
-                        ruled.check(False)
-                        shapes.append(ruled)
+                        ruled = ruled_surface(shapes_1[i].Wires[0], shapes_2[i].Wires[0])
+                        try:
+                            ruled.check(False)
+                            shapes.append(ruled)
+                        except ValueError:
+                            pass
                 # shapes.append(quad)
                 if shapes:
                     if len(shapes) == 1:
