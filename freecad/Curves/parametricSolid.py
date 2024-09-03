@@ -163,7 +163,7 @@ class solidCommand:
 
     def Activated(self):
         faces = []
-        sel = FreeCADGui.Selection.getSelectionEx()
+        sel = FreeCADGui.Selection.getSelectionEx('', 0)
         if sel == []:
             FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
         for selobj in sel:
