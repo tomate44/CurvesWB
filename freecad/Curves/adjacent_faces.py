@@ -21,7 +21,8 @@ TOOL_ICON = os.path.join(ICONPATH, 'adjacent_faces.svg')
 class adjacentfacesCommand:
     """Select the Adjacent faces of the selected subshape"""
 
-    def get_subname(self, shape, sub):
+    @staticmethod
+    def get_subname(shape, sub):
         if isinstance(sub, Part.Face):
             for i in range(len(shape.Faces)):
                 if sub.isEqual(shape.Faces[i]):
@@ -35,6 +36,11 @@ class adjacentfacesCommand:
                 if sub.isEqual(shape.Vertexes[i]):
                     return "Vertex{}".format(i + 1)
 
+    @staticmethod
+    def faces_have_shared_edge(f1: Part.Face, f2: Part.Face) -> bool:
+        return bool({x.hashCode() for x in f1.Edges} & {x.hashCode() for x in f2.Edges})
+
+
     def Activated(self):
         search_type = Part.Face
         result = list()
@@ -45,15 +51,15 @@ class adjacentfacesCommand:
         for selo in s:
             if selo.HasSubObjects:
                 obj = selo.Object
-                shape = obj.Shape.copy()
+                shape = obj.Shape
                 for subname in selo.SubElementNames:
                     sub = shape.getElement(subname)
-                    if isinstance(sub, Part.Face):
-                        subs += sub.Edges
-                    else:
-                        subs.append(sub)
+                    subs.append(sub)
                 for sub in subs:
-                    anc = shape.ancestorsOfType(sub, search_type)
+                    if isinstance(sub, Part.Face):
+                        anc = [f for f in shape.Faces if self.faces_have_shared_edge(sub, f)]
+                    else:
+                        anc = shape.ancestorsOfType(sub, search_type)
                     result += anc
                     for a in anc:
                         sel.addSelection(obj, self.get_subname(shape, a))
