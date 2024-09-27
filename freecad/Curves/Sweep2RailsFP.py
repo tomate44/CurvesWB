@@ -85,12 +85,12 @@ class Sweep2RailsObjProxy:
         isWire = False
         for link in linklist:
             if link.Shape.Wires:
-                e = SweepObject.ProfileShape(link.Shape.Wire1)
+                # e = SweepObject.ProfileShape(link.Shape.Wire1)
                 # c = e.approximate(1e-7, 1e-6, 999, 5)
                 c = link.Shape.Wire1
                 isWire = True
             else:
-                e = SweepObject.ProfileShape(link.Shape.Edge1)
+                # e = SweepObject.ProfileShape(link.Shape.Edge1)
                 # c = e.Curve.toBSpline(e.FirstParameter, e.LastParameter)
                 c = link.Shape.Edge1
             # c = e.Curve

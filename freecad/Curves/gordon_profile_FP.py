@@ -317,12 +317,12 @@ class GordonProfileCommand:
 
     def Activated(self):
         s = FreeCADGui.Selection.getSelectionEx()
-        try:
-            ordered = FreeCADGui.activeWorkbench().Selection
-            if ordered:
-                s = ordered
-        except AttributeError:
-            pass
+        # try:
+        #     ordered = FreeCADGui.activeWorkbench().Selection
+        #     if ordered:
+        #         s = ordered
+        # except AttributeError:
+        #     pass
 
         sub = list()
         pts = list()

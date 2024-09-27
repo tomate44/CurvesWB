@@ -75,10 +75,10 @@ def match_knots(curves, tolerance=1e-9):
                 om = first.getMultiplicity(fk)
                 if om < mult:
                     first.increaseMultiplicity(fk, mult)
-                    print("Increased mult of knot # {} from {} to {}".format(fk, om, mult))
+                    # print("Increased mult of knot # {} from {} to {}".format(fk, om, mult))
             else:
                 first.insertKnot(k, mult, tolerance)
-                print("Inserting knot {} mult {}".format(k, mult))
+                # print("Inserting knot {} mult {}".format(k, mult))
     for cur_idx in range(1, len(curves)):
         for kno_idx in range(1, first.NbKnots + 1):
             k = first.getKnot(kno_idx)
@@ -548,31 +548,34 @@ class Gordon:
             if not surf.bounds() == (0.0, 1.0, 0.0, 1.0):
                 surf.scaleKnotsToBounds(0.0, 1.0, 0.0, 1.0)
 
+    def same_bounds(self, s1, s2):
+        bounds = zip(s1.bounds(), s2.bounds())
+        diff = [abs(a - b) for a, b in bounds]
+        is_same = (max(diff) < self.tol2d)
+        if not is_same:
+            print("Surface bounds don't match")
+            print(s1.bounds())
+            print(s2.bounds())
+        return is_same
+
     def check_bounds(self):
-        u0, u1, v0, v1 = self.s1.bounds()
-        if not self.s2.bounds() == (u0, u1, v0, v1):
-            print("S1 and S2 bounds don't match")
-            return False
-        if not self.s3.bounds() == (u0, u1, v0, v1):
-            print("S1 and S3 bounds don't match")
-            return False
-        return True
+        result = self.same_bounds(self.s1, self.s2) and self.same_bounds(self.s1, self.s3)
+        return result
+
+    def same_corner(self, s1, s2, uv):
+        u, v = uv
+        p1 = s1.value(u, v)
+        p2 = s2.value(u, v)
+        d = p2.distanceToPoint(p1)
+        is_same = (d < self.tol3d)
+        if not is_same:
+            print("Surface corners @({}, {}) don't match. Distance = {}".format(u, v, d))
+            print(f"{p1} != {p2}")
+        return is_same
 
     def check_corner(self, uv):
-        check = True
-        u, v = uv
-        p1 = self.s1.value(u, v)
-        p2 = self.s2.value(u, v)
-        if p2.distanceToPoint(p1) > self.tol3d:
-            print("S1 and S2 points @({}, {}) don't match".format(u, v))
-            print(f"{p1} != {p2}")
-            check = False
-        p3 = self.s3.value(u, v)
-        if p3.distanceToPoint(p1) > self.tol3d:
-            print("S1 and S3 points @({}, {}) don't match".format(u, v))
-            print(f"{p1} != {p3}")
-            check = False
-        return check
+        result = self.same_corner(self.s1, self.s2, uv) and self.same_corner(self.s1, self.s3, uv)
+        return result
 
     def check_corners(self):
         u0, u1, v0, v1 = self.s1.bounds()
@@ -604,14 +607,21 @@ class Gordon:
         self.s1 = ad1.surface
         self.s2 = ad2.surface
         self.s3 = ad3.surface
+        assert (self.s1.NbUPoles == self.s2.NbUPoles)
+        assert (self.s1.NbUPoles == self.s3.NbUPoles)
+        assert (self.s1.NbVPoles == self.s2.NbVPoles)
+        assert (self.s1.NbVPoles == self.s3.NbVPoles)
 
     def gordon(self):
         ns = self.s1.copy()
         for i in range(1, len(self.s1.getPoles()) + 1):
             for j in range(1, len(self.s1.getPoles()[0]) + 1):
-                w1 = self.s1.getWeight(i, j)
-                w2 = self.s2.getWeight(i, j)
-                w3 = self.s3.getWeight(i, j)
+                # w1 = self.s1.getWeight(i, j)
+                # print(i,j)
+                # Part.show(self.s2.toShape())
+                # w2 = self.s2.getWeight(i, j)
+                # w3 = self.s3.getWeight(i, j)
+                w1, w2, w3 = 1, 1, 1
                 p1 = self.s1.getPole(i, j) * w1
                 p2 = self.s2.getPole(i, j) * w2
                 p3 = self.s3.getPole(i, j) * w3
@@ -664,14 +674,16 @@ class CurvesOn2Rails:
 
     def sort_curves(self, s):
         intersect = []
-        for c in self.curves:
+        for i, c in enumerate(self.curves):
             u1, v1 = s.parameter(c.value(c.FirstParameter))
             u2, v2 = s.parameter(c.value(c.LastParameter))
-            if abs(v1 - v2) > self.tol2d:
-                FreeCAD.Console.PrintMessage("Curve is not Iso\n")
+            diff = abs(v1 - v2)
+            if diff > self.tol2d:
+                FreeCAD.Console.PrintMessage(f"Curve {i + 1} is not Iso (diff = {diff}). Ignoring.\n")
+                continue
             if u1 > u2:
                 c.reverse()
-                FreeCAD.Console.PrintMessage("Reversing curve\n")
+                FreeCAD.Console.PrintMessage(f"Reversing curve {i + 1}.\n")
             intersect.append((v1, c))
         intersect.sort()
         if abs(intersect[0][0]) > self.tol3d:
@@ -697,6 +709,7 @@ class CurvesOn2Rails:
         cts.Parameters = params
         s1 = cts.Surface
         s3 = U_linear_surface(s1)
+        # Part.show(Part.Compound([s1.toShape(), s2.toShape(), s3.toShape(), ]))
         gordon = Gordon(s1, s2, s3, self.tol2d, self.tol3d)
         return gordon.Surface
 

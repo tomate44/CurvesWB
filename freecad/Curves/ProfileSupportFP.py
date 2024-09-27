@@ -69,7 +69,7 @@ Sketcher::PropertyConstraintList
 
 class ProfileSupportFP:
     """Creates a ..."""
-    def __init__(self, obj, sel):
+    def __init__(self, obj, rail1, rail2, prof=None):
         """Add the properties"""
         obj.addProperty("App::PropertyLink", "Rail1",
                         "Sources", "Tooltip")
@@ -98,31 +98,34 @@ class ProfileSupportFP:
         obj.Position1 = (0.0, 0.0, 1.0, 0.05)
         obj.Position2 = (-0.05, -0.05, 1.0, 0.05)
         obj.setEditorMode("Position2", 2)
-        obj.Rail1 = sel[0]
-        if len(sel) == 3:
-            obj.Rail2 = sel[1]
-        obj.ProfileShape = sel[-1]
+        obj.Rail1 = rail1
+        obj.Rail2 = rail2
+        obj.ProfileShape = prof
         obj.Proxy = self
 
     def execute(self, obj):
-        e1 = obj.Rail1.Shape.Edge1
-        if obj.Rail2:
-            e2 = obj.Rail2.Shape.Edge1
-        elif len(obj.Rail1.Shape.Edges) == 4:
-            e2 = obj.Rail1.Shape.Edge3
-        else:
-            e2 = obj.Rail1.Shape.Edge2
-        obj.Rail1Length = e1.Length
-        obj.Rail2Length = e2.Length
-        path2R = SweepObject.Path2Rails(e1, e2)
+        r1 = obj.Rail1.Shape
+        r2 = obj.Rail2.Shape
+        obj.Rail1Length = r1.Length
+        obj.Rail2Length = r2.Length
+        path2R = SweepObject.Path2Rails(r1, r2)
         path2R.ReversedNormal = obj.NormalReverse
-        # sh = obj.ProfileShape.Shape.copy()
-        prof = SweepObject.ProfileShape(obj.ProfileShape.Shape)
+        if obj.ProfileShape is not None:
+            prof = SweepObject.ProfileShape(obj.ProfileShape.Shape)
+        else:
+            pts = [FreeCAD.Vector(0, 0, 0),
+                   FreeCAD.Vector(0, 1, 0),
+                   FreeCAD.Vector(0.5, 0, 0),
+                   FreeCAD.Vector(1, 0, 0)]
+            poly = Part.makePolygon(pts)
+            prof = SweepObject.ProfileShape(poly)
         sp, ep = prof.end_points_2D()
         size = (ep - sp).Length
+        obj.ChordLength = size
         m, width = path2R.get_transform_matrix(obj.Position1, obj.Position2, obj.NormalPosition)
-        sh = obj.ProfileShape.Shape.copy()
-        sh.scale(width / size, sp)
+        sh = prof.BaseShape.copy()
+        if size > 0.0:
+            sh.scale(width / size, sp)
         prof = SweepObject.ProfileShape(sh)
         obj.Shape = prof.BaseShape
         obj.Placement = FreeCAD.Placement(m)
@@ -194,20 +197,24 @@ class ProfileSupportVP:
 
 
 class ProfileSupportCommand:
-    """Create a ... feature"""
-    def makeFeature(self, sel=None):
+    """Create a Profile Support feature"""
+
+    def makeFeature(self, r1, r2, pr=None):
         fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "Profile Support")
-        ProfileSupportFP(fp, sel)
+        ProfileSupportFP(fp, r1, r2, pr)
         ProfileSupportVP(fp.ViewObject)
         fp.ViewObject.PointSize = 5
         FreeCAD.ActiveDocument.recompute()
 
     def Activated(self):
         sel = FreeCADGui.Selection.getSelection()
-        if len(sel) < 1:
-            FreeCAD.Console.PrintError("Select 2 edges\n")
+        if len(sel) < 2:
+            FreeCAD.Console.PrintError("Select 2 rail objects, and optionally some profile objects\n")
+        elif len(sel) == 2:
+            self.makeFeature(sel[0], sel[1], None)
         else:
-            self.makeFeature(sel)
+            for so in sel[2:]:
+                self.makeFeature(sel[0], sel[1], so)
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:

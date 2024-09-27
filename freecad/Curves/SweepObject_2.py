@@ -2,22 +2,61 @@ import FreeCAD
 import Part
 vec2 = FreeCAD.Base.Vector2d
 from freecad.Curves import curves_to_surface
+from . import TOL3D
 
 
-class ProfileShape:
+class SortedShape:
+    tol3d = TOL3D
+    def __init__(self, shape, tol=tol3d):
+        self.BaseShape = shape
+        self.Tol3d = tol
+        self.Mapping = []
+        if isinstance(shape, Part.Face):
+            self._wires = [SortedShape(w) for w in shape.Wires]
+        elif isinstance(shape, Part.Wire):
+            self._edges = [SortedShape(e) for e in shape.Edges]
+        elif isinstance(shape, Part.Edge):
+            self._vertexes = [SortedShape(v) for w in shape.Wires]
+
+    def __getattr__(self, attr):
+        return getattr(self.BaseShape, attr)
+
+    @property
+    def Wires(self):
+        if hasattr(self, "_wires") and (len(self._wires) == len(self.Mapping)):
+            return [self._wires[self.Mapping[i]] for i in range(len(self._wires))]
+        return self.BaseShape.Wires
+
+    @property
+    def Edges(self):
+        if hasattr(self, "_edges") and (len(self._edges) == len(self.Mapping)):
+            return [self._edges[self.Mapping[i]] for i in range(len(self._edges))]
+        return []
+
+    @property
+    def Vertexes(self):
+        if hasattr(self, "_vertexes") and (len(self._vertexes) == len(self.Mapping)):
+            return [self._vertexes[self.Mapping[i]] for i in range(len(self._vertexes))]
+        return []
+
+    def average_normal(self):
+        normal = FreeCAD.Vector()
+        if self.BaseShape:
+            pass
+
+
+class ProfileShape(SortedShape):
     """Wrapper for shapes that will be used in a surfacing operation"""
 
-    def __init__(self, shape, tol=1e-7, rational=False):
-        self.BaseShape = shape
-        self.tol3d = tol
+    tol3d = FreeCAD.Base.Precision.confusion()
+    def __init__(self, shape, tol=tol3d, rational=False):
+        super().__init__(shape, tol)
+        # self.BaseShape = shape
+        # self.tol3d = tol
         self.full_bspline = None
         self.polygon = None
         self.BSplines = []
         self.compute_BSplines(rational)
-
-    @property
-    def NbFaces(self):
-        return len(self.BaseShape.Faces)
 
     @property
     def NbWires(self):
@@ -45,8 +84,6 @@ class ProfileShape:
     #     return maxgap
 
     def end_points_2D(self):
-        if not self.BaseShape.isClosed():
-            return self.end_points()
         sp = FreeCAD.Vector()
         ep = FreeCAD.Vector()
         ma = -1e100
@@ -63,9 +100,8 @@ class ProfileShape:
 
     def end_points(self):
         ov = self.BaseShape.OrderedVertexes
-        ep = [ov[0].Point, ov[-1].Point]
-        ep.sort(key=lambda pt: pt.x)
-        return ep
+        vl = (ov[0], ov[-1])
+        return [v.Point for v in vl]
 
     def compute_BSplines(self, rational=False):
         self.BSplines = []
@@ -87,10 +123,8 @@ class ProfileShape:
             shape = self.BaseShape.Wire1
             if rational:
                 shape = self.BaseShape.Wire1.toNurbs().Wire1
-            # print(shape.OrderedEdges)
             for e in shape.OrderedEdges:
                 c = e.Curve.toBSpline(e.FirstParameter, e.LastParameter)
-                # print(c)
                 self.BSplines.append(c)
         c0 = self.BSplines[0].copy()
         if len(self.BSplines) > 1:
@@ -133,7 +167,7 @@ class Path2Rails:
         # self.TangentToFaces = False
         self.ReversedNormal = False
         ruled = Part.makeRuledSurface(self.Rail1.full_bspline.toShape(),
-                                      self.Rail2.full_bspline.toShape(), 1)
+                                      self.Rail2.full_bspline.toShape())
         self.Surface = ruled.Surface
         self.Surface.scaleKnotsToBounds(0.0, 1.0)
 
