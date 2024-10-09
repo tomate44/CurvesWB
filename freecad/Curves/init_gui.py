@@ -63,8 +63,8 @@ class CurvesWorkbench(Gui.Workbench):
         from . import SurfaceAnalysisFP
         from . import DraftAnalysisFP
         from . import Truncate_Extend_FP
-        # from . import ProfileSupportFP
-        # from . import Sweep2RailsFP
+        from . import ProfileSupportFP
+        from . import Sweep2RailsFP
         # from . import HQRuledSurfaceFP
         # from . import HelicalSweepFP
         # import sectionSketch
@@ -77,7 +77,8 @@ class CurvesWorkbench(Gui.Workbench):
                     "profile", "pipeshell", "gordon", "segment_surface", "comp_spring",
                     "ReflectLines", "MultiLoft", "Curves_BlendSurf2", "Curves_BlendSolid",
                     "Curves_FlattenFace", "Curves_RotationSweep", 'Curves_SurfaceAnalysis',
-                    'Curves_DraftAnalysis', "Curve_TruncateExtendCmd"]  # , "Curves_ProfileSupport", "Curves_Sweep2Rails"]
+                    'Curves_DraftAnalysis', "Curve_TruncateExtendCmd"]
+        # , "Curves_ProfileSupport", "Curves_Sweep2Rails"]
         misclist = ["GeomInfo", "extract", "solid", "pasteSVG", "to_console", "Curves_adjacent_faces",
                     "Curves_bspline_to_console"]
 
@@ -118,9 +119,13 @@ class CurvesWorkbench(Gui.Workbench):
         nl = []
         cl = []
         for i in range(len(self.Selection)):
-            if not self.Selection[i] == Gui.Selection.getSelectionObject(doc, obj, sub):
-                nl.append(self.Selection[i])
-                cl.append(self.View_Directions[i])
+            doc_match = (doc == self.Selection[i].Document.Name)
+            obj_match = (obj == self.Selection[i].Object.Name)
+            sub_match = (len(sub) == 0) or (sub in self.Selection[i].SubElementNames)
+            if doc_match and obj_match and sub_match:
+                continue
+            nl.append(self.Selection[i])
+            cl.append(self.View_Directions[i])
         self.Selection = nl
 
     def clearSelection(self, doc):

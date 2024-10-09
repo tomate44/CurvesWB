@@ -678,7 +678,7 @@ class CurvesOn2Rails:
             u1, v1 = s.parameter(c.value(c.FirstParameter))
             u2, v2 = s.parameter(c.value(c.LastParameter))
             diff = abs(v1 - v2)
-            if diff > self.tol2d:
+            if (diff > self.tol2d) and (diff < (1 - self.tol2d)):
                 FreeCAD.Console.PrintMessage(f"Curve {i + 1} is not Iso (diff = {diff}). Ignoring.\n")
                 continue
             if u1 > u2:
@@ -686,6 +686,8 @@ class CurvesOn2Rails:
                 FreeCAD.Console.PrintMessage(f"Reversing curve {i + 1}.\n")
             intersect.append((v1, c))
         intersect.sort()
+        for i in intersect:
+            print(i)
         if abs(intersect[0][0]) > self.tol3d:
             FreeCAD.Console.PrintMessage("Inserting flat profile at 0.0\n")
             intersect.insert(0, (0.0, s.vIso(0.0)))

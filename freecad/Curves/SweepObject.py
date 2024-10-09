@@ -69,6 +69,7 @@ class ProfileShape:
 
     def compute_BSplines(self, rational=False):
         self.BSplines = []
+        print(f"Nb edges : {self.NbEdges}")
         # Shape is a single Vertex
         if (self.NbEdges == 0):
             bs = Part.BSplineCurve()
@@ -76,7 +77,7 @@ class ProfileShape:
             bs.setPole(2, self.BaseShape.Vertex1.Point)
             self.BSplines.append(bs)
         # Shape is a single Edge
-        if (self.NbEdges == 1):
+        elif (self.NbEdges == 1):
             e = self.BaseShape.Edge1
             if rational:
                 e = self.BaseShape.Edge1.toNurbs().Edge1
@@ -84,6 +85,7 @@ class ProfileShape:
             self.BSplines.append(c)
         # Shape is a single Wire
         elif (self.NbWires == 1):
+            print("Wire detected")
             shape = self.BaseShape.Wire1
             if rational:
                 shape = self.BaseShape.Wire1.toNurbs().Wire1
@@ -126,7 +128,7 @@ class ProfileShape:
 
 class Path2Rails:
     def __init__(self, rail1, rail2, tol=1e-7):
-        self.Rail1 = ProfileShape(rail1, tol)
+        self.Rail1 = ProfileShape(rail1, tol, False)
         self.Rail2 = ProfileShape(rail2, tol)
         # self.Face1 = face1
         # self.Face2 = face2
