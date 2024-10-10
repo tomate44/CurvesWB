@@ -413,7 +413,7 @@ class pointEditor(object):
         self.root_inserted = False
         self.ctrl_keys = {"i": [self.insert],
                           "v": [self.text_change],
-                          "q": [self.quit],
+                          "q": [self.leave],
                           "\uffff": [self.remove_point]}
         for p in points:
             if isinstance(p, FreeCAD.Vector):
@@ -516,6 +516,12 @@ class pointEditor(object):
         self.sg.removeChild(self.root)
         self.root_inserted = False
 
+    def leave(self):
+        if self.fp:
+            self.fp.ViewObject.Proxy.doubleClicked(self.fp.ViewObject)
+        else:
+            self.quit()
+
 
 class splitVP:
     def __init__(self, vobj):
@@ -535,6 +541,7 @@ class splitVP:
         self.ps = 0.0
 
     def setEdit(self, vobj, mode=0):
+        # print(f"setEdit {mode}")
         if mode == 0:
             if vobj.Selectable:
                 self.select_state = True
@@ -543,15 +550,20 @@ class splitVP:
                 vobj.PointSize = 0.0
             # sl = self.Object.Source
             e, w = self.Object.Proxy.getShape(self.Object)
+            values = self.Object.Values
+            # print(values)
+            if values == [''] or values == []:
+                # print('no values')
+                values = ['50%']
             params = []
             if hasattr(self.Object, "Values"):
-                params = self.Object.Proxy.parse_values(e, self.Object.Values)
+                params = self.Object.Proxy.parse_values(e, values)
             if params == []:
                 return False
             pts = list()
             # print("Creating markers")
             if hasattr(self.Object, "Values"):
-                for v in self.Object.Values:
+                for v in values:
                     p, t = self.Object.Proxy.parse_value(e, v)
                     # print("{} -> {}".format(p, e.valueAt(p)))
                     m = MarkerOnEdge([e.valueAt(p)], e)
