@@ -140,7 +140,7 @@ class ZebraTool:
             ZebraTool.active = True
             show_task_panel(ZebraForm(self.gui))
         else:
-            FreeCAD.Console.PrintMessage("Zebra already active\n")
+            FreeCAD.Console.PrintMessage(translate("Log", "Zebra already active\n"))
 
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,

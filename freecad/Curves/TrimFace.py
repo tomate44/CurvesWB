@@ -16,7 +16,9 @@ try:
     import BOPTools.SplitAPI
     splitAPI = BOPTools.SplitAPI
 except ImportError:
-    FreeCAD.Console.PrintError("Failed importing BOPTools. Fallback to Part API\n")
+    FreeCAD.Console.PrintError(
+        translate("Log", "Failed importing BOPTools. Fallback to Part API\n")
+    )
     splitAPI = Part.BOPTools.SplitAPI
 
 TOOL_ICON = os.path.join(ICONPATH, 'trimFace.svg')
@@ -26,23 +28,45 @@ DEBUG = False
 def debug(string):
     if DEBUG:
         FreeCAD.Console.PrintMessage(string)
-        FreeCAD.Console.PrintMessage("\n")
+        FreeCAD.Console.PrintMessage(translate("Log", "\n"))
 
 
 class trimFace:
     def __init__(self, obj):
         ''' Add the properties '''
         debug("\ntrimFace init")
-        obj.addProperty("App::PropertyLinkSub", "Face",
-                        "TrimFace", "Input face")
-        obj.addProperty("App::PropertyVector", "PickedPoint",
-                        "TrimFace", "Picked point in parametric space of the face (u,v,0)")
-        obj.addProperty("App::PropertyLinkSubList", "Tool",
-                        "TrimFace", "Trimming curve")
-        obj.addProperty("App::PropertyLink", "DirVector",
-                        "TrimFace", "Trimming Vector")
-        obj.addProperty("App::PropertyVector", "Direction",
-                        "TrimFace", "Trimming direction")
+        obj.addProperty(
+            "App::PropertyLinkSub",
+            "Face",
+            "TrimFace",
+            QT_TRANSLATE_NOOP("App::Property", "Input face"),
+        )
+        obj.addProperty(
+            "App::PropertyVector",
+            "PickedPoint",
+            "TrimFace",
+            QT_TRANSLATE_NOOP(
+                "App::Property", "Picked point in parametric space of the face (u,v,0)"
+            ),
+        )
+        obj.addProperty(
+            "App::PropertyLinkSubList",
+            "Tool",
+            "TrimFace",
+            QT_TRANSLATE_NOOP("App::Property", "Trimming curve"),
+        )
+        obj.addProperty(
+            "App::PropertyLink",
+            "DirVector",
+            "TrimFace",
+            QT_TRANSLATE_NOOP("App::Property", "Trimming Vector"),
+        )
+        obj.addProperty(
+            "App::PropertyVector",
+            "Direction",
+            "TrimFace",
+            QT_TRANSLATE_NOOP("App::Property", "Trimming direction"),
+        )
         obj.Proxy = self
 
     def getFace(self, link):

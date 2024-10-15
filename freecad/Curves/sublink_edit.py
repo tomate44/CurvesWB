@@ -161,13 +161,13 @@ class myGrpBox(QtGui.QGroupBox):
         subs = list()
         sel = FreeCADGui.Selection.getSelectionEx()
         if sel == []:
-            FreeCAD.Console.PrintError("Nothing selected !\n")
+            FreeCAD.Console.PrintError(translate("Log", "Nothing selected !\n"))
         for selobj in sel:
             if selobj.HasSubObjects:
                 subs.append(("(FreeCAD.ActiveDocument.getObject('%s'),%s)" % (selobj.Object.Name, selobj.SubElementNames)))
         if self.obj.getTypeIdOfProperty(self.link) == 'App::PropertyLinkSub':
             if not len(subs) == 1:
-                FreeCAD.Console.PrintError("This property accept only 1 subobject !\n")
+                FreeCAD.Console.PrintError(translate("Log", "This property accept only 1 subobject !\n"))
             else:
                 # FreeCADGui.doCommand("subobj = FreeCAD.ActiveDocument.getObject('%s')"%(subs[0][0].Name))
                 FreeCADGui.doCommand("FreeCAD.ActiveDocument.getObject('%s').%s = %s" % (self.obj.Name, self.link, subs[0]))
@@ -224,7 +224,7 @@ class sle:
     def Activated(self):
         s = FreeCADGui.Selection.getSelection()
         if not len(s) == 1:
-            FreeCAD.Console.PrintError("Select 1 object !\n")
+            FreeCAD.Console.PrintError(translate("Log", "Select 1 object !\n"))
         else:
             hasSubLink = False
             for p in s[0].PropertiesList:
@@ -255,10 +255,10 @@ FreeCADGui.addCommand('SublinkEditor', sle())
 class proxy(object):
     """Feature python proxy"""
     def __init__(self, obj):
-        obj.addProperty("App::PropertyLinkSubList", "Profile", "Profile", "SubShapes of the profile")
-        obj.addProperty("App::PropertyLinkSub", "Location1", "Profile", "Vertex location on spine")
-        obj.addProperty("App::PropertyLinkSub", "Location2", "Profile", "Vertex location on spine")
-        obj.addProperty("App::PropertyLinkSub", "Location3", "Profile", "Vertex location on spine")
+        obj.addProperty("App::PropertyLinkSubList", "Profile", "Profile", QT_TRANSLATE_NOOP("App::Property", "SubShapes of the profile"))
+        obj.addProperty("App::PropertyLinkSub", "Location1", "Profile", QT_TRANSLATE_NOOP("App::Property", "Vertex location on spine"))
+        obj.addProperty("App::PropertyLinkSub", "Location2", "Profile", QT_TRANSLATE_NOOP("App::Property", "Vertex location on spine"))
+        obj.addProperty("App::PropertyLinkSub", "Location3", "Profile", QT_TRANSLATE_NOOP("App::Property", "Vertex location on spine"))
         obj.Proxy = self
 
 

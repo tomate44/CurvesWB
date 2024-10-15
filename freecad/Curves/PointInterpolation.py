@@ -25,8 +25,8 @@ class PointInterpolation:
         self.Periodic = periodic
         self.check_duplicates()
         if self.Periodic and (not self.Duplicates) and self.are_closed():
-            FreeCAD.Console.PrintMessage("Periodic interpolation\n")
-            FreeCAD.Console.PrintMessage("Ignoring duplicate last point\n")
+            FreeCAD.Console.PrintMessage(translate("Log", "Periodic interpolation\n"))
+            FreeCAD.Console.PrintMessage(translate("Log", "Ignoring duplicate last point\n"))
             self.Points = points[:-1]
 
     def are_closed(self):
@@ -41,7 +41,7 @@ class PointInterpolation:
             if self.Points[i].distanceToPoint(self.Points[i - 1]) > self.Tolerance:
                 self.Duplicates = False
                 break
-        FreeCAD.Console.PrintMessage("Duplicates point list\n")
+        FreeCAD.Console.PrintMessage(translate("Log", "Duplicates point list\n"))
         return self.Duplicates
 
     def parameters_along_curve(self, curve):
@@ -54,8 +54,8 @@ class PointInterpolation:
             if par > params[-1]:
                 params.append(par)
             else:
-                FreeCAD.Console.PrintError("Parameters are not increasing\n")
-                FreeCAD.Console.PrintError("Falling back to ChordLength\n")
+                FreeCAD.Console.PrintError(translate("Log", "Parameters are not increasing\n"))
+                FreeCAD.Console.PrintError(translate("Log", "Falling back to ChordLength\n"))
                 params = self.get_parameters("ChordLength")
                 break
         return params

@@ -64,7 +64,7 @@ class adjacentfacesCommand:
                     for a in anc:
                         sel.addSelection(obj, self.get_subname(shape, a))
         if len(result) == 0:
-            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
+            FreeCAD.Console.PrintError(translate("Log", "{} :\n{}\n")).format(__title__, __usage__)
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:

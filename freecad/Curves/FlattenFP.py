@@ -352,12 +352,24 @@ def flatten_face_new(face, inPlace=False, size=0.0):
 class FlattenProxy:
     def __init__(self, obj):
         """Add the properties"""
-        obj.addProperty("App::PropertyLinkSub", "Source",
-                        "Source", "The conical face to flatten")
-        obj.addProperty("App::PropertyBool", "InPlace",
-                        "Settings", "Unroll the face in place")
-        obj.addProperty("App::PropertyFloat", "Size",
-                        "Settings", "Size of the underlying surface")
+        obj.addProperty(
+            "App::PropertyLinkSub",
+            "Source",
+            "Source",
+            QT_TRANSLATE_NOOP("App::Property", "The conical face to flatten"),
+        )
+        obj.addProperty(
+            "App::PropertyBool",
+            "InPlace",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Unroll the face in place"),
+        )
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Size",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Size of the underlying surface"),
+        )
         obj.setEditorMode("Size", 2)
         obj.Size = 0.0
         preferences = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves")
@@ -402,14 +414,16 @@ class Curves_Flatten_Face_Cmd:
     def Activated(self):
         sel = FreeCADGui.Selection.getSelectionEx()
         if sel == []:
-            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
+            FreeCAD.Console.PrintError(translate("Log", "{} :\n{}\n")).format(__title__, __usage__)
         for so in sel:
             for sn in so.SubElementNames:
                 subo = so.Object.getSubObject(sn)
                 if hasattr(subo, "Surface") and isinstance(subo.Surface, (Part.Cylinder, Part.Cone, Part.SurfaceOfExtrusion)):
                     self.makeFeature((so.Object, sn))
                 else:
-                    FreeCAD.Console.PrintError("Bad input :{}-{}\n".format(so.Object.Label, sn))
+                    FreeCAD.Console.PrintError(translate("Log", "Bad input :{}-{}\n")).format(
+                        so.Object.Label, sn
+                    )
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:

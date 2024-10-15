@@ -34,7 +34,7 @@ class pasteSVG:
             doc.recompute()
             FreeCADGui.SendMsgToActiveView("ViewFit")
         else:
-            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
+            FreeCAD.Console.PrintError(translate("Log", "{} :\n{}\n")).format(__title__, __usage__)
 
     def IsActive(self):
         cb = QtGui.QApplication.clipboard()

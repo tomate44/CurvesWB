@@ -13,7 +13,9 @@ from freecad.Curves import _utils
 from freecad.Curves.nurbs_tools import nurbs_quad
 from freecad.Curves import ICONPATH
 
-TOOL_ICON = os.path.join(ICONPATH, 'icon.svg')
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+TOOL_ICON = os.path.join(ICONPATH, "icon.svg")
 # debug = _utils.debug
 # debug = _utils.doNothing
 
@@ -71,14 +73,30 @@ class FaceMapFP:
     """Creates a ..."""
     def __init__(self, obj):
         """Add the properties"""
-        obj.addProperty("App::App::PropertyLinkSub", "Source",
-                        "Base", "Input face")
-        obj.addProperty("App::PropertyFloat", "SizeU",
-                        "Dimensions", "Size of the map in the U direction")
-        obj.addProperty("App::PropertyFloat", "SizeV",
-                        "Dimensions", "Size of the map in the V direction")
-        obj.addProperty("App::PropertyBool", "AddBounds",
-                        "Settings", "Add the bounding box of the face")
+        obj.addProperty(
+            "App::App::PropertyLinkSub",
+            "Source",
+            "Base",
+            QT_TRANSLATE_NOOP("App::Property", "Input face"),
+        )
+        obj.addProperty(
+            "App::PropertyFloat",
+            "SizeU",
+            "Dimensions",
+            QT_TRANSLATE_NOOP("App::Property", "Size of the map in the U direction"),
+        )
+        obj.addProperty(
+            "App::PropertyFloat",
+            "SizeV",
+            "Dimensions",
+            QT_TRANSLATE_NOOP("App::Property", "Size of the map in the V direction"),
+        )
+        obj.addProperty(
+            "App::PropertyBool",
+            "AddBounds",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Add the bounding box of the face"),
+        )
         obj.SizeU = 1.0
         obj.SizeV = 1.0
         obj.Proxy = self
@@ -136,7 +154,7 @@ class ToolCommand:
     def Activated(self):
         sel = FreeCADGui.Selection.getSelection()
         if sel == []:
-            FreeCAD.Console.PrintError("Select something first !\n")
+            FreeCAD.Console.PrintError(translate("Log", "Select something first !\n"))
         else:
             self.makeFeature(sel)
 

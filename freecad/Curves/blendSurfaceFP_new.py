@@ -24,21 +24,21 @@ class BlendSurfaceFP2:
     """Proxy of a BlendSurface FeaturePython object"""
     def __init__(self, obj):
         obj.addProperty("App::PropertyLinkSubList", "Sources",
-                        "Base", "Edges and support faces")
+                        "Base", QT_TRANSLATE_NOOP("App::Property", "Edges and support faces"))
         obj.addProperty("App::PropertyInteger", "Samples",
-                        "Base", "Number of samples to generate surface")
+                        "Base", QT_TRANSLATE_NOOP("App::Property", "Number of samples to generate surface"))
         obj.addProperty("App::PropertyInteger", "Continuity1",
-                        "Continuity", "Continuity level with face of edge 1")
+                        "Continuity", QT_TRANSLATE_NOOP("App::Property", "Continuity level with face of edge 1"))
         obj.addProperty("App::PropertyInteger", "Continuity2",
-                        "Continuity", "Continuity level with face of edge 2")
+                        "Continuity", QT_TRANSLATE_NOOP("App::Property", "Continuity level with face of edge 2"))
         obj.addProperty("App::PropertyEnumeration", "AutoScale",
-                        "Scale", "Compute scales to get regular poles, or minimal curvature")
+                        "Scale", QT_TRANSLATE_NOOP("App::Property", "Compute scales to get regular poles, or minimal curvature"))
         obj.addProperty("App::PropertyInteger", "ScaleSamples",
-                        "Scale", "Number of samples for auto scaling")
+                        "Scale", QT_TRANSLATE_NOOP("App::Property", "Number of samples for auto scaling"))
         obj.addProperty("App::PropertyFloatList", "Scale1",
-                        "Scale", "Scale values along edge 1")
+                        "Scale", QT_TRANSLATE_NOOP("App::Property", "Scale values along edge 1"))
         obj.addProperty("App::PropertyFloatList", "Scale2",
-                        "Scale", "Scale values along edge 2")
+                        "Scale", QT_TRANSLATE_NOOP("App::Property", "Scale values along edge 2"))
         obj.ScaleSamples = 3
         obj.Samples = 20
         obj.Continuity1 = 2
@@ -144,7 +144,7 @@ class BlendSurf2Command:
         if sources:
             self.makeFeature(sources)
         else:
-            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
+            FreeCAD.Console.PrintError(translate("Log", "{} :\n{}\n")).format(__title__, __usage__)
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:

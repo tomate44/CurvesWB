@@ -15,9 +15,11 @@ import Part
 import _utils
 import approximate_extension
 
-TOOL_ICON = _utils.iconsPath() + 'icon.svg'
-#debug = _utils.debug
-#debug = _utils.doNothing
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+TOOL_ICON = _utils.iconsPath() + "icon.svg"
+# debug = _utils.debug
+# debug = _utils.doNothing
 
 props = """
 App::PropertyBool
@@ -72,9 +74,9 @@ class OutlineFP:
     """Creates a Outline curve"""
     def __init__(self, obj, s):
         """Add the properties"""
-        obj.addProperty("App::PropertyLink", "Source", "Outline", "Source object").Source = s
-        obj.addProperty("App::PropertyVector", "Direction", "Outline", "Direction Vector").Direction = FreeCAD.Vector(0,0,1)
-        obj.addProperty("App::PropertyInteger", "RadialSamples", "Outline", "Number of samples around object").RadialSamples = 360
+        obj.addProperty("App::PropertyLink", "Source", "Outline", QT_TRANSLATE_NOOP("App::Property", "Source object")).Source = s
+        obj.addProperty("App::PropertyVector", "Direction", "Outline", QT_TRANSLATE_NOOP("App::Property", "Direction Vector")).Direction = FreeCAD.Vector(0,0,1)
+        obj.addProperty("App::PropertyInteger", "RadialSamples", "Outline", QT_TRANSLATE_NOOP("App::Property", "Number of samples around object")).RadialSamples = 360
         obj.Proxy = self
 
     def execute(self, obj):
@@ -151,7 +153,7 @@ class outline_cmd:
     def Activated(self):
         sel = FreeCADGui.Selection.getSelection()
         if sel == []:
-            FreeCAD.Console.PrintError("Select something first !\n")
+            FreeCAD.Console.PrintError(translate("Log", "Select something first !\n"))
         else:
             self.makeFeature(sel[0])
 
