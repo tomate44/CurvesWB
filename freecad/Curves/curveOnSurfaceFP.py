@@ -148,4 +148,4 @@ class cosCommand:
                 'MenuText': 'CurveOnSurface',
                 'ToolTip': 'Create a curve on surface object'}
 
-FreeCADGui.addCommand('cos', cosCommand())
+FreeCADGui.addCommand("Curves_CurveOnSurface", cosCommand())

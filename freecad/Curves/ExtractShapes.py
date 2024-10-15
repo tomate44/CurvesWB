@@ -36,4 +36,4 @@ class extract:
                 'ToolTip': "{}\n\n{}".format(__title__, __doc__)}
 
 
-FreeCADGui.addCommand('extract', extract())
+FreeCADGui.addCommand("Curves_ExtractSubshape", extract())

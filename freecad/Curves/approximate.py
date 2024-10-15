@@ -416,7 +416,4 @@ class approx:
                 'ToolTip': 'Approximate points to NURBS curve or surface'}
 
 
-FreeCADGui.addCommand('Approximate', approx())
-
-
-
+FreeCADGui.addCommand("Curves_Approximate", approx())

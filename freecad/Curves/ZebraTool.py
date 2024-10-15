@@ -148,4 +148,4 @@ class ZebraTool:
                 'ToolTip': 'Zebra texture for surface inspection'}
 
 
-FreeCADGui.addCommand('ZebraTool', ZebraTool())
+FreeCADGui.addCommand("Curves_ZebraTool", ZebraTool())

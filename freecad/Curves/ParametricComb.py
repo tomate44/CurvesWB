@@ -602,7 +602,4 @@ class ParametricComb:
                 'ToolTip': __doc__}
 
 
-FreeCADGui.addCommand('ParametricComb', ParametricComb())
-
-
-
+FreeCADGui.addCommand("Curves_ParametricComb", ParametricComb())

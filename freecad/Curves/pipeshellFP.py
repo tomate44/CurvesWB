@@ -387,4 +387,4 @@ class pipeShellCommand:
                 'ToolTip': __doc__}
 
 
-FreeCADGui.addCommand('pipeshell', pipeShellCommand())
+FreeCADGui.addCommand("Curves_Pipeshell", pipeShellCommand())

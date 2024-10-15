@@ -174,4 +174,4 @@ class profileCommand:
                 'MenuText': __title__,
                 'ToolTip': __doc__}
 
-FreeCADGui.addCommand('profile', profileCommand())
+FreeCADGui.addCommand("Curves_PipeshellProfile", profileCommand())

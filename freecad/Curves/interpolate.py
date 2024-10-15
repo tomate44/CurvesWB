@@ -379,4 +379,4 @@ class interpolate:
                 'ToolTip': __doc__}
 
 
-FreeCADGui.addCommand('Interpolate', interpolate())
+FreeCADGui.addCommand("Curves_Interpolate", interpolate())

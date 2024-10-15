@@ -745,4 +745,4 @@ class ParametricBlendCurve:
                 'ToolTip': __doc__}
 
 
-FreeCADGui.addCommand('ParametricBlendCurve', ParametricBlendCurve())
+FreeCADGui.addCommand("Curves_ParametricBlendCurve", ParametricBlendCurve())

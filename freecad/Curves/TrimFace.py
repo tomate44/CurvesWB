@@ -235,7 +235,6 @@ class trim:
                 'ToolTip': __doc__}
 
 
-FreeCADGui.addCommand('Trim', trim())
 
 
-
+FreeCADGui.addCommand("Curves_Trim", trim())

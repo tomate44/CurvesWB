@@ -112,4 +112,4 @@ class NurbsToConsole:
             return False
 
 
-FreeCADGui.addCommand('Curves_bspline_to_console', NurbsToConsole())
+FreeCADGui.addCommand("Curves_BsplineToConsole", NurbsToConsole())

@@ -641,4 +641,4 @@ class GeomInfo:
                 'Checkable': False}
 
 
-FreeCADGui.addCommand('GeomInfo', GeomInfo())
+FreeCADGui.addCommand("Curves_GeometryInfo", GeomInfo())

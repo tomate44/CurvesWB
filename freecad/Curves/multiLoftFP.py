@@ -129,4 +129,4 @@ class MultiLoftCommand:
                 'ToolTip': __doc__}
 
 
-FreeCADGui.addCommand('MultiLoft', MultiLoftCommand())
+FreeCADGui.addCommand("Curves_MultiLoft", MultiLoftCommand())

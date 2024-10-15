@@ -225,4 +225,4 @@ class s2rCommand:
                 'ToolTip': 'Sweep profiles on 2 rails'}
 
 
-FreeCADGui.addCommand('sw2r', s2rCommand())
+FreeCADGui.addCommand("Curves_SweepToRails", s2rCommand())
