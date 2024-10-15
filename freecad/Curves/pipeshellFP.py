@@ -15,36 +15,140 @@ from freecad.Curves import ICONPATH
 TOOL_ICON = os.path.join(ICONPATH, 'pipeshell.svg')
 DEBUG = False
 
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
 
 def debug(string):
     if DEBUG:
         FreeCAD.Console.PrintMessage(string)
-        FreeCAD.Console.PrintMessage("\n")
+        FreeCAD.Console.PrintMessage(translate("Log", "\n"))
 
 
 class pipeShell:
     "PipeShell featurePython object"
 
     def __init__(self, obj):
-        ''' Add the properties '''
-        obj.addProperty("App::PropertyLinkSubList", "Spine", "Main", "Sweep path")
-        obj.addProperty("App::PropertyLinkList", "Profiles", "Main", "Profiles that are swept along spine")
-        obj.addProperty("App::PropertyLink", "Support", "Mode", "Shape of the ShapeSupport mode")
-        obj.addProperty("App::PropertyLink", "Auxiliary", "Mode", "Auxiliary spine")
-        obj.addProperty("App::PropertyEnumeration", "Mode", "Main", "PipeShell mode").Mode = ["Frenet", "DiscreteTrihedron", "FixedTrihedron", "Binormal", "ShapeSupport", "AuxiliarySpine"]
-        obj.addProperty("App::PropertyEnumeration", "Output", "Main", "Output shape").Output = ["Sections", "Lofted sections", "Surface"]
-        obj.addProperty("App::PropertyBool", "Solid", "Settings", "Make solid object").Solid = False
-        obj.addProperty("App::PropertyInteger", "MaxDegree", "Settings", "Maximum degree of the generated surface").MaxDegree = 5
-        obj.addProperty("App::PropertyInteger", "MaxSegments", "Settings", "Maximum number of segments of the generated surface").MaxSegments = 999
-        obj.addProperty("App::PropertyInteger", "Samples", "Settings", "Number of samples for preview").Samples = 100
-        obj.addProperty("App::PropertyFloat", "Tol3d", "Settings", "Tolerance 3D").Tol3d = 1.0e-4
-        obj.addProperty("App::PropertyFloat", "TolBound", "Settings", "Tolerance boundary").TolBound = 1.0e-4
-        obj.addProperty("App::PropertyFloat", "TolAng", "Settings", "Tolerance angular").TolAng = 1.0e-2
-        obj.addProperty("App::PropertyVector", "Direction", "Mode", "Direction of the Binormal and FixedTrihedron modes")
-        obj.addProperty("App::PropertyVector", "Location", "Mode", "Location of the FixedTrihedron mode")
-        obj.addProperty("App::PropertyBool", "Corrected", "Mode", "Corrected Frenet").Corrected = False
-        obj.addProperty("App::PropertyBool", "EquiCurvi", "Mode", "Curvilinear equivalence").EquiCurvi = False
-        obj.addProperty("App::PropertyEnumeration", "Contact", "Mode", "Type of contact to auxiliary spine").Contact = ["NoContact", "Contact", "ContactOnBorder"]
+        """Add the properties"""
+        obj.addProperty(
+            "App::PropertyLinkSubList",
+            "Spine",
+            "Main",
+            QT_TRANSLATE_NOOP("App::Property", "Sweep path"),
+        )
+        obj.addProperty(
+            "App::PropertyLinkList",
+            "Profiles",
+            "Main",
+            QT_TRANSLATE_NOOP("App::Property", "Profiles that are swept along spine"),
+        )
+        obj.addProperty(
+            "App::PropertyLink",
+            "Support",
+            "Mode",
+            QT_TRANSLATE_NOOP("App::Property", "Shape of the ShapeSupport mode"),
+        )
+        obj.addProperty(
+            "App::PropertyLink",
+            "Auxiliary",
+            "Mode",
+            QT_TRANSLATE_NOOP("App::Property", "Auxiliary spine"),
+        )
+        obj.addProperty(
+            "App::PropertyEnumeration",
+            "Mode",
+            "Main",
+            QT_TRANSLATE_NOOP("App::Property", "PipeShell mode"),
+        ).Mode = [
+            "Frenet",
+            "DiscreteTrihedron",
+            "FixedTrihedron",
+            "Binormal",
+            "ShapeSupport",
+            "AuxiliarySpine",
+        ]
+        obj.addProperty(
+            "App::PropertyEnumeration",
+            "Output",
+            "Main",
+            QT_TRANSLATE_NOOP("App::Property", "Output shape"),
+        ).Output = ["Sections", "Lofted sections", "Surface"]
+        obj.addProperty(
+            "App::PropertyBool",
+            "Solid",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Make solid object"),
+        ).Solid = False
+        obj.addProperty(
+            "App::PropertyInteger",
+            "MaxDegree",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Maximum degree of the generated surface"),
+        ).MaxDegree = 5
+        obj.addProperty(
+            "App::PropertyInteger",
+            "MaxSegments",
+            "Settings",
+            QT_TRANSLATE_NOOP(
+                "App::Property", "Maximum number of segments of the generated surface"
+            ),
+        ).MaxSegments = 999
+        obj.addProperty(
+            "App::PropertyInteger",
+            "Samples",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Number of samples for preview"),
+        ).Samples = 100
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Tol3d",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Tolerance 3D"),
+        ).Tol3d = 1.0e-4
+        obj.addProperty(
+            "App::PropertyFloat",
+            "TolBound",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Tolerance boundary"),
+        ).TolBound = 1.0e-4
+        obj.addProperty(
+            "App::PropertyFloat",
+            "TolAng",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Tolerance angular"),
+        ).TolAng = 1.0e-2
+        obj.addProperty(
+            "App::PropertyVector",
+            "Direction",
+            "Mode",
+            QT_TRANSLATE_NOOP(
+                "App::Property", "Direction of the Binormal and FixedTrihedron modes"
+            ),
+        )
+        obj.addProperty(
+            "App::PropertyVector",
+            "Location",
+            "Mode",
+            QT_TRANSLATE_NOOP("App::Property", "Location of the FixedTrihedron mode"),
+        )
+        obj.addProperty(
+            "App::PropertyBool",
+            "Corrected",
+            "Mode",
+            QT_TRANSLATE_NOOP("App::Property", "Corrected Frenet"),
+        ).Corrected = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "EquiCurvi",
+            "Mode",
+            QT_TRANSLATE_NOOP("App::Property", "Curvilinear equivalence"),
+        ).EquiCurvi = False
+        obj.addProperty(
+            "App::PropertyEnumeration",
+            "Contact",
+            "Mode",
+            QT_TRANSLATE_NOOP("App::Property", "Type of contact to auxiliary spine"),
+        ).Contact = ["NoContact", "Contact", "ContactOnBorder"]
         obj.Mode = "DiscreteTrihedron"
         obj.Contact = "NoContact"
         obj.Output = "Sections"
@@ -166,7 +270,11 @@ class pipeShell:
                 fp.TolAng = 1000
         if prop == "Contact":
             if fp.Contact == "ContactOnBorder":
-                FreeCAD.Console.PrintError("\nSorry, ContactOnBorder option is currently broken in OCCT.\n")
+                FreeCAD.Console.PrintError(
+                    translate(
+                        "Log", "\nSorry, ContactOnBorder option is currently broken in OCCT.\n"
+                    )
+                )
                 fp.Contact = "Contact"
 
     def add(self, ps, p):
@@ -209,11 +317,15 @@ class pipeShell:
             if not direction:
                 direction = FreeCAD.Vector(0, 0, 1)
                 obj.Direction = direction
-                FreeCAD.Console.PrintError("\nWrong direction, defaulting to +Z\n")
+                FreeCAD.Console.PrintError(
+                    translate("Log", "\nWrong direction, defaulting to +Z\n")
+                )
             elif direction.Length < 1e-7:
                 direction = FreeCAD.Vector(0, 0, 1)
                 obj.Direction = direction
-                FreeCAD.Console.PrintError("\nDirection has null length, defaulting to +Z\n")
+                FreeCAD.Console.PrintError(
+                    translate("Log", "\nDirection has null length, defaulting to +Z\n")
+                )
             if mode == "Binormal":
                 debug("Binormal mode (%r)" % direction)
                 ps.setBiNormalMode(direction)
@@ -240,7 +352,9 @@ class pipeShell:
                 debug("AuxiliarySpine mode (%r %s)" % (curv, cont))
                 ps.setAuxiliarySpine(w, curv, n)
             else:
-                FreeCAD.Console.PrintError("\nPlease set a valid Auxiliary Spine Object\n")
+                FreeCAD.Console.PrintError(
+                    translate("Log", "\nPlease set a valid Auxiliary Spine Object\n")
+                )
         elif mode == "ShapeSupport":
             sup = self.getprop(obj, "Support")
             sh = None
@@ -250,7 +364,7 @@ class pipeShell:
                 debug("ShapeSupport mode")
                 ps.setSpineSupport(sh)
             else:
-                FreeCAD.Console.PrintError("\nPlease set a valid Spine support Object\n")
+                FreeCAD.Console.PrintError(translate("Log", "\nPlease set a valid Spine support Object\n"))
 
         for p in profs:
             self.add(ps, p)
@@ -272,7 +386,7 @@ class pipeShell:
                     c = Part.Compound(shapes + rails)
                     obj.Shape = c
         else:
-            FreeCAD.Console.PrintError("\nFailed to create shape\n")
+            FreeCAD.Console.PrintError(translate("Log", "\nFailed to create shape\n"))
 
     def getCode(self, cont):
         if cont == "Contact":
@@ -373,7 +487,12 @@ class pipeShellCommand:
             # path.ViewObject.LineColor = (1.0,0.3,0.0)
             self.makePipeShellFeature(path, profs)
         else:
-            FreeCAD.Console.PrintError("\nYou must select:\n- in the 3D view, the edges that build the sweep path\n- in the Tree view, one or more 'pipeshellProfile' objects\n")
+            FreeCAD.Console.PrintError(
+                translate(
+                    "Log",
+                    "\nYou must select:\n- in the 3D view, the edges that build the sweep path\n- in the Tree view, one or more 'pipeshellProfile' objects\n",
+                )
+            )
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:

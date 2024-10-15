@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
 __title__ = "Parametric Gordon surface"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
@@ -24,25 +29,25 @@ def debug(o):
     if not DEBUG:
         return
     if isinstance(o, Part.BSplineCurve):
-        FreeCAD.Console.PrintWarning("\nBSplineCurve\n")
+        FreeCAD.Console.PrintWarning(translate("Log", "\nBSplineCurve\n"))
         FreeCAD.Console.PrintWarning("Degree: %d\n" % (o.Degree))
         FreeCAD.Console.PrintWarning("NbPoles: %d\n" % (o.NbPoles))
         FreeCAD.Console.PrintWarning("Knots: %d (%0.2f - %0.2f)\n" % (o.NbKnots, o.FirstParameter, o.LastParameter))
         FreeCAD.Console.PrintWarning("Mults: %s\n" % (o.getMultiplicities()))
         FreeCAD.Console.PrintWarning("Periodic: %s\n" % (o.isPeriodic()))
     elif isinstance(o, Part.BSplineSurface):
-        FreeCAD.Console.PrintWarning("\nBSplineSurface\n************\n")
+        FreeCAD.Console.PrintWarning(translate("Log", "\nBSplineSurface\n************\n"))
         try:
             u = o.uIso(o.UKnotSequence[0])
             debug(u)
         except Part.OCCError:
-            FreeCAD.Console.PrintError("Failed to compute uIso curve\n")
+            FreeCAD.Console.PrintError(translate("Log", "Failed to compute uIso curve\n"))
         try:
             v = o.vIso(o.VKnotSequence[0])
             debug(v)
         except Part.OCCError:
-            FreeCAD.Console.PrintError("Failed to compute vIso curve\n")
-        FreeCAD.Console.PrintWarning("************\n")
+            FreeCAD.Console.PrintError(translate("Log", "Failed to compute vIso curve\n"))
+        FreeCAD.Console.PrintWarning(translate("Log", "************\n"))
     else:
         FreeCAD.Console.PrintMessage("%s\n" % o)
 
@@ -52,14 +57,54 @@ class gordonFP:
 
     def __init__(self, obj):
         """Add the properties"""
-        obj.addProperty("App::PropertyLinkList", "Sources", "Gordon", "Curve network")
-        obj.addProperty("App::PropertyFloat", "Tol3D", "Gordon", "3D tolerance").Tol3D = 1e-2
-        obj.addProperty("App::PropertyFloat", "Tol2D", "Gordon", "Parametric tolerance").Tol2D = 1e-5
-        obj.addProperty("App::PropertyInteger", "MaxCtrlPts", "Gordon", "Max Number of control points").MaxCtrlPts = 80
-        obj.addProperty("App::PropertyEnumeration", "Output", "Base", "Output type").Output = ["Surface", "Wireframe"]
-        obj.addProperty("App::PropertyInteger", "SamplesU", "Wireframe", "Number of samples in U direction").SamplesU = 16
-        obj.addProperty("App::PropertyInteger", "SamplesV", "Wireframe", "Number of samples in V direction").SamplesV = 16
-        obj.addProperty("App::PropertyBool", "FlipNormal", "Surface", "Flip surface normal").FlipNormal = False
+        obj.addProperty(
+            "App::PropertyLinkList",
+            "Sources",
+            "Gordon",
+            QT_TRANSLATE_NOOP("App::Property", "Curve network"),
+        )
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Tol3D",
+            "Gordon",
+            QT_TRANSLATE_NOOP("App::Property", "3D tolerance"),
+        ).Tol3D = 1e-2
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Tol2D",
+            "Gordon",
+            QT_TRANSLATE_NOOP("App::Property", "Parametric tolerance"),
+        ).Tol2D = 1e-5
+        obj.addProperty(
+            "App::PropertyInteger",
+            "MaxCtrlPts",
+            "Gordon",
+            QT_TRANSLATE_NOOP("App::Property", "Max Number of control points"),
+        ).MaxCtrlPts = 80
+        obj.addProperty(
+            "App::PropertyEnumeration",
+            "Output",
+            "Base",
+            QT_TRANSLATE_NOOP("App::Property", "Output type"),
+        ).Output = ["Surface", "Wireframe"]
+        obj.addProperty(
+            "App::PropertyInteger",
+            "SamplesU",
+            "Wireframe",
+            QT_TRANSLATE_NOOP("App::Property", "Number of samples in U direction"),
+        ).SamplesU = 16
+        obj.addProperty(
+            "App::PropertyInteger",
+            "SamplesV",
+            "Wireframe",
+            QT_TRANSLATE_NOOP("App::Property", "Number of samples in V direction"),
+        ).SamplesV = 16
+        obj.addProperty(
+            "App::PropertyBool",
+            "FlipNormal",
+            "Surface",
+            QT_TRANSLATE_NOOP("App::Property", "Flip surface normal"),
+        ).FlipNormal = False
         obj.Output = "Surface"
         obj.setEditorMode("Tol2D", 2)
         obj.setEditorMode("SamplesU", 2)
@@ -206,7 +251,7 @@ class gordonCommand:
     def Activated(self):
         sel = FreeCADGui.Selection.getSelection()
         if sel == []:
-            FreeCAD.Console.PrintError("Select a curve network !\n")
+            FreeCAD.Console.PrintError(translate("Log", "Select a curve network !\n"))
         else:
             self.makeGordonFeature(sel)
 

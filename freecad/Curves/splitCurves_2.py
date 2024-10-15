@@ -34,38 +34,60 @@ class split:
     """Splits the selected edge."""
     def __init__(self, obj, e):
         obj.Proxy = self
-        obj.addProperty("App::PropertyLinkSub",
-                        "Source",
-                        "Base",
-                        "Edge to split").Source = e
-        obj.addProperty("App::PropertyStringList",
-                        "Values",
-                        "Split",
-                        "List of splitting locations\n% and units are allowed\nNegative values are computed from edge end")
-        obj.addProperty("App::PropertyInteger",
-                        "Number",
-                        "Split",
-                        "Number of equal segments").Number = 2
-        obj.addProperty("App::PropertyLinkList",
-                        "CuttingObjects",
-                        "Split",
-                        "List of objects that cut the curve")
-        obj.addProperty("App::PropertyBool",
-                        "CutAtVertexes",
-                        "Split",
-                        "Create a split point at nearest of each vertex of the cutting objects")
-        obj.addProperty("App::PropertyDistance",
-                        "Distance",
-                        "Split",
-                        "Expression-ready distance value")
-        obj.addProperty("App::PropertyFloatList",
-                        "NormalizedParameters",
-                        "Output",
-                        "Normalized parameters list")
-        obj.addProperty("App::PropertyBool",
-                        "KeepSolid",
-                        "Split",
-                        "Rebuild and output the complete shape")
+        obj.addProperty(
+            "App::PropertyLinkSub",
+            "Source",
+            "Base",
+            QT_TRANSLATE_NOOP("App::Property", "Edge to split"),
+        ).Source = e
+        obj.addProperty(
+            "App::PropertyStringList",
+            "Values",
+            "Split",
+            QT_TRANSLATE_NOOP(
+                "App::Property",
+                "List of splitting locations\n% and units are allowed\nNegative values are computed from edge end",
+            ),
+        )
+        obj.addProperty(
+            "App::PropertyInteger",
+            "Number",
+            "Split",
+            QT_TRANSLATE_NOOP("App::Property", "Number of equal segments"),
+        ).Number = 2
+        obj.addProperty(
+            "App::PropertyLinkList",
+            "CuttingObjects",
+            "Split",
+            QT_TRANSLATE_NOOP("App::Property", "List of objects that cut the curve"),
+        )
+        obj.addProperty(
+            "App::PropertyBool",
+            "CutAtVertexes",
+            "Split",
+            QT_TRANSLATE_NOOP(
+                "App::Property",
+                "Create a split point at nearest of each vertex of the cutting objects",
+            ),
+        )
+        obj.addProperty(
+            "App::PropertyDistance",
+            "Distance",
+            "Split",
+            QT_TRANSLATE_NOOP("App::Property", "Expression-ready distance value"),
+        )
+        obj.addProperty(
+            "App::PropertyFloatList",
+            "NormalizedParameters",
+            "Output",
+            QT_TRANSLATE_NOOP("App::Property", "Normalized parameters list"),
+        )
+        obj.addProperty(
+            "App::PropertyBool",
+            "KeepSolid",
+            "Split",
+            QT_TRANSLATE_NOOP("App::Property", "Rebuild and output the complete shape"),
+        )
         obj.setEditorMode("NormalizedParameters", 2)
 
     def getShape(self, fp):
@@ -83,7 +105,7 @@ class split:
                 e = fp.Source[0].Shape.Edge1
                 w = None
             else:
-                FreeCAD.Console.PrintError("SplitCurve : Input shape has no wires or edges\n")
+                FreeCAD.Console.PrintError(translate("Log", "SplitCurve : Input shape has no wires or edges\n"))
                 return None, None
         else:
             e = _utils.getShape(fp, "Source", "Edge")
@@ -193,7 +215,7 @@ class split:
                         # print([e.Length for e in edges])
                         se = Part.sortEdges(edges)
                         if len(se) > 1:
-                            FreeCAD.Console.PrintError("Split curve : failed to build temp Wire !")
+                            FreeCAD.Console.PrintError(translate("Log", "Split curve : failed to build temp Wire !"))
                             # print(se)
                         w = Part.Wire(se[0])
         else:
@@ -207,7 +229,7 @@ class split:
         #
         # se = Part.sortEdges(edges)
         # if len(se) > 1:
-        #     FreeCAD.Console.PrintError("Split curve : failed to build final Wire !")
+        #     FreeCAD.Console.PrintError(translate("Log", "Split curve : failed to build final Wire !"))
         #     wires = []
         #     for el in se:
         #         wires.append(Part.Wire(el))
@@ -249,7 +271,7 @@ class split:
                 obj.Shape = w
             obj.NormalizedParameters = KnotVector(params).normalize()
         else:
-            FreeCAD.Console.PrintError("Split curve : Invalid Wire !")
+            FreeCAD.Console.PrintError(translate("Log", "Split curve : Invalid Wire !"))
             obj.Shape = e
 
 
@@ -423,7 +445,7 @@ class pointEditor(object):
             elif isinstance(p, MarkerOnEdge):
                 self.points.append(p)
             else:
-                FreeCAD.Console.PrintError("pointEditor : bad input")
+                FreeCAD.Console.PrintError(translate("Log", "pointEditor : bad input"))
         for p in points:
             if hasattr(p, "ctrl_keys"):
                 for key in p.ctrl_keys:
@@ -663,7 +685,7 @@ class splitCommand:
     def Activated(self):
         sel = FreeCADGui.Selection.getSelectionEx()
         if sel == []:
-            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
+            FreeCAD.Console.PrintError(translate("Log", "{} :\n{}\n")).format(__title__, __usage__)
         for selobj in sel:
             if selobj.HasSubObjects:
                 for i in range(len(selobj.SubObjects)):

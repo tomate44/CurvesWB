@@ -57,22 +57,102 @@ class Interpolate:
     def __init__(self, obj, source):
         ''' Add the properties '''
         debug("\nInterpolate class Init\n")
-        obj.addProperty("App::PropertyLink",           "Source",         "General",    "Source object that provides points to interpolate")
-        obj.addProperty("App::PropertyLinkSubList",    "PointList",      "General",    "Point list to interpolate")
-        obj.addProperty("App::PropertyBool",           "Periodic",       "General",    "Set the curve closed").Periodic = False
-        obj.addProperty("App::PropertyFloat",          "Tolerance",      "General",    "Interpolation tolerance").Tolerance = 1e-7
-        obj.addProperty("App::PropertyBool",           "CustomTangents", "General",    "User specified tangents").CustomTangents = False
-        obj.addProperty("App::PropertyBool",           "DetectAligned",  "General",    "interpolate 3 aligned points with a line").DetectAligned = False
-        obj.addProperty("App::PropertyBool",           "Polygonal",      "General",    "interpolate with a degree 1 polygonal curve").Polygonal = False
-        obj.addProperty("App::PropertyInteger",        "StartOffset",    "General",    "Offset the start index of the point list").StartOffset = 0
-        obj.addProperty("App::PropertyBool",           "WireOutput",     "Parameters", "outputs a wire or a single edge").WireOutput = False
-        obj.addProperty("App::PropertyFloatList",      "Parameters",     "Parameters", "Parameters of interpolated points")
-        obj.addProperty("App::PropertyEnumeration",    "Parametrization","Parameters", "Parametrization type")
-        obj.addProperty("App::PropertyVectorList",     "Tangents",       "General",    "Tangents at interpolated points")
-        obj.addProperty("App::PropertyBoolList",       "TangentFlags",   "General",    "Activation flag of tangents")
-        obj.addProperty("App::PropertyLinkSub", "FaceSupport", "Spiral", "Face support of the spiral")
-        obj.addProperty("App::PropertyInteger", "UTurns", "Spiral", "Nb of turns between 2 points, in U direction").UTurns = 0
-        obj.addProperty("App::PropertyInteger", "VTurns", "Spiral", "Nb of turns between 2 points, in V direction").VTurns = 0
+        obj.addProperty(
+            "App::PropertyLink",
+            "Source",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "Source object that provides points to interpolate"),
+        )
+        obj.addProperty(
+            "App::PropertyLinkSubList",
+            "PointList",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "Point list to interpolate"),
+        )
+        obj.addProperty(
+            "App::PropertyBool",
+            "Periodic",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "Set the curve closed"),
+        ).Periodic = False
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Tolerance",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "Interpolation tolerance"),
+        ).Tolerance = 1e-7
+        obj.addProperty(
+            "App::PropertyBool",
+            "CustomTangents",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "User specified tangents"),
+        ).CustomTangents = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "DetectAligned",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "interpolate 3 aligned points with a line"),
+        ).DetectAligned = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "Polygonal",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "interpolate with a degree 1 polygonal curve"),
+        ).Polygonal = False
+        obj.addProperty(
+            "App::PropertyInteger",
+            "StartOffset",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "Offset the start index of the point list"),
+        ).StartOffset = 0
+        obj.addProperty(
+            "App::PropertyBool",
+            "WireOutput",
+            "Parameters",
+            QT_TRANSLATE_NOOP("App::Property", "outputs a wire or a single edge"),
+        ).WireOutput = False
+        obj.addProperty(
+            "App::PropertyFloatList",
+            "Parameters",
+            "Parameters",
+            QT_TRANSLATE_NOOP("App::Property", "Parameters of interpolated points"),
+        )
+        obj.addProperty(
+            "App::PropertyEnumeration",
+            "Parametrization",
+            "Parameters",
+            QT_TRANSLATE_NOOP("App::Property", "Parametrization type"),
+        )
+        obj.addProperty(
+            "App::PropertyVectorList",
+            "Tangents",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "Tangents at interpolated points"),
+        )
+        obj.addProperty(
+            "App::PropertyBoolList",
+            "TangentFlags",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "Activation flag of tangents"),
+        )
+        obj.addProperty(
+            "App::PropertyLinkSub",
+            "FaceSupport",
+            "Spiral",
+            QT_TRANSLATE_NOOP("App::Property", "Face support of the spiral"),
+        )
+        obj.addProperty(
+            "App::PropertyInteger",
+            "UTurns",
+            "Spiral",
+            QT_TRANSLATE_NOOP("App::Property", "Nb of turns between 2 points, in U direction"),
+        ).UTurns = 0
+        obj.addProperty(
+            "App::PropertyInteger",
+            "VTurns",
+            "Spiral",
+            QT_TRANSLATE_NOOP("App::Property", "Nb of turns between 2 points, in V direction"),
+        ).VTurns = 0
         obj.Parametrization = ["ChordLength", "Centripetal", "Uniform", "Custom"]
         obj.Proxy = self
         if isinstance(source, (list, tuple)):
@@ -290,10 +370,12 @@ class Interpolate:
         fp.setEditorMode("CustomTangents", 2)
         self.touch_parametrization(fp)
         if not hasattr(fp, "StartOffset"):
-            fp.addProperty("App::PropertyInteger",
-                           "StartOffset",
-                           "General",
-                           "Offset the start index of the point list").StartOffset = 0
+            fp.addProperty(
+                "App::PropertyInteger",
+                "StartOffset",
+                "General",
+                QT_TRANSLATE_NOOP("App::Property", "Offset the start index of the point list"),
+            ).StartOffset = 0
 
 
 class ViewProviderInterpolate:

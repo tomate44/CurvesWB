@@ -103,7 +103,7 @@ class NurbsToConsole:
                     nurbs_to_script(i, geom)
                     i += 1
         if i == 0:
-            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
+            FreeCAD.Console.PrintError(translate("Log", "{} :\n{}\n")).format(__title__, __usage__)
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:

@@ -47,15 +47,15 @@ class GordonProfileFP:
     """Creates an editable interpolation curve"""
     def __init__(self, obj, s, d, t):
         """Add the properties"""
-        obj.addProperty("App::PropertyLinkSubList", "Support", "Profile", "Constraint shapes").Support = s
-        obj.addProperty("App::PropertyFloatConstraint", "Parametrization", "Profile", "Parametrization factor")
-        obj.addProperty("App::PropertyFloat", "Tolerance", "Profile", "Tolerance").Tolerance = 1e-7
-        obj.addProperty("App::PropertyBool", "Periodic", "Profile", "Periodic curve").Periodic = False
-        obj.addProperty("App::PropertyVectorList", "Data", "Profile", "Data list").Data = d
-        obj.addProperty("App::PropertyVectorList", "Tangents", "Profile", "Tangents list")
-        obj.addProperty("App::PropertyBoolList", "Flags", "Profile", "Tangent flags")
-        obj.addProperty("App::PropertyIntegerList", "DataType", "Profile", "Types of interpolated points").DataType = t
-        obj.addProperty("App::PropertyBoolList", "LinearSegments", "Profile", "Linear segment flags")
+        obj.addProperty("App::PropertyLinkSubList", "Support", "Profile", QT_TRANSLATE_NOOP("App::Property", "Constraint shapes")).Support = s
+        obj.addProperty("App::PropertyFloatConstraint", "Parametrization", "Profile", QT_TRANSLATE_NOOP("App::Property", "Parametrization factor"))
+        obj.addProperty("App::PropertyFloat", "Tolerance", "Profile", QT_TRANSLATE_NOOP("App::Property", "Tolerance")).Tolerance = 1e-7
+        obj.addProperty("App::PropertyBool", "Periodic", "Profile", QT_TRANSLATE_NOOP("App::Property", "Periodic curve")).Periodic = False
+        obj.addProperty("App::PropertyVectorList", "Data", "Profile", QT_TRANSLATE_NOOP("App::Property", "Data list")).Data = d
+        obj.addProperty("App::PropertyVectorList", "Tangents", "Profile", QT_TRANSLATE_NOOP("App::Property", "Tangents list"))
+        obj.addProperty("App::PropertyBoolList", "Flags", "Profile", QT_TRANSLATE_NOOP("App::Property", "Tangent flags"))
+        obj.addProperty("App::PropertyIntegerList", "DataType", "Profile", QT_TRANSLATE_NOOP("App::Property", "Types of interpolated points")).DataType = t
+        obj.addProperty("App::PropertyBoolList", "LinearSegments", "Profile", QT_TRANSLATE_NOOP("App::Property", "Linear segment flags"))
         obj.Parametrization = (1.0, 0.0, 1.0, 0.05)
         obj.Proxy = self
 
@@ -84,7 +84,7 @@ class GordonProfileFP:
         touched = False
         shapes = self.get_shapes(fp)
         if not len(fp.Data) == len(fp.DataType):
-            FreeCAD.Console.PrintError("Gordon Profile : Data and DataType mismatch\n")
+            FreeCAD.Console.PrintError(translate("Log", "Gordon Profile : Data and DataType mismatch\n"))
             return(None)
         pts = list()
         shape_idx = 0
@@ -136,11 +136,11 @@ class GordonProfileFP:
         except AttributeError:
             pass
         except:
-            FreeCAD.Console.PrintWarning("execute is disabled during editing\n")
+            FreeCAD.Console.PrintWarning(translate("Log", "execute is disabled during editing\n"))
         pts = self.get_points(obj)
         if pts:
             if len(pts) < 2:
-                FreeCAD.Console.PrintError("{} : Not enough points\n".format(obj.Label))
+                FreeCAD.Console.PrintError(translate("Log", "{} : Not enough points\n")).format(obj.Label)
                 return False
             else:
                 obj.Data = pts

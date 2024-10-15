@@ -765,7 +765,7 @@ class EdgeInterpolator(object):
             path = shape.approximate(1e-8, 1e-3, 99, 5)  # &tol2d, &tol3d, &maxseg, &maxdeg
             self.path = path.toShape()
         else:
-            FreeCAD.Console.PrintError("EdgeInterpolator input must be edge or wire")
+            FreeCAD.Console.PrintError(translate("Log", "EdgeInterpolator input must be edge or wire"))
             raise ValueError
 
     def add_data(self, p, dat):
@@ -777,7 +777,7 @@ class EdgeInterpolator(object):
             if isinstance(dat, type(self.data[0][1])):
                 self.data.append((p, dat))
             else:
-                FreeCAD.Console.PrintError("Bad type of data")
+                FreeCAD.Console.PrintError(translate("Log", "Bad type of data"))
 
     def add_mult_data(self, dat):
         """add multiple data values"""
@@ -785,7 +785,7 @@ class EdgeInterpolator(object):
             for d in dat:
                 self.add_data(d[0], d[1])
         else:
-            FreeCAD.Console.PrintError("Argument must be list or tuple")
+            FreeCAD.Console.PrintError(translate("Log", "Argument must be list or tuple"))
 
     def get_point(self, val):
         v = FreeCAD.Vector(0, 0, 0)

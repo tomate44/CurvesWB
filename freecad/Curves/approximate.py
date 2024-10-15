@@ -12,14 +12,16 @@ import Part
 # from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
 
-TOOL_ICON = os.path.join(ICONPATH, 'approximate.svg')
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+TOOL_ICON = os.path.join(ICONPATH, "approximate.svg")
 DEBUG = False
 
 
 def debug(string):
     if DEBUG:
         FreeCAD.Console.PrintMessage(string)
-        FreeCAD.Console.PrintMessage("\n")
+        FreeCAD.Console.PrintMessage(translate("Log", "\n"))
 
 # ********************************************************
 # **** Part.BSplineCurve.approximate() documentation *****
@@ -59,38 +61,101 @@ class Approximate:
     def __init__(self, obj, source):
         ''' Add the properties '''
         debug("\nApproximate class Init\n")
-        obj.addProperty("App::PropertyLink", "PointObject", "Approximate",
-                        "Object containing the points to approximate").PointObject = source
-        obj.addProperty("App::PropertyBool", "ClampEnds", "General",
-                        "Clamp endpoints").ClampEnds = False
-        obj.addProperty("App::PropertyBool", "Closed", "General",
-                        "Force a closed curve").Closed = False
-        obj.addProperty("App::PropertyInteger", "DegreeMin", "General",
-                        "Minimum degree of the curve").DegreeMin = 3
-        obj.addProperty("App::PropertyInteger", "DegreeMax", "General",
-                        "Maximum degree of the curve").DegreeMax = 5
-        obj.addProperty("App::PropertyFloat", "ApproxTolerance", "General",
-                        "Approximation tolerance")
-        obj.addProperty("App::PropertyEnumeration", "Continuity", "General",
-                        "Desired continuity of the curve").Continuity = ["C0", "C1", "G1", "C2", "G2", "C3", "CN"]
-        obj.addProperty("App::PropertyEnumeration", "Method", "General",
-                        "Approximation method").Method = ["Parametrization", "Smoothing Algorithm"]
-        obj.addProperty("App::PropertyEnumeration", "Parametrization", "Parameters",
-                        "Parametrization type").Parametrization = ["ChordLength", "Centripetal", "Uniform", "Curvilinear"]
-        obj.addProperty("App::PropertyFloatConstraint", "LengthWeight", "Parameters",
-                        "Weight of curve length for smoothing algorithm").LengthWeight = 1.0
-        obj.addProperty("App::PropertyFloatConstraint", "CurvatureWeight", "Parameters",
-                        "Weight of curve curvature for smoothing algorithm").CurvatureWeight = 1.0
-        obj.addProperty("App::PropertyFloatConstraint", "TorsionWeight", "Parameters",
-                        "Weight of curve torsion for smoothing algorithm").TorsionWeight = 1.0
-        obj.addProperty("App::PropertyInteger", "FirstIndex", "Range",
-                        "Index of first point").FirstIndex = 0
-        obj.addProperty("App::PropertyInteger", "LastIndex", "Range",
-                        "Index of last point (-1 to ignore)")
-        obj.addProperty("App::PropertyInteger", "StartOffset", "Range",
-                        "For closed curves, allows to choose the location of the join point").StartOffset = 0
-        # obj.addProperty("App::PropertyVectorList",   "Points",    "Approximate",   "Points")
-        # obj.addProperty("Part::PropertyPartShape",   "Shape",     "Approximate",   "Shape")
+        obj.addProperty(
+            "App::PropertyLink",
+            "PointObject",
+            "Approximate",
+            QT_TRANSLATE_NOOP("App::Property", "Object containing the points to approximate"),
+        ).PointObject = source
+        obj.addProperty(
+            "App::PropertyBool",
+            "ClampEnds",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "Clamp endpoints"),
+        ).ClampEnds = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "Closed",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "Force a closed curve"),
+        ).Closed = False
+        obj.addProperty(
+            "App::PropertyInteger",
+            "DegreeMin",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "Minimum degree of the curve"),
+        ).DegreeMin = 3
+        obj.addProperty(
+            "App::PropertyInteger",
+            "DegreeMax",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "Maximum degree of the curve"),
+        ).DegreeMax = 5
+        obj.addProperty(
+            "App::PropertyFloat",
+            "ApproxTolerance",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "Approximation tolerance"),
+        )
+        obj.addProperty(
+            "App::PropertyEnumeration",
+            "Continuity",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "Desired continuity of the curve"),
+        ).Continuity = ["C0", "C1", "G1", "C2", "G2", "C3", "CN"]
+        obj.addProperty(
+            "App::PropertyEnumeration",
+            "Method",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "Approximation method"),
+        ).Method = ["Parametrization", "Smoothing Algorithm"]
+        obj.addProperty(
+            "App::PropertyEnumeration",
+            "Parametrization",
+            "Parameters",
+            QT_TRANSLATE_NOOP("App::Property", "Parametrization type"),
+        ).Parametrization = ["ChordLength", "Centripetal", "Uniform", "Curvilinear"]
+        obj.addProperty(
+            "App::PropertyFloatConstraint",
+            "LengthWeight",
+            "Parameters",
+            QT_TRANSLATE_NOOP("App::Property", "Weight of curve length for smoothing algorithm"),
+        ).LengthWeight = 1.0
+        obj.addProperty(
+            "App::PropertyFloatConstraint",
+            "CurvatureWeight",
+            "Parameters",
+            QT_TRANSLATE_NOOP("App::Property", "Weight of curve curvature for smoothing algorithm"),
+        ).CurvatureWeight = 1.0
+        obj.addProperty(
+            "App::PropertyFloatConstraint",
+            "TorsionWeight",
+            "Parameters",
+            QT_TRANSLATE_NOOP("App::Property", "Weight of curve torsion for smoothing algorithm"),
+        ).TorsionWeight = 1.0
+        obj.addProperty(
+            "App::PropertyInteger",
+            "FirstIndex",
+            "Range",
+            QT_TRANSLATE_NOOP("App::Property", "Index of first point"),
+        ).FirstIndex = 0
+        obj.addProperty(
+            "App::PropertyInteger",
+            "LastIndex",
+            "Range",
+            QT_TRANSLATE_NOOP("App::Property", "Index of last point (-1 to ignore)"),
+        )
+        obj.addProperty(
+            "App::PropertyInteger",
+            "StartOffset",
+            "Range",
+            QT_TRANSLATE_NOOP(
+                "App::Property",
+                "For closed curves, allows to choose the location of the join point",
+            ),
+        ).StartOffset = 0
+        # obj.addProperty("App::PropertyVectorList",   "Points",    "Approximate",   QT_TRANSLATE_NOOP("App::Property", "Points"))
+        # obj.addProperty("Part::PropertyPartShape",   "Shape",     "Approximate",   QT_TRANSLATE_NOOP("App::Property", "Shape"))
         obj.Proxy = self
         self.obj = obj
         self.Points = []
@@ -366,7 +431,7 @@ class ViewProviderApp:
         try:
             self.Object.PointObject.ViewObject.Visibility = True
         except Exception as err:
-            FreeCAD.Console.PrintError("Error in onDelete: {0} \n".format(err))
+            FreeCAD.Console.PrintError(translate("Log", "Error in onDelete: {0} \n")).format(err)
         return True
 
 
@@ -383,7 +448,9 @@ class approx:
         if res:
             return res
         else:
-            FreeCAD.Console.PrintMessage("\nPlease select an object that has at least 2 vertexes")
+            FreeCAD.Console.PrintMessage(
+                translate("Log", "\nPlease select an object that has at least 2 vertexes")
+            )
         return None
 
     def Activated(self):

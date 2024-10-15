@@ -1,6 +1,7 @@
 import os
 import FreeCAD
 import FreeCADGui
+
 # import Part
 # from FreeCAD import Base
 from pivy import coin
@@ -12,6 +13,9 @@ TOOL_ICON = os.path.join(ICONPATH, 'sw2r.svg')
 fac = 1.0
 DEBUG = False
 
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
 
 def debug(string):
     if DEBUG:
@@ -22,15 +26,57 @@ def debug(string):
 class sweep2rails:
     def __init__(self, obj):
         obj.Proxy = self
-        obj.addProperty("App::PropertyLink",       "Birail",         "Base",   "Birail object")
-        obj.addProperty("App::PropertyLinkList",   "Profiles",       "Base",   "List of profiles")
-        obj.addProperty("App::PropertyEnumeration","Blending",       "Base",   "Blending method").Blending = ["Average","Blend","Rail1","Rail2"]
-        obj.addProperty("App::PropertyFloat",      "Parametrization","Base",   "Parametrization of interpolating curves")
-        obj.addProperty("App::PropertyInteger",    "ProfileSamples", "Base",   "Profile Samples")
-        obj.addProperty("App::PropertyInteger",    "RailSamples",    "Base",   "Profile Samples")
-        obj.addProperty("App::PropertyBool",       "Extend",         "Base",   "Extend to rail limits")
-        obj.addProperty("App::PropertyVectorList", "Points",         "Base",   "Points")
-        obj.addProperty("Part::PropertyPartShape", "Shape",          "Base",   "Shape")
+        obj.addProperty(
+            "App::PropertyLink",
+            "Birail",
+            "Base",
+            QT_TRANSLATE_NOOP("App::Property", "Birail object"),
+        )
+        obj.addProperty(
+            "App::PropertyLinkList",
+            "Profiles",
+            "Base",
+            QT_TRANSLATE_NOOP("App::Property", "List of profiles"),
+        )
+        obj.addProperty(
+            "App::PropertyEnumeration",
+            "Blending",
+            "Base",
+            QT_TRANSLATE_NOOP("App::Property", "Blending method"),
+        ).Blending = ["Average", "Blend", "Rail1", "Rail2"]
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Parametrization",
+            "Base",
+            QT_TRANSLATE_NOOP("App::Property", "Parametrization of interpolating curves"),
+        )
+        obj.addProperty(
+            "App::PropertyInteger",
+            "ProfileSamples",
+            "Base",
+            QT_TRANSLATE_NOOP("App::Property", "Profile Samples"),
+        )
+        obj.addProperty(
+            "App::PropertyInteger",
+            "RailSamples",
+            "Base",
+            QT_TRANSLATE_NOOP("App::Property", "Profile Samples"),
+        )
+        obj.addProperty(
+            "App::PropertyBool",
+            "Extend",
+            "Base",
+            QT_TRANSLATE_NOOP("App::Property", "Extend to rail limits"),
+        )
+        obj.addProperty(
+            "App::PropertyVectorList",
+            "Points",
+            "Base",
+            QT_TRANSLATE_NOOP("App::Property", "Points"),
+        )
+        obj.addProperty(
+            "Part::PropertyPartShape", "Shape", "Base", QT_TRANSLATE_NOOP("App::Property", "Shape")
+        )
         obj.Blending = "Blend"
         obj.ProfileSamples = 20
         obj.RailSamples = 20
@@ -126,7 +172,7 @@ class sweep2railsVP:
         # vobj.DisplayMode = "Wireframe"
 
     def updateData(self, fp, prop):
-        FreeCAD.Console.PrintMessage("updateDate : " + str(prop) + "\n")
+        FreeCAD.Console.PrintMessage(translate("Log", "updateDate : " + str(prop) + "\n"))
         if len(fp.Points) == fp.RailSamples * fp.ProfileSamples:
             self.coord.points = fp.Points
             self.row.vertices = (fp.RailSamples, fp.ProfileSamples)
@@ -134,7 +180,7 @@ class sweep2railsVP:
 
     def onChanged(self, vp, prop):
         "Here we can do something when a single property got changed"
-        FreeCAD.Console.PrintMessage("Change property: " + str(prop) + "\n")
+        FreeCAD.Console.PrintMessage(translate("Log", "Change property: " + str(prop) + "\n"))
 
     def getDisplayModes(self, obj):
         "Return a list of display modes."
@@ -184,7 +230,7 @@ class sweep2railsVP:
             for p in self.Object.Profiles:
                 p.ViewObject.show()
         except Exception as err:
-            FreeCAD.Console.PrintError("Error in onDelete: {0} \n".format(err))
+            FreeCAD.Console.PrintError(translate("Log", "Error in onDelete: {0} \n")).format(err)
         return True
 
 
@@ -202,7 +248,7 @@ class s2rCommand:
     def Activated(self):
         s = FreeCADGui.Selection.getSelection()
         if s == []:
-            FreeCAD.Console.PrintError("Select a ruled surface and a list of profile edges\n")
+            FreeCAD.Console.PrintError(translate("Log", "Select a ruled surface and a list of profile edges\n"))
             return
         myS2R = FreeCAD.ActiveDocument.addObject("App::FeaturePython",
                                                  "Sweep 2 rails")

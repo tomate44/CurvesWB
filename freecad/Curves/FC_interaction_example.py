@@ -9,6 +9,9 @@ from PySide2.QtWidgets import QApplication
 from PySide2.QtGui import QColor
 from pivy import quarter, coin, graphics, utils
 
+translate = FreeCAD.Qt.translate
+
+
 class ConnectionMarker(graphics.Marker):
     def __init__(self, points):
         super(ConnectionMarker, self).__init__(points, True)
@@ -133,7 +136,7 @@ class InterpolationPolygon(object):
             elif isinstance(points[0],(tuple,list)):
                 self.points = [MarkerOnEdge([p]) for p in points]
             else:
-                FreeCAD.Console.PrintError("InterpolationPolygon : bad input")
+                FreeCAD.Console.PrintError(translate("Log", "InterpolationPolygon : bad input"))
         
         # Setup coin objects
         if not FreeCAD.ActiveDocument:
@@ -171,7 +174,7 @@ class InterpolationPolygon(object):
         FreeCAD.Console.PrintMessage("pts :\n%s\n"%str(pts))
         if len(pts) > 1:
             self.curve.interpolate(pts)
-            #FreeCAD.Console.PrintMessage("update_curve\n")
+            #FreeCAD.Console.PrintMessage(translate("Log", "update_curve\n"))
             if self.fp:
                 self.fp.Shape = self.curve.toShape()
 

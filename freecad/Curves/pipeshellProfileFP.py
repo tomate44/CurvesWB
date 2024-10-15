@@ -15,23 +15,53 @@ from freecad.Curves import ICONPATH
 TOOL_ICON = os.path.join( ICONPATH, 'profile.svg')
 DEBUG = False
 
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+
 def debug(string):
     if DEBUG:
         FreeCAD.Console.PrintMessage(string)
         FreeCAD.Console.PrintMessage("\n")
 
+
 class profile:
     "Profile object for PipeShell"
     def __init__(self, obj, source):
-        ''' Add the properties '''
-        if isinstance(source,(list,tuple)):
-            obj.addProperty("App::PropertyLinkSubList",  "Profile",    "Profile", "SubShapes of the profile")
+        """Add the properties"""
+        if isinstance(source, (list, tuple)):
+            obj.addProperty(
+                "App::PropertyLinkSubList",
+                "Profile",
+                "Profile",
+                QT_TRANSLATE_NOOP("App::Property", "SubShapes of the profile"),
+            )
         else:
-            obj.addProperty("App::PropertyLink",  "Profile",    "Profile", "source object of the profile")
+            obj.addProperty(
+                "App::PropertyLink",
+                "Profile",
+                "Profile",
+                QT_TRANSLATE_NOOP("App::Property", "source object of the profile"),
+            )
         obj.Profile = source
-        obj.addProperty("App::PropertyLinkSub",      "Location",   "Profile", "Vertex location on spine")
-        obj.addProperty("App::PropertyBool",         "Contact",    "Profile", "Translate profile to contact spine").Contact = False
-        obj.addProperty("App::PropertyBool",         "Correction", "Profile", "Rotate profile to be orthogonal to spine").Correction = False
+        obj.addProperty(
+            "App::PropertyLinkSub",
+            "Location",
+            "Profile",
+            QT_TRANSLATE_NOOP("App::Property", "Vertex location on spine"),
+        )
+        obj.addProperty(
+            "App::PropertyBool",
+            "Contact",
+            "Profile",
+            QT_TRANSLATE_NOOP("App::Property", "Translate profile to contact spine"),
+        ).Contact = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "Correction",
+            "Profile",
+            QT_TRANSLATE_NOOP("App::Property", "Rotate profile to be orthogonal to spine"),
+        ).Correction = False
         obj.Proxy = self
 
     def getEdgeList(self, obj, prop):
@@ -81,9 +111,9 @@ class profile:
                 if w:
                     obj.Shape = w
                 else:
-                    FreeCAD.Console.PrintError("\nFailed to build wire\n")
+                    FreeCAD.Console.PrintError(translate("Log", "\nFailed to build wire\n"))
             else:
-                FreeCAD.Console.PrintError("\nFailed to extract edges\n")
+                FreeCAD.Console.PrintError(translate("Log", "\nFailed to extract edges\n"))
 
 class profileVP:
     def __init__(self,vobj):
@@ -144,7 +174,7 @@ class profileCommand:
         source = None
         sel = FreeCADGui.Selection.getSelectionEx()
         if sel == []:
-            FreeCAD.Console.PrintError("Select at least 1 edge !\n")
+            FreeCAD.Console.PrintError(translate("Log", "Select at least 1 edge !\n"))
         for selobj in sel:
             if selobj.HasSubObjects:
                 for i in range(len(selobj.SubObjects)):

@@ -77,7 +77,7 @@ class blendSurface:
         elif isinstance(sc, (float, int)):
             return([float(sc)] * self.railSamples)
         else:
-            FreeCAD.Console.PrintError("BlendSurface : failed to compute scale\n{}\n".format(sc))
+            FreeCAD.Console.PrintError(translate("Log", "BlendSurface : failed to compute scale\n{}\n")).format(sc)
             return(None)
 
     def cross_curves2(self):

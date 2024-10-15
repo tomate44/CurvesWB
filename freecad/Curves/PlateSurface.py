@@ -12,7 +12,7 @@ DEBUG = 1
 def debug(string):
     if DEBUG:
         FreeCAD.Console.PrintMessage(string)
-        FreeCAD.Console.PrintMessage("\n")
+        FreeCAD.Console.PrintMessage(translate("Log", "\n"))
 
 
 def linkSubList_convertToOldStyle(references):
@@ -36,25 +36,25 @@ class plateSurfFP:
         debug("\nplateSurfFP class init\n")
         
         # List of constraint objects
-        obj.addProperty("App::PropertyLinkList",           "Objects",      "Plate", "List of constraint objects")
+        obj.addProperty("App::PropertyLinkList",           "Objects",      "Plate", QT_TRANSLATE_NOOP("App::Property", "List of constraint objects"))
         
         # Arguments of the PlateSurface algorithm
-        obj.addProperty("App::PropertyIntegerConstraint",  "PlateDegree",  "Plate",        "Plate degree")
-        obj.addProperty("App::PropertyIntegerConstraint",  "Iterations",   "Plate",        "Number of iterations")
-        obj.addProperty("App::PropertyFloat",              "Tol2d",        "Plate",        "2D Tolerance")
-        obj.addProperty("App::PropertyFloat",              "Tol3d",        "Plate",        "3D Tolerance")
-        obj.addProperty("App::PropertyFloat",              "TolAngular",   "Plate",        "Angular Tolerance").TolAngular = 0.1
-        obj.addProperty("App::PropertyFloat",              "TolCurvature", "Plate",        "Curvature Tolerance").TolCurvature = 0.1
-        obj.addProperty("App::PropertyBool",               "Anisotropie",  "Plate",        "Anisotropie").Anisotropie = False
+        obj.addProperty("App::PropertyIntegerConstraint",  "PlateDegree",  "Plate",        QT_TRANSLATE_NOOP("App::Property", "Plate degree"))
+        obj.addProperty("App::PropertyIntegerConstraint",  "Iterations",   "Plate",        QT_TRANSLATE_NOOP("App::Property", "Number of iterations"))
+        obj.addProperty("App::PropertyFloat",              "Tol2d",        "Plate",        QT_TRANSLATE_NOOP("App::Property", "2D Tolerance"))
+        obj.addProperty("App::PropertyFloat",              "Tol3d",        "Plate",        QT_TRANSLATE_NOOP("App::Property", "3D Tolerance"))
+        obj.addProperty("App::PropertyFloat",              "TolAngular",   "Plate",        QT_TRANSLATE_NOOP("App::Property", "Angular Tolerance")).TolAngular = 0.1
+        obj.addProperty("App::PropertyFloat",              "TolCurvature", "Plate",        QT_TRANSLATE_NOOP("App::Property", "Curvature Tolerance")).TolCurvature = 0.1
+        obj.addProperty("App::PropertyBool",               "Anisotropie",  "Plate",        QT_TRANSLATE_NOOP("App::Property", "Anisotropie")).Anisotropie = False
         
         # Arguments of the BSpline approximation
-        obj.addProperty("App::PropertyIntegerConstraint",  "MaxDegree",    "SurfaceApproximation",      "Max degree of Bspline approximation")
-        obj.addProperty("App::PropertyIntegerConstraint",  "MaxSegments",  "SurfaceApproximation",      "Max Number of surface segments")
-        obj.addProperty("App::PropertyFloat",              "MaxDistance",  "SurfaceApproximation",      "Max Distance to plate surface").MaxDistance = 0.001
-        obj.addProperty("App::PropertyFloat",              "Tolerance",    "SurfaceApproximation",      "3D Tolerance of Bspline approximation").Tolerance = 0.01
-        obj.addProperty("App::PropertyIntegerConstraint",  "CritOrder",    "SurfaceApproximation",      "Criterion Order")
-        obj.addProperty("App::PropertyEnumeration",        "Continuity",   "SurfaceApproximation",      "Desired continuity of the surface").Continuity=["C0","C1","C2"]
-        obj.addProperty("App::PropertyFloat",              "EnlargeCoeff", "SurfaceApproximation",      "Enlarge Coefficient").EnlargeCoeff = 1.1
+        obj.addProperty("App::PropertyIntegerConstraint",  "MaxDegree",    "SurfaceApproximation",      QT_TRANSLATE_NOOP("App::Property", "Max degree of Bspline approximation"))
+        obj.addProperty("App::PropertyIntegerConstraint",  "MaxSegments",  "SurfaceApproximation",      QT_TRANSLATE_NOOP("App::Property", "Max Number of surface segments"))
+        obj.addProperty("App::PropertyFloat",              "MaxDistance",  "SurfaceApproximation",      QT_TRANSLATE_NOOP("App::Property", "Max Distance to plate surface")).MaxDistance = 0.001
+        obj.addProperty("App::PropertyFloat",              "Tolerance",    "SurfaceApproximation",      QT_TRANSLATE_NOOP("App::Property", "3D Tolerance of Bspline approximation")).Tolerance = 0.01
+        obj.addProperty("App::PropertyIntegerConstraint",  "CritOrder",    "SurfaceApproximation",      QT_TRANSLATE_NOOP("App::Property", "Criterion Order"))
+        obj.addProperty("App::PropertyEnumeration",        "Continuity",   "SurfaceApproximation",      QT_TRANSLATE_NOOP("App::Property", "Desired continuity of the surface")).Continuity=["C0","C1","C2"]
+        obj.addProperty("App::PropertyFloat",              "EnlargeCoeff", "SurfaceApproximation",      QT_TRANSLATE_NOOP("App::Property", "Enlarge Coefficient")).EnlargeCoeff = 1.1
 
         obj.Proxy = self
         obj.PlateDegree = ( 3, 3, 25, 1)

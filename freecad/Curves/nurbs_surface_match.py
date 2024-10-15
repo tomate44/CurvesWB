@@ -6,7 +6,7 @@ DEBUG = 1
 def debug(string):
     if DEBUG:
         FreeCAD.Console.PrintMessage(string)
-        FreeCAD.Console.PrintMessage("\n")
+        FreeCAD.Console.PrintMessage(translate("Log", "\n"))
 
 # ****** match degrees ******
 
@@ -34,7 +34,7 @@ def matchVDegree(s1,s2):
 def matchURange(s1,s2):
     '''make the UKnotSequence of surface s1 match the UKnotSequence of surface s2'''
     if not s1.UDegree == s2.UDegree:
-        FreeCAD.Console.PrintError("U degree mismatch error\n")
+        FreeCAD.Console.PrintError(translate("Log", "U degree mismatch error\n"))
         return(False)
     if s1.bounds()[0:2] == s2.bounds()[0:2]:
         debug("U parameter ranges already matching")
@@ -53,7 +53,7 @@ def matchURange(s1,s2):
 def matchVRange(s1,s2):
     '''make the VKnotSequence of surface s1 match the VKnotSequence of surface s2'''
     if not s1.VDegree == s2.VDegree:
-        FreeCAD.Console.PrintError("V degree mismatch error\n")
+        FreeCAD.Console.PrintError(translate("Log", "V degree mismatch error\n"))
         return(False)
     if s1.bounds()[2::] == s2.bounds()[2::]:
         debug("V parameter ranges already matching")
@@ -84,10 +84,10 @@ def getIndex(k,ks):
 def matchUknots(s1,s2,tol=0.000001):
     '''insert knots to make surfaces s1 and s2 have the same U knots sequences'''
     if not s1.UDegree == s2.UDegree:
-        FreeCAD.Console.PrintError("U degree mismatch error\n")
+        FreeCAD.Console.PrintError(translate("Log", "U degree mismatch error\n"))
         return(False)
     if not s1.bounds()[0:2] == s2.bounds()[0:2]:
-        FreeCAD.Console.PrintError("U parameter ranges mismatch error\n")
+        FreeCAD.Console.PrintError(translate("Log", "U parameter ranges mismatch error\n"))
         return(False)
     k1 = s1.getUKnots()
     k2 = s2.getUKnots()
@@ -107,10 +107,10 @@ def matchUknots(s1,s2,tol=0.000001):
 def matchVknots(s1,s2,tol=0.000001):
     '''insert knots to make surfaces s1 and s2 have the same V knots sequences'''
     if not s1.VDegree == s2.VDegree:
-        FreeCAD.Console.PrintError("V degree mismatch error\n")
+        FreeCAD.Console.PrintError(translate("Log", "V degree mismatch error\n"))
         return(False)
     if not s1.bounds()[2::] == s2.bounds()[2::]:
-        FreeCAD.Console.PrintError("V parameter ranges mismatch error\n")
+        FreeCAD.Console.PrintError(translate("Log", "V parameter ranges mismatch error\n"))
         return(False)
     k1 = s1.getVKnots()
     k2 = s2.getVKnots()
@@ -132,13 +132,13 @@ def matchVknots(s1,s2,tol=0.000001):
 def matchUMults(s1,s2):
     '''insert knots to make surfaces s1 and s2 have the same U knot multiplicities'''
     if not s1.UDegree == s2.UDegree:
-        FreeCAD.Console.PrintError("U degree mismatch error\n")
+        FreeCAD.Console.PrintError(translate("Log", "U degree mismatch error\n"))
         return(False)
     if not s1.bounds()[0:2] == s2.bounds()[0:2]:
-        FreeCAD.Console.PrintError("U parameter ranges mismatch error\n")
+        FreeCAD.Console.PrintError(translate("Log", "U parameter ranges mismatch error\n"))
         return(False)
     if not s1.getUKnots() == s2.getUKnots():
-        FreeCAD.Console.PrintError("U KnotSequence mismatch error\n")
+        FreeCAD.Console.PrintError(translate("Log", "U KnotSequence mismatch error\n"))
         return(False)
     m1 = s1.getUMultiplicities()
     m2 = s2.getUMultiplicities()
@@ -152,13 +152,13 @@ def matchUMults(s1,s2):
 def matchVMults(s1,s2):
     '''insert knots to make surfaces s1 and s2 have the same V knot multiplicities'''
     if not s1.VDegree == s2.VDegree:
-        FreeCAD.Console.PrintError("V degree mismatch error\n")
+        FreeCAD.Console.PrintError(translate("Log", "V degree mismatch error\n"))
         return(False)
     if not s1.bounds()[2::] == s2.bounds()[2::]:
-        FreeCAD.Console.PrintError("V parameter ranges mismatch error\n")
+        FreeCAD.Console.PrintError(translate("Log", "V parameter ranges mismatch error\n"))
         return(False)
     if not s1.getVKnots() == s2.getVKnots():
-        FreeCAD.Console.PrintError("V KnotSequence mismatch error\n")
+        FreeCAD.Console.PrintError(translate("Log", "V KnotSequence mismatch error\n"))
         return(False)
     m1 = s1.getVMultiplicities()
     m2 = s2.getVMultiplicities()

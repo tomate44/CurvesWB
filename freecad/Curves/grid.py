@@ -303,7 +303,7 @@ class gridNode(coin.SoSeparator):
 class gridObject:
     def __init__(self, obj):
         obj.Proxy = self
-        obj.addProperty("App::PropertyPlacement",  "Placement",   "Base",   "Placement")
+        obj.addProperty("App::PropertyPlacement",  "Placement",   "Base",   QT_TRANSLATE_NOOP("App::Property", "Placement"))
     def execute(self, obj):
         return()
     def onChanged(self, fp, prop):
@@ -317,15 +317,15 @@ class gridObject:
 
 class gridVP:
     def __init__(self, obj ):
-        obj.addProperty("App::PropertyDistance",  "Total",         "Size",   "Size of a grid quadrant").Total = '100mm'
-        obj.addProperty("App::PropertyDistance",  "Subdivision",   "Size",   "Size of subdivisions").Subdivision = '10mm'
-        obj.addProperty("App::PropertyFloat",     "XY_Attenuation", "View",   "XY plane attenuation").XY_Attenuation = 2.0
-        obj.addProperty("App::PropertyFloat",     "XZ_Attenuation", "View",   "XZ plane attenuation").XZ_Attenuation = 50.0
-        obj.addProperty("App::PropertyFloat",     "YZ_Attenuation", "View",   "YZ plane attenuation").YZ_Attenuation = 50.0
-        obj.addProperty("App::PropertyFloat",     "XY_Visibility",  "View",   "XY plane max visibility").XY_Visibility = 1.0
-        obj.addProperty("App::PropertyFloat",     "XZ_Visibility",  "View",   "XZ plane max visibility").XZ_Visibility = 0.5
-        obj.addProperty("App::PropertyFloat",     "YZ_Visibility",  "View",   "YZ plane max visibility").YZ_Visibility = 0.5
-        obj.addProperty("App::PropertyColor",     "GridColor",     "Color",  "Grid Color").GridColor = (0.5,0.5,0.5)
+        obj.addProperty("App::PropertyDistance",  "Total",         "Size",   QT_TRANSLATE_NOOP("App::Property", "Size of a grid quadrant")).Total = '100mm'
+        obj.addProperty("App::PropertyDistance",  "Subdivision",   "Size",   QT_TRANSLATE_NOOP("App::Property", "Size of subdivisions")).Subdivision = '10mm'
+        obj.addProperty("App::PropertyFloat",     "XY_Attenuation", "View",   QT_TRANSLATE_NOOP("App::Property", "XY plane attenuation")).XY_Attenuation = 2.0
+        obj.addProperty("App::PropertyFloat",     "XZ_Attenuation", "View",   QT_TRANSLATE_NOOP("App::Property", "XZ plane attenuation")).XZ_Attenuation = 50.0
+        obj.addProperty("App::PropertyFloat",     "YZ_Attenuation", "View",   QT_TRANSLATE_NOOP("App::Property", "YZ plane attenuation")).YZ_Attenuation = 50.0
+        obj.addProperty("App::PropertyFloat",     "XY_Visibility",  "View",   QT_TRANSLATE_NOOP("App::Property", "XY plane max visibility")).XY_Visibility = 1.0
+        obj.addProperty("App::PropertyFloat",     "XZ_Visibility",  "View",   QT_TRANSLATE_NOOP("App::Property", "XZ plane max visibility")).XZ_Visibility = 0.5
+        obj.addProperty("App::PropertyFloat",     "YZ_Visibility",  "View",   QT_TRANSLATE_NOOP("App::Property", "YZ plane max visibility")).YZ_Visibility = 0.5
+        obj.addProperty("App::PropertyColor",     "GridColor",     "Color",  QT_TRANSLATE_NOOP("App::Property", "Grid Color")).GridColor = (0.5,0.5,0.5)
         obj.Proxy = self
 
     def attach(self, obj):

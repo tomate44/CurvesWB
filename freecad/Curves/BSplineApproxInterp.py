@@ -10,6 +10,7 @@ import numpy as np
 from freecad.Curves import nurbs_tools
 #  from math import pi
 
+translate = FreeCAD.Qt.translate
 DEBUG = False
 
 
@@ -17,27 +18,29 @@ def debug(o):
     if not DEBUG:
         return
     if isinstance(o, Part.BSplineCurve):
-        FreeCAD.Console.PrintWarning("\nBSplineCurve\n")
-        FreeCAD.Console.PrintWarning("Degree: {}\n".format(o.Degree))
-        FreeCAD.Console.PrintWarning("NbPoles: {}\n".format(o.NbPoles))
-        FreeCAD.Console.PrintWarning("Knots: {} ({:0.2f} - {:0.2f})\n".format(o.NbKnots, o.FirstParameter, o.LastParameter))
-        FreeCAD.Console.PrintWarning("Mults: {}\n".format(o.getMultiplicities()))
-        FreeCAD.Console.PrintWarning("Periodic: {}\n".format(o.isPeriodic()))
+        FreeCAD.Console.PrintWarning(translate("Log", "\nBSplineCurve\n"))
+        FreeCAD.Console.PrintWarning(translate("Log", "Degree: {}\n")).format(o.Degree)
+        FreeCAD.Console.PrintWarning(translate("Log", "NbPoles: {}\n")).format(o.NbPoles)
+        FreeCAD.Console.PrintWarning(translate("Log", "Knots: {} ({:0.2f} - {:0.2f})\n")).format(
+            o.NbKnots, o.FirstParameter, o.LastParameter
+        )
+        FreeCAD.Console.PrintWarning(translate("Log", "Mults: {}\n")).format(o.getMultiplicities())
+        FreeCAD.Console.PrintWarning(translate("Log", "Periodic: {}\n")).format(o.isPeriodic())
     elif isinstance(o, Part.BSplineSurface):
-        FreeCAD.Console.PrintWarning("\nBSplineSurface\n************\n")
+        FreeCAD.Console.PrintWarning(translate("Log", "\nBSplineSurface\n************\n"))
         try:
             u = o.uIso(o.UKnotSequence[0])
             debug(u)
         except Part.OCCError:
-            FreeCAD.Console.PrintError("Failed to compute uIso curve\n")
+            FreeCAD.Console.PrintError(translate("Log", "Failed to compute uIso curve\n"))
         try:
             v = o.vIso(o.VKnotSequence[0])
             debug(v)
         except Part.OCCError:
-            FreeCAD.Console.PrintError("Failed to compute vIso curve\n")
-        FreeCAD.Console.PrintWarning("************\n")
+            FreeCAD.Console.PrintError(translate("Log", "Failed to compute vIso curve\n"))
+        FreeCAD.Console.PrintWarning(translate("Log", "************\n"))
     else:
-        FreeCAD.Console.PrintMessage("{}\n".format(str(o)))
+        FreeCAD.Console.PrintMessage(translate("Log", "{}\n")).format(str(o))
 
 
 def square_distance(v1, v2):

@@ -28,8 +28,8 @@ class TemplateFP:
     """Creates a ..."""
     def __init__(self, obj):
         """Add the properties"""
-        obj.addProperty("App::PropertyLinkList", "Sources", "Group", "Tooltip")
-        obj.addProperty("App::PropertyFloat", "float", "Group", "Tooltip")
+        obj.addProperty("App::PropertyLinkList", "Sources", "Group", QT_TRANSLATE_NOOP("App::Property", "Tooltip"))
+        obj.addProperty("App::PropertyFloat", "float", "Group", QT_TRANSLATE_NOOP("App::Property", "Tooltip"))
         obj.Proxy = self
 
     def execute(self, obj):
@@ -77,7 +77,7 @@ class ToolCommand:
     def Activated(self):
         sel = FreeCADGui.Selection.getSelection()
         if sel == []:
-            FreeCAD.Console.PrintError("Select something first !\n")
+            FreeCAD.Console.PrintError(translate("Log", "Select something first !\n"))
         else:
             self.makeFeature(sel)
 

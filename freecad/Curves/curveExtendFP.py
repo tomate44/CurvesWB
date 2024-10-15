@@ -15,22 +15,33 @@ from . import _utils
 from . import ICONPATH
 from . import curveExtend
 
-TOOL_ICON = os.path.join(ICONPATH, 'extendcurve.svg')
+TOOL_ICON = os.path.join(ICONPATH, "extendcurve.svg")
 # debug = _utils.debug
 debug = _utils.doNothing
 
 
 class extend:
     """Extends the selected edge"""
+
     def __init__(self, obj):
-        obj.addProperty("App::PropertyLinkSub", "Edge", "Base", "Input edge to extend")
-        obj.addProperty("App::PropertyEnumeration", "Output", "Base", "Output shape").Output = ["SingleEdge", "Wire"]
+        obj.addProperty("App::PropertyLinkSub", "Edge", "Base", QT_TRANSLATE_NOOP("App::Property", "Input edge to extend"))
+        obj.addProperty(
+            "App::PropertyEnumeration", "Output", "Base", QT_TRANSLATE_NOOP("App::Property", "Output shape")
+        ).Output = ["SingleEdge", "Wire"]
 
-        obj.addProperty("App::PropertyFloat", "LengthStart", "Beginning", "Start Extension Length").LengthStart = 10.0
-        obj.addProperty("App::PropertyEnumeration", "TypeStart", "Beginning", "Start Extension type").TypeStart = ["Straight", "G2 curve"]
+        obj.addProperty(
+            "App::PropertyFloat", "LengthStart", "Beginning", QT_TRANSLATE_NOOP("App::Property", "Start Extension Length")
+        ).LengthStart = 10.0
+        obj.addProperty(
+            "App::PropertyEnumeration", "TypeStart", "Beginning", QT_TRANSLATE_NOOP("App::Property", "Start Extension type")
+        ).TypeStart = ["Straight", "G2 curve"]
 
-        obj.addProperty("App::PropertyFloat", "LengthEnd", "End", "End Extension Length").LengthEnd = 10.0
-        obj.addProperty("App::PropertyEnumeration", "TypeEnd", "End", "End Extension type").TypeEnd = ["Straight", "G2 curve"]
+        obj.addProperty(
+            "App::PropertyFloat", "LengthEnd", "End", QT_TRANSLATE_NOOP("App::Property", "End Extension Length")
+        ).LengthEnd = 10.0
+        obj.addProperty(
+            "App::PropertyEnumeration", "TypeEnd", "End", QT_TRANSLATE_NOOP("App::Property", "End Extension type")
+        ).TypeEnd = ["Straight", "G2 curve"]
 
         obj.TypeStart = "Straight"
         obj.TypeEnd = "Straight"
@@ -96,7 +107,8 @@ class extendVP:
     def onDelete(self, feature, subelements):
         return True
 
-    if FreeCAD.Version()[0] == '0' and '.'.join(FreeCAD.Version()[1:3]) >= '21.2':
+    if FreeCAD.Version()[0] == "0" and ".".join(FreeCAD.Version()[1:3]) >= "21.2":
+
         def dumps(self):
             return {"name": self.Object.Name}
 
@@ -105,6 +117,7 @@ class extendVP:
             return None
 
     else:
+
         def __getstate__(self):
             return {"name": self.Object.Name}
 
@@ -115,10 +128,13 @@ class extendVP:
 
 class extendCommand:
     """Extends the selected edge"""
+
     def makeExtendFeature(self, source):
         if source is not []:
             for o in source:
-                extCurve = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "ExtendedCurve")
+                extCurve = FreeCAD.ActiveDocument.addObject(
+                    "Part::FeaturePython", "ExtendedCurve"
+                )
                 extend(extCurve)
                 extCurve.Edge = o
                 extendVP(extCurve.ViewObject)
@@ -130,7 +146,7 @@ class extendCommand:
         edges = []
         sel = FreeCADGui.Selection.getSelectionEx()
         if sel == []:
-            FreeCAD.Console.PrintError("Select the edges to extend first !\n")
+            FreeCAD.Console.PrintError(translate("Log", "Select the edges to extend first !\n"))
         for selobj in sel:
             if selobj.HasSubObjects:
                 for i in range(len(selobj.SubObjects)):
@@ -147,9 +163,13 @@ class extendCommand:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>Usage :</b><br>{}".format(
+                __doc__, "<br>".join(__usage__.splitlines())
+            ),
+        }
 
 
-FreeCADGui.addCommand('extend', extendCommand())
+FreeCADGui.addCommand("Curves_ExtendCurve", extendCommand())

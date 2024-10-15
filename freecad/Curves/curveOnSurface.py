@@ -421,7 +421,7 @@ class curveOnSurface(object):
             if len(c) == 3:
                 cos.append(c[0].toBSpline(c[1], c[2]))
             else:
-                FreeCAD.Console.PrintError("failed to extract 2D geometry")
+                FreeCAD.Console.PrintError(translate("Log", "failed to extract 2D geometry"))
             if e.isPartner(self.edge):
                 idx = n
 
@@ -445,8 +445,8 @@ class curveOnSurface(object):
     def get_cross_curve(self, off, u=0):
         """returns cross-curve from offsetCurve off to COS at param u"""
         if u < self.firstParameter or u > self.lastParameter:
-            FreeCAD.Console.PrintError("Curve_on_surface.get_cross_curve : parameter out of range\n")
-            FreeCAD.Console.PrintError("{} is not in [{},{}]\n".format(u, self.firstParameter, self.lastParameter))
+            FreeCAD.Console.PrintError(translate("Log", "Curve_on_surface.get_cross_curve : parameter out of range\n"))
+            FreeCAD.Console.PrintError(translate("Log", "{} is not in [{},{}]\n")).format(u, self.firstParameter, self.lastParameter)
         if u < self.firstParameter:
             u = self.firstParameter
         elif u > self.lastParameter:
@@ -458,7 +458,7 @@ class curveOnSurface(object):
         ls = Part.Geom2d.Line2dSegment(p1, p2)
         sh = ls.toShape(self.face.Surface)
         # sh = sh.transformGeometry(self.face.Placement.toMatrix()).Edges[0]
-        FreeCAD.Console.PrintMessage(" {} - {}\n".format(self.edge.Curve, str(sh.distToShape(self.edge)[0])))
+        FreeCAD.Console.PrintMessage(translate("Log", " {} - {}\n")).format(self.edge.Curve, str(sh.distToShape(self.edge)[0]))
         # d,pts,info = sh.distToShape(self.edge)
         # if d > 1e-8:
         #     bs = sh.Edges[0].Curve.toBSpline()

@@ -53,16 +53,16 @@ class isoCurve:
         self.direction = 'U'
         self.parameter = 0
         if not isinstance(face, Part.Face):
-            FreeCAD.Console.PrintMessage("Error. Not a face")
+            FreeCAD.Console.PrintMessage(translate("Log", "Error. Not a face"))
         else:
             self.bounds = face.ParameterRange
             self.face = face
         if direc not in 'UV':
-            FreeCAD.Console.PrintMessage("Direction error")
+            FreeCAD.Console.PrintMessage(translate("Log", "Direction error"))
         else:
             self.direction = direc
         if not isinstance(param, (float, int)):
-            FreeCAD.Console.PrintMessage("Parameter error")
+            FreeCAD.Console.PrintMessage(translate("Log", "Parameter error"))
         else:
             self.parameter = param
 
@@ -105,7 +105,7 @@ class isoCurve:
                 sortedPts = sorted(pts, key=lambda v: v.y)
                 prange = [l2d.parameter(sortedPts[0]), l2d.parameter(sortedPts[-1])]
             else:
-                FreeCAD.Console.PrintMessage("No intersection points\n")
+                FreeCAD.Console.PrintMessage(translate("Log", "No intersection points\n"))
         elif self.direction == 'V':
             self.curve = self.face.Surface.vIso(self.parameter)
             v1 = Base.Vector2d(self.bounds[0] - ext, self.parameter)
@@ -116,14 +116,14 @@ class isoCurve:
                 sortedPts = sorted(pts, key=lambda v: v.x)
                 prange = [l2d.parameter(sortedPts[0]), l2d.parameter(sortedPts[-1])]
             else:
-                FreeCAD.Console.PrintMessage("No intersection points\n")
+                FreeCAD.Console.PrintMessage(translate("Log", "No intersection points\n"))
         e = None
         if (prange[1] - prange[0]) > 1e-9:
             e = l2d.toShape(self.face, prange[0], prange[1])
         if isinstance(e, Part.Edge):
             return e
         # else:
-            # FreeCAD.Console.PrintMessage("Failed to create isoCurve shape\n")
+            # FreeCAD.Console.PrintMessage(translate("Log", "Failed to create isoCurve shape\n"))
             # return None
 
 
@@ -137,7 +137,7 @@ class multiIso:
         self.uiso = []
         self.viso = []
         if not isinstance(face, Part.Face):
-            FreeCAD.Console.PrintMessage("Error. Not a face")
+            FreeCAD.Console.PrintMessage(translate("Log", "Error. Not a face"))
         else:
             self.bounds = face.ParameterRange
             self.face = face

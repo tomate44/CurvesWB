@@ -58,18 +58,27 @@ def get_svg(shape_type):
 class solid:
     """Make a parametric solid from selected faces"""
     def __init__(self, obj):
-        obj.addProperty("App::PropertyLinkSubList",
-                        "Faces",
-                        "Solid",
-                        "List of faces to build the solid")
-        obj.addProperty("App::PropertyString",
-                        "ShapeStatus",
-                        "Solid",
-                        "Status of the created shape")
-        obj.addProperty("App::PropertyBool",
-                        "ShowOpenEdges",
-                        "Debug",
-                        "If the output shape in not a solid, this will output the open edges")
+        obj.addProperty(
+            "App::PropertyLinkSubList",
+            "Faces",
+            "Solid",
+            QT_TRANSLATE_NOOP("App::Property", "List of faces to build the solid"),
+        )
+        obj.addProperty(
+            "App::PropertyString",
+            "ShapeStatus",
+            "Solid",
+            QT_TRANSLATE_NOOP("App::Property", "Status of the created shape"),
+        )
+        obj.addProperty(
+            "App::PropertyBool",
+            "ShowOpenEdges",
+            "Debug",
+            QT_TRANSLATE_NOOP(
+                "App::Property",
+                "If the output shape in not a solid, this will output the open edges",
+            ),
+        )
         obj.ShapeStatus = ""
         obj.setEditorMode("ShapeStatus", 1)
         obj.Proxy = self
@@ -165,7 +174,7 @@ class solidCommand:
         faces = []
         sel = FreeCADGui.Selection.getSelectionEx('', 0)
         if sel == []:
-            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
+            FreeCAD.Console.PrintError(translate("Log", "{} :\n{}\n")).format(__title__, __usage__)
         for selobj in sel:
             if selobj.HasSubObjects:
                 for i in range(len(selobj.SubObjects)):

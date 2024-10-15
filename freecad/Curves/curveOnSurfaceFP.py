@@ -21,20 +21,80 @@ debug = _utils.debug
 class cosFP:
     """Creates a parametric curve on surface object."""
     def __init__(self, obj):
-        ''' Add the properties '''
-        obj.addProperty("App::PropertyLinkSub",    "InputEdge",      "CurveOnSurface",   "Input edge")
-        obj.addProperty("App::PropertyLinkSub",    "Face",           "CurveOnSurface",   "Support face")
-        obj.addProperty("App::PropertyFloat",      "Tolerance",      "CurveOnSurface",   "Tolerance").Tolerance=0.0001
-        obj.addProperty("App::PropertyBool",       "ReverseTangent", "Orientation",   "Reverse tangent").ReverseTangent = False
-        obj.addProperty("App::PropertyBool",       "ReverseNormal",  "Orientation",   "Reverse normal").ReverseNormal = False
-        obj.addProperty("App::PropertyBool",       "ReverseBinormal","Orientation",   "Reverse binormal").ReverseBinormal = False
-        #obj.addProperty("Part::PropertyPartShape", "Shape",          "Base",   "Shape")
-        obj.addProperty("App::PropertyEnumeration","Output",         "CurveOnSurface",   "Output type").Output = ["Curve only","Normal face","Binormal face"]
-        obj.addProperty("App::PropertyInteger",    "Samples",        "CurveOnSurface", "Number of samples").Samples=100
-        obj.addProperty("App::PropertyDistance",   "FaceWidth",      "CurveOnSurface", "Width of the output face").FaceWidth='1mm'
-        obj.addProperty("App::PropertyBool",       "Symmetric",      "CurveOnSurface", "Face symmetric across curve").Symmetric = False
-        obj.addProperty("App::PropertyBool",       "Closed",         "CurveOnSurface", "Close the curve").Closed = False
-        obj.addProperty("App::PropertyBool",       "Reverse",        "CurveOnSurface", "Reverse the parametric orientation of the curve").Reverse = False
+        """Add the properties"""
+        obj.addProperty(
+            "App::PropertyLinkSub",
+            "InputEdge",
+            "CurveOnSurface",
+            QT_TRANSLATE_NOOP("App::Property", "Input edge"),
+        )
+        obj.addProperty(
+            "App::PropertyLinkSub",
+            "Face",
+            "CurveOnSurface",
+            QT_TRANSLATE_NOOP("App::Property", "Support face"),
+        )
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Tolerance",
+            "CurveOnSurface",
+            QT_TRANSLATE_NOOP("App::Property", "Tolerance"),
+        ).Tolerance = 0.0001
+        obj.addProperty(
+            "App::PropertyBool",
+            "ReverseTangent",
+            "Orientation",
+            QT_TRANSLATE_NOOP("App::Property", "Reverse tangent"),
+        ).ReverseTangent = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "ReverseNormal",
+            "Orientation",
+            QT_TRANSLATE_NOOP("App::Property", "Reverse normal"),
+        ).ReverseNormal = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "ReverseBinormal",
+            "Orientation",
+            QT_TRANSLATE_NOOP("App::Property", "Reverse binormal"),
+        ).ReverseBinormal = False
+        # obj.addProperty("Part::PropertyPartShape", "Shape",          "Base",   QT_TRANSLATE_NOOP("App::Property", "Shape"))
+        obj.addProperty(
+            "App::PropertyEnumeration",
+            "Output",
+            "CurveOnSurface",
+            QT_TRANSLATE_NOOP("App::Property", "Output type"),
+        ).Output = ["Curve only", "Normal face", "Binormal face"]
+        obj.addProperty(
+            "App::PropertyInteger",
+            "Samples",
+            "CurveOnSurface",
+            QT_TRANSLATE_NOOP("App::Property", "Number of samples"),
+        ).Samples = 100
+        obj.addProperty(
+            "App::PropertyDistance",
+            "FaceWidth",
+            "CurveOnSurface",
+            QT_TRANSLATE_NOOP("App::Property", "Width of the output face"),
+        ).FaceWidth = "1mm"
+        obj.addProperty(
+            "App::PropertyBool",
+            "Symmetric",
+            "CurveOnSurface",
+            QT_TRANSLATE_NOOP("App::Property", "Face symmetric across curve"),
+        ).Symmetric = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "Closed",
+            "CurveOnSurface",
+            QT_TRANSLATE_NOOP("App::Property", "Close the curve"),
+        ).Closed = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "Reverse",
+            "CurveOnSurface",
+            QT_TRANSLATE_NOOP("App::Property", "Reverse the parametric orientation of the curve"),
+        ).Reverse = False
         obj.Output = "Curve only"
         obj.Proxy = self
 
@@ -104,7 +164,7 @@ class cosVP:
         try:
             self.Object.InputEdge[0].ViewObject.Visibility=True
         except Exception as err:
-            FreeCAD.Console.PrintError("Error in onDelete: {0} \n".format(err))
+            FreeCAD.Console.PrintError(translate("Log", "Error in onDelete: {0} \n")).format(err)
         return(True)
 
 
@@ -116,7 +176,7 @@ class cosCommand:
         face = None
         sel = FreeCADGui.Selection.getSelectionEx('',0)
         if sel == []:
-            FreeCAD.Console.PrintError("Select an edge and its supporting face \n")
+            FreeCAD.Console.PrintError(translate("Log", "Select an edge and its supporting face \n"))
         for selobj in sel:
             for path in selobj.SubElementNames if selobj.SubElementNames else ['']:
                 shape = selobj.Object.getSubObject(path)
@@ -140,8 +200,9 @@ class cosCommand:
             cos.ViewObject.LineColor = (1.0,0.67,0.0)
             cos.ViewObject.LineWidth = 3.0
         else:
-            FreeCAD.Console.PrintError("Select an edge and its supporting face \n")
-
+            FreeCAD.Console.PrintError(
+                translate("Log", "Select an edge and its supporting face \n")
+            )
 
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,

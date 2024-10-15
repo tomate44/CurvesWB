@@ -54,15 +54,15 @@ def debug(o):
             u = o.uIso(o.getUKnot(1))
             debug(u)
         except Part.OCCError:
-            FreeCAD.Console.PrintError("Failed to compute uIso curve\n")
+            FreeCAD.Console.PrintError(translate("Log", "Failed to compute uIso curve\n"))
         try:
             v = o.vIso(o.getVKnot(1))
             debug(v)
         except Part.OCCError:
-            FreeCAD.Console.PrintError("Failed to compute vIso curve\n")
+            FreeCAD.Console.PrintError(translate("Log", "Failed to compute vIso curve\n"))
         warn("************\n")
     else:
-        FreeCAD.Console.PrintMessage("{}\n".format(str(o)))
+        FreeCAD.Console.PrintMessage(translate("Log", "{}\n")).format(str(o))
 
 
 def find(val, array, tol=1e-5):

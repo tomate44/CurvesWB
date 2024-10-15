@@ -27,7 +27,7 @@ DEBUG = False
 def debug(string):
     if DEBUG:
         FreeCAD.Console.PrintMessage(string)
-        FreeCAD.Console.PrintMessage("\n")
+        FreeCAD.Console.PrintMessage(translate("Log", "\n"))
 
 
 def beautify(shp):
@@ -466,7 +466,7 @@ class GeomInfo:
         pass
 
     def clearSelection(self, doc):  # If screen is clicked, delete selection
-        # FreeCAD.Console.PrintMessage("clearSelection\n")
+        # FreeCAD.Console.PrintMessage(translate("Log", "clearSelection\n"))
         if self.Active:
             self.SoText2.string = ""
             self.removeGrid()

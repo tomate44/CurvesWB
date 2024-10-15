@@ -72,16 +72,52 @@ class MixedCurve:
 class MixedCurveFP:
     """Builds a 3D curve as the intersection of 2 projected curves."""
     def __init__(self, obj, s1, s2, d1, d2):
-        obj.addProperty("App::PropertyLink", "Shape1", "Mixed Curve", "First shape").Shape1 = s1
-        obj.addProperty("App::PropertyLink", "Shape2", "Mixed Curve", "Second shape").Shape2 = s2
-        obj.addProperty("App::PropertyVector", "Direction1", "Mixed Curve",
-                        "Projection direction of the first shape.\nIf vector is null, shape's placement is used.").Direction1 = d1
-        obj.addProperty("App::PropertyVector", "Direction2", "Mixed Curve",
-                        "Projection direction of the second shape.\nIf vector is null, shape's placement is used.").Direction2 = d2
-        obj.addProperty("App::PropertyBool", "FillFace1", "Mixed Curve",
-                        "Build ruled surfaces between Shape1 and resulting Mixed-Curve").FillFace1 = False
-        obj.addProperty("App::PropertyBool", "FillFace2", "Mixed Curve",
-                        "Build ruled surfaces between Shape2 and resulting Mixed-Curve").FillFace2 = False
+        obj.addProperty(
+            "App::PropertyLink",
+            "Shape1",
+            "Mixed Curve",
+            QT_TRANSLATE_NOOP("App::Property", "First shape"),
+        ).Shape1 = s1
+        obj.addProperty(
+            "App::PropertyLink",
+            "Shape2",
+            "Mixed Curve",
+            QT_TRANSLATE_NOOP("App::Property", "Second shape"),
+        ).Shape2 = s2
+        obj.addProperty(
+            "App::PropertyVector",
+            "Direction1",
+            "Mixed Curve",
+            QT_TRANSLATE_NOOP(
+                "App::Property",
+                "Projection direction of the first shape.\nIf vector is null, shape's placement is used.",
+            ),
+        ).Direction1 = d1
+        obj.addProperty(
+            "App::PropertyVector",
+            "Direction2",
+            "Mixed Curve",
+            QT_TRANSLATE_NOOP(
+                "App::Property",
+                "Projection direction of the second shape.\nIf vector is null, shape's placement is used.",
+            ),
+        ).Direction2 = d2
+        obj.addProperty(
+            "App::PropertyBool",
+            "FillFace1",
+            "Mixed Curve",
+            QT_TRANSLATE_NOOP(
+                "App::Property", "Build ruled surfaces between Shape1 and resulting Mixed-Curve"
+            ),
+        ).FillFace1 = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "FillFace2",
+            "Mixed Curve",
+            QT_TRANSLATE_NOOP(
+                "App::Property", "Build ruled surfaces between Shape2 and resulting Mixed-Curve"
+            ),
+        ).FillFace2 = False
         obj.Proxy = self
 
     def execute(self, obj):
@@ -173,7 +209,7 @@ class MixedCurveCmd:
         except AttributeError:
             sel = FreeCADGui.Selection.getSelectionEx()
         if not len(sel) == 2:
-            FreeCAD.Console.PrintError("Select 2 objects !\n")
+            FreeCAD.Console.PrintError(translate("Log", "Select 2 objects !\n"))
             return
         for selobj in sel:
             selobj.Object.ViewObject.Visibility = False

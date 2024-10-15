@@ -429,10 +429,10 @@ class MapOnFace:
         if len(proj.Edges) == 0:
             raise RuntimeError("Failed to get pcurve")
         if len(proj.Edges) > 1:
-            FreeCAD.Console.PrintWarning("Projection: several pcurves")
+            FreeCAD.Console.PrintWarning(translate("Log", "Projection: several pcurves"))
         cos = self.quad.curveOnSurface(proj.Edge1)
         if edge.isClosed() and not cos[0].isClosed():
-            FreeCAD.Console.PrintWarning("pcurve should be closed")
+            FreeCAD.Console.PrintWarning(translate("Log", "pcurve should be closed"))
 
 
 

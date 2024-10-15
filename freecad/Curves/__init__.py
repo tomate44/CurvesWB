@@ -3,6 +3,7 @@ import FreeCAD
 from .version import __version__
 
 ICONPATH = os.path.join(os.path.dirname(__file__), "resources", "icons")
+TRANSLATIONPATH = os.path.join(os.path.dirname(__file__), "resources", "translations")
 
 TOL3D = 1e-7
 TOL2D = 1e-9

@@ -20,8 +20,12 @@ TOOL_ICON = path.join(ICONPATH, 'draft_analysis.svg')
 
 class DraftAnalysisProxyFP:
     def __init__(self, obj):
-        obj.addProperty("App::PropertyLink", "Source",
-                        "AnalysisOptions", "Object on which the analysis is performed")
+        obj.addProperty(
+            "App::PropertyLink",
+            "Source",
+            "AnalysisOptions",
+            QT_TRANSLATE_NOOP("App::Property", "Object on which the analysis is performed"),
+        )
         obj.Proxy = self
 
     def execute(self, obj):
@@ -43,30 +47,78 @@ class DraftAnalysisProxyFP:
 
 class DraftAnalysisProxyVP:
     def __init__(self, viewobj):
-        viewobj.addProperty("App::PropertyVector", "Direction",
-                            "AnalysisOptions", "Anaysis direction")
-        viewobj.addProperty("App::PropertyFloatConstraint", "DraftAngle1",
-                            "AnalysisOptions", "Positive draft angle")
-        viewobj.addProperty("App::PropertyFloatConstraint", "DraftAngle2",
-                            "AnalysisOptions", "Negative draft angle")
-        viewobj.addProperty("App::PropertyFloatConstraint", "DraftTol1",
-                            "AnalysisOptions", "Positive draft tolerance")
-        viewobj.addProperty("App::PropertyFloatConstraint", "DraftTol2",
-                            "AnalysisOptions", "Negative draft tolerance")
-        viewobj.addProperty("App::PropertyColor", "ColorInDraft1",
-                            "Colors1PositiveDraft", "Color of the positive in-draft area")
-        viewobj.addProperty("App::PropertyColor", "ColorInTolerance1",
-                            "Colors1PositiveDraft", "Color of the positive tolerance area")
-        viewobj.addProperty("App::PropertyColor", "ColorOutOfDraft1",
-                            "Colors1PositiveDraft", "Color of the positive out-of-draft area")
-        viewobj.addProperty("App::PropertyColor", "ColorInDraft2",
-                            "Colors2NegativeDraft", "Color of the negative in-draft area")
-        viewobj.addProperty("App::PropertyColor", "ColorInTolerance2",
-                            "Colors2NegativeDraft", "Color of the negative tolerance area")
-        viewobj.addProperty("App::PropertyColor", "ColorOutOfDraft2",
-                            "Colors2NegativeDraft", "Color of the negative out-of-draft area")
-        viewobj.addProperty("App::PropertyFloatConstraint", "Shading",
-                            "AnalysisOptions", "Amount of shading on the analysis overlay")
+        viewobj.addProperty(
+            "App::PropertyVector",
+            "Direction",
+            "AnalysisOptions",
+            QT_TRANSLATE_NOOP("App::Property", "Anaysis direction"),
+        )
+        viewobj.addProperty(
+            "App::PropertyFloatConstraint",
+            "DraftAngle1",
+            "AnalysisOptions",
+            QT_TRANSLATE_NOOP("App::Property", "Positive draft angle"),
+        )
+        viewobj.addProperty(
+            "App::PropertyFloatConstraint",
+            "DraftAngle2",
+            "AnalysisOptions",
+            QT_TRANSLATE_NOOP("App::Property", "Negative draft angle"),
+        )
+        viewobj.addProperty(
+            "App::PropertyFloatConstraint",
+            "DraftTol1",
+            "AnalysisOptions",
+            QT_TRANSLATE_NOOP("App::Property", "Positive draft tolerance"),
+        )
+        viewobj.addProperty(
+            "App::PropertyFloatConstraint",
+            "DraftTol2",
+            "AnalysisOptions",
+            QT_TRANSLATE_NOOP("App::Property", "Negative draft tolerance"),
+        )
+        viewobj.addProperty(
+            "App::PropertyColor",
+            "ColorInDraft1",
+            "Colors1PositiveDraft",
+            QT_TRANSLATE_NOOP("App::Property", "Color of the positive in-draft area"),
+        )
+        viewobj.addProperty(
+            "App::PropertyColor",
+            "ColorInTolerance1",
+            "Colors1PositiveDraft",
+            QT_TRANSLATE_NOOP("App::Property", "Color of the positive tolerance area"),
+        )
+        viewobj.addProperty(
+            "App::PropertyColor",
+            "ColorOutOfDraft1",
+            "Colors1PositiveDraft",
+            QT_TRANSLATE_NOOP("App::Property", "Color of the positive out-of-draft area"),
+        )
+        viewobj.addProperty(
+            "App::PropertyColor",
+            "ColorInDraft2",
+            "Colors2NegativeDraft",
+            QT_TRANSLATE_NOOP("App::Property", "Color of the negative in-draft area"),
+        )
+        viewobj.addProperty(
+            "App::PropertyColor",
+            "ColorInTolerance2",
+            "Colors2NegativeDraft",
+            QT_TRANSLATE_NOOP("App::Property", "Color of the negative tolerance area"),
+        )
+        viewobj.addProperty(
+            "App::PropertyColor",
+            "ColorOutOfDraft2",
+            "Colors2NegativeDraft",
+            QT_TRANSLATE_NOOP("App::Property", "Color of the negative out-of-draft area"),
+        )
+        viewobj.addProperty(
+            "App::PropertyFloatConstraint",
+            "Shading",
+            "AnalysisOptions",
+            QT_TRANSLATE_NOOP("App::Property", "Amount of shading on the analysis overlay"),
+        )
         viewobj.DraftAngle1 = (1.0, 0.0, 90.0, 0.1)
         viewobj.DraftAngle2 = (1.0, 0.0, 90.0, 0.1)
         viewobj.DraftTol1 = (0.05, 0.0, 90.0, 0.05)

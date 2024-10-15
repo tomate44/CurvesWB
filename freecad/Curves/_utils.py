@@ -89,7 +89,7 @@ def getShape(obj, prop, shape_type):
                             res.append(getSubShape(sh, shape_type, n))
             return res
         else:
-            FreeCAD.Console.PrintError("CurvesWB._utils.getShape: wrong property type.\n")
+            FreeCAD.Console.PrintError(translate("Log", "CurvesWB._utils.getShape: wrong property type.\n"))
             return None
     else:
         # FreeCAD.Console.PrintError("CurvesWB._utils.getShape: %r has no property %r\n"%(obj, prop))

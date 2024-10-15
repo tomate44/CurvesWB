@@ -22,31 +22,31 @@ class BlendSolidProxy:
     """Proxy of a BlendSolid FeaturePython object"""
     def __init__(self, obj):
         obj.addProperty("App::PropertyLinkSubList", "Sources",
-                        "Base", "Faces to join")
+                        "Base", QT_TRANSLATE_NOOP("App::Property", "Faces to join"))
         obj.addProperty("App::PropertyInteger", "Samples",
-                        "Settings", "Number of samples to generate each surface")
+                        "Settings", QT_TRANSLATE_NOOP("App::Property", "Number of samples to generate each surface"))
         obj.addProperty("App::PropertyBool", "Fuse",
-                        "Settings", "Fuse the 3 solids together")
+                        "Settings", QT_TRANSLATE_NOOP("App::Property", "Fuse the 3 solids together"))
         # obj.addProperty("App::PropertyEnumeration", "Algo",
-        #                 "Untwist", "Method used to untwist the wires")
+        #                 "Untwist", QT_TRANSLATE_NOOP("App::Property", "Method used to untwist the wires"))
         # obj.addProperty("App::PropertyLinkSubList", "MatchingShapes",
-        #                 "Untwist", "User selected matching edges or vertexes")
+        #                 "Untwist", QT_TRANSLATE_NOOP("App::Property", "User selected matching edges or vertexes"))
         # obj.addProperty("App::PropertyVectorList", "Offset",
-        #                 "Untwist", "Offset edge indices")
+        #                 "Untwist", QT_TRANSLATE_NOOP("App::Property", "Offset edge indices"))
         obj.addProperty("App::PropertyInteger", "Continuity1",
-                        "Continuity", "Continuity order G... with shape 1")
+                        "Continuity", QT_TRANSLATE_NOOP("App::Property", "Continuity order G... with shape 1"))
         obj.addProperty("App::PropertyInteger", "Continuity2",
-                        "Continuity", "Continuity order G... with shape 2")
+                        "Continuity", QT_TRANSLATE_NOOP("App::Property", "Continuity order G... with shape 2"))
         obj.addProperty("App::PropertyEnumeration", "AutoScale",
-                        "Scale", "Compute scales to get regular poles, or minimal curvature")
+                        "Scale", QT_TRANSLATE_NOOP("App::Property", "Compute scales to get regular poles, or minimal curvature"))
         obj.addProperty("App::PropertyInteger", "ScaleSamples",
-                        "Scale", "Number of samples for auto scaling")
+                        "Scale", QT_TRANSLATE_NOOP("App::Property", "Number of samples for auto scaling"))
         obj.addProperty("App::PropertyFloatList", "Scale1",
-                        "Scale", "Scale values along face 1")
+                        "Scale", QT_TRANSLATE_NOOP("App::Property", "Scale values along face 1"))
         obj.addProperty("App::PropertyFloatList", "Scale2",
-                        "Scale", "Scale values along face 2")
+                        "Scale", QT_TRANSLATE_NOOP("App::Property", "Scale values along face 2"))
         obj.addProperty("App::PropertyString", "ShapeType",
-                        "Status", "Status of the created shape")
+                        "Status", QT_TRANSLATE_NOOP("App::Property", "Status of the created shape"))
         obj.ShapeType = ""
         obj.setEditorMode("ShapeType", 1)
         obj.ScaleSamples = 6
@@ -227,14 +227,14 @@ class BlendSolidCommand:
                 if "Face" in sen:
                     sources.append((selobj.Object, sen))
         if not len(sources) == 2:
-            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
+            FreeCAD.Console.PrintError(translate("Log", "{} :\n{}\n")).format(__title__, __usage__)
         else:
             f1 = sources[0][0].getSubObject(sources[0][1])
             f2 = sources[1][0].getSubObject(sources[1][1])
             if len(f1.Edges) == len(f2.Edges):
                 self.makeFeature(sources)
             else:
-                FreeCAD.Console.PrintError("BlendSolid : The two faces must have the same number of edges\n")
+                FreeCAD.Console.PrintError(translate("Log", "BlendSolid : The two faces must have the same number of edges\n"))
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:

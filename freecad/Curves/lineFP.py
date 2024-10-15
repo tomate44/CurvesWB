@@ -20,8 +20,8 @@ class line:
     """Creates a parametric line between two vertexes"""
     def __init__(self, obj):
         """Add the properties"""
-        obj.addProperty("App::PropertyLinkSub", "Vertex1", "Line", "First Vertex")
-        obj.addProperty("App::PropertyLinkSub", "Vertex2", "Line", "Second Vertex")
+        obj.addProperty("App::PropertyLinkSub", "Vertex1", "Line", QT_TRANSLATE_NOOP("App::Property", "First Vertex"))
+        obj.addProperty("App::PropertyLinkSub", "Vertex2", "Line", QT_TRANSLATE_NOOP("App::Property", "Second Vertex"))
         obj.Proxy = self
 
     def execute(self, obj):
@@ -31,7 +31,7 @@ class line:
             ls = Part.LineSegment(v1.Point, v2.Point)
             obj.Shape = ls.toShape()
         else:
-            FreeCAD.Console.PrintError("{} broken !\n".format(obj.Label))
+            FreeCAD.Console.PrintError(translate("Log", "{} broken !\n")).format(obj.Label)
 
 
 class lineVP:
@@ -82,7 +82,7 @@ class lineCommand:
         if len(verts) == 2:
             self.makeLineFeature(verts)
         else:
-            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
+            FreeCAD.Console.PrintError(translate("Log", "{} :\n{}\n")).format(__title__, __usage__)
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:

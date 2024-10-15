@@ -15,7 +15,7 @@ def getTrimmedCurve(e):
         error(f"CurveExtend : Nurbs conversion error\n{exc}\n")
         c = e.Curve.toBSpline()
     if (not e.FirstParameter == c.FirstParameter) or (not e.LastParameter == c.LastParameter):
-        FreeCAD.Console.PrintWarning("Segmenting input curve\n")
+        FreeCAD.Console.PrintWarning(translate("Log", "Segmenting input curve\n"))
         c.segment(e.FirstParameter, e.LastParameter)
     return c
 

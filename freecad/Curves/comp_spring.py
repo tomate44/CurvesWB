@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Compression Spring"
+import FreeCAD
+
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = """Parametric Compression Spring"""
@@ -95,13 +98,48 @@ class CompSpringFP:
 
     def __init__(self, obj):
         """Add the properties"""
-        obj.addProperty("App::PropertyFloat", "Length", "CompSpring", "Spring Length").Length = 10.0
-        obj.addProperty("App::PropertyInteger", "Turns", "CompSpring", "Number of turns").Turns = 5
-        obj.addProperty("App::PropertyFloat", "WireDiameter", "CompSpring", "Diameter of the spring wire").WireDiameter = 0.5
-        obj.addProperty("App::PropertyFloat", "Diameter", "CompSpring", "Diameter of the spring").Diameter = 4.0
-        obj.addProperty("App::PropertyInteger", "Flatness", "Setting", "Flatness of spring extremities from 0 to 4").Flatness = 0
-        obj.addProperty("App::PropertyBool", "WireOutput", "Setting", "Output a wire shape").WireOutput = True
-        obj.addProperty("App::PropertyBool", "ReverseHelix", "CompSpring", "Left hand if true").ReverseHelix = False
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Length",
+            "CompSpring",
+            QT_TRANSLATE_NOOP("App::Property", "Spring Length"),
+        ).Length = 10.0
+        obj.addProperty(
+            "App::PropertyInteger",
+            "Turns",
+            "CompSpring",
+            QT_TRANSLATE_NOOP("App::Property", "Number of turns"),
+        ).Turns = 5
+        obj.addProperty(
+            "App::PropertyFloat",
+            "WireDiameter",
+            "CompSpring",
+            QT_TRANSLATE_NOOP("App::Property", "Diameter of the spring wire"),
+        ).WireDiameter = 0.5
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Diameter",
+            "CompSpring",
+            QT_TRANSLATE_NOOP("App::Property", "Diameter of the spring"),
+        ).Diameter = 4.0
+        obj.addProperty(
+            "App::PropertyInteger",
+            "Flatness",
+            "Setting",
+            QT_TRANSLATE_NOOP("App::Property", "Flatness of spring extremities from 0 to 4"),
+        ).Flatness = 0
+        obj.addProperty(
+            "App::PropertyBool",
+            "WireOutput",
+            "Setting",
+            QT_TRANSLATE_NOOP("App::Property", "Output a wire shape"),
+        ).WireOutput = True
+        obj.addProperty(
+            "App::PropertyBool",
+            "ReverseHelix",
+            "CompSpring",
+            QT_TRANSLATE_NOOP("App::Property", "Left hand if true"),
+        ).ReverseHelix = False
         obj.Proxy = self
 
     def spring(self, obj):
