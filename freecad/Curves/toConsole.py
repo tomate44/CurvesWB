@@ -93,4 +93,4 @@ class ToConsole:
             return False
 
 
-FreeCADGui.addCommand('to_console', ToConsole())
+FreeCADGui.addCommand("Curves_ObjectsToConsole", ToConsole())

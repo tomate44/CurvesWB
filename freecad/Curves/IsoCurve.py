@@ -222,7 +222,7 @@ class CommandMacroIsoCurve:
 
 
 if App.GuiUp:
-    Gui.addCommand("IsoCurve", CommandMacroIsoCurve())
+    Gui.addCommand("Curves_IsoCurve", CommandMacroIsoCurve())
 
 
 def run():

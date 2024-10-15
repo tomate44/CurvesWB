@@ -185,4 +185,4 @@ class CompSpringCommand:
                 'ToolTip': __doc__}
 
 
-FreeCADGui.addCommand('comp_spring', CompSpringCommand())
+FreeCADGui.addCommand("Curves_CompressionSpring", CompSpringCommand())

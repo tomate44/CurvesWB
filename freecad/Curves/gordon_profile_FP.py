@@ -357,4 +357,4 @@ class GordonProfileCommand:
                 'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
 
-FreeCADGui.addCommand('gordon_profile', GordonProfileCommand())
+FreeCADGui.addCommand("Curves_EditableSpline", GordonProfileCommand())

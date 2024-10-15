@@ -539,4 +539,4 @@ class SoS:
                 'ToolTip': __doc__}
 
 
-FreeCADGui.addCommand('SoS', SoS())
+FreeCADGui.addCommand("Curves_SketchOnSurface", SoS())

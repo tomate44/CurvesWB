@@ -78,4 +78,4 @@ class adjacentfacesCommand:
                 'ToolTip': "{}<br><br><b>Usage :</b><br>{}<br>".format(__doc__, __usage__)}
 
 
-addCommand('Curves_adjacent_faces', adjacentfacesCommand())
+addCommand("Curves_AdjacentFaces", adjacentfacesCommand())

@@ -194,4 +194,4 @@ class MixedCurveCmd:
                 'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
 
-FreeCADGui.addCommand('mixed_curve', MixedCurveCmd())
+FreeCADGui.addCommand("Curves_MixedCurve", MixedCurveCmd())

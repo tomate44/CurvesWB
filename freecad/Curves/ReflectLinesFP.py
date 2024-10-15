@@ -211,4 +211,4 @@ class ReflectLinesCommand:
                 'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
 
-FreeCADGui.addCommand('ReflectLines', ReflectLinesCommand())
+FreeCADGui.addCommand("Curves_ReflectLines", ReflectLinesCommand())

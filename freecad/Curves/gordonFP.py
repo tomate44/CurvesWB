@@ -223,4 +223,4 @@ class gordonCommand:
                 'ToolTip': 'Creates a surface that skins a network of curves'}
 
 
-FreeCADGui.addCommand('gordon', gordonCommand())
+FreeCADGui.addCommand("Curves_GordonSurface", gordonCommand())

@@ -198,4 +198,4 @@ class DraftAnalysisCommand:
                 'ToolTip': __doc__}
 
 
-FreeCADGui.addCommand('Curves_DraftAnalysis', DraftAnalysisCommand())
+FreeCADGui.addCommand("Curves_DraftAnalysis", DraftAnalysisCommand())

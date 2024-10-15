@@ -69,18 +69,53 @@ class CurvesWorkbench(Gui.Workbench):
         # from . import HelicalSweepFP
         # import sectionSketch
 
-        curvelist = ["Curves_line", "gordon_profile", "mixed_curve", "extend", "join", "split",
-                     "Discretize", "Approximate", "Interpolate", "ParametricBlendCurve",
-                     "ParametricComb", "cos"]
+        curvelist = [
+            "Curves_Line",
+            "Curves_EditableSpline",
+            "Curves_MixedCurve",
+            "Curves_ExtendCurve",
+            "Curves_JoinCurve",
+            "Curves_SplitCurve",
+            "Curves_Discretize",
+            "Curves_Approximate",
+            "Curves_Interpolate",
+            "Curves_ParametricBlendCurve",
+            "Curves_ParametricComb",
+            "Curves_CurveOnSurface",
+        ]
 
-        surflist = ["ZebraTool", "Trim", "IsoCurve", "SoS", "sw2r", "profileSupportCmd",
-                    "profile", "pipeshell", "gordon", "segment_surface", "comp_spring",
-                    "ReflectLines", "MultiLoft", "Curves_BlendSurf2", "Curves_BlendSolid",
-                    "Curves_FlattenFace", "Curves_RotationSweep", 'Curves_SurfaceAnalysis',
-                    'Curves_DraftAnalysis', "Curve_TruncateExtendCmd"]
+        surflist = [
+            "Curves_ZebraTool",
+            "Curves_Trim",
+            "Curves_IsoCurve",
+            "Curves_SketchOnSurface",
+            "Curves_SweepToRails",
+            "Curves_ProfileSupportPlane",
+            "Curves_PipeshellProfile",
+            "Curves_Pipeshell",
+            "Curves_GordonSurface",
+            "Curves_SegmentSurface",
+            "Curves_CompressionSpring",
+            "Curves_ReflectLines",
+            "Curves_MultiLoft",
+            "Curves_BlendSurf2",
+            "Curves_BlendSolid",
+            "Curves_FlattenFace",
+            "Curves_RotationSweep",
+            "Curves_SurfaceAnalysis",
+            "Curves_DraftAnalysis",
+            "Curves_TruncateExtendCmd",
+        ]
         # , "Curves_ProfileSupport", "Curves_Sweep2Rails"]
-        misclist = ["GeomInfo", "extract", "solid", "pasteSVG", "to_console", "Curves_adjacent_faces",
-                    "Curves_bspline_to_console"]
+        misclist = [
+            "Curves_GeometryInfo",
+            "Curves_ExtractSubshape",
+            "Curves_ParametricSolid",
+            "Curves_PasteSVG",
+            "Curves_ObjectsToConsole",
+            "Curves_AdjacentFaces",
+            "Curves_BsplineToConsole",
+        ]
 
         self.appendToolbar("Curves", curvelist)
         self.appendToolbar("Surfaces", surflist)
@@ -136,8 +171,11 @@ class CurvesWorkbench(Gui.Workbench):
         """This is executed whenever the user right-clicks on screen.
         recipient" will be either 'view' or 'tree'"""
         if recipient == "View":
-            contextlist = ["Curves_adjacent_faces", "Curves_bspline_to_console"]  # list of commands
             self.appendContextMenu("Curves", contextlist)
+            contextlist = [
+                "Curves_AdjacentFaces",
+                "Curves_BsplineToConsole",
+            ]  # list of commands
         elif recipient == "Tree":
             contextlist = []  # list of commands
             self.appendContextMenu("Curves", contextlist)

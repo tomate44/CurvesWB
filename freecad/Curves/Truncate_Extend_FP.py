@@ -142,4 +142,4 @@ class TruncateExtendCommand:
                 'ToolTip': __doc__}
 
 
-FreeCADGui.addCommand('Curve_TruncateExtendCmd', TruncateExtendCommand())
+FreeCADGui.addCommand("Curves_TruncateExtendCmd", TruncateExtendCommand())

@@ -160,4 +160,4 @@ class profSupCommand:
                 'ToolTip': __doc__}
 
 
-FreeCADGui.addCommand('profileSupportCmd', profSupCommand())
+FreeCADGui.addCommand("Curves_ProfileSupportPlane", profSupCommand())

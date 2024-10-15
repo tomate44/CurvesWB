@@ -258,4 +258,4 @@ class joinCommand:
                 'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
 
-FreeCADGui.addCommand('join', joinCommand())
+FreeCADGui.addCommand("Curves_JoinCurve", joinCommand())

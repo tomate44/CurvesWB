@@ -159,4 +159,4 @@ class BlendSurf2Command:
 
 
 if FreeCAD.GuiUp:
-    FreeCADGui.addCommand('Curves_BlendSurf2', BlendSurf2Command())
+    FreeCADGui.addCommand("Curves_BlendSurf2", BlendSurf2Command())

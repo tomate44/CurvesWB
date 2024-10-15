@@ -689,4 +689,4 @@ class splitCommand:
                 'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
 
-FreeCADGui.addCommand('split', splitCommand())
+FreeCADGui.addCommand("Curves_SplitCurve", splitCommand())

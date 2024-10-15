@@ -215,4 +215,4 @@ class RotsweepFPCommand:
                 'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
 
 
-FreeCADGui.addCommand('Curves_RotationSweep', RotsweepFPCommand())
+FreeCADGui.addCommand("Curves_RotationSweep", RotsweepFPCommand())
