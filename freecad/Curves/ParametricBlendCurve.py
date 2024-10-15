@@ -30,22 +30,83 @@ if not blend_curve.CAN_MINIMIZE:
 class BlendCurveFP:
     def __init__(self, obj, edges):
         debug("BlendCurve class Init")
-        obj.addProperty("App::PropertyLinkSub", "Edge1", "Edge1", "Edge 1").Edge1 = edges[0]
-        obj.addProperty("App::PropertyLinkSub", "Edge2", "Edge2", "Edge 2").Edge2 = edges[1]
-        # obj.addProperty("App::PropertyInteger", "DegreeMax", "BlendCurve", "Max degree of the Blend curve").DegreeMax = 9
-        obj.addProperty("App::PropertyDistance", "Parameter1", "Edge1", "Location on first edge")
-        obj.addProperty("App::PropertyBool", "Reverse1", "Edge1", "Reverse Edge").Reverse1 = False
-        obj.addProperty("App::PropertyFloatConstraint", "Scale1", "Edge1", "Scale of blend curve")
-        obj.addProperty("App::PropertyEnumeration", "Continuity1", "Edge1", "Continuity").Continuity1 = ["C0", "G1", "G2", "G3", "G4"]
-        obj.addProperty("App::PropertyDistance", "Parameter2", "Edge2", "Location on second edge")
-        obj.addProperty("App::PropertyBool", "Reverse2", "Edge2", "Reverse Edge").Reverse2 = False
-        obj.addProperty("App::PropertyFloatConstraint", "Scale2", "Edge2", "Scale of blend curve")
-        obj.addProperty("App::PropertyEnumeration", "Continuity2", "Edge2", "Continuity").Continuity2 = ["C0", "G1", "G2", "G3", "G4"]
-        obj.addProperty("App::PropertyVectorList", "CurvePts", "BlendCurve", "Poles of the Bezier curve")
-        obj.addProperty("App::PropertyEnumeration", "Output", "BlendCurve", "Output type").Output = ["Wire", "Joined", "Single"]
-        obj.addProperty("App::PropertyBool", "AutoScale", "BlendCurve", "Compute scales to get minimal curvature along curve").AutoScale = False
-        obj.Scale1 = (1., -5.0, 5.0, 0.05)
-        obj.Scale2 = (1., -5.0, 5.0, 0.05)
+        obj.addProperty(
+            "App::PropertyLinkSub", "Edge1", "Edge1", QT_TRANSLATE_NOOP("App::Property", "Edge 1")
+        ).Edge1 = edges[0]
+        obj.addProperty(
+            "App::PropertyLinkSub", "Edge2", "Edge2", QT_TRANSLATE_NOOP("App::Property", "Edge 2")
+        ).Edge2 = edges[1]
+        # obj.addProperty("App::PropertyInteger", "DegreeMax", "BlendCurve", QT_TRANSLATE_NOOP("App::Property", "Max degree of the Blend curve")).DegreeMax = 9
+        obj.addProperty(
+            "App::PropertyDistance",
+            "Parameter1",
+            "Edge1",
+            QT_TRANSLATE_NOOP("App::Property", "Location on first edge"),
+        )
+        obj.addProperty(
+            "App::PropertyBool",
+            "Reverse1",
+            "Edge1",
+            QT_TRANSLATE_NOOP("App::Property", "Reverse Edge"),
+        ).Reverse1 = False
+        obj.addProperty(
+            "App::PropertyFloatConstraint",
+            "Scale1",
+            "Edge1",
+            QT_TRANSLATE_NOOP("App::Property", "Scale of blend curve"),
+        )
+        obj.addProperty(
+            "App::PropertyEnumeration",
+            "Continuity1",
+            "Edge1",
+            QT_TRANSLATE_NOOP("App::Property", "Continuity"),
+        ).Continuity1 = ["C0", "G1", "G2", "G3", "G4"]
+        obj.addProperty(
+            "App::PropertyDistance",
+            "Parameter2",
+            "Edge2",
+            QT_TRANSLATE_NOOP("App::Property", "Location on second edge"),
+        )
+        obj.addProperty(
+            "App::PropertyBool",
+            "Reverse2",
+            "Edge2",
+            QT_TRANSLATE_NOOP("App::Property", "Reverse Edge"),
+        ).Reverse2 = False
+        obj.addProperty(
+            "App::PropertyFloatConstraint",
+            "Scale2",
+            "Edge2",
+            QT_TRANSLATE_NOOP("App::Property", "Scale of blend curve"),
+        )
+        obj.addProperty(
+            "App::PropertyEnumeration",
+            "Continuity2",
+            "Edge2",
+            QT_TRANSLATE_NOOP("App::Property", "Continuity"),
+        ).Continuity2 = ["C0", "G1", "G2", "G3", "G4"]
+        obj.addProperty(
+            "App::PropertyVectorList",
+            "CurvePts",
+            "BlendCurve",
+            QT_TRANSLATE_NOOP("App::Property", "Poles of the Bezier curve"),
+        )
+        obj.addProperty(
+            "App::PropertyEnumeration",
+            "Output",
+            "BlendCurve",
+            QT_TRANSLATE_NOOP("App::Property", "Output type"),
+        ).Output = ["Wire", "Joined", "Single"]
+        obj.addProperty(
+            "App::PropertyBool",
+            "AutoScale",
+            "BlendCurve",
+            QT_TRANSLATE_NOOP(
+                "App::Property", "Compute scales to get minimal curvature along curve"
+            ),
+        ).AutoScale = False
+        obj.Scale1 = (1.0, -5.0, 5.0, 0.05)
+        obj.Scale2 = (1.0, -5.0, 5.0, 0.05)
         obj.setEditorMode("CurvePts", 2)
         obj.Proxy = self
 
@@ -53,7 +114,11 @@ class BlendCurveFP:
         if blend_curve.CAN_MINIMIZE:
             fp.setEditorMode("AutoScale", 0)
         else:
-            FreeCAD.Console.PrintWarning("BlendCurve: Install 'scipy' python package for AutoScale feature\n")
+            FreeCAD.Console.PrintWarning(
+                translate(
+                    "Log", "BlendCurve: Install 'scipy' python package for AutoScale feature\n"
+                )
+            )
             fp.setEditorMode("AutoScale", 2)
 
     def getShape(self, fp, prop):
@@ -236,7 +301,7 @@ class pointEditor(object):
             elif isinstance(p, manipulators.CustomText):
                 self.points.append(p)
             else:
-                FreeCAD.Console.PrintError("pointEditor : bad input")
+                FreeCAD.Console.PrintError(translate("Log", "pointEditor : bad input"))
         for p in points:
             if hasattr(p, "ctrl_keys"):
                 for key in p.ctrl_keys:

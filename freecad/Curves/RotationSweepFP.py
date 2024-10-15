@@ -29,19 +29,19 @@ class RotsweepProxyFP:
     def __init__(self, obj):
         """Add the properties"""
         obj.addProperty("App::PropertyLinkSubList", "Profiles",
-                        "InputShapes", "The list of profiles to sweep")
+                        "InputShapes", QT_TRANSLATE_NOOP("App::Property", "The list of profiles to sweep"))
         obj.addProperty("App::PropertyLinkSub", "Path",
-                        "InputShapes", "The sweep path")
+                        "InputShapes", QT_TRANSLATE_NOOP("App::Property", "The sweep path"))
         obj.addProperty("App::PropertyLinkSub", "FaceSupport",
-                        "ExtraProfiles", "Face support of the sweep path")
+                        "ExtraProfiles", QT_TRANSLATE_NOOP("App::Property", "Face support of the sweep path"))
         obj.addProperty("App::PropertyBool", "TrimPath",
-                        "Settings", "Trim the sweep shape").TrimPath = True
+                        "Settings", QT_TRANSLATE_NOOP("App::Property", "Trim the sweep shape")).TrimPath = True
         obj.addProperty("App::PropertyBool", "ViewProfiles",
-                        "Settings", "Add profiles to the sweep shape")
+                        "Settings", QT_TRANSLATE_NOOP("App::Property", "Add profiles to the sweep shape"))
         obj.addProperty("App::PropertyInteger", "ExtraProfiles",
-                        "ExtraProfiles", "Number of extra profiles")
+                        "ExtraProfiles", QT_TRANSLATE_NOOP("App::Property", "Number of extra profiles"))
         obj.addProperty("App::PropertyBool", "SmoothTop",
-                        "Settings", "Build a smooth top with extra profiles")
+                        "Settings", QT_TRANSLATE_NOOP("App::Property", "Build a smooth top with extra profiles"))
         obj.setEditorMode("ViewProfiles", 2)
         # obj.setEditorMode("ExtraProfiles", 2)
         obj.Proxy = self

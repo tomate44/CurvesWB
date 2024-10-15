@@ -20,9 +20,10 @@ vec2 = FreeCAD.Base.Vector2d
 
 from freecad.Curves import ICONPATH
 
-TOOL_ICON = os.path.join( ICONPATH, 'helical_sweep.svg')
-#debug = _utils.debug
-#debug = _utils.doNothing
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+TOOL_ICON = os.path.join(ICONPATH, "helical_sweep.svg")
+# debug = _utils.debug
+# debug = _utils.doNothing
 
 props = """
 App::PropertyBool
@@ -177,10 +178,30 @@ class HelicalSweepFP:
     def __init__(self, obj):
         """Add the properties"""
         obj.addProperty("App::PropertyLink", "Profile", "Profile object")
-        obj.addProperty("App::PropertyFloat", "Turns", "Settings", "Number of turns").Turns = 1.0
-        obj.addProperty("App::PropertyFloat", "Lead", "Settings", "Thread lead (-1 for auto)").Lead = -1
-        obj.addProperty("App::PropertyBool", "Rational", "Settings", "Allow rational bsplines").Rational = False
-        obj.addProperty("App::PropertyBool", "Solid", "Settings", "Create a solid shape").Solid = False
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Turns",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Number of turns"),
+        ).Turns = 1.0
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Lead",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Thread lead (-1 for auto)"),
+        ).Lead = -1
+        obj.addProperty(
+            "App::PropertyBool",
+            "Rational",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Allow rational bsplines"),
+        ).Rational = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "Solid",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Create a solid shape"),
+        ).Solid = False
         obj.Proxy = self
 
     def execute(self, obj):

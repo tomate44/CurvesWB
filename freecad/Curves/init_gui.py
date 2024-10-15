@@ -1,13 +1,21 @@
 import os
+
 import FreeCADGui as Gui
 import FreeCAD as App
-from . import ICONPATH
+from . import ICONPATH, TRANSLATIONPATH
+
+translate = App.Qt.translate
+QT_TRANSLATE_NOOP = App.Qt.QT_TRANSLATE_NOOP
+
+Gui.addLanguagePath(TRANSLATIONPATH)
+Gui.updateLocale()
 
 
 class CurvesWorkbench(Gui.Workbench):
     """FreeCAD workbench that offers a collection of tools mainly related to Nurbs curves and surfaces."""
-    MenuText = "Curves"
-    ToolTip = "a workbench dedicated to curves and surfaces"
+
+    MenuText = translate("Workbench", "Curves")
+    ToolTip = translate("Workbench", "a workbench dedicated to curves and surfaces")
     Icon = os.path.join(ICONPATH, "blendSurf.svg")
     toolbox = []
 
@@ -117,12 +125,12 @@ class CurvesWorkbench(Gui.Workbench):
             "Curves_BsplineToConsole",
         ]
 
-        self.appendToolbar("Curves", curvelist)
-        self.appendToolbar("Surfaces", surflist)
-        self.appendToolbar("Misc.", misclist)
-        self.appendMenu("Curves", curvelist)
-        self.appendMenu("Surfaces", surflist)
-        self.appendMenu("Misc.", misclist)
+        self.appendToolbar(QT_TRANSLATE_NOOP("Workbench", "Curves"), curvelist)
+        self.appendToolbar(QT_TRANSLATE_NOOP("Workbench", "Surfaces"), surflist)
+        self.appendToolbar(QT_TRANSLATE_NOOP("Workbench", "Misc."), misclist)
+        self.appendMenu(QT_TRANSLATE_NOOP("Workbench", "Curves"), curvelist)
+        self.appendMenu(QT_TRANSLATE_NOOP("Workbench", "Surfaces"), surflist)
+        self.appendMenu(QT_TRANSLATE_NOOP("Workbench", "Misc."), misclist)
 
     def Activated(self):
         """This function is executed when the workbench is activated"""
@@ -171,14 +179,14 @@ class CurvesWorkbench(Gui.Workbench):
         """This is executed whenever the user right-clicks on screen.
         recipient" will be either 'view' or 'tree'"""
         if recipient == "View":
-            self.appendContextMenu("Curves", contextlist)
             contextlist = [
                 "Curves_AdjacentFaces",
                 "Curves_BsplineToConsole",
             ]  # list of commands
+            self.appendContextMenu(QT_TRANSLATE_NOOP("Workbench", "Curves"), contextlist)
         elif recipient == "Tree":
             contextlist = []  # list of commands
-            self.appendContextMenu("Curves", contextlist)
+            self.appendContextMenu(QT_TRANSLATE_NOOP("Workbench", "Curves"), contextlist)
 
     def GetClassName(self):
         """This function is mandatory if this is a full python workbench"""

@@ -23,7 +23,8 @@ from freecad.Curves import isocurves
 from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
 
-TOOL_ICON = os.path.join(ICONPATH, 'isocurve.svg')
+QT_TRANSLATE_NOOP = App.Qt.QT_TRANSLATE_NOOP
+TOOL_ICON = os.path.join(ICONPATH, "isocurve.svg")
 
 # debug = _utils.debug
 debug = _utils.doNothing
@@ -41,12 +42,42 @@ class IsoCurve:
     "The IsoCurve feature object"
 
     def __init__(self, selfobj):
-        selfobj.addProperty("App::PropertyLinkSub", "Face", "IsoCurve", "Input face")
-        selfobj.addProperty("App::PropertyFloat", "Parameter", "IsoCurve", "IsoCurve parameter").Parameter = 0.
-        selfobj.addProperty("App::PropertyInteger", "NumberU", "IsoCurve", "Number of IsoCurve in U direction").NumberU = 5
-        selfobj.addProperty("App::PropertyInteger", "NumberV", "IsoCurve", "Number of IsoCurve in V direction").NumberV = 5
-        selfobj.addProperty("App::PropertyEnumeration", "Mode", "IsoCurve", "Number of IsoCurve").Mode = ["Single", "Multi"]
-        selfobj.addProperty("App::PropertyEnumeration", "Orientation", "IsoCurve", "Curve Orientation").Orientation = ["U", "V"]
+        selfobj.addProperty(
+            "App::PropertyLinkSub",
+            "Face",
+            "IsoCurve",
+            QT_TRANSLATE_NOOP("App::Property", "Input face"),
+        )
+        selfobj.addProperty(
+            "App::PropertyFloat",
+            "Parameter",
+            "IsoCurve",
+            QT_TRANSLATE_NOOP("App::Property", "IsoCurve parameter"),
+        ).Parameter = 0.0
+        selfobj.addProperty(
+            "App::PropertyInteger",
+            "NumberU",
+            "IsoCurve",
+            QT_TRANSLATE_NOOP("App::Property", "Number of IsoCurve in U direction"),
+        ).NumberU = 5
+        selfobj.addProperty(
+            "App::PropertyInteger",
+            "NumberV",
+            "IsoCurve",
+            QT_TRANSLATE_NOOP("App::Property", "Number of IsoCurve in V direction"),
+        ).NumberV = 5
+        selfobj.addProperty(
+            "App::PropertyEnumeration",
+            "Mode",
+            "IsoCurve",
+            QT_TRANSLATE_NOOP("App::Property", "Number of IsoCurve"),
+        ).Mode = ["Single", "Multi"]
+        selfobj.addProperty(
+            "App::PropertyEnumeration",
+            "Orientation",
+            "IsoCurve",
+            QT_TRANSLATE_NOOP("App::Property", "Curve Orientation"),
+        ).Orientation = ["U", "V"]
         selfobj.Mode = "Multi"
         selfobj.setEditorMode("Parameter", 2)
         selfobj.setEditorMode("Orientation", 2)

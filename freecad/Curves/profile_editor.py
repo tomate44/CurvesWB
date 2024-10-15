@@ -5,7 +5,7 @@ from pivy import coin
 from freecad.Curves import _utils
 from freecad.Curves import graphics
 # from graphics import COLORS
-# FreeCAD.Console.PrintMessage("Using local Pivy.graphics library\n")
+# FreeCAD.Console.PrintMessage(translate("Log", "Using local Pivy.graphics library\n"))
 
 
 def parameterization(points, a, closed):
@@ -240,7 +240,7 @@ class InterpoCurveEditor(object):
             elif isinstance(p, (MarkerOnShape, ConnectionMarker)):
                 self.points.append(p)
             else:
-                FreeCAD.Console.PrintError("InterpoCurveEditor : bad input")
+                FreeCAD.Console.PrintError(translate("Log", "InterpoCurveEditor : bad input"))
         #  Setup coin objects
         if self.fp:
             self.guidoc = self.fp.ViewObject.Document
@@ -363,7 +363,7 @@ class InterpoCurveEditor(object):
                 for i in range(len(self.root.selected_objects)):
                     if isinstance(self.root.selected_objects[i], MarkerOnShape):
                         self.root.selected_objects[i].sublink = tup
-                        FreeCAD.Console.PrintMessage("Snapped to {}\n".format(str(self.root.selected_objects[i].sublink)))
+                        FreeCAD.Console.PrintMessage(translate("Log", "Snapped to {}\n")).format(str(self.root.selected_objects[i].sublink))
                         self.root.selected_objects[i].drag_start()
                         self.root.selected_objects[i].drag((0, 0, 0.))
                         self.root.selected_objects[i].drag_release()
@@ -371,7 +371,7 @@ class InterpoCurveEditor(object):
             elif event.getKey() == ord("l"):
                 self.toggle_linear()
             elif (event.getKey() == 65535) or (event.getKey() == 65288):  # Suppr or Backspace
-                # FreeCAD.Console.PrintMessage("Some objects have been deleted\n")
+                # FreeCAD.Console.PrintMessage(translate("Log", "Some objects have been deleted\n"))
                 pts = list()
                 for o in self.root.dynamic_objects:
                     if isinstance(o, MarkerOnShape):
@@ -433,9 +433,9 @@ class InterpoCurveEditor(object):
             pl = Part.Plane(p0, p1, p1 + view_dir)
             for o in markers:
                 if isinstance(o.snap_shape, Part.Vertex):
-                    FreeCAD.Console.PrintMessage("Snapped to Vertex\n")
+                    FreeCAD.Console.PrintMessage(translate("Log", "Snapped to Vertex\n"))
                 elif isinstance(o.snap_shape, Part.Edge):
-                    FreeCAD.Console.PrintMessage("Snapped to Edge\n")
+                    FreeCAD.Console.PrintMessage(translate("Log", "Snapped to Edge\n"))
                     c = o.snap_shape.Curve
                     pts = pl.intersect(c)[0]
                     new_pts = list()
@@ -451,7 +451,7 @@ class InterpoCurveEditor(object):
                         new_pts.append(new)
                     o.points = new_pts
                 elif isinstance(o.snap_shape, Part.Face):
-                    FreeCAD.Console.PrintMessage("Snapped to Face\n")
+                    FreeCAD.Console.PrintMessage(translate("Log", "Snapped to Face\n"))
                     s = o.snap_shape.Surface
                     cvs = pl.intersect(s)
                     new_pts = list()
@@ -468,7 +468,7 @@ class InterpoCurveEditor(object):
                         new_pts.append(new)
                     o.points = new_pts
                 else:
-                    FreeCAD.Console.PrintMessage("Not snapped\n")
+                    FreeCAD.Console.PrintMessage(translate("Log", "Not snapped\n"))
                     new_pts = list()
                     for ip in o.points:
                         iv = FreeCAD.Vector(ip[0], ip[1], ip[2])
@@ -489,7 +489,7 @@ class InterpoCurveEditor(object):
                 pts.append(o.markers[0])
                 if o in self.root.selected_objects:
                     idx = self.lines.index(o)
-                    FreeCAD.Console.PrintMessage("Subdividing line  #{}\n".format(idx))
+                    FreeCAD.Console.PrintMessage(translate("Log", "Subdividing line  #{}\n")).format(idx)
                     p1 = o.markers[0].points[0]
                     p2 = o.markers[1].points[0]
                     par1 = self.curve.parameter(FreeCAD.Vector(p1))
