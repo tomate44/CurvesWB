@@ -1,15 +1,22 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "joinCurves"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_JoinCurve", "joinCurves")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Joins the selected edges into a BSpline Curve"
-__usage__ = """Select the edges to join in the 3D View, or select an object containing multiple edges in the Tree View.
+__doc__ = translate("Curves_JoinCurve", "Joins the selected edges into a BSpline Curve")
+__usage__ = translate(
+    "Curves_JoinCurve",
+    """Select the edges to join in the 3D View, or select an object containing multiple edges in the Tree View.
 Activate the tool.
-The output is a single BSpline curve joining all selected edges."""
+The output is a single BSpline curve joining all selected edges.""",
+)
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 from . import _utils
@@ -293,9 +300,13 @@ class joinCommand:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__, translate("Curves_JoinCurve", "Usage"), "<br>".join(__usage__.splitlines())
+            ),
+        }
 
 
 FreeCADGui.addCommand("Curves_JoinCurve", joinCommand())

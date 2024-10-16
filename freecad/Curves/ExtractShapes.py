@@ -1,21 +1,29 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Extract subshape"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_ExtractSubshape", "Extract subshape")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = """Make a non-parametric copy of selected subshapes.
-Same as Part_ElementCopy"""
+__doc__ = translate(
+    "Curves_ExtractSubshape",
+    """Make a non-parametric copy of selected subshapes.
+Same as Part_ElementCopy""",
+)
 
 import os
-import FreeCAD
 import FreeCADGui
 from freecad.Curves import ICONPATH
 
-TOOL_ICON = os.path.join(ICONPATH, 'extract.svg')
+TOOL_ICON = os.path.join(ICONPATH, "extract.svg")
 
 
 class extract:
     """Make a non-parametric copy of selected subshapes."""
+
     def Activated(self):
         s = FreeCADGui.Selection.getSelectionEx()
         for o in s:
@@ -31,9 +39,11 @@ class extract:
         FreeCAD.ActiveDocument.recompute()
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}\n\n{}".format(__title__, __doc__)}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}\n\n{}".format(__title__, __doc__),
+        }
 
 
 FreeCADGui.addCommand("Curves_ExtractSubshape", extract())

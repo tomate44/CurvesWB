@@ -1,15 +1,24 @@
 # -*- coding: utf-8 -*-
 
-__title__ = 'Flatten face'
-__author__ = 'Christophe Grellier (Chris_G)'
-__license__ = 'LGPL 2.1'
-__doc__ = 'Creates a flat developed face from conical and cylindrical faces'
-__usage__ = """You must select a conical or cylindrical face in the 3D View.
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_FlattenFace", "Flatten face")
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = translate(
+    "Curves_FlattenFace", "Creates a flat developed face from conical and cylindrical faces"
+)
+__usage__ = translate(
+    "Curves_FlattenFace",
+    """You must select a conical or cylindrical face in the 3D View.
 InPlace property puts the unrolled face tangent to the source face (InPlace = True)
-or in the XY plane (InPlace = False)"""
+or in the XY plane (InPlace = False)""",
+)
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 from math import pi
@@ -432,9 +441,15 @@ class Curves_Flatten_Face_Cmd:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_FlattenFace", "Usage"),
+                "<br>".join(__usage__.splitlines()),
+            ),
+        }
 
 
-FreeCADGui.addCommand('Curves_FlattenFace', Curves_Flatten_Face_Cmd())
+FreeCADGui.addCommand("Curves_FlattenFace", Curves_Flatten_Face_Cmd())

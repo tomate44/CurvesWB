@@ -1,15 +1,22 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Discretize"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_Discretize", "Discretize")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Discretize an edge or a wire."
-__usage__ = """Select an edge in the 3D View
+__doc__ = translate("Curves_Discretize", "Discretize an edge or a wire.")
+__usage__ = translate(
+    "Curves_Discretize",
+    """Select an edge in the 3D View
 Activate tool
-It will generate some points along the edge, following various methods"""
+It will generate some points along the edge, following various methods""",
+)
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 from . import _utils
@@ -365,9 +372,15 @@ class discretize:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_Discretize", "Usage"),
+                "<br>".join(__usage__.splitlines()),
+            ),
+        }
 
 
 FreeCADGui.addCommand("Curves_Discretize", discretize())

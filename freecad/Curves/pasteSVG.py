@@ -1,12 +1,20 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Paste SVG"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_PasteSVG", "Paste SVG")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Paste the SVG content of the clipboard"
-__usage__ = """When working in parallel with FreeCAD and a SVG editor (Inkscape),
+__doc__ = translate("Curves_PasteSVG", "Paste the SVG content of the clipboard")
+__usage__ = translate(
+    "Curves_PasteSVG",
+    """When working in parallel with FreeCAD and a SVG editor (Inkscape),
 copy (CTRL-C) an object in the SVG editor, switch to FreeCAD and activate tool.
-This will import the SVG content of the clipboard into the active FreeCAD document."""
+This will import the SVG content of the clipboard into the active FreeCAD document.""",
+)
 
 import xml.sax
 import importSVG
@@ -43,9 +51,13 @@ class pasteSVG:
             return True
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__, translate("Curves_PasteSVG", "Usage"), "<br>".join(__usage__.splitlines())
+            ),
+        }
 
 
 FreeCADGui.addCommand("Curves_PasteSVG", pasteSVG())

@@ -7,7 +7,9 @@ from PySide import QtGui, QtCore
 from pivy import coin
 from freecad.Curves.Gui import Zebra_Gui
 
-TOOL_ICON = os.path.join(ICONPATH, 'zebra.svg')
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+TOOL_ICON = os.path.join(ICONPATH, "zebra.svg")
 
 
 def execute_later(callback, delay=0):
@@ -143,9 +145,13 @@ class ZebraTool:
             FreeCAD.Console.PrintMessage(translate("Log", "Zebra already active\n"))
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': 'ZebraTool',
-                'ToolTip': 'Zebra texture for surface inspection'}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": QT_TRANSLATE_NOOP("Curves_ZebraTool", "ZebraTool"),
+            "ToolTip": QT_TRANSLATE_NOOP(
+                "Curves_ZebraTool", "Zebra texture for surface inspection"
+            ),
+        }
 
 
 FreeCADGui.addCommand("Curves_ZebraTool", ZebraTool())
