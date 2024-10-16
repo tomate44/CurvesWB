@@ -1,12 +1,15 @@
 #  -*- coding: utf-8 -*-
 
-__title__ = "Sketch on surface"
+import FreeCAD
+
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_SketchOnSurface", "Sketch on surface")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Map a sketch on a surface"
+__doc__ = QT_TRANSLATE_NOOP("Curves_SketchOnSurface", "Map a sketch on a surface")
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 import Sketcher

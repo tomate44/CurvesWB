@@ -1,16 +1,26 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Reflect Lines"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_ReflectLines", "Reflect Lines")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Creates the reflect lines on a shape, according to a view direction"
-__usage__ = """Select an object and activate tool.
+__doc__ = translate(
+    "Curves_ReflectLines", "Creates the reflect lines on a shape, according to a view direction"
+)
+__usage__ = translate(
+    "Curves_ReflectLines",
+    """Select an object and activate tool.
 This will create reflect lines according to the current view direction.
 If selected object is a ReflectLines object, the view direction will be updated to the current camera direction.
 If property OnShape is True, the lines will be ON the input shape (ViewPos and UpDir properties won't be used).
 Otherwise, lines will be on the XY plane.
 If view property TrackCam is True, the view direction will keep updating upon camera movements.
-"""
+""",
+)
 
 import os
 import FreeCAD
@@ -206,9 +216,15 @@ class ReflectLinesCommand:
         return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_ReflectLines", "Usage"),
+                "<br>".join(__usage__.splitlines()),
+            ),
+        }
 
 
 FreeCADGui.addCommand("Curves_ReflectLines", ReflectLinesCommand())

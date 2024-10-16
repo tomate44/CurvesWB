@@ -1,20 +1,27 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Split curve"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_SplitCurve", "Split curve")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Splits the selected edge"
-__usage__ = """Select an edge in the 3D View, or an object containing a wire in the Tree View
+__doc__ = translate("Curves_SplitCurve", "Splits the selected edge")
+__usage__ = translate(
+    "Curves_SplitCurve",
+    """Select an edge in the 3D View, or an object containing a wire in the Tree View
 Activate Tool
 The selected edges (or wire) will be cut at the specified location.
 The split locations can be given as real edge parameter, absolute distance(mm) or relative distance (%)
 The split locations can be set by proximity to cutting objects.
 Double-click in Tree-View to toggle Freehand editor in 3D View.
-"""
+""",
+)
 
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 from freecad.Curves import _utils
@@ -706,9 +713,15 @@ class splitCommand:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_SplitCurve", "Usage"),
+                "<br>".join(__usage__.splitlines()),
+            ),
+        }
 
 
 FreeCADGui.addCommand("Curves_SplitCurve", splitCommand())

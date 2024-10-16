@@ -1,16 +1,23 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "GeomInfo"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_GeometryInfo", "GeomInfo")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Display geometry information about selected shape"
-__usage__ = """While active, this tool displays information about the geometry of an edge or face.
-It displays poles, knots and weights of Bezier and BSpline curves and surfaces in the 3D View."""
+__doc__ = translate("Curves_GeometryInfo", "Display geometry information about selected shape")
+__usage__ = translate(
+    "Curves_GeometryInfo",
+    """While active, this tool displays information about the geometry of an edge or face.
+It displays poles, knots and weights of Bezier and BSpline curves and surfaces in the 3D View.""",
+)
 
 
 import os
 import re
-import FreeCAD
 import FreeCADGui
 import Part
 from . import _utils

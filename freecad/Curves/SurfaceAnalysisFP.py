@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
 
-__title__ = 'Title'
-__author__ = 'Christophe Grellier (Chris_G)'
-__license__ = 'LGPL 2.1'
-__doc__ = 'Doc'
+import FreeCAD
+
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+# TODO: include useful __doc__
+__title__ = QT_TRANSLATE_NOOP("Curves_SurfaceAnalysis", "Surface Analysis")
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = QT_TRANSLATE_NOOP("Curves_SurfaceAnalysis", "Doc")
 
 # import os
-import FreeCAD
 import FreeCADGui
+
 # from pivy import coin
 from os import path
 from math import pi

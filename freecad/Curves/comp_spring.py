@@ -4,16 +4,17 @@ import FreeCAD
 
 QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
 
+__title__ = QT_TRANSLATE_NOOP("Curves_CompressionSpring", "Compression Spring")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = """Parametric Compression Spring"""
+__doc__ = QT_TRANSLATE_NOOP("Curves_CompressionSpring", """Parametric Compression Spring""")
 
 import sys
+
 if sys.version_info.major >= 3:
     from importlib import reload
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 from Part import Geom2d

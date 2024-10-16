@@ -1,12 +1,22 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Mixed curve"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_MixedCurve", "Mixed curve")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Builds a 3D curve as the intersection of 2 projected curves."
-__usage__ = """Select two objects or shapes, and activate tool.
+__doc__ = translate(
+    "Curves_MixedCurve", "Builds a 3D curve as the intersection of 2 projected curves."
+)
+__usage__ = translate(
+    "Curves_MixedCurve",
+    """Select two objects or shapes, and activate tool.
 The camera direction is saved during each shape selection, and will be used as projection direction.
-Set these directions to (0,0,0) to use the placement of each shape as projection direction."""
+Set these directions to (0,0,0) to use the placement of each shape as projection direction.""",
+)
 
 import os
 import FreeCAD
@@ -225,9 +235,15 @@ class MixedCurveCmd:
         return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': 'Mixed curve',
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": "Mixed curve",
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_MixedCurve", "Usage"),
+                "<br>".join(__usage__.splitlines()),
+            ),
+        }
 
 
 FreeCADGui.addCommand("Curves_MixedCurve", MixedCurveCmd())

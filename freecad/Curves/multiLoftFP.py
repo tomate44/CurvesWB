@@ -4,9 +4,12 @@ import FreeCAD
 
 QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
 
+__title__ = QT_TRANSLATE_NOOP("Curves_MultiLoft", "MultiLoft")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = """Loft profile objects made of multiple faces in parallel"""
+__doc__ = QT_TRANSLATE_NOOP(
+    "Curves_MultiLoft", """Loft profile objects made of multiple faces in parallel"""
+)
 
 import os
 import FreeCADGui

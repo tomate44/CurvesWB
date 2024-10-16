@@ -1,11 +1,19 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Select Adjacent faces"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_AdjacentFaces", "Select Adjacent faces")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Select the Adjacent faces of the selected subshape"
-__usage__ = """Select a face or an edge in the 3D View, activate tool
-and all the faces that touch it will be added to the selection."""
+__doc__ = translate("Curves_AdjacentFaces", "Select the Adjacent faces of the selected subshape")
+__usage__ = translate(
+    "Curves_AdjacentFaces",
+    """Select a face or an edge in the 3D View, activate tool
+and all the faces that touch it will be added to the selection.""",
+)
 
 import os
 import FreeCAD
@@ -73,9 +81,13 @@ class adjacentfacesCommand:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}<br>".format(__doc__, __usage__)}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}<br>".format(
+                __doc__, translate("Curves_AdjacentFaces", "Usage"), __usage__
+            ),
+        }
 
 
 addCommand("Curves_AdjacentFaces", adjacentfacesCommand())

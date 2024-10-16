@@ -1,12 +1,19 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Blend curve"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_ParametricBlendCurve", "Blend curve")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Blend curve between two edges.  Double-clic object to enable/disable freehand mouse editing."
+__doc__ = QT_TRANSLATE_NOOP(
+    "Curves_ParametricBlendCurve",
+    "Blend curve between two edges.  Double-clic object to enable/disable freehand mouse editing.",
+)
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 from freecad.Curves import _utils

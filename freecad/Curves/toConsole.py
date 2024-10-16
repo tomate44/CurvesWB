@@ -1,13 +1,22 @@
 # -*- coding: utf-8 -*-
 
-__title__ = 'Objects to Console'
-__author__ = 'Christophe Grellier (Chris_G)'
-__license__ = 'LGPL 2.1'
-__doc__ = 'Give access to the selected objects in the python console.'
-__usage__ = """Select some objects in the TreeView, or in the 3D View, and activate tool.
-Some variables will be created in the python console, to access the selection."""
-
 import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_ObjectsToConsole", "Objects to Console")
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = translate(
+    "Curves_ObjectsToConsole", "Give access to the selected objects in the python console."
+)
+__usage__ = translate(
+    "Curves_ObjectsToConsole",
+    """Select some objects in the TreeView, or in the 3D View, and activate tool.
+Some variables will be created in the python console, to access the selection.""",
+)
+
 import FreeCADGui
 import os
 from freecad.Curves import _utils
@@ -21,10 +30,16 @@ debug = _utils.doNothing
 class ToConsole:
     "Brings the selected objects to the python console"
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'Accel': "",
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "Accel": "",
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_ObjectsToConsole", "Usage"),
+                "<br>".join(__usage__.splitlines()),
+            ),
+        }
 
     def Activated(self):
         doc = ''

@@ -235,10 +235,14 @@ class CommandMacroIsoCurve:
     "Command to create IsoCurve feature"
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': "IsoCurve",
-                'Accel': "",
-                'ToolTip': "IsoCurve: Create an IsoCurve from a face"}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": QT_TRANSLATE_NOOP("Curves_IsoCurve", "IsoCurve"),
+            "Accel": "",
+            "ToolTip": QT_TRANSLATE_NOOP(
+                "Curves_IsoCurve", "IsoCurve: Create an IsoCurve from a face"
+            ),
+        }
 
     def Activated(self):
         run()

@@ -14,7 +14,9 @@ from freecad.Curves import curveOnSurface
 from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
 
-TOOL_ICON = os.path.join( ICONPATH, 'curveOnSurface.svg')
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+TOOL_ICON = os.path.join(ICONPATH, "curveOnSurface.svg")
 debug = _utils.debug
 #debug = _utils.doNothing
 
@@ -205,8 +207,13 @@ class cosCommand:
             )
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': 'CurveOnSurface',
-                'ToolTip': 'Create a curve on surface object'}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": QT_TRANSLATE_NOOP("Curves_CurveOnSurface", "CurveOnSurface"),
+            "ToolTip": QT_TRANSLATE_NOOP(
+                "Curves_CurveOnSurface", "Create a curve on surface object"
+            ),
+        }
+
 
 FreeCADGui.addCommand("Curves_CurveOnSurface", cosCommand())

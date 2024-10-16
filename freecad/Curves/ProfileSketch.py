@@ -5,9 +5,10 @@ import FreeCAD
 translate = FreeCAD.Qt.translate
 QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
 
+__title__ = QT_TRANSLATE_NOOP("Curves_ProfileSupportPlane", "Profile support plane")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = 'Creates a support plane for sketches'
+__doc__ = QT_TRANSLATE_NOOP("Curves_ProfileSupportPlane", "Creates a support plane for sketches")
 
 import os
 import FreeCADGui

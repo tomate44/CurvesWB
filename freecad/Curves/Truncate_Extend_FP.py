@@ -1,14 +1,20 @@
 # -*- coding: utf-8 -*-
 
-__title__ = 'Truncate Extend'
-__author__ = 'Christophe Grellier (Chris_G)'
-__license__ = 'LGPL 2.1'
-__doc__ = '''Cut a shape with a plane and truncate or extend it by a given distance.
+import FreeCAD
+
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_TruncateExtendCmd", "Truncate Extend")
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = QT_TRANSLATE_NOOP(
+    "Curves_TruncateExtendCmd",
+    """Cut a shape with a plane and truncate or extend it by a given distance.
 In a PartDesign body, select only the cutting plane.
-Otherwise, select the shape to modify, and the cutting plane.'''
+Otherwise, select the shape to modify, and the cutting plane.""",
+)
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 from freecad.Curves import Truncate_Extend

@@ -1,17 +1,24 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Parametric solid"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_ParametricSolid", "Parametric solid")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Make a parametric solid from selected faces."
-__usage__ = """Select some faces in the 3D View, or select objects in the Tree View.
+__doc__ = translate("Curves_ParametricSolid", "Make a parametric solid from selected faces.")
+__usage__ = translate(
+    "Curves_ParametricSolid",
+    """Select some faces in the 3D View, or select objects in the Tree View.
 Activate tool.
 It will try to build a solid from selected faces.
 If not possible, it falls back to a shell, then to a compound.
-The ShapeStatus property (and the color of the icon) give the type of shape."""
+The ShapeStatus property (and the color of the icon) give the type of shape.""",
+)
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 import tempfile
@@ -195,9 +202,15 @@ class solidCommand:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_ParametricSolid", "Usage"),
+                "<br>".join(__usage__.splitlines()),
+            ),
+        }
 
 
 FreeCADGui.addCommand("Curves_ParametricSolid", solidCommand())

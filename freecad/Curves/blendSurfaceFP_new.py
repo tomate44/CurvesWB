@@ -1,12 +1,23 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "BlendSurface"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_BlendSurf2", "BlendSurface")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Create a surface between two edges with some continuity with their support faces"
-__usage__ = """You must select 4 subshapes in the 3D View :
+__doc__ = translate(
+    "Curves_BlendSurf2",
+    "Create a surface between two edges with some continuity with their support faces",
+)
+__usage__ = translate(
+    "Curves_BlendSurf2",
+    """You must select 4 subshapes in the 3D View :
 - EDGE1 on FACE1
-- EDGE2 on FACE2"""
+- EDGE2 on FACE2""",
+)
 
 import os
 import FreeCAD
@@ -153,9 +164,15 @@ class BlendSurf2Command:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_BlendSurf2", "Usage"),
+                "<br>".join(__usage__.splitlines()),
+            ),
+        }
 
 
 if FreeCAD.GuiUp:

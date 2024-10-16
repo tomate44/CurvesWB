@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Parametric line"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+__title__ = QT_TRANSLATE_NOOP("Curves_Line", "Parametric line")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Parametric line between two vertexes."
-__usage__ = """Select 2 vertexes in the 3D View and activate the tool."""
+__doc__ = translate("Curves_Line", "Parametric line between two vertexes.")
+__usage__ = translate("Curves_Line", "Select 2 vertexes in the 3D View and activate the tool.")
 
 import os
 import FreeCAD
@@ -91,9 +95,15 @@ class lineCommand:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_Line", "Usage"),
+                "<br>".join(__usage__.splitlines()),
+            ),
+        }
 
 
 FreeCADGui.addCommand("Curves_Line", lineCommand())

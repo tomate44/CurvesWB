@@ -1,10 +1,17 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Freehand BSpline"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_EditableSpline", "Freehand BSpline")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Creates an freehand BSpline curve"
-__usage__ = """*** Interpolation curve control keys :
+__doc__ = translate("Curves_EditableSpline", "Creates an freehand BSpline curve")
+__usage__ = translate(
+    "Curves_EditableSpline",
+    """*** Interpolation curve control keys :
 
     a - Select all / Deselect
     i - Insert point in selected segments
@@ -13,7 +20,8 @@ __usage__ = """*** Interpolation curve control keys :
     s - Snap points on shape / Unsnap
     l - Set/unset a linear interpolation
     x,y,z - Axis constraints during grab
-    q - Apply changes and quit editing"""
+    q - Apply changes and quit editing""",
+)
 
 import os
 import FreeCAD
@@ -352,9 +360,15 @@ class GordonProfileCommand:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_EditableSpline", "Usage"),
+                "<br>".join(__usage__.splitlines()),
+            ),
+        }
 
 
 FreeCADGui.addCommand("Curves_EditableSpline", GordonProfileCommand())

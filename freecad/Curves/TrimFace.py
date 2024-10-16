@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 
-__title__ = 'Trim face'
-__author__ = 'Christophe Grellier (Chris_G)'
-__license__ = 'LGPL 2.1'
-__doc__ = 'Trim a face with a projected curve'
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_Trim", "Trim face")
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = QT_TRANSLATE_NOOP("Curves_Trim", "Trim a face with a projected curve")
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 # from freecad.Curves import _utils

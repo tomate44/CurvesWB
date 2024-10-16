@@ -1,13 +1,19 @@
 # -*- coding: utf-8 -*-
 
-__title__ = 'Draft Analysis'
-__author__ = 'Christophe Grellier (Chris_G)'
-__license__ = 'LGPL 2.1'
-__doc__ = '''Create a colored overlay on an object to visualize draft angles.
-Tool options are in the View tab.
-Mouse clics in the colored areas print measured draft angle in the Report View.'''
-
 import FreeCAD
+
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_DraftAnalysis", "Draft Analysis")
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = QT_TRANSLATE_NOOP(
+    "Curves_DraftAnalysis",
+    """Create a colored overlay on an object to visualize draft angles.
+Tool options are in the View tab.
+Mouse clics in the colored areas print measured draft angle in the Report View.""",
+)
+
 import FreeCADGui
 import Part
 from os import path

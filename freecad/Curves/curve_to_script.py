@@ -1,11 +1,22 @@
 # -*- coding: utf-8 -*-
 
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
 __title__ = "BSpline to script"
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Creates a python script to build the selected BSpline or Bezier geometries."
-__usage__ = """Select some Bezier or BSpline curves or surfaces in the 3D View and activate the tool.
-The selected curves  or surfaces will be re-created with commands in the python console."""
+__doc__ = translate(
+    "Curves_BsplineToConsole",
+    "Creates a python script to build the selected BSpline or Bezier geometries.",
+)
+__usage__ = translate(
+    "Curves_BsplineToConsole",
+    """Select some Bezier or BSpline curves or surfaces in the 3D View and activate the tool.
+The selected curves  or surfaces will be re-created with commands in the python console.""",
+)
 
 import os
 import FreeCAD
@@ -84,10 +95,16 @@ def nurbs_to_script(i, c):
 class NurbsToConsole:
     "Brings the selected BSpline curves to the python console"
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': "BSpline to Console",
-                'Accel': "",
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": QT_TRANSLATE_NOOP("Curves_BsplineToConsole", "BSpline to Console"),
+            "Accel": "",
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_BsplineToConsole", "Usage"),
+                "<br>".join(__usage__.splitlines()),
+            ),
+        }
 
     def Activated(self):
         s = FreeCADGui.Selection.getSelectionEx()

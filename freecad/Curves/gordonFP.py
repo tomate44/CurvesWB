@@ -5,16 +5,18 @@ import FreeCAD
 translate = FreeCAD.Qt.translate
 QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
 
-__title__ = "Parametric Gordon surface"
+__title__ = QT_TRANSLATE_NOOP("Curves_GordonSurface", "Parametric Gordon surface")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Creates a surface that skins a network of curves."
+__doc__ = QT_TRANSLATE_NOOP(
+    "Curves_GordonSurface", "Creates a surface that skins a network of curves."
+)
 
 # from importlib import reload
 import os
-import FreeCAD
 import FreeCADGui
 import Part
+
 # from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
 from freecad.Curves.gordon import InterpolateCurveNetwork
@@ -263,9 +265,7 @@ class gordonCommand:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': 'Gordon surface',
-                'ToolTip': 'Creates a surface that skins a network of curves'}
+        return {"Pixmap": TOOL_ICON, "MenuText": __title__, "ToolTip": __doc__}
 
 
 FreeCADGui.addCommand("Curves_GordonSurface", gordonCommand())

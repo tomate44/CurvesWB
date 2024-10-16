@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 
-__title__ = 'Pipeshell profile'
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_PipeshellProfile", "Pipeshell profile")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = 'Creates a Profile object for PipeShell'
+__doc__ = QT_TRANSLATE_NOOP("Curves_PipeshellProfile", "Creates a Profile object for PipeShell")
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 from freecad.Curves import _utils
@@ -14,9 +18,6 @@ from freecad.Curves import ICONPATH
 
 TOOL_ICON = os.path.join( ICONPATH, 'profile.svg')
 DEBUG = False
-
-translate = FreeCAD.Qt.translate
-QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
 
 
 def debug(string):

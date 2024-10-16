@@ -266,9 +266,11 @@ class s2rCommand:
         FreeCAD.ActiveDocument.recompute()
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': 'Sweep2Rails',
-                'ToolTip': 'Sweep profiles on 2 rails'}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": QT_TRANSLATE_NOOP("Curves_SweepToRails", "Sweep2Rails"),
+            "ToolTip": QT_TRANSLATE_NOOP("Curves_SweepToRails", "Sweep profiles on 2 rails"),
+        }
 
 
 FreeCADGui.addCommand("Curves_SweepToRails", s2rCommand())
