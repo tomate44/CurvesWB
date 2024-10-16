@@ -1,10 +1,17 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Freehand BSpline"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_EditableSpline", "Freehand BSpline")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Creates an freehand BSpline curve"
-__usage__ = """*** Interpolation curve control keys :
+__doc__ = translate("Curves_EditableSpline", "Creates an freehand BSpline curve")
+__usage__ = translate(
+    "Curves_EditableSpline",
+    """*** Interpolation curve control keys :
 
     a - Select all / Deselect
     i - Insert point in selected segments
@@ -13,7 +20,8 @@ __usage__ = """*** Interpolation curve control keys :
     s - Snap points on shape / Unsnap
     l - Set/unset a linear interpolation
     x,y,z - Axis constraints during grab
-    q - Apply changes and quit editing"""
+    q - Apply changes and quit editing""",
+)
 
 import os
 import FreeCAD
@@ -47,15 +55,15 @@ class GordonProfileFP:
     """Creates an editable interpolation curve"""
     def __init__(self, obj, s, d, t):
         """Add the properties"""
-        obj.addProperty("App::PropertyLinkSubList", "Support", "Profile", "Constraint shapes").Support = s
-        obj.addProperty("App::PropertyFloatConstraint", "Parametrization", "Profile", "Parametrization factor")
-        obj.addProperty("App::PropertyFloat", "Tolerance", "Profile", "Tolerance").Tolerance = 1e-7
-        obj.addProperty("App::PropertyBool", "Periodic", "Profile", "Periodic curve").Periodic = False
-        obj.addProperty("App::PropertyVectorList", "Data", "Profile", "Data list").Data = d
-        obj.addProperty("App::PropertyVectorList", "Tangents", "Profile", "Tangents list")
-        obj.addProperty("App::PropertyBoolList", "Flags", "Profile", "Tangent flags")
-        obj.addProperty("App::PropertyIntegerList", "DataType", "Profile", "Types of interpolated points").DataType = t
-        obj.addProperty("App::PropertyBoolList", "LinearSegments", "Profile", "Linear segment flags")
+        obj.addProperty("App::PropertyLinkSubList", "Support", "Profile", QT_TRANSLATE_NOOP("App::Property", "Constraint shapes")).Support = s
+        obj.addProperty("App::PropertyFloatConstraint", "Parametrization", "Profile", QT_TRANSLATE_NOOP("App::Property", "Parametrization factor"))
+        obj.addProperty("App::PropertyFloat", "Tolerance", "Profile", QT_TRANSLATE_NOOP("App::Property", "Tolerance")).Tolerance = 1e-7
+        obj.addProperty("App::PropertyBool", "Periodic", "Profile", QT_TRANSLATE_NOOP("App::Property", "Periodic curve")).Periodic = False
+        obj.addProperty("App::PropertyVectorList", "Data", "Profile", QT_TRANSLATE_NOOP("App::Property", "Data list")).Data = d
+        obj.addProperty("App::PropertyVectorList", "Tangents", "Profile", QT_TRANSLATE_NOOP("App::Property", "Tangents list"))
+        obj.addProperty("App::PropertyBoolList", "Flags", "Profile", QT_TRANSLATE_NOOP("App::Property", "Tangent flags"))
+        obj.addProperty("App::PropertyIntegerList", "DataType", "Profile", QT_TRANSLATE_NOOP("App::Property", "Types of interpolated points")).DataType = t
+        obj.addProperty("App::PropertyBoolList", "LinearSegments", "Profile", QT_TRANSLATE_NOOP("App::Property", "Linear segment flags"))
         obj.Parametrization = (1.0, 0.0, 1.0, 0.05)
         obj.Proxy = self
 
@@ -84,7 +92,7 @@ class GordonProfileFP:
         touched = False
         shapes = self.get_shapes(fp)
         if not len(fp.Data) == len(fp.DataType):
-            FreeCAD.Console.PrintError("Gordon Profile : Data and DataType mismatch\n")
+            FreeCAD.Console.PrintError(translate("Log", "Gordon Profile : Data and DataType mismatch\n"))
             return(None)
         pts = list()
         shape_idx = 0
@@ -136,11 +144,11 @@ class GordonProfileFP:
         except AttributeError:
             pass
         except:
-            FreeCAD.Console.PrintWarning("execute is disabled during editing\n")
+            FreeCAD.Console.PrintWarning(translate("Log", "execute is disabled during editing\n"))
         pts = self.get_points(obj)
         if pts:
             if len(pts) < 2:
-                FreeCAD.Console.PrintError("{} : Not enough points\n".format(obj.Label))
+                FreeCAD.Console.PrintError(translate("Log", "{} : Not enough points\n")).format(obj.Label)
                 return False
             else:
                 obj.Data = pts
@@ -352,9 +360,15 @@ class GordonProfileCommand:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_EditableSpline", "Usage"),
+                "<br>".join(__usage__.splitlines()),
+            ),
+        }
 
 
-FreeCADGui.addCommand('gordon_profile', GordonProfileCommand())
+FreeCADGui.addCommand("Curves_EditableSpline", GordonProfileCommand())

@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Interpolate"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_Interpolate", "Interpolate")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Interpolate a set of points."
+__doc__ = QT_TRANSLATE_NOOP("Curves_Interpolate", "Interpolate a set of points.")
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 from freecad.Curves import _utils
@@ -57,21 +61,96 @@ class Interpolate:
     def __init__(self, obj, source):
         ''' Add the properties '''
         debug("\nInterpolate class Init\n")
-        obj.addProperty("App::PropertyLink",           "Source",         "General",    "Source object that provides points to interpolate")
-        obj.addProperty("App::PropertyLinkSubList",    "PointList",      "General",    "Point list to interpolate")
-        obj.addProperty("App::PropertyBool",           "Periodic",       "General",    "Set the curve closed").Periodic = False
-        obj.addProperty("App::PropertyFloat",          "Tolerance",      "General",    "Interpolation tolerance").Tolerance = 1e-7
-        obj.addProperty("App::PropertyBool",           "CustomTangents", "General",    "User specified tangents").CustomTangents = False
-        obj.addProperty("App::PropertyBool",           "DetectAligned",  "General",    "interpolate 3 aligned points with a line").DetectAligned = False
-        obj.addProperty("App::PropertyBool",           "Polygonal",      "General",    "interpolate with a degree 1 polygonal curve").Polygonal = False
-        obj.addProperty("App::PropertyBool",           "WireOutput",     "Parameters", "outputs a wire or a single edge").WireOutput = False
-        obj.addProperty("App::PropertyFloatList",      "Parameters",     "Parameters", "Parameters of interpolated points")
-        obj.addProperty("App::PropertyEnumeration",    "Parametrization","Parameters", "Parametrization type")
-        obj.addProperty("App::PropertyVectorList",     "Tangents",       "General",    "Tangents at interpolated points")
-        obj.addProperty("App::PropertyBoolList",       "TangentFlags",   "General",    "Activation flag of tangents")
-        obj.addProperty("App::PropertyLinkSub", "FaceSupport", "Spiral", "Face support of the spiral")
-        obj.addProperty("App::PropertyInteger", "UTurns", "Spiral", "Nb of turns between 2 points, in U direction").UTurns = 0
-        obj.addProperty("App::PropertyInteger", "VTurns", "Spiral", "Nb of turns between 2 points, in V direction").VTurns = 0
+        obj.addProperty(
+            "App::PropertyLink",
+            "Source",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "Source object that provides points to interpolate"),
+        )
+        obj.addProperty(
+            "App::PropertyLinkSubList",
+            "PointList",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "Point list to interpolate"),
+        )
+        obj.addProperty(
+            "App::PropertyBool",
+            "Periodic",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "Set the curve closed"),
+        ).Periodic = False
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Tolerance",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "Interpolation tolerance"),
+        ).Tolerance = 1e-7
+        obj.addProperty(
+            "App::PropertyBool",
+            "CustomTangents",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "User specified tangents"),
+        ).CustomTangents = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "DetectAligned",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "interpolate 3 aligned points with a line"),
+        ).DetectAligned = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "Polygonal",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "interpolate with a degree 1 polygonal curve"),
+        ).Polygonal = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "WireOutput",
+            "Parameters",
+            QT_TRANSLATE_NOOP("App::Property", "outputs a wire or a single edge"),
+        ).WireOutput = False
+        obj.addProperty(
+            "App::PropertyFloatList",
+            "Parameters",
+            "Parameters",
+            QT_TRANSLATE_NOOP("App::Property", "Parameters of interpolated points"),
+        )
+        obj.addProperty(
+            "App::PropertyEnumeration",
+            "Parametrization",
+            "Parameters",
+            QT_TRANSLATE_NOOP("App::Property", "Parametrization type"),
+        )
+        obj.addProperty(
+            "App::PropertyVectorList",
+            "Tangents",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "Tangents at interpolated points"),
+        )
+        obj.addProperty(
+            "App::PropertyBoolList",
+            "TangentFlags",
+            "General",
+            QT_TRANSLATE_NOOP("App::Property", "Activation flag of tangents"),
+        )
+        obj.addProperty(
+            "App::PropertyLinkSub",
+            "FaceSupport",
+            "Spiral",
+            QT_TRANSLATE_NOOP("App::Property", "Face support of the spiral"),
+        )
+        obj.addProperty(
+            "App::PropertyInteger",
+            "UTurns",
+            "Spiral",
+            QT_TRANSLATE_NOOP("App::Property", "Nb of turns between 2 points, in U direction"),
+        ).UTurns = 0
+        obj.addProperty(
+            "App::PropertyInteger",
+            "VTurns",
+            "Spiral",
+            QT_TRANSLATE_NOOP("App::Property", "Nb of turns between 2 points, in V direction"),
+        ).VTurns = 0
         obj.Parametrization = ["ChordLength", "Centripetal", "Uniform", "Custom"]
         obj.Proxy = self
         if isinstance(source, (list, tuple)):
@@ -320,7 +399,7 @@ class ViewProviderInterpolate:
         # try:
             # self.Object.PointObject.ViewObject.Visibility=True
         # except Exception as err:
-            # FreeCAD.Console.PrintError("Error in onDelete: {0} \n".format(err))
+            # FreeCAD.Console.PrintError(translate("Log", "Error in onDelete: {0} \n")).format(err)
         # return True
 
 
@@ -329,17 +408,21 @@ class interpolate:
         verts = list()
         for obj in selectionObject:
             if obj.HasSubObjects:
-                FreeCAD.Console.PrintMessage("object has subobjects {}\n".format(obj.SubElementNames))
+                FreeCAD.Console.PrintMessage(translate("Log", "object has subobjects {}\n")).format(
+                    obj.SubElementNames
+                )
                 for n in obj.SubElementNames:
                     if 'Vertex' in n:
                         verts.append((obj.Object, [n]))
             else:
-                # FreeCAD.Console.PrintMessage("object has no subobjects\n")
+                # FreeCAD.Console.PrintMessage(translate("Log", "object has no subobjects\n"))
                 verts = obj.Object
         if verts:
             return verts
         else:
-            FreeCAD.Console.PrintMessage("\nPlease select an object that has at least 2 vertexes\n")
+            FreeCAD.Console.PrintMessage(
+                translate("Log", "\nPlease select an object that has at least 2 vertexes\n")
+            )
             return None
 
     def Activated(self):
@@ -364,4 +447,4 @@ class interpolate:
                 'ToolTip': __doc__}
 
 
-FreeCADGui.addCommand('Interpolate', interpolate())
+FreeCADGui.addCommand("Curves_Interpolate", interpolate())

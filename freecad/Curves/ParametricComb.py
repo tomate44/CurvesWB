@@ -1,12 +1,18 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Comb plot"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_ParametricComb", "Comb plot")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = 'Creates a parametric Comb plot on selected edges'
+__doc__ = QT_TRANSLATE_NOOP(
+    "Curves_ParametricComb", "Creates a parametric Comb plot on selected edges"
+)
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 # from freecad.Curves import _utils
@@ -172,22 +178,22 @@ class Comb:
         ''' Add the properties '''
         debug("Comb class Init")
         obj.addProperty("App::PropertyLinkSubList", "Edge",
-                        "Comb", "Edge").Edge = edge
-        # obj.addProperty("App::PropertyEnumeration","Type","Comb","Comb Type").Type=["Curvature","Unit Normal"]
+                        "Comb", QT_TRANSLATE_NOOP("App::Property", "Edge")).Edge = edge
+        # obj.addProperty("App::PropertyEnumeration","Type","Comb",QT_TRANSLATE_NOOP("App::Property", "Comb Type")).Type=["Curvature","Unit Normal"]
         obj.addProperty("App::PropertyFloat", "Scale",
-                        "Comb", "Scale (%). 0 for AutoScale").Scale = 0.0
-        # obj.addProperty("App::PropertyBool","ScaleAuto","Comb","Automatic Scale").ScaleAuto = True
+                        "Comb", QT_TRANSLATE_NOOP("App::Property", "Scale (%). 0 for AutoScale")).Scale = 0.0
+        # obj.addProperty("App::PropertyBool","ScaleAuto","Comb",QT_TRANSLATE_NOOP("App::Property", "Automatic Scale")).ScaleAuto = True
         obj.addProperty("App::PropertyIntegerConstraint", "Samples",
-                        "Comb", "Number of samples").Samples = 100
+                        "Comb", QT_TRANSLATE_NOOP("App::Property", "Number of samples")).Samples = 100
         obj.addProperty("App::PropertyInteger", "Number",
-                        "Surface", "Number of surface samples").Number = 3
+                        "Surface", QT_TRANSLATE_NOOP("App::Property", "Number of surface samples")).Number = 3
         obj.addProperty("App::PropertyEnumeration", "Orientation",
-                        "Surface", "Surface Comb Orientation").Orientation = ["U", "V", "UV"]
-        # obj.addProperty("App::PropertyFloat","TotalLength","Comb","Total length of edges")
+                        "Surface", QT_TRANSLATE_NOOP("App::Property", "Surface Comb Orientation")).Orientation = ["U", "V", "UV"]
+        # obj.addProperty("App::PropertyFloat","TotalLength","Comb",QT_TRANSLATE_NOOP("App::Property", "Total length of edges"))
         obj.addProperty("App::PropertyVectorList", "CombPoints",
-                        "Comb", "CombPoints")
+                        "Comb", QT_TRANSLATE_NOOP("App::Property", "CombPoints"))
         obj.addProperty("Part::PropertyPartShape", "Shape",
-                        "Comb", "Shape of comb plot")
+                        "Comb", QT_TRANSLATE_NOOP("App::Property", "Shape of comb plot"))
         obj.Proxy = self
         # obj.Samples = (20,2,1000,10)
         obj.CombPoints = []
@@ -396,9 +402,9 @@ class ViewProviderComb:
     def __init__(self, obj):
         "Set this object to the proxy object of the actual view provider"
         obj.addProperty("App::PropertyColor", "CurveColor",
-                        "Comb", "Color of the curvature curve").CurveColor = (0.8, 0.0, 0.0)
+                        "Comb", QT_TRANSLATE_NOOP("App::Property", "Color of the curvature curve")).CurveColor = (0.8, 0.0, 0.0)
         obj.addProperty("App::PropertyColor", "CombColor",
-                        "Comb", "Color of the curvature comb").CombColor = (0.0, 0.8, 0.0)
+                        "Comb", QT_TRANSLATE_NOOP("App::Property", "Color of the curvature comb")).CombColor = (0.0, 0.8, 0.0)
         self.Object = obj.Object
         obj.Proxy = self
 
@@ -466,16 +472,16 @@ class ViewProviderComb:
 
     def setEdit(self, vobj, mode=0):
         if mode == 0:
-            FreeCAD.Console.PrintWarning("--- Entering Comb Edit Mode ---\n")
-            FreeCAD.Console.PrintMessage("Nb of samples : CTRL  + Mouse Up / Down\n")
-            FreeCAD.Console.PrintMessage("Comb scale :    SHIFT + Mouse Up / Down\n")
+            FreeCAD.Console.PrintWarning(translate("Log", "--- Entering Comb Edit Mode ---\n"))
+            FreeCAD.Console.PrintMessage(translate("Log", "Nb of samples : CTRL  + Mouse Up / Down\n"))
+            FreeCAD.Console.PrintMessage(translate("Log", "Comb scale :    SHIFT + Mouse Up / Down\n"))
             self.view = FreeCADGui.ActiveDocument.ActiveView
             self.locCB = self.view.addEventCallbackPivy(coin.SoLocation2Event.getClassTypeId(), self.loc_cb)
             return True
         return False
 
     def unsetEdit(self, vobj, mode=0):
-        FreeCAD.Console.PrintWarning("--- Exiting Comb Edit Mode ---\n")
+        FreeCAD.Console.PrintWarning(translate("Log", "--- Exiting Comb Edit Mode ---\n"))
         self.view.removeEventCallbackPivy(coin.SoLocation2Event.getClassTypeId(), self.locCB)
         return False
 
@@ -602,7 +608,4 @@ class ParametricComb:
                 'ToolTip': __doc__}
 
 
-FreeCADGui.addCommand('ParametricComb', ParametricComb())
-
-
-
+FreeCADGui.addCommand("Curves_ParametricComb", ParametricComb())

@@ -74,7 +74,7 @@ class SurfaceAnalysisProxyFP:
     def __init__(self, obj):
         """Add the properties"""
         obj.addProperty("App::PropertyLinkList", "Sources",
-                        "Group", "Tooltip")
+                        "Group", QT_TRANSLATE_NOOP("App::Property", "Tooltip"))
         obj.Proxy = self
 
     def execute(self, obj):
@@ -87,29 +87,29 @@ class SurfaceAnalysisProxyFP:
 class SurfaceAnalysisProxyVP:
     def __init__(self, viewobj):
         viewobj.addProperty("App::PropertyVector", "Direction",
-                            "AnalysisMode", "Analysis Direction")
+                            "AnalysisMode", QT_TRANSLATE_NOOP("App::Property", "Analysis Direction"))
         viewobj.addProperty("App::PropertyEnumeration", "Mode",
-                            "AnalysisMode", "Analysis Mode")
+                            "AnalysisMode", QT_TRANSLATE_NOOP("App::Property", "Analysis Mode"))
         viewobj.addProperty("App::PropertyBool", "Fixed",
-                            "AnalysisMode", "Fix analysis direction to global coordinate system")
+                            "AnalysisMode", QT_TRANSLATE_NOOP("App::Property", "Fix analysis direction to global coordinate system"))
         viewobj.addProperty("App::PropertyInteger", "StripesNumber",
-                            "AnalysisOptions", "Number of stripes (Zebra, Rainbow)")
+                            "AnalysisOptions", QT_TRANSLATE_NOOP("App::Property", "Number of stripes (Zebra, Rainbow)"))
         viewobj.addProperty("App::PropertyFloatConstraint", "StripesRatio",
-                            "AnalysisOptions", "Relative width of stripes (Zebra)")
+                            "AnalysisOptions", QT_TRANSLATE_NOOP("App::Property", "Relative width of stripes (Zebra)"))
         viewobj.addProperty("App::PropertyColor", "Color1",
-                            "AnalysisOptions", "First color (Zebra, Rainbow, Isophote)")
+                            "AnalysisOptions", QT_TRANSLATE_NOOP("App::Property", "First color (Zebra, Rainbow, Isophote)"))
         viewobj.addProperty("App::PropertyColor", "Color2",
-                            "AnalysisOptions", "Second color (Zebra, Rainbow, Isophote)")
+                            "AnalysisOptions", QT_TRANSLATE_NOOP("App::Property", "Second color (Zebra, Rainbow, Isophote)"))
         viewobj.addProperty("App::PropertyFloatConstraint", "RainbowAngle1",
-                            "AnalysisOptions", "Start angle of the rainbow")
+                            "AnalysisOptions", QT_TRANSLATE_NOOP("App::Property", "Start angle of the rainbow"))
         viewobj.addProperty("App::PropertyFloatConstraint", "RainbowAngle2",
-                            "AnalysisOptions", "End angle of the rainbow")
+                            "AnalysisOptions", QT_TRANSLATE_NOOP("App::Property", "End angle of the rainbow"))
         viewobj.addProperty("App::PropertyFloatList", "IsoAngles",
-                            "AnalysisOptions", "Angles of isophote curves")
+                            "AnalysisOptions", QT_TRANSLATE_NOOP("App::Property", "Angles of isophote curves"))
         viewobj.addProperty("App::PropertyFloat", "IsoTolerance",
-                            "AnalysisOptions", "Angular tolerance of isophote curves")
+                            "AnalysisOptions", QT_TRANSLATE_NOOP("App::Property", "Angular tolerance of isophote curves"))
         viewobj.addProperty("App::PropertyFloatConstraint", "Shading",
-                            "AnalysisMode", "Amount of shading on the analysis overlay")
+                            "AnalysisMode", QT_TRANSLATE_NOOP("App::Property", "Amount of shading on the analysis overlay"))
         viewobj.Direction = (1, 0, 0)
         viewobj.Mode = ["Zebra", "Rainbow", "Isophote"]
         viewobj.Mode = "Zebra"
@@ -240,7 +240,7 @@ class SurfaceAnalysisProxyVP:
         pass
 
     def clearSelection(self, doc):  # If screen is clicked, delete selection
-        # FreeCAD.Console.PrintMessage("clearSelection\n")
+        # FreeCAD.Console.PrintMessage(translate("Log", "clearSelection\n"))
         pass  # self.Object.ViewObject.DraftAngles = []
 
 class SurfaceAnalysisCommand:

@@ -73,9 +73,9 @@ class Sweep2RailsObjProxy:
     def __init__(self, obj, sel):
         """Add the properties"""
         obj.addProperty("App::PropertyLinkList", "Rails",
-                        "Sources", "Tooltip")
+                        "Sources", QT_TRANSLATE_NOOP("App::Property", "Tooltip"))
         obj.addProperty("App::PropertyLinkList", "Profiles",
-                        "Sources", "Tooltip")
+                        "Sources", QT_TRANSLATE_NOOP("App::Property", "Tooltip"))
         obj.Rails = sel[:2]
         obj.Profiles = sel[2:]
         obj.Proxy = self
@@ -148,7 +148,7 @@ class Sweep2RailsCommand:
     def Activated(self):
         sel = FreeCADGui.Selection.getSelection()
         if len(sel) < 1:
-            FreeCAD.Console.PrintError("Select 2 rails and at least 2 profiles\n")
+            FreeCAD.Console.PrintError(translate("Log", "Select 2 rails and at least 2 profiles\n"))
         else:
             self.makeFeature(sel)
 

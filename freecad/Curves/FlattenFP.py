@@ -1,15 +1,24 @@
 # -*- coding: utf-8 -*-
 
-__title__ = 'Flatten face'
-__author__ = 'Christophe Grellier (Chris_G)'
-__license__ = 'LGPL 2.1'
-__doc__ = 'Creates a flat developed face from conical and cylindrical faces'
-__usage__ = """You must select a conical or cylindrical face in the 3D View.
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_FlattenFace", "Flatten face")
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = translate(
+    "Curves_FlattenFace", "Creates a flat developed face from conical and cylindrical faces"
+)
+__usage__ = translate(
+    "Curves_FlattenFace",
+    """You must select a conical or cylindrical face in the 3D View.
 InPlace property puts the unrolled face tangent to the source face (InPlace = True)
-or in the XY plane (InPlace = False)"""
+or in the XY plane (InPlace = False)""",
+)
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 from math import pi
@@ -352,12 +361,24 @@ def flatten_face_new(face, inPlace=False, size=0.0):
 class FlattenProxy:
     def __init__(self, obj):
         """Add the properties"""
-        obj.addProperty("App::PropertyLinkSub", "Source",
-                        "Source", "The conical face to flatten")
-        obj.addProperty("App::PropertyBool", "InPlace",
-                        "Settings", "Unroll the face in place")
-        obj.addProperty("App::PropertyFloat", "Size",
-                        "Settings", "Size of the underlying surface")
+        obj.addProperty(
+            "App::PropertyLinkSub",
+            "Source",
+            "Source",
+            QT_TRANSLATE_NOOP("App::Property", "The conical face to flatten"),
+        )
+        obj.addProperty(
+            "App::PropertyBool",
+            "InPlace",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Unroll the face in place"),
+        )
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Size",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Size of the underlying surface"),
+        )
         obj.setEditorMode("Size", 2)
         obj.Size = 0.0
         preferences = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves")
@@ -402,14 +423,16 @@ class Curves_Flatten_Face_Cmd:
     def Activated(self):
         sel = FreeCADGui.Selection.getSelectionEx()
         if sel == []:
-            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
+            FreeCAD.Console.PrintError(translate("Log", "{} :\n{}\n")).format(__title__, __usage__)
         for so in sel:
             for sn in so.SubElementNames:
                 subo = so.Object.getSubObject(sn)
                 if hasattr(subo, "Surface") and isinstance(subo.Surface, (Part.Cylinder, Part.Cone, Part.SurfaceOfExtrusion)):
                     self.makeFeature((so.Object, sn))
                 else:
-                    FreeCAD.Console.PrintError("Bad input :{}-{}\n".format(so.Object.Label, sn))
+                    FreeCAD.Console.PrintError(translate("Log", "Bad input :{}-{}\n")).format(
+                        so.Object.Label, sn
+                    )
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:
@@ -418,9 +441,15 @@ class Curves_Flatten_Face_Cmd:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_FlattenFace", "Usage"),
+                "<br>".join(__usage__.splitlines()),
+            ),
+        }
 
 
-FreeCADGui.addCommand('Curves_FlattenFace', Curves_Flatten_Face_Cmd())
+FreeCADGui.addCommand("Curves_FlattenFace", Curves_Flatten_Face_Cmd())

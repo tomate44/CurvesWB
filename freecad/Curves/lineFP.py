@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Parametric line"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+__title__ = QT_TRANSLATE_NOOP("Curves_Line", "Parametric line")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Parametric line between two vertexes."
-__usage__ = """Select 2 vertexes in the 3D View and activate the tool."""
+__doc__ = translate("Curves_Line", "Parametric line between two vertexes.")
+__usage__ = translate("Curves_Line", "Select 2 vertexes in the 3D View and activate the tool.")
 
 import os
 import FreeCAD
@@ -20,8 +24,8 @@ class line:
     """Creates a parametric line between two vertexes"""
     def __init__(self, obj):
         """Add the properties"""
-        obj.addProperty("App::PropertyLinkSub", "Vertex1", "Line", "First Vertex")
-        obj.addProperty("App::PropertyLinkSub", "Vertex2", "Line", "Second Vertex")
+        obj.addProperty("App::PropertyLinkSub", "Vertex1", "Line", QT_TRANSLATE_NOOP("App::Property", "First Vertex"))
+        obj.addProperty("App::PropertyLinkSub", "Vertex2", "Line", QT_TRANSLATE_NOOP("App::Property", "Second Vertex"))
         obj.Proxy = self
 
     def execute(self, obj):
@@ -31,7 +35,7 @@ class line:
             ls = Part.LineSegment(v1.Point, v2.Point)
             obj.Shape = ls.toShape()
         else:
-            FreeCAD.Console.PrintError("{} broken !\n".format(obj.Label))
+            FreeCAD.Console.PrintError(translate("Log", "{} broken !\n")).format(obj.Label)
 
 
 class lineVP:
@@ -82,7 +86,7 @@ class lineCommand:
         if len(verts) == 2:
             self.makeLineFeature(verts)
         else:
-            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
+            FreeCAD.Console.PrintError(translate("Log", "{} :\n{}\n")).format(__title__, __usage__)
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:
@@ -91,9 +95,15 @@ class lineCommand:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_Line", "Usage"),
+                "<br>".join(__usage__.splitlines()),
+            ),
+        }
 
 
-FreeCADGui.addCommand('Curves_line', lineCommand())
+FreeCADGui.addCommand("Curves_Line", lineCommand())
