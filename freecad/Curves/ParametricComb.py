@@ -1,12 +1,18 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Comb plot"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_ParametricComb", "Comb plot")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = 'Creates a parametric Comb plot on selected edges'
+__doc__ = QT_TRANSLATE_NOOP(
+    "Curves_ParametricComb", "Creates a parametric Comb plot on selected edges"
+)
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 # from freecad.Curves import _utils

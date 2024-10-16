@@ -1,11 +1,19 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Curve extend"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_ExtendCurve", "Curve extend")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Extend an edge by a given distance."
-__usage__ = """Select an edge in the 3D View, and activate tool.
-Edge can be extended at each end, by a given distance."""
+__doc__ = translate("Curves_ExtendCurve", "Extend an edge by a given distance.")
+__usage__ = translate(
+    "Curves_ExtendCurve",
+    """Select an edge in the 3D View, and activate tool.
+Edge can be extended at each end, by a given distance.""",
+)
 
 import os
 import FreeCAD
@@ -166,8 +174,10 @@ class extendCommand:
         return {
             "Pixmap": TOOL_ICON,
             "MenuText": __title__,
-            "ToolTip": "{}<br><br><b>Usage :</b><br>{}".format(
-                __doc__, "<br>".join(__usage__.splitlines())
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_ExtendCurve", "Usage"),
+                "<br>".join(__usage__.splitlines()),
             ),
         }
 

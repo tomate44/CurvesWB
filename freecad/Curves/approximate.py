@@ -478,9 +478,13 @@ class approx:
         FreeCAD.ActiveDocument.recompute()
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': 'Approximate',
-                'ToolTip': 'Approximate points to NURBS curve or surface'}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": QT_TRANSLATE_NOOP("Curves_Approximate", "Approximate"),
+            "ToolTip": QT_TRANSLATE_NOOP(
+                "Curves_Approximate", "Approximate points to NURBS curve or surface"
+            ),
+        }
 
 
 FreeCADGui.addCommand("Curves_Approximate", approx())

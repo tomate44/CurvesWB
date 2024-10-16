@@ -1,19 +1,26 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Segment surface"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_SegmentSurface", "Segment surface")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = """Segment a surface on isocurves"""
-__usage__ = """Select a face in the 3D view and activate tool.
+__doc__ = translate("Curves_SegmentSurface", "Segment a surface on isocurves")
+__usage__ = translate(
+    "Curves_SegmentSurface",
+    """Select a face in the 3D view and activate tool.
 The face will be converted to a BSpline surface.
 In Auto mode, the surface will be segmented along isocurves of highest multiplicity.
 In Custom mode, it will be segmented along isocurves of specified parameters.
 These parameters can be provided by an external object that have a NormalizedParameters property,
-like the Discretize, or the SplitCurve tools."""
+like the Discretize, or the SplitCurve tools.""",
+)
 
 import os
 
-import FreeCAD
 import FreeCADGui
 import Part
 from . import ICONPATH
@@ -267,9 +274,15 @@ class SegSurfCommand:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_SegmentSurface", "Usage"),
+                "<br>".join(__usage__.splitlines()),
+            ),
+        }
 
 
 FreeCADGui.addCommand("Curves_SegmentSurface", SegSurfCommand())
