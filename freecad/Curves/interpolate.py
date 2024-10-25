@@ -64,6 +64,7 @@ class Interpolate:
         obj.addProperty("App::PropertyBool",           "CustomTangents", "General",    "User specified tangents").CustomTangents = False
         obj.addProperty("App::PropertyBool",           "DetectAligned",  "General",    "interpolate 3 aligned points with a line").DetectAligned = False
         obj.addProperty("App::PropertyBool",           "Polygonal",      "General",    "interpolate with a degree 1 polygonal curve").Polygonal = False
+        obj.addProperty("App::PropertyInteger",        "StartOffset",    "General",    "Offset the start index of the point list").StartOffset = 0
         obj.addProperty("App::PropertyBool",           "WireOutput",     "Parameters", "outputs a wire or a single edge").WireOutput = False
         obj.addProperty("App::PropertyFloatList",      "Parameters",     "Parameters", "Parameters of interpolated points")
         obj.addProperty("App::PropertyEnumeration",    "Parametrization","Parameters", "Parametrization type")
@@ -92,10 +93,13 @@ class Interpolate:
 
     def getPoints(self, obj):
         vl = self.getVertexes(obj)
-        if isinstance(vl, (list, tuple)):
-            return [v.Point for v in vl]
-        else:
+        if not isinstance(vl, (list, tuple)):
             return []
+        pts = [v.Point for v in vl if isinstance(v, Part.Vertex)]
+        off = 0
+        if hasattr(obj, "StartOffset"):
+            off = obj.StartOffset
+        return pts[off:] + pts[:off]
 
     def getVertexes(self, obj):
         try:
@@ -254,7 +258,8 @@ class Interpolate:
     def onChanged(self, fp, prop):
         if 'Restore' in fp.State:
             return
-        if not self.getPoints(fp):
+        pts = self.getPoints(fp)
+        if not pts:
             return
         if prop in ("Parametrization", "Source", "PointList"):
             # debug("Approximate : Parametrization changed\n")
@@ -273,12 +278,22 @@ class Interpolate:
                 fp.setEditorMode("WireOutput", 2)
         if prop in ["Periodic", "PointList"]:
             self.touch_parametrization(fp)
-        # if prop == "Parameters":
-            # self.execute(fp)
+        if prop == "StartOffset":
+            minidx = -len(pts)
+            maxidx = len(pts) - 1
+            if fp.StartOffset < minidx:
+                fp.StartOffset = minidx
+            if fp.StartOffset > maxidx:
+                fp.StartOffset = maxidx
 
     def onDocumentRestored(self, fp):
         fp.setEditorMode("CustomTangents", 2)
         self.touch_parametrization(fp)
+        if not hasattr(fp, "StartOffset"):
+            fp.addProperty("App::PropertyInteger",
+                           "StartOffset",
+                           "General",
+                           "Offset the start index of the point list").StartOffset = 0
 
 
 class ViewProviderInterpolate:
