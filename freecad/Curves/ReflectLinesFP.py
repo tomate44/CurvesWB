@@ -1,16 +1,26 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Reflect Lines"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_ReflectLines", "Reflect Lines")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Creates the reflect lines on a shape, according to a view direction"
-__usage__ = """Select an object and activate tool.
+__doc__ = translate(
+    "Curves_ReflectLines", "Creates the reflect lines on a shape, according to a view direction"
+)
+__usage__ = translate(
+    "Curves_ReflectLines",
+    """Select an object and activate tool.
 This will create reflect lines according to the current view direction.
 If selected object is a ReflectLines object, the view direction will be updated to the current camera direction.
 If property OnShape is True, the lines will be ON the input shape (ViewPos and UpDir properties won't be used).
 Otherwise, lines will be on the XY plane.
 If view property TrackCam is True, the view direction will keep updating upon camera movements.
-"""
+""",
+)
 
 import os
 import FreeCAD
@@ -30,35 +40,35 @@ class ReflectLinesFP:
     def __init__(self, obj, src):
         """Add the properties"""
         obj.addProperty("App::PropertyLink", "Source",
-                        "ReflectLines", "Source object")
+                        "ReflectLines", QT_TRANSLATE_NOOP("App::Property", "Source object"))
         obj.addProperty("App::PropertyLinkSubList", "IndivFaces",
-                        "ReflectLines", "Individual faces")
+                        "ReflectLines", QT_TRANSLATE_NOOP("App::Property", "Individual faces"))
         obj.addProperty("App::PropertyVector", "ViewPos",
-                        "ReflectLines", "View position")
+                        "ReflectLines", QT_TRANSLATE_NOOP("App::Property", "View position"))
         obj.addProperty("App::PropertyVector", "ViewDir",
-                        "ReflectLines", "View direction")
+                        "ReflectLines", QT_TRANSLATE_NOOP("App::Property", "View direction"))
         obj.addProperty("App::PropertyVector", "UpDir",
-                        "ReflectLines", "Up direction")
+                        "ReflectLines", QT_TRANSLATE_NOOP("App::Property", "Up direction"))
         obj.addProperty("App::PropertyBool", "RemoveDuplicates",
-                        "CleaningOptions", "Remove duplicate edges").RemoveDuplicates = False
+                        "CleaningOptions", QT_TRANSLATE_NOOP("App::Property", "Remove duplicate edges")).RemoveDuplicates = False
         obj.addProperty("App::PropertyInteger", "Samples",
-                        "CleaningOptions", "Number of edge samples").Samples = 10
+                        "CleaningOptions", QT_TRANSLATE_NOOP("App::Property", "Number of edge samples")).Samples = 10
         obj.addProperty("App::PropertyQuantity", "CleaningTolerance",
-                        "CleaningOptions", "CleaningTolerance for duplicate detection").CleaningTolerance = 1e-3
+                        "CleaningOptions", QT_TRANSLATE_NOOP("App::Property", "CleaningTolerance for duplicate detection")).CleaningTolerance = 1e-3
         obj.addProperty("App::PropertyBool", "IsoLine",
-                        "EdgeType", "Isoparametric lines").IsoLine = True
+                        "EdgeType", QT_TRANSLATE_NOOP("App::Property", "Isoparametric lines")).IsoLine = True
         obj.addProperty("App::PropertyBool", "OutLine",
-                        "EdgeType", "Outline silhouette lines").OutLine = True
+                        "EdgeType", QT_TRANSLATE_NOOP("App::Property", "Outline silhouette lines")).OutLine = True
         obj.addProperty("App::PropertyBool", "Rg1Line",
-                        "EdgeType", "smooth edge of G1-continuity between two surfaces").Rg1Line = True
+                        "EdgeType", QT_TRANSLATE_NOOP("App::Property", "smooth edge of G1-continuity between two surfaces")).Rg1Line = True
         obj.addProperty("App::PropertyBool", "RgNLine",
-                        "EdgeType", "sewn edge of CN-continuity on one surface").RgNLine = True
+                        "EdgeType", QT_TRANSLATE_NOOP("App::Property", "sewn edge of CN-continuity on one surface")).RgNLine = True
         obj.addProperty("App::PropertyBool", "Sharp",
-                        "EdgeType", "sharp edge (of C0-continuity)").Sharp = True
+                        "EdgeType", QT_TRANSLATE_NOOP("App::Property", "sharp edge (of C0-continuity)")).Sharp = True
         obj.addProperty("App::PropertyBool", "Visible",
-                        "ReflectLines", "Generate the visible lines, or the hidden lines").Visible = True
+                        "ReflectLines", QT_TRANSLATE_NOOP("App::Property", "Generate the visible lines, or the hidden lines")).Visible = True
         obj.addProperty("App::PropertyBool", "OnShape",
-                        "ReflectLines", "Output on-shape 3D lines").OnShape = True
+                        "ReflectLines", QT_TRANSLATE_NOOP("App::Property", "Output on-shape 3D lines")).OnShape = True
         # obj.Samples = [10,3,999,1]
         obj.ViewPos = FreeCAD.Vector(0, 0, 0)
         obj.ViewDir = FreeCAD.Vector(0, 0, 1)
@@ -121,7 +131,7 @@ class ReflectLinesFP:
 class ReflectLinesVP:
     def __init__(self, vobj):
         vobj.addProperty("App::PropertyBool", "TrackCamera",
-                        "AutoView", "Track camera movements").TrackCamera = False
+                        "AutoView", QT_TRANSLATE_NOOP("App::Property", "Track camera movements")).TrackCamera = False
         vobj.Proxy = self
 
     def onChanged(self, vobj, prop):
@@ -171,7 +181,7 @@ class ReflectLinesCommand:
     def Activated(self):
         sel = FreeCADGui.Selection.getSelectionEx()
         if sel == []:
-            FreeCAD.Console.PrintError("Select an object first !\n")
+            FreeCAD.Console.PrintError(translate("Log", "Select an object first !\n"))
         else:
             rot = FreeCADGui.ActiveDocument.ActiveView.getCameraOrientation()
             vdir = FreeCAD.Vector(0, 0, 1)
@@ -206,9 +216,15 @@ class ReflectLinesCommand:
         return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_ReflectLines", "Usage"),
+                "<br>".join(__usage__.splitlines()),
+            ),
+        }
 
 
-FreeCADGui.addCommand('ReflectLines', ReflectLinesCommand())
+FreeCADGui.addCommand("Curves_ReflectLines", ReflectLinesCommand())

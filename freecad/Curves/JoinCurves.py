@@ -1,15 +1,22 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "joinCurves"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_JoinCurve", "joinCurves")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Joins the selected edges into a BSpline Curve"
-__usage__ = """Select the edges to join in the 3D View, or select an object containing multiple edges in the Tree View.
+__doc__ = translate("Curves_JoinCurve", "Joins the selected edges into a BSpline Curve")
+__usage__ = translate(
+    "Curves_JoinCurve",
+    """Select the edges to join in the 3D View, or select an object containing multiple edges in the Tree View.
 Activate the tool.
-The output is a single BSpline curve joining all selected edges."""
+The output is a single BSpline curve joining all selected edges.""",
+)
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 from . import _utils
@@ -81,15 +88,55 @@ def forceClosed(curves, tol=1e-7):
 class join:
     "joins the selected edges into a single BSpline Curve"
     def __init__(self, obj):
-        ''' Add the properties '''
-        obj.addProperty("App::PropertyLinkSubList", "Edges", "InputSources", "List of edges to join")
-        obj.addProperty("App::PropertyLink", "Base", "InputSources", "Join all the edges of this base object")
-        obj.addProperty("App::PropertyFloat", "Tolerance", "Join", "Tolerance").Tolerance = 0.01
-        obj.addProperty("App::PropertyBool", "CornerBreak", "Join", "Break on sharp corners").CornerBreak = False
-        obj.addProperty("App::PropertyBool", "ForceContact", "Join", "Force connection of edges").ForceContact = True
-        obj.addProperty("App::PropertyBool", "ForceClosed", "Join", "Force closed curve").ForceClosed = False
-        obj.addProperty("App::PropertyBool", "Reverse", "Join", "Reverse the output curve").Reverse = False
-        obj.addProperty("App::PropertyInteger", "StartOffset", "Join", "Set the start point of closed curve").StartOffset = 0
+        """Add the properties"""
+        obj.addProperty(
+            "App::PropertyLinkSubList",
+            "Edges",
+            "InputSources",
+            QT_TRANSLATE_NOOP("App::Property", "List of edges to join"),
+        )
+        obj.addProperty(
+            "App::PropertyLink",
+            "Base",
+            "InputSources",
+            QT_TRANSLATE_NOOP("App::Property", "Join all the edges of this base object"),
+        )
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Tolerance",
+            "Join",
+            QT_TRANSLATE_NOOP("App::Property", "Tolerance"),
+        ).Tolerance = 0.01
+        obj.addProperty(
+            "App::PropertyBool",
+            "CornerBreak",
+            "Join",
+            QT_TRANSLATE_NOOP("App::Property", "Break on sharp corners"),
+        ).CornerBreak = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "ForceContact",
+            "Join",
+            QT_TRANSLATE_NOOP("App::Property", "Force connection of edges"),
+        ).ForceContact = True
+        obj.addProperty(
+            "App::PropertyBool",
+            "ForceClosed",
+            "Join",
+            QT_TRANSLATE_NOOP("App::Property", "Force closed curve"),
+        ).ForceClosed = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "Reverse",
+            "Join",
+            QT_TRANSLATE_NOOP("App::Property", "Reverse the output curve"),
+        ).Reverse = False
+        obj.addProperty(
+            "App::PropertyInteger",
+            "StartOffset",
+            "Join",
+            QT_TRANSLATE_NOOP("App::Property", "Set the start point of closed curve"),
+        ).StartOffset = 0
         obj.Proxy = self
 
     def onChanged(self, fp, prop):
@@ -232,7 +279,7 @@ class joinCommand:
         except AttributeError:
             pass
         if sel == []:
-            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
+            FreeCAD.Console.PrintError(translate("Log", "{} :\n{}\n")).format(__title__, __usage__)
         for selobj in sel:
             if selobj.HasSubObjects:
                 for i in range(len(selobj.SubObjects)):
@@ -253,9 +300,13 @@ class joinCommand:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__, translate("Curves_JoinCurve", "Usage"), "<br>".join(__usage__.splitlines())
+            ),
+        }
 
 
-FreeCADGui.addCommand('join', joinCommand())
+FreeCADGui.addCommand("Curves_JoinCurve", joinCommand())

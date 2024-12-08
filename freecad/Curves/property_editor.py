@@ -69,7 +69,7 @@ class VPEditor(QObject):
             self.widget.layout.addLayout(g)
             return(g)
         else:
-            FreeCAD.Console.PrintError("VPEditor has no widget !\n")
+            FreeCAD.Console.PrintError(translate("Log", "VPEditor has no widget !\n"))
     def add_propeditor(self,editor,group):
         """add a property editor widget"""
         group.addWidget(editor)
@@ -105,14 +105,14 @@ class VPEditor(QObject):
         self.quit()
     @Slot()
     def quit(self):
-        FreeCAD.Console.PrintMessage("VPEditor.Quit() \n")
+        FreeCAD.Console.PrintMessage(translate("Log", "VPEditor.Quit() \n"))
         self.widget.close()
         try:
             self.comboview.removeTab(self.tabIndex)
             self.comboview.setCurrentIndex(0)
             FreeCADGui.ActiveDocument.resetEdit()
         except:
-            FreeCAD.Console.PrintError("Failed to remove from ComboView\n")
+            FreeCAD.Console.PrintError(translate("Log", "Failed to remove from ComboView\n"))
 
 class VectorListWidget(QTableWidget):
     def __init__(self, fp=None, prop=None, parent=None):

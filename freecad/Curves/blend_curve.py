@@ -701,7 +701,7 @@ class EdgeOnFace:
             if len(c) == 3:
                 cos.append(c[0].toBSpline(c[1], c[2]))
             else:
-                FreeCAD.Console.PrintError("failed to extract 2D geometry")
+                FreeCAD.Console.PrintError(translate("Log", "failed to extract 2D geometry"))
             if e.isPartner(self._edge):
                 idx = n
 

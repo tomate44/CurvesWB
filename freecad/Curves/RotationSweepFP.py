@@ -1,11 +1,19 @@
 # -*- coding: utf-8 -*-
 
-__title__ = 'Rotation Sweep'
-__author__ = 'Christophe Grellier (Chris_G)'
-__license__ = 'LGPL 2.1'
-__doc__ = 'Sweep some profiles along a path, and around a point'
-__usage__ = """Select a sweep path and some profiles in the 3D View.
-If TrimPath is False, the Sweep surface will be extrapolated to fit the whole path."""
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_RotationSweep", "Rotation Sweep")
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = translate("Curves_RotationSweep", "Sweep some profiles along a path, and around a point")
+__usage__ = translate(
+    "Curves_RotationSweep",
+    """Select a sweep path and some profiles in the 3D View.
+If TrimPath is False, the Sweep surface will be extrapolated to fit the whole path.""",
+)
 
 import os
 import FreeCAD
@@ -29,19 +37,19 @@ class RotsweepProxyFP:
     def __init__(self, obj):
         """Add the properties"""
         obj.addProperty("App::PropertyLinkSubList", "Profiles",
-                        "InputShapes", "The list of profiles to sweep")
+                        "InputShapes", QT_TRANSLATE_NOOP("App::Property", "The list of profiles to sweep"))
         obj.addProperty("App::PropertyLinkSub", "Path",
-                        "InputShapes", "The sweep path")
+                        "InputShapes", QT_TRANSLATE_NOOP("App::Property", "The sweep path"))
         obj.addProperty("App::PropertyLinkSub", "FaceSupport",
-                        "ExtraProfiles", "Face support of the sweep path")
+                        "ExtraProfiles", QT_TRANSLATE_NOOP("App::Property", "Face support of the sweep path"))
         obj.addProperty("App::PropertyBool", "TrimPath",
-                        "Settings", "Trim the sweep shape").TrimPath = True
+                        "Settings", QT_TRANSLATE_NOOP("App::Property", "Trim the sweep shape")).TrimPath = True
         obj.addProperty("App::PropertyBool", "ViewProfiles",
-                        "Settings", "Add profiles to the sweep shape")
+                        "Settings", QT_TRANSLATE_NOOP("App::Property", "Add profiles to the sweep shape"))
         obj.addProperty("App::PropertyInteger", "ExtraProfiles",
-                        "ExtraProfiles", "Number of extra profiles")
+                        "ExtraProfiles", QT_TRANSLATE_NOOP("App::Property", "Number of extra profiles"))
         obj.addProperty("App::PropertyBool", "SmoothTop",
-                        "Settings", "Build a smooth top with extra profiles")
+                        "Settings", QT_TRANSLATE_NOOP("App::Property", "Build a smooth top with extra profiles"))
         obj.setEditorMode("ViewProfiles", 2)
         # obj.setEditorMode("ExtraProfiles", 2)
         obj.Proxy = self
@@ -210,9 +218,15 @@ class RotsweepFPCommand:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_RotationSweep", "Usage"),
+                "<br>".join(__usage__.splitlines()),
+            ),
+        }
 
 
-FreeCADGui.addCommand('Curves_RotationSweep', RotsweepFPCommand())
+FreeCADGui.addCommand("Curves_RotationSweep", RotsweepFPCommand())

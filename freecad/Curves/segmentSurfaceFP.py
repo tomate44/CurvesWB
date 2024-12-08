@@ -1,19 +1,26 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Segment surface"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_SegmentSurface", "Segment surface")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = """Segment a surface on isocurves"""
-__usage__ = """Select a face in the 3D view and activate tool.
+__doc__ = translate("Curves_SegmentSurface", "Segment a surface on isocurves")
+__usage__ = translate(
+    "Curves_SegmentSurface",
+    """Select a face in the 3D view and activate tool.
 The face will be converted to a BSpline surface.
 In Auto mode, the surface will be segmented along isocurves of highest multiplicity.
 In Custom mode, it will be segmented along isocurves of specified parameters.
 These parameters can be provided by an external object that have a NormalizedParameters property,
-like the Discretize, or the SplitCurve tools."""
+like the Discretize, or the SplitCurve tools.""",
+)
 
 import os
 
-import FreeCAD
 import FreeCADGui
 import Part
 from . import ICONPATH
@@ -27,15 +34,68 @@ class SegmentSurface:
 
     def __init__(self, obj, face):
         """Add the properties"""
-        obj.addProperty("App::PropertyLinkSub", "Source", "Base", "Initial Face").Source = face
-        obj.addProperty("App::PropertyEnumeration", "Option", "Base", "Option list").Option = ["Auto", "Custom"]
-        obj.addProperty("App::PropertyEnumeration", "Direction", "OptionAuto", "Segmenting direction").Direction = ["U", "V", "Both"]
-        obj.addProperty("App::PropertyFloatList", "KnotsU", "UDirection", "Splitting parameters in U direction")
-        obj.addProperty("App::PropertyFloatList", "KnotsV", "VDirection", "Splitting parameters in V direction")
-        obj.addProperty("App::PropertyInteger", "NumberU", "UDirection", "Split the U parameter range in the given number of segments").NumberU = 2
-        obj.addProperty("App::PropertyInteger", "NumberV", "VDirection", "Split the V parameter range in the given number of segments").NumberV = 2
-        obj.addProperty("App::PropertyLink", "KnotsUProvider", "UDirection", "Object generating normalized parameters in U direction")
-        obj.addProperty("App::PropertyLink", "KnotsVProvider", "VDirection", "Object generating normalized parameters in V direction")
+        obj.addProperty(
+            "App::PropertyLinkSub",
+            "Source",
+            "Base",
+            QT_TRANSLATE_NOOP("App::Property", "Initial Face"),
+        ).Source = face
+        obj.addProperty(
+            "App::PropertyEnumeration",
+            "Option",
+            "Base",
+            QT_TRANSLATE_NOOP("App::Property", "Option list"),
+        ).Option = ["Auto", "Custom"]
+        obj.addProperty(
+            "App::PropertyEnumeration",
+            "Direction",
+            "OptionAuto",
+            QT_TRANSLATE_NOOP("App::Property", "Segmenting direction"),
+        ).Direction = ["U", "V", "Both"]
+        obj.addProperty(
+            "App::PropertyFloatList",
+            "KnotsU",
+            "UDirection",
+            QT_TRANSLATE_NOOP("App::Property", "Splitting parameters in U direction"),
+        )
+        obj.addProperty(
+            "App::PropertyFloatList",
+            "KnotsV",
+            "VDirection",
+            QT_TRANSLATE_NOOP("App::Property", "Splitting parameters in V direction"),
+        )
+        obj.addProperty(
+            "App::PropertyInteger",
+            "NumberU",
+            "UDirection",
+            QT_TRANSLATE_NOOP(
+                "App::Property", "Split the U parameter range in the given number of segments"
+            ),
+        ).NumberU = 2
+        obj.addProperty(
+            "App::PropertyInteger",
+            "NumberV",
+            "VDirection",
+            QT_TRANSLATE_NOOP(
+                "App::Property", "Split the V parameter range in the given number of segments"
+            ),
+        ).NumberV = 2
+        obj.addProperty(
+            "App::PropertyLink",
+            "KnotsUProvider",
+            "UDirection",
+            QT_TRANSLATE_NOOP(
+                "App::Property", "Object generating normalized parameters in U direction"
+            ),
+        )
+        obj.addProperty(
+            "App::PropertyLink",
+            "KnotsVProvider",
+            "VDirection",
+            QT_TRANSLATE_NOOP(
+                "App::Property", "Object generating normalized parameters in V direction"
+            ),
+        )
         obj.Proxy = self
         obj.Option = "Custom"
 
@@ -203,7 +263,7 @@ class SegSurfCommand:
     def Activated(self):
         sel = FreeCADGui.Selection.getSelectionEx()
         if sel == []:
-            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
+            FreeCAD.Console.PrintError(translate("Log", "{} :\n{}\n")).format(__title__, __usage__)
         else:
             self.makeFeature(sel[0])
 
@@ -214,9 +274,15 @@ class SegSurfCommand:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_SegmentSurface", "Usage"),
+                "<br>".join(__usage__.splitlines()),
+            ),
+        }
 
 
-FreeCADGui.addCommand('segment_surface', SegSurfCommand())
+FreeCADGui.addCommand("Curves_SegmentSurface", SegSurfCommand())

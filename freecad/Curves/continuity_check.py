@@ -132,13 +132,13 @@ class ContinuityCheckerFP:
     def __init__(self, obj):
         """Add the properties"""
         obj.addProperty("App::PropertyLinkList", "Sources",
-                        "Base", "The list of seam edges to check")
+                        "Base", QT_TRANSLATE_NOOP("App::Property", "The list of seam edges to check"))
         obj.addProperty("App::PropertyInteger", "Samples",
-                        "Settings", "Number of test samples on edge")
+                        "Settings", QT_TRANSLATE_NOOP("App::Property", "Number of test samples on edge"))
         obj.addProperty("App::PropertyInteger", "Lines",
-                        "Settings", "Number of test lines on each sample")
+                        "Settings", QT_TRANSLATE_NOOP("App::Property", "Number of test lines on each sample"))
         obj.addProperty("App::PropertyFloat", "Tolerance",
-                        "Settings", "Continuity tolerance")
+                        "Settings", QT_TRANSLATE_NOOP("App::Property", "Continuity tolerance"))
         obj.Proxy = self
 
     def execute(self, obj):
@@ -186,7 +186,7 @@ class ContinuityCheckerCommand:
     def Activated(self):
         sel = FreeCADGui.Selection.getSelection()
         if sel == []:
-            FreeCAD.Console.PrintError("Select something first !\n")
+            FreeCAD.Console.PrintError(translate("Log", "Select something first !\n"))
         else:
             self.makeFeature(sel)
 

@@ -51,14 +51,14 @@ class ApproximateExtension:
     def __init__(self, obj):
         ''' Add the properties '''
         debug("\nApproximate extension Init\n")
-        obj.addProperty("App::PropertyInteger", "Samples", "ShapeApproximation", "Number of samples").Samples = 100
-        obj.addProperty("App::PropertyBool", "Active", "ShapeApproximation", "Use approximation")
-        obj.addProperty("App::PropertyInteger", "DegreeMin", "ShapeApproximation", "Minimum degree of the curve").DegreeMin = 3
-        obj.addProperty("App::PropertyInteger", "DegreeMax", "ShapeApproximation", "Maximum degree of the curve").DegreeMax = 5
-        obj.addProperty("App::PropertyFloat", "ApproxTolerance", "ShapeApproximation", "Approximation tolerance")
-        obj.addProperty("App::PropertyEnumeration", "Continuity", "ShapeApproximation", "Desired continuity of the curve").Continuity = ["C0", "C1", "G1", "C2", "G2", "C3", "CN"]
-        obj.addProperty("App::PropertyEnumeration", "Parametrization", "ShapeApproximation", "Parametrization type").Parametrization = ["ChordLength", "Centripetal", "Uniform"]
-        obj.addProperty("App::PropertyPythonObject", "ExtensionProxy", "ShapeApproximation", "Proxy object of the approximation extension").ExtensionProxy = self
+        obj.addProperty("App::PropertyInteger", "Samples", "ShapeApproximation", QT_TRANSLATE_NOOP("App::Property", "Number of samples")).Samples = 100
+        obj.addProperty("App::PropertyBool", "Active", "ShapeApproximation", QT_TRANSLATE_NOOP("App::Property", "Use approximation"))
+        obj.addProperty("App::PropertyInteger", "DegreeMin", "ShapeApproximation", QT_TRANSLATE_NOOP("App::Property", "Minimum degree of the curve")).DegreeMin = 3
+        obj.addProperty("App::PropertyInteger", "DegreeMax", "ShapeApproximation", QT_TRANSLATE_NOOP("App::Property", "Maximum degree of the curve")).DegreeMax = 5
+        obj.addProperty("App::PropertyFloat", "ApproxTolerance", "ShapeApproximation", QT_TRANSLATE_NOOP("App::Property", "Approximation tolerance"))
+        obj.addProperty("App::PropertyEnumeration", "Continuity", "ShapeApproximation", QT_TRANSLATE_NOOP("App::Property", "Desired continuity of the curve")).Continuity = ["C0", "C1", "G1", "C2", "G2", "C3", "CN"]
+        obj.addProperty("App::PropertyEnumeration", "Parametrization", "ShapeApproximation", QT_TRANSLATE_NOOP("App::Property", "Parametrization type")).Parametrization = ["ChordLength", "Centripetal", "Uniform"]
+        obj.addProperty("App::PropertyPythonObject", "ExtensionProxy", "ShapeApproximation", QT_TRANSLATE_NOOP("App::Property", "Proxy object of the approximation extension")).ExtensionProxy = self
         obj.Parametrization = "ChordLength"
         obj.Continuity = 'C3'
         self.setTolerance(obj)

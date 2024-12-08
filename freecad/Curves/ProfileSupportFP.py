@@ -72,25 +72,25 @@ class ProfileSupportFP:
     def __init__(self, obj, rail1, rail2, prof=None):
         """Add the properties"""
         obj.addProperty("App::PropertyLink", "Rail1",
-                        "Sources", "Tooltip")
+                        "Sources", QT_TRANSLATE_NOOP("App::Property", "Tooltip"))
         obj.addProperty("App::PropertyLink", "Rail2",
-                        "Sources", "Tooltip")
+                        "Sources", QT_TRANSLATE_NOOP("App::Property", "Tooltip"))
         obj.addProperty("App::PropertyLink", "ProfileShape",
-                        "Sources", "Tooltip")
+                        "Sources", QT_TRANSLATE_NOOP("App::Property", "Tooltip"))
         obj.addProperty("App::PropertyFloatConstraint", "Position1",
-                        "Settings", "Tooltip")
+                        "Settings", QT_TRANSLATE_NOOP("App::Property", "Tooltip"))
         obj.addProperty("App::PropertyFloatConstraint", "Position2",
-                        "Settings", "Tooltip")
+                        "Settings", QT_TRANSLATE_NOOP("App::Property", "Tooltip"))
         obj.addProperty("App::PropertyFloatConstraint", "NormalPosition",
-                        "Settings", "Tooltip")
+                        "Settings", QT_TRANSLATE_NOOP("App::Property", "Tooltip"))
         obj.addProperty("App::PropertyBool", "NormalReverse",
-                        "Settings", "Tooltip")
+                        "Settings", QT_TRANSLATE_NOOP("App::Property", "Tooltip"))
         obj.addProperty("App::PropertyDistance", "ChordLength",
-                        "Info", "Tooltip")
+                        "Info", QT_TRANSLATE_NOOP("App::Property", "Tooltip"))
         obj.addProperty("App::PropertyDistance", "Rail1Length",
-                        "Info", "Tooltip")
+                        "Info", QT_TRANSLATE_NOOP("App::Property", "Tooltip"))
         obj.addProperty("App::PropertyDistance", "Rail2Length",
-                        "Info", "Tooltip")
+                        "Info", QT_TRANSLATE_NOOP("App::Property", "Tooltip"))
         # obj.setPropertyStatus("ChordLength", "Output")
         # obj.setPropertyStatus("Rail1Length", "Output")
         # obj.setPropertyStatus("Rail2Length", "Output")
@@ -209,7 +209,7 @@ class ProfileSupportCommand:
     def Activated(self):
         sel = FreeCADGui.Selection.getSelection()
         if len(sel) < 2:
-            FreeCAD.Console.PrintError("Select 2 rail objects, and optionally some profile objects\n")
+            FreeCAD.Console.PrintError(translate("Log", "Select 2 rail objects, and optionally some profile objects\n"))
         elif len(sel) == 2:
             self.makeFeature(sel[0], sel[1], None)
         else:
