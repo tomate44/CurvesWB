@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 
-__title__ = 'Profile Support'
-__author__ = 'Christophe Grellier (Chris_G)'
-__license__ = 'LGPL 2.1'
-__doc__ = 'Creates a support shape between two rails'
+import FreeCAD
+
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_ProfileSupport", "Profile Support")
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = QT_TRANSLATE_NOOP("Curves_ProfileSupport", "Creates a support shape between two rails")
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 # from freecad.Curves import _utils
@@ -71,26 +74,60 @@ class ProfileSupportFP:
     """Creates a ..."""
     def __init__(self, obj, rail1, rail2, prof=None):
         """Add the properties"""
-        obj.addProperty("App::PropertyLink", "Rail1",
-                        "Sources", "Tooltip")
-        obj.addProperty("App::PropertyLink", "Rail2",
-                        "Sources", "Tooltip")
-        obj.addProperty("App::PropertyLink", "ProfileShape",
-                        "Sources", "Tooltip")
-        obj.addProperty("App::PropertyFloatConstraint", "Position1",
-                        "Settings", "Tooltip")
-        obj.addProperty("App::PropertyFloatConstraint", "Position2",
-                        "Settings", "Tooltip")
-        obj.addProperty("App::PropertyFloatConstraint", "NormalPosition",
-                        "Settings", "Tooltip")
-        obj.addProperty("App::PropertyBool", "NormalReverse",
-                        "Settings", "Tooltip")
-        obj.addProperty("App::PropertyDistance", "ChordLength",
-                        "Info", "Tooltip")
-        obj.addProperty("App::PropertyDistance", "Rail1Length",
-                        "Info", "Tooltip")
-        obj.addProperty("App::PropertyDistance", "Rail2Length",
-                        "Info", "Tooltip")
+        obj.addProperty(
+            "App::PropertyLink", "Rail1", "Sources", QT_TRANSLATE_NOOP("App::Property", "Tooltip")
+        )
+        obj.addProperty(
+            "App::PropertyLink", "Rail2", "Sources", QT_TRANSLATE_NOOP("App::Property", "Tooltip")
+        )
+        obj.addProperty(
+            "App::PropertyLink",
+            "ProfileShape",
+            "Sources",
+            QT_TRANSLATE_NOOP("App::Property", "Tooltip"),
+        )
+        obj.addProperty(
+            "App::PropertyFloatConstraint",
+            "Position1",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Tooltip"),
+        )
+        obj.addProperty(
+            "App::PropertyFloatConstraint",
+            "Position2",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Tooltip"),
+        )
+        obj.addProperty(
+            "App::PropertyFloatConstraint",
+            "NormalPosition",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Tooltip"),
+        )
+        obj.addProperty(
+            "App::PropertyBool",
+            "NormalReverse",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Tooltip"),
+        )
+        obj.addProperty(
+            "App::PropertyDistance",
+            "ChordLength",
+            "Info",
+            QT_TRANSLATE_NOOP("App::Property", "Tooltip"),
+        )
+        obj.addProperty(
+            "App::PropertyDistance",
+            "Rail1Length",
+            "Info",
+            QT_TRANSLATE_NOOP("App::Property", "Tooltip"),
+        )
+        obj.addProperty(
+            "App::PropertyDistance",
+            "Rail2Length",
+            "Info",
+            QT_TRANSLATE_NOOP("App::Property", "Tooltip"),
+        )
         # obj.setPropertyStatus("ChordLength", "Output")
         # obj.setPropertyStatus("Rail1Length", "Output")
         # obj.setPropertyStatus("Rail2Length", "Output")
@@ -209,7 +246,7 @@ class ProfileSupportCommand:
     def Activated(self):
         sel = FreeCADGui.Selection.getSelection()
         if len(sel) < 2:
-            FreeCAD.Console.PrintError("Select 2 rail objects, and optionally some profile objects\n")
+            FreeCAD.Console.PrintError(translate("Log", "Select 2 rail objects, and optionally some profile objects\n"))
         elif len(sel) == 2:
             self.makeFeature(sel[0], sel[1], None)
         else:

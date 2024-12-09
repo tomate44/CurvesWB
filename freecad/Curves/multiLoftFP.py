@@ -1,12 +1,17 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "MultiLoft"
+import FreeCAD
+
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_MultiLoft", "MultiLoft")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = """Loft profile objects made of multiple faces in parallel"""
+__doc__ = QT_TRANSLATE_NOOP(
+    "Curves_MultiLoft", """Loft profile objects made of multiple faces in parallel"""
+)
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 # from freecad.Curves import _utils
@@ -21,10 +26,30 @@ class MultiLoftFP:
     """Creates a MultiLoft"""
     def __init__(self, obj):
         """Add the properties"""
-        obj.addProperty("App::PropertyLinkList", "Sources", "Multiloft", "Objects to loft")
-        obj.addProperty("App::PropertyBool", "Ruled", "Multiloft", "Ruled Loft").Ruled = False
-        obj.addProperty("App::PropertyBool", "Closed", "Multiloft", "Close loft").Closed = False
-        obj.addProperty("App::PropertyInteger", "MaxDegree", "Multiloft", "Max Bspline degree").MaxDegree = 5
+        obj.addProperty(
+            "App::PropertyLinkList",
+            "Sources",
+            "Multiloft",
+            QT_TRANSLATE_NOOP("App::Property", "Objects to loft"),
+        )
+        obj.addProperty(
+            "App::PropertyBool",
+            "Ruled",
+            "Multiloft",
+            QT_TRANSLATE_NOOP("App::Property", "Ruled Loft"),
+        ).Ruled = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "Closed",
+            "Multiloft",
+            QT_TRANSLATE_NOOP("App::Property", "Close loft"),
+        ).Closed = False
+        obj.addProperty(
+            "App::PropertyInteger",
+            "MaxDegree",
+            "Multiloft",
+            QT_TRANSLATE_NOOP("App::Property", "Max Bspline degree"),
+        ).MaxDegree = 5
         obj.Proxy = self
 
     def execute(self, obj):
@@ -113,7 +138,7 @@ class MultiLoftCommand:
     def Activated(self):
         sel = FreeCADGui.Selection.getSelection()
         if sel == []:
-            FreeCAD.Console.PrintError("Select something first !\n")
+            FreeCAD.Console.PrintError(translate("Log", "Select something first !\n"))
         else:
             self.makeFeature(sel)
 
@@ -129,4 +154,4 @@ class MultiLoftCommand:
                 'ToolTip': __doc__}
 
 
-FreeCADGui.addCommand('MultiLoft', MultiLoftCommand())
+FreeCADGui.addCommand("Curves_MultiLoft", MultiLoftCommand())

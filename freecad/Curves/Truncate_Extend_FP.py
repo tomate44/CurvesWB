@@ -1,14 +1,20 @@
 # -*- coding: utf-8 -*-
 
-__title__ = 'Truncate Extend'
-__author__ = 'Christophe Grellier (Chris_G)'
-__license__ = 'LGPL 2.1'
-__doc__ = '''Cut a shape with a plane and truncate or extend it by a given distance.
+import FreeCAD
+
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_TruncateExtendCmd", "Truncate Extend")
+__author__ = "Christophe Grellier (Chris_G)"
+__license__ = "LGPL 2.1"
+__doc__ = QT_TRANSLATE_NOOP(
+    "Curves_TruncateExtendCmd",
+    """Cut a shape with a plane and truncate or extend it by a given distance.
 In a PartDesign body, select only the cutting plane.
-Otherwise, select the shape to modify, and the cutting plane.'''
+Otherwise, select the shape to modify, and the cutting plane.""",
+)
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 from freecad.Curves import Truncate_Extend
@@ -23,16 +29,38 @@ class TruncateExtendFP:
 
     def __init__(self, obj):
         """Add the properties"""
-        obj.addProperty("App::PropertyLink", "Source",
-                        "InputObjects", "The object that will be truncated or extended")
-        obj.addProperty("App::PropertyLink", "Cutter",
-                        "InputObjects", "The planar object that cuts the Source object")
-        obj.addProperty("App::PropertyDistance", "Distance",
-                        "Settings", "The distance to truncate (if negative) or extend (if positive)")
-        obj.addProperty("App::PropertyBool", "Refine",
-                        "Settings", "Refine shape (clean up redundant edges)")
-        obj.addProperty("App::PropertyBool", "Reverse",
-                        "Settings", "Reverse cutter plane normal")
+        obj.addProperty(
+            "App::PropertyLink",
+            "Source",
+            "InputObjects",
+            QT_TRANSLATE_NOOP("App::Property", "The object that will be truncated or extended"),
+        )
+        obj.addProperty(
+            "App::PropertyLink",
+            "Cutter",
+            "InputObjects",
+            QT_TRANSLATE_NOOP("App::Property", "The planar object that cuts the Source object"),
+        )
+        obj.addProperty(
+            "App::PropertyDistance",
+            "Distance",
+            "Settings",
+            QT_TRANSLATE_NOOP(
+                "App::Property", "The distance to truncate (if negative) or extend (if positive)"
+            ),
+        )
+        obj.addProperty(
+            "App::PropertyBool",
+            "Refine",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Refine shape (clean up redundant edges)"),
+        )
+        obj.addProperty(
+            "App::PropertyBool",
+            "Reverse",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Reverse cutter plane normal"),
+        )
         obj.Distance = 10.0
         obj.Proxy = self
 
@@ -128,7 +156,7 @@ class TruncateExtendCommand:
         elif len(sel) == 2:
             self.makePartFeature(sel)
         else:
-            FreeCAD.Console.PrintError("Wrong Selection\n")
+            FreeCAD.Console.PrintError(translate("Log", "Wrong Selection\n"))
 
     def IsActive(self):
         if FreeCADGui.Selection.getSelection():
@@ -142,4 +170,4 @@ class TruncateExtendCommand:
                 'ToolTip': __doc__}
 
 
-FreeCADGui.addCommand('Curve_TruncateExtendCmd', TruncateExtendCommand())
+FreeCADGui.addCommand("Curves_TruncateExtendCmd", TruncateExtendCommand())

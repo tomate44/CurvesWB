@@ -1,17 +1,24 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Parametric solid"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_ParametricSolid", "Parametric solid")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Make a parametric solid from selected faces."
-__usage__ = """Select some faces in the 3D View, or select objects in the Tree View.
+__doc__ = translate("Curves_ParametricSolid", "Make a parametric solid from selected faces.")
+__usage__ = translate(
+    "Curves_ParametricSolid",
+    """Select some faces in the 3D View, or select objects in the Tree View.
 Activate tool.
 It will try to build a solid from selected faces.
 If not possible, it falls back to a shell, then to a compound.
-The ShapeStatus property (and the color of the icon) give the type of shape."""
+The ShapeStatus property (and the color of the icon) give the type of shape.""",
+)
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 import tempfile
@@ -58,18 +65,27 @@ def get_svg(shape_type):
 class solid:
     """Make a parametric solid from selected faces"""
     def __init__(self, obj):
-        obj.addProperty("App::PropertyLinkSubList",
-                        "Faces",
-                        "Solid",
-                        "List of faces to build the solid")
-        obj.addProperty("App::PropertyString",
-                        "ShapeStatus",
-                        "Solid",
-                        "Status of the created shape")
-        obj.addProperty("App::PropertyBool",
-                        "ShowOpenEdges",
-                        "Debug",
-                        "If the output shape in not a solid, this will output the open edges")
+        obj.addProperty(
+            "App::PropertyLinkSubList",
+            "Faces",
+            "Solid",
+            QT_TRANSLATE_NOOP("App::Property", "List of faces to build the solid"),
+        )
+        obj.addProperty(
+            "App::PropertyString",
+            "ShapeStatus",
+            "Solid",
+            QT_TRANSLATE_NOOP("App::Property", "Status of the created shape"),
+        )
+        obj.addProperty(
+            "App::PropertyBool",
+            "ShowOpenEdges",
+            "Debug",
+            QT_TRANSLATE_NOOP(
+                "App::Property",
+                "If the output shape in not a solid, this will output the open edges",
+            ),
+        )
         obj.ShapeStatus = ""
         obj.setEditorMode("ShapeStatus", 1)
         obj.Proxy = self
@@ -165,7 +181,7 @@ class solidCommand:
         faces = []
         sel = FreeCADGui.Selection.getSelectionEx('', 0)
         if sel == []:
-            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
+            FreeCAD.Console.PrintError(translate("Log", "{} :\n{}\n")).format(__title__, __usage__)
         for selobj in sel:
             if selobj.HasSubObjects:
                 for i in range(len(selobj.SubObjects)):
@@ -186,9 +202,15 @@ class solidCommand:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_ParametricSolid", "Usage"),
+                "<br>".join(__usage__.splitlines()),
+            ),
+        }
 
 
-FreeCADGui.addCommand('solid', solidCommand())
+FreeCADGui.addCommand("Curves_ParametricSolid", solidCommand())

@@ -15,7 +15,7 @@ DEBUG = 1
 def debug(string):
     if DEBUG:
         FreeCAD.Console.PrintMessage(string)
-        FreeCAD.Console.PrintMessage("\n")
+        FreeCAD.Console.PrintMessage(translate("Log", "\n"))
 
 
 def downgradeArray(arr):
@@ -47,20 +47,20 @@ def getComboView(mw):
 class blendSurfFP:
     def __init__(self, obj):
         obj.Proxy = self
-        obj.addProperty("App::PropertyLink",       "Edge1",          "Base",   "First edge")
-        obj.addProperty("App::PropertyLink",       "Edge2",          "Base",   "Second edge")
-        #obj.addProperty("App::PropertyEnumeration","Blending",       "Base",   "Blending method").Blending = ["Average","Blend","Rail1","Rail2"]
-        obj.addProperty("App::PropertyPlacement",  "Placement",      "Base",   "Placement")
-        obj.addProperty("App::PropertyFloatConstraint", "Scale1",     "Edge1", "Scale of blend curve")
-        obj.addProperty("App::PropertyEnumeration",     "Continuity1","Edge1", "Continuity").Continuity1=["C0","G1","G2","G3","G4"]
-        obj.addProperty("App::PropertyFloatConstraint", "Scale2",     "Edge2", "Scale of blend curve")
-        obj.addProperty("App::PropertyEnumeration",     "Continuity2","Edge2", "Continuity").Continuity2=["C0","G1","G2","G3","G4"]
-        obj.addProperty("App::PropertyInteger",    "ProfileSamples", "BlendSurface",   "Profile Samples")
-        obj.addProperty("App::PropertyInteger",    "RailSamples",    "BlendSurface",   "Edge Samples")
-        obj.addProperty("App::PropertyBool",       "Untwist",        "BlendSurface",   "Untwist surface")
-        obj.addProperty("App::PropertyVectorList", "Points",         "BlendSurface",   "Points")
-        obj.addProperty("App::PropertyVectorList", "ScaleList1",     "BlendSurface",   "Variable scale 1: list of vectors(parameter, scale1, 0)")
-        obj.addProperty("App::PropertyVectorList", "ScaleList2",     "BlendSurface",   "Variable scale 2: list of vectors(parameter, scale2, 0)")
+        obj.addProperty("App::PropertyLink",       "Edge1",          "Base",   QT_TRANSLATE_NOOP("App::Property", "First edge"))
+        obj.addProperty("App::PropertyLink",       "Edge2",          "Base",   QT_TRANSLATE_NOOP("App::Property", "Second edge"))
+        #obj.addProperty("App::PropertyEnumeration","Blending",       "Base",   QT_TRANSLATE_NOOP("App::Property", "Blending method")).Blending = ["Average","Blend","Rail1","Rail2"]
+        obj.addProperty("App::PropertyPlacement",  "Placement",      "Base",   QT_TRANSLATE_NOOP("App::Property", "Placement"))
+        obj.addProperty("App::PropertyFloatConstraint", "Scale1",     "Edge1", QT_TRANSLATE_NOOP("App::Property", "Scale of blend curve"))
+        obj.addProperty("App::PropertyEnumeration",     "Continuity1","Edge1", QT_TRANSLATE_NOOP("App::Property", "Continuity")).Continuity1=["C0","G1","G2","G3","G4"]
+        obj.addProperty("App::PropertyFloatConstraint", "Scale2",     "Edge2", QT_TRANSLATE_NOOP("App::Property", "Scale of blend curve"))
+        obj.addProperty("App::PropertyEnumeration",     "Continuity2","Edge2", QT_TRANSLATE_NOOP("App::Property", "Continuity")).Continuity2=["C0","G1","G2","G3","G4"]
+        obj.addProperty("App::PropertyInteger",    "ProfileSamples", "BlendSurface",   QT_TRANSLATE_NOOP("App::Property", "Profile Samples"))
+        obj.addProperty("App::PropertyInteger",    "RailSamples",    "BlendSurface",   QT_TRANSLATE_NOOP("App::Property", "Edge Samples"))
+        obj.addProperty("App::PropertyBool",       "Untwist",        "BlendSurface",   QT_TRANSLATE_NOOP("App::Property", "Untwist surface"))
+        obj.addProperty("App::PropertyVectorList", "Points",         "BlendSurface",   QT_TRANSLATE_NOOP("App::Property", "Points"))
+        obj.addProperty("App::PropertyVectorList", "ScaleList1",     "BlendSurface",   QT_TRANSLATE_NOOP("App::Property", "Variable scale 1: list of vectors(parameter, scale1, 0)"))
+        obj.addProperty("App::PropertyVectorList", "ScaleList2",     "BlendSurface",   QT_TRANSLATE_NOOP("App::Property", "Variable scale 2: list of vectors(parameter, scale2, 0)"))
 
         obj.Continuity1 = "G2"
         obj.Continuity2 = "G2"
@@ -191,7 +191,7 @@ class blendSurfVP:
             ##vobj.DisplayMode = "Wireframe"
 
     #def updateData(self, fp, prop):
-        #FreeCAD.Console.PrintMessage("updateDate : " + str(prop) + "\n")
+        #FreeCAD.Console.PrintMessage(translate("Log", "updateDate : " + str(prop) + "\n"))
         #if len(fp.Points) == fp.RailSamples * fp.ProfileSamples :
             #self.coord.points = fp.Points
             #self.row.vertices = (fp.RailSamples, fp.ProfileSamples)
@@ -205,7 +205,7 @@ class blendSurfVP:
 
     #def onChanged(self, vp, prop):
         #"Here we can do something when a single property got changed"
-        #FreeCAD.Console.PrintMessage("Change property: " + str(prop) + "\n")
+        #FreeCAD.Console.PrintMessage(translate("Log", "Change property: " + str(prop) + "\n"))
 
     #def getDisplayModes(self,obj):
          #"Return a list of display modes."
@@ -287,7 +287,7 @@ class blendSurfVP:
             self.Object.Edge1.ViewObject.show()
             self.Object.Edge2.ViewObject.show()
         except Exception as err:
-            FreeCAD.Console.PrintError("Error in onDelete: {0} \n".format(err))
+            FreeCAD.Console.PrintError(translate("Log", "Error in onDelete: {0} \n")).format(err)
         return True
 
 class blendSurfCommand:
@@ -302,7 +302,7 @@ class blendSurfCommand:
     def Activated(self):
         s = FreeCADGui.Selection.getSelection()
         if s == []:
-            FreeCAD.Console.PrintError("Select 2 CurveOnSurface objects.\n")
+            FreeCAD.Console.PrintError(translate("Log", "Select 2 CurveOnSurface objects.\n"))
             return
             
         myblSu = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Blend_Surface")

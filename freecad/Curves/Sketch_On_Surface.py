@@ -1,12 +1,15 @@
 #  -*- coding: utf-8 -*-
 
-__title__ = "Sketch on surface"
+import FreeCAD
+
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_SketchOnSurface", "Sketch on surface")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Map a sketch on a surface"
+__doc__ = QT_TRANSLATE_NOOP("Curves_SketchOnSurface", "Map a sketch on a surface")
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 import Sketcher
@@ -162,27 +165,66 @@ def print_tolerance(shape):
 class sketchOnSurface:
     "This feature object maps a sketch on a surface"
     def __init__(self, obj):
-        obj.addProperty("App::PropertyLink", "Sketch", "SketchOnSurface",
-                        "Input Sketch")
-        obj.addProperty("App::PropertyLinkList", "ExtraObjects",
-                        "SketchOnSurface",
-                        "Additional objects that will be mapped on surface")
-        obj.addProperty("App::PropertyBool", "FillFaces", "Settings",
-                        "Make faces from closed wires").FillFaces = False
-        obj.addProperty("App::PropertyBool", "FillExtrusion", "Settings",
-                        "Add extrusion faces").FillExtrusion = True
-        obj.addProperty("App::PropertyFloat", "Offset",   "Settings",
-                        "Offset distance of mapped sketch").Offset = 0.0
-        obj.addProperty("App::PropertyFloat", "Thickness", "Settings",
-                        "Extrusion thickness").Thickness = 0.0
-        obj.addProperty("App::PropertyBool", "ReverseU", "Touchup",
-                        "Reverse U direction").ReverseU = False
-        obj.addProperty("App::PropertyBool", "ReverseV", "Touchup",
-                        "Reverse V direction").ReverseV = False
-        obj.addProperty("App::PropertyBool", "SwapUV", "Touchup",
-                        "Swap U and V directions").ReverseV = False
-        obj.addProperty("App::PropertyBool", "ConstructionBounds", "Touchup",
-                        "include construction geometry in sketch bounds").ConstructionBounds = True
+        obj.addProperty(
+            "App::PropertyLink",
+            "Sketch",
+            "SketchOnSurface",
+            QT_TRANSLATE_NOOP("App::Property", "Input Sketch"),
+        )
+        obj.addProperty(
+            "App::PropertyLinkList",
+            "ExtraObjects",
+            "SketchOnSurface",
+            QT_TRANSLATE_NOOP("App::Property", "Additional objects that will be mapped on surface"),
+        )
+        obj.addProperty(
+            "App::PropertyBool",
+            "FillFaces",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Make faces from closed wires"),
+        ).FillFaces = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "FillExtrusion",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Add extrusion faces"),
+        ).FillExtrusion = True
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Offset",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Offset distance of mapped sketch"),
+        ).Offset = 0.0
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Thickness",
+            "Settings",
+            QT_TRANSLATE_NOOP("App::Property", "Extrusion thickness"),
+        ).Thickness = 0.0
+        obj.addProperty(
+            "App::PropertyBool",
+            "ReverseU",
+            "Touchup",
+            QT_TRANSLATE_NOOP("App::Property", "Reverse U direction"),
+        ).ReverseU = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "ReverseV",
+            "Touchup",
+            QT_TRANSLATE_NOOP("App::Property", "Reverse V direction"),
+        ).ReverseV = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "SwapUV",
+            "Touchup",
+            QT_TRANSLATE_NOOP("App::Property", "Swap U and V directions"),
+        ).ReverseV = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "ConstructionBounds",
+            "Touchup",
+            QT_TRANSLATE_NOOP("App::Property", "include construction geometry in sketch bounds"),
+        ).ConstructionBounds = True
         obj.Proxy = self
 
     def force_closed_bspline2d(self, c2d):
@@ -379,7 +421,7 @@ class sketchOnSurface:
                                 # faces.extend(loft.Faces)
                             # except Part.OCCError:
                                 # # error_wires.extend([shapes_1[i].Wires[j], shapes_2[i].Wires[j]])
-                                # FreeCAD.Console.PrintError("Sketch on surface : failed to create loft face ({},{})".format(i,j))
+                                # FreeCAD.Console.PrintError(translate("Log", "Sketch on surface : failed to create loft face ({},{})")).format(i,j)
                         try:
                             shell = Part.Shell(faces)
                             shell.sewShape()
@@ -388,7 +430,7 @@ class sketchOnSurface:
                             solid.fixTolerance(1e-5)
                             shapes.append(solid)
                         except Exception:
-                            FreeCAD.Console.PrintWarning("Sketch on surface : failed to create solid # {}.\n".format(i + 1))
+                            FreeCAD.Console.PrintWarning(translate("Log", "Sketch on surface : failed to create solid # {}.\n")).format(i + 1)
                             shapes.extend(faces)
                     else:
                         ruled = ruled_surface(shapes_1[i].Wires[0], shapes_2[i].Wires[0])
@@ -514,7 +556,7 @@ class SoS:
         doc = FreeCAD.ActiveDocument
         sketch, face_link = self.get_selection()
         if not sketch and not face_link:
-            FreeCAD.Console.PrintMessage("Please select a face (in the 3D view) or a sketch\n")
+            FreeCAD.Console.PrintMessage(translate("Log", "Please select a face (in the 3D view) or a sketch\n"))
             return
         if not sketch:
             sketch = doc.addObject('Sketcher::SketchObject', 'Mapped_Sketch')
@@ -539,4 +581,4 @@ class SoS:
                 'ToolTip': __doc__}
 
 
-FreeCADGui.addCommand('SoS', SoS())
+FreeCADGui.addCommand("Curves_SketchOnSurface", SoS())

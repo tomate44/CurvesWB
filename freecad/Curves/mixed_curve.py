@@ -1,12 +1,22 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Mixed curve"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_MixedCurve", "Mixed curve")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Builds a 3D curve as the intersection of 2 projected curves."
-__usage__ = """Select two objects or shapes, and activate tool.
+__doc__ = translate(
+    "Curves_MixedCurve", "Builds a 3D curve as the intersection of 2 projected curves."
+)
+__usage__ = translate(
+    "Curves_MixedCurve",
+    """Select two objects or shapes, and activate tool.
 The camera direction is saved during each shape selection, and will be used as projection direction.
-Set these directions to (0,0,0) to use the placement of each shape as projection direction."""
+Set these directions to (0,0,0) to use the placement of each shape as projection direction.""",
+)
 
 import os
 import FreeCAD
@@ -72,16 +82,52 @@ class MixedCurve:
 class MixedCurveFP:
     """Builds a 3D curve as the intersection of 2 projected curves."""
     def __init__(self, obj, s1, s2, d1, d2):
-        obj.addProperty("App::PropertyLink", "Shape1", "Mixed Curve", "First shape").Shape1 = s1
-        obj.addProperty("App::PropertyLink", "Shape2", "Mixed Curve", "Second shape").Shape2 = s2
-        obj.addProperty("App::PropertyVector", "Direction1", "Mixed Curve",
-                        "Projection direction of the first shape.\nIf vector is null, shape's placement is used.").Direction1 = d1
-        obj.addProperty("App::PropertyVector", "Direction2", "Mixed Curve",
-                        "Projection direction of the second shape.\nIf vector is null, shape's placement is used.").Direction2 = d2
-        obj.addProperty("App::PropertyBool", "FillFace1", "Mixed Curve",
-                        "Build ruled surfaces between Shape1 and resulting Mixed-Curve").FillFace1 = False
-        obj.addProperty("App::PropertyBool", "FillFace2", "Mixed Curve",
-                        "Build ruled surfaces between Shape2 and resulting Mixed-Curve").FillFace2 = False
+        obj.addProperty(
+            "App::PropertyLink",
+            "Shape1",
+            "Mixed Curve",
+            QT_TRANSLATE_NOOP("App::Property", "First shape"),
+        ).Shape1 = s1
+        obj.addProperty(
+            "App::PropertyLink",
+            "Shape2",
+            "Mixed Curve",
+            QT_TRANSLATE_NOOP("App::Property", "Second shape"),
+        ).Shape2 = s2
+        obj.addProperty(
+            "App::PropertyVector",
+            "Direction1",
+            "Mixed Curve",
+            QT_TRANSLATE_NOOP(
+                "App::Property",
+                "Projection direction of the first shape.\nIf vector is null, shape's placement is used.",
+            ),
+        ).Direction1 = d1
+        obj.addProperty(
+            "App::PropertyVector",
+            "Direction2",
+            "Mixed Curve",
+            QT_TRANSLATE_NOOP(
+                "App::Property",
+                "Projection direction of the second shape.\nIf vector is null, shape's placement is used.",
+            ),
+        ).Direction2 = d2
+        obj.addProperty(
+            "App::PropertyBool",
+            "FillFace1",
+            "Mixed Curve",
+            QT_TRANSLATE_NOOP(
+                "App::Property", "Build ruled surfaces between Shape1 and resulting Mixed-Curve"
+            ),
+        ).FillFace1 = False
+        obj.addProperty(
+            "App::PropertyBool",
+            "FillFace2",
+            "Mixed Curve",
+            QT_TRANSLATE_NOOP(
+                "App::Property", "Build ruled surfaces between Shape2 and resulting Mixed-Curve"
+            ),
+        ).FillFace2 = False
         obj.Proxy = self
 
     def execute(self, obj):
@@ -173,7 +219,7 @@ class MixedCurveCmd:
         except AttributeError:
             sel = FreeCADGui.Selection.getSelectionEx()
         if not len(sel) == 2:
-            FreeCAD.Console.PrintError("Select 2 objects !\n")
+            FreeCAD.Console.PrintError(translate("Log", "Select 2 objects !\n"))
             return
         for selobj in sel:
             selobj.Object.ViewObject.Visibility = False
@@ -189,9 +235,15 @@ class MixedCurveCmd:
         return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': 'Mixed curve',
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": "Mixed curve",
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_MixedCurve", "Usage"),
+                "<br>".join(__usage__.splitlines()),
+            ),
+        }
 
 
-FreeCADGui.addCommand('mixed_curve', MixedCurveCmd())
+FreeCADGui.addCommand("Curves_MixedCurve", MixedCurveCmd())

@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 
-__title__ = 'Profile support plane'
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_ProfileSupportPlane", "Profile support plane")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = 'Creates a support plane for sketches'
+__doc__ = QT_TRANSLATE_NOOP("Curves_ProfileSupportPlane", "Creates a support plane for sketches")
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 from . import ICONPATH
@@ -24,12 +28,37 @@ def debug(string):
 class profileSupportFP:
     "creates a profile sketch"
     def __init__(self, obj):
-        ''' Add the properties '''
-        obj.addProperty("App::PropertyLinkSub", "Edge1", "Profile", "First support edge")
-        obj.addProperty("App::PropertyLinkSub", "Edge2", "Profile", "Second support edge")
-        obj.addProperty("App::PropertyFloat", "Parameter1", "Profile", "Parameter on first edge")
-        obj.addProperty("App::PropertyFloat", "Parameter2", "Profile", "Parameter on second edge")
-        obj.addProperty("App::PropertyVector", "MainAxis", "Profile", "Main axis of the sketch")
+        """Add the properties"""
+        obj.addProperty(
+            "App::PropertyLinkSub",
+            "Edge1",
+            "Profile",
+            QT_TRANSLATE_NOOP("App::Property", "First support edge"),
+        )
+        obj.addProperty(
+            "App::PropertyLinkSub",
+            "Edge2",
+            "Profile",
+            QT_TRANSLATE_NOOP("App::Property", "Second support edge"),
+        )
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Parameter1",
+            "Profile",
+            QT_TRANSLATE_NOOP("App::Property", "Parameter on first edge"),
+        )
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Parameter2",
+            "Profile",
+            QT_TRANSLATE_NOOP("App::Property", "Parameter on second edge"),
+        )
+        obj.addProperty(
+            "App::PropertyVector",
+            "MainAxis",
+            "Profile",
+            QT_TRANSLATE_NOOP("App::Property", "Main axis of the sketch"),
+        )
         obj.Proxy = self
 
     def getEdges(self, obj):
@@ -127,7 +156,7 @@ class profSupCommand:
         params = []
         sel = FreeCADGui.Selection.getSelectionEx()
         if sel == []:
-            FreeCAD.Console.PrintError("Select 2 edges or vertexes first !\n")
+            FreeCAD.Console.PrintError(translate("Log", "Select 2 edges or vertexes first !\n"))
         for selobj in sel:
             if selobj.HasSubObjects:
                 for i in range(len(selobj.SubObjects)):
@@ -144,7 +173,7 @@ class profSupCommand:
                         # par = poe[2][0][2]
                         params.append(0)
             else:
-                FreeCAD.Console.PrintError("Select 2 edges or vertexes first !\n")
+                FreeCAD.Console.PrintError(translate("Log", "Select 2 edges or vertexes first !\n"))
         if shapes:
             self.makeProfileFeature(shapes, params)
 
@@ -160,4 +189,4 @@ class profSupCommand:
                 'ToolTip': __doc__}
 
 
-FreeCADGui.addCommand('profileSupportCmd', profSupCommand())
+FreeCADGui.addCommand("Curves_ProfileSupportPlane", profSupCommand())

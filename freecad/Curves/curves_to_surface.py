@@ -204,7 +204,7 @@ def orient_surface(surf1, surf2, tol=1e-7):
     """
     def match(p1, p2):
         return p1.distanceToPoint(p2) < tol
-    FreeCAD.Console.PrintMessage("---\n")
+    FreeCAD.Console.PrintMessage(translate("Log", "---\n"))
     # surface params O, X, Y
     params = ((0.0, 0.0), (1.0, 0.0), (0.0, 1.0))
     pts1 = [surf1.value(u, v) for u, v in params]
@@ -213,12 +213,12 @@ def orient_surface(surf1, surf2, tol=1e-7):
     if match(pts1[0], pts2[0]):
         if match(pts1[1], pts2[2]):
             surf2.exchangeUV()
-            FreeCAD.Console.PrintMessage("exchange UV\n")
+            FreeCAD.Console.PrintMessage(translate("Log", "exchange UV\n"))
         return surf2
     # O match X
     elif match(pts1[0], pts2[1]):
         # reverse U
-        FreeCAD.Console.PrintMessage("reverse U\n")
+        FreeCAD.Console.PrintMessage(translate("Log", "reverse U\n"))
         c = surf2.vIso(0.0)
         c.reverse()
         uknots = c.getKnots()
@@ -239,13 +239,13 @@ def orient_surface(surf1, surf2, tol=1e-7):
         # Y match O
         if match(pts1[2], pts2[0]):
             nbs.exchangeUV()
-            FreeCAD.Console.PrintMessage("exchange UV\n")
+            FreeCAD.Console.PrintMessage(translate("Log", "exchange UV\n"))
         surf2 = nbs
         return nbs
     # O match Y
     elif match(pts1[0], pts2[1]):
         # reverse V
-        FreeCAD.Console.PrintMessage("reverse V\n")
+        FreeCAD.Console.PrintMessage(translate("Log", "reverse V\n"))
         c = surf2.uIso(0.0)
         c.reverse()
         vknots = c.getKnots()
@@ -266,7 +266,7 @@ def orient_surface(surf1, surf2, tol=1e-7):
         # X match O
         if match(pts1[2], pts2[0]):
             nbs.exchangeUV()
-            FreeCAD.Console.PrintMessage("exchange UV\n")
+            FreeCAD.Console.PrintMessage(translate("Log", "exchange UV\n"))
         surf2 = nbs
         return nbs
     else:
@@ -689,10 +689,10 @@ class CurvesOn2Rails:
         for i in intersect:
             print(i)
         if abs(intersect[0][0]) > self.tol3d:
-            FreeCAD.Console.PrintMessage("Inserting flat profile at 0.0\n")
+            FreeCAD.Console.PrintMessage(translate("Log", "Inserting flat profile at 0.0\n"))
             intersect.insert(0, (0.0, s.vIso(0.0)))
         if abs(intersect[-1][0] - 1.0) > self.tol3d:
-            FreeCAD.Console.PrintMessage("Inserting flat profile at 1.0\n")
+            FreeCAD.Console.PrintMessage(translate("Log", "Inserting flat profile at 1.0\n"))
             intersect.append((1.0, s.vIso(1.0)))
         params = [tup[0] for tup in intersect]
         curves = [tup[1] for tup in intersect]

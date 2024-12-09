@@ -1,15 +1,22 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Discretize"
+import FreeCAD
+
+translate = FreeCAD.Qt.translate
+QT_TRANSLATE_NOOP = FreeCAD.Qt.QT_TRANSLATE_NOOP
+
+__title__ = QT_TRANSLATE_NOOP("Curves_Discretize", "Discretize")
 __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
-__doc__ = "Discretize an edge or a wire."
-__usage__ = """Select an edge in the 3D View
+__doc__ = translate("Curves_Discretize", "Discretize an edge or a wire.")
+__usage__ = translate(
+    "Curves_Discretize",
+    """Select an edge in the 3D View
 Activate tool
-It will generate some points along the edge, following various methods"""
+It will generate some points along the edge, following various methods""",
+)
 
 import os
-import FreeCAD
 import FreeCADGui
 import Part
 from . import _utils
@@ -24,22 +31,91 @@ debug = _utils.doNothing
 class Discretization:
     def __init__(self, obj, edge):
         debug("Discretization class Init")
-        obj.addProperty("App::PropertyLinkSub",      "Edge",      "Discretization",   "Edge").Edge = edge
-        obj.addProperty("App::PropertyEnumeration",  "Target",    "Discretization",   "Tool target").Target=["Edge","Wire"]
-        obj.addProperty("App::PropertyEnumeration",  "Algorithm", "Method",   "Discretization Method").Algorithm=["Number","QuasiNumber","Distance","Deflection","QuasiDeflection","Angular-Curvature"]
-        obj.addProperty("App::PropertyInteger",      "Number",    "Method",   "Number of edge points").Number = 100
-        obj.addProperty("App::PropertyFloat",        "Distance",  "Method",   "Distance between edge points").Distance=1.0
-        obj.addProperty("App::PropertyFloat",        "Deflection","Method",   "Distance for deflection Algorithm").Deflection=1.0
-        obj.addProperty("App::PropertyFloat",        "Angular",   "Method",   "Angular value for Angular-Curvature Algorithm").Angular=0.1
-        obj.addProperty("App::PropertyFloat",        "Curvature", "Method",   "Curvature value for Angular-Curvature Algorithm").Curvature=0.1
-        obj.addProperty("App::PropertyInteger",      "Minimum",   "Method",   "Minimum Number of points").Minimum = 2
-        obj.addProperty("App::PropertyFloat",        "ParameterFirst",     "Parameters",   "Start parameter")
-        obj.addProperty("App::PropertyFloat",        "ParameterLast",      "Parameters",   "End parameter")
-        obj.addProperty("App::PropertyVectorList",   "Points",    "Discretization",   "Points")
-        obj.addProperty("App::PropertyFloatList",
-                        "NormalizedParameters",
-                        "Output",
-                        "Normalized parameters list")
+        obj.addProperty(
+            "App::PropertyLinkSub",
+            "Edge",
+            "Discretization",
+            QT_TRANSLATE_NOOP("App::Property", "Edge"),
+        ).Edge = edge
+        obj.addProperty(
+            "App::PropertyEnumeration",
+            "Target",
+            "Discretization",
+            QT_TRANSLATE_NOOP("App::Property", "Tool target"),
+        ).Target = ["Edge", "Wire"]
+        obj.addProperty(
+            "App::PropertyEnumeration",
+            "Algorithm",
+            "Method",
+            QT_TRANSLATE_NOOP("App::Property", "Discretization Method"),
+        ).Algorithm = [
+            "Number",
+            "QuasiNumber",
+            "Distance",
+            "Deflection",
+            "QuasiDeflection",
+            "Angular-Curvature",
+        ]
+        obj.addProperty(
+            "App::PropertyInteger",
+            "Number",
+            "Method",
+            QT_TRANSLATE_NOOP("App::Property", "Number of edge points"),
+        ).Number = 100
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Distance",
+            "Method",
+            QT_TRANSLATE_NOOP("App::Property", "Distance between edge points"),
+        ).Distance = 1.0
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Deflection",
+            "Method",
+            QT_TRANSLATE_NOOP("App::Property", "Distance for deflection Algorithm"),
+        ).Deflection = 1.0
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Angular",
+            "Method",
+            QT_TRANSLATE_NOOP("App::Property", "Angular value for Angular-Curvature Algorithm"),
+        ).Angular = 0.1
+        obj.addProperty(
+            "App::PropertyFloat",
+            "Curvature",
+            "Method",
+            QT_TRANSLATE_NOOP("App::Property", "Curvature value for Angular-Curvature Algorithm"),
+        ).Curvature = 0.1
+        obj.addProperty(
+            "App::PropertyInteger",
+            "Minimum",
+            "Method",
+            QT_TRANSLATE_NOOP("App::Property", "Minimum Number of points"),
+        ).Minimum = 2
+        obj.addProperty(
+            "App::PropertyFloat",
+            "ParameterFirst",
+            "Parameters",
+            QT_TRANSLATE_NOOP("App::Property", "Start parameter"),
+        )
+        obj.addProperty(
+            "App::PropertyFloat",
+            "ParameterLast",
+            "Parameters",
+            QT_TRANSLATE_NOOP("App::Property", "End parameter"),
+        )
+        obj.addProperty(
+            "App::PropertyVectorList",
+            "Points",
+            "Discretization",
+            QT_TRANSLATE_NOOP("App::Property", "Points"),
+        )
+        obj.addProperty(
+            "App::PropertyFloatList",
+            "NormalizedParameters",
+            "Output",
+            QT_TRANSLATE_NOOP("App::Property", "Normalized parameters list"),
+        )
         obj.setEditorMode("NormalizedParameters", 1)
         obj.Proxy = self
         obj.Algorithm = "Number"
@@ -256,7 +332,7 @@ class ViewProviderDisc:
         try:
             self.Object.Edge[0].ViewObject.Visibility = True
         except Exception as err:
-            FreeCAD.Console.PrintError("Error in onDelete: {0} \n".format(err))
+            FreeCAD.Console.PrintError(translate("Log", "Error in onDelete: {0} \n")).format(err)
         return True
 
 
@@ -276,7 +352,7 @@ class discretize:
         s = FreeCADGui.Selection.getSelectionEx()
         edges = self.parseSel(s)
         if not edges:
-            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
+            FreeCAD.Console.PrintError(translate("Log", "{} :\n{}\n")).format(__title__, __usage__)
         FreeCADGui.doCommand("from freecad.Curves import Discretize")
         for e in edges:
             FreeCADGui.doCommand('obj = FreeCAD.ActiveDocument.addObject("Part::FeaturePython","Discretized_Edge")')
@@ -296,9 +372,15 @@ class discretize:
             return False
 
     def GetResources(self):
-        return {'Pixmap': TOOL_ICON,
-                'MenuText': __title__,
-                'ToolTip': "{}<br><br><b>Usage :</b><br>{}".format(__doc__, "<br>".join(__usage__.splitlines()))}
+        return {
+            "Pixmap": TOOL_ICON,
+            "MenuText": __title__,
+            "ToolTip": "{}<br><br><b>{} :</b><br>{}".format(
+                __doc__,
+                translate("Curves_Discretize", "Usage"),
+                "<br>".join(__usage__.splitlines()),
+            ),
+        }
 
 
-FreeCADGui.addCommand('Discretize', discretize())
+FreeCADGui.addCommand("Curves_Discretize", discretize())
