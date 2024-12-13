@@ -110,7 +110,8 @@ class join:
     def execute(self, obj):
         edges = self.getEdges(obj)
         if not edges:
-            return
+            raise RuntimeError("No input edges")
+            # return False
         # tmp = list()
         # for e in edges:
         #     if not isinstance(e.Curve, Part.BSplineCurve):
