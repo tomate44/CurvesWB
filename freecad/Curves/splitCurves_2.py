@@ -74,7 +74,7 @@ class split:
         if fp.Source[1] == []:  # No subshape given, take wire 1
             if fp.Source[0].Shape.Wires:
                 w = fp.Source[0].Shape.Wire1
-                e = w.approximate(1e-7, 1e-5, len(w.Edges), 7).toShape()
+                e = w.approximate(1e-9, 1e-7, len(w.Edges), 7).toShape()
                 # double tol2d = gp::Resolution();
                 # double tol3d = 0.0001;
                 # int maxseg=10, maxdeg=3;

@@ -645,7 +645,7 @@ class CurvesOn2Rails:
     """Surface defined by a series of curves on 2 rails"""
 
     def __init__(self, curves, rails):
-        self.tol2d = 1e-9
+        self.tol2d = 1e-7
         self.tol3d = 1e-7
         self.curves = self.curve_convert(curves)
         self.rails = self.curve_convert(rails)
