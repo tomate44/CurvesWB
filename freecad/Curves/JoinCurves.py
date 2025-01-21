@@ -93,6 +93,8 @@ class join:
         obj.Proxy = self
 
     def onChanged(self, fp, prop):
+        if prop == "StartOffset":
+            self.execute(fp)
         if hasattr(fp, "ExtensionProxy"):
             fp.ExtensionProxy.onChanged(fp, prop)
 
@@ -126,6 +128,10 @@ class join:
                 debug(f"JoinCurve : Nurbs conversion error\n{exc}\n")
                 c = e.Curve.toBSpline()
             c.segment(e.FirstParameter, e.LastParameter)
+            c.scaleKnotsToBounds()
+            mid = c.parameterAtDistance(e.Length / 2)
+            print(c.FirstParameter, c.LastParameter, mid)
+            c.insertKnot(mid, 1, 0.0)
             curves.append(c)
         debug("Edges : \n{}".format(str(curves)))
 

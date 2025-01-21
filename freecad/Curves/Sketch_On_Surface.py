@@ -274,8 +274,8 @@ class sketchOnSurface:
         if face.Orientation == "Reversed":
             offset = -offset
         offsurf = Part.OffsetSurface(face.Surface, offset)
-        rts = Part.RectangularTrimmedSurface(offsurf, u0, u1, v0, v1)
-        return rts.toShape()
+        # rts = Part.RectangularTrimmedSurface(offsurf, u0, u1, v0, v1)
+        return offsurf.toShape()
 
     def execute(self, obj):
         if not obj.Sketch:

@@ -68,7 +68,6 @@ class WaterLineFP:
         faces = self.get_source_shapes(obj)
         print(faces)
         comp = Part.Compound(faces)
-        cog = comp.CenterOfGravity
         axis = obj.Direction
         line = Part.Line()
         line.Direction = axis
@@ -84,8 +83,8 @@ class WaterLineFP:
             edges = []
             for f in faces:
                 inter = plane.intersectSS(f.Surface)
-                if inter:
-                    edges.append(inter[0].toShape())
+                for itr in inter:
+                    edges.append(itr.toShape())
             shapes.append(Part.Compound(edges))
         compound = Part.Compound(shapes)
         obj.Shape = compound
