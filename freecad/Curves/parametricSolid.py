@@ -121,10 +121,12 @@ class solidVP:
         if not hasattr(self, "icons"):
             self.icons = dict()
             for sht in ["", "Compound", "Shell", "Solid"]:
-                iconFile = tempfile.NamedTemporaryFile(suffix=".svg", delete=False)
-                iconFile.write(bytes(get_svg(sht), "utf8"))
-                iconFile.close()
-                self.icons[sht] = QtGui.QIcon(iconFile.name)
+                svg_bytes = bytearray(get_svg(sht), encoding='utf-8')
+                qimage = QtGui.QImage.fromData(svg_bytes)
+                # iconFile = tempfile.NamedTemporaryFile(suffix=".svg", delete=False)
+                # iconFile.write(bytes(get_svg(sht), "utf8"))
+                # iconFile.close()
+                self.icons[sht] = QtGui.QIcon(QtGui.QPixmap(qimage))
         return self.icons[self.Object.ShapeStatus]
 
     def attach(self, vobj):
