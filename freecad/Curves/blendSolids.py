@@ -309,8 +309,8 @@ class BlendSolid:
         self.surflist = []
         mf = MatchFaces(self.face1, self.face2)
         mf.normalize_faces()
-        Part.show(mf.face1)
-        Part.show(mf.face2)
+        # Part.show(mf.face1)
+        # Part.show(mf.face2)
         wire_pairs = list(self.get_wire_pairs())
         for idx, tup in enumerate(wire_pairs):
             # print(f"wire pair {idx}")
