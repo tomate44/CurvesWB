@@ -253,19 +253,19 @@ class MatchFaces:
         dl = []
         for off in range(max_offset):
             d = 0
-            for idx in range(len(w1.Edges)):
-                p1 = self.edge_midpoint(w1.Edges[idx])
-                p2 = self.edge_midpoint(w2.Edges[(idx + off) % max_offset])
+            for idx in range(len(w1.OrderedEdges)):
+                p1 = self.edge_midpoint(w1.OrderedEdges[idx])
+                p2 = self.edge_midpoint(w2.OrderedEdges[(idx + off) % max_offset])
                 d += p1.distanceToPoint(p2)
             dl.append(d)
             d = 0
-            for idx in range(len(w1.Edges)):
-                p1 = self.edge_midpoint(w1.Edges[idx])
-                p2 = self.edge_midpoint(w2.Edges[(-idx + off) % max_offset])
+            for idx in range(len(w1.OrderedEdges)):
+                p1 = self.edge_midpoint(w1.OrderedEdges[idx])
+                p2 = self.edge_midpoint(w2.OrderedEdges[(-idx + off) % max_offset])
                 d += p1.distanceToPoint(p2)
             dl.append(d)
-        # for d in dl:
-        #     print(d)
+        for d in dl:
+            print(d)
         mini = min(dl)
         maxi = max(dl)
         fid = dl.index(mini)
@@ -309,16 +309,16 @@ class BlendSolid:
         self.surflist = []
         mf = MatchFaces(self.face1, self.face2)
         mf.normalize_faces()
-        # Part.show(mf.face1)
-        # Part.show(mf.face2)
+        Part.show(mf.face1)
+        Part.show(mf.face2)
         wire_pairs = list(self.get_wire_pairs())
         for idx, tup in enumerate(wire_pairs):
             # print(f"wire pair {idx}")
             offset, inc = mf.wire_offset(*tup)
-            for i in range(len(tup[0].Edges)):
-                j = (inc * i + offset) % len(tup[0].Edges)
-                e1 = wire_pairs[idx][0].Edges[i]
-                e2 = wire_pairs[idx][1].Edges[j]
+            for i in range(len(tup[0].OrderedEdges)):
+                j = (inc * i + offset) % len(tup[0].OrderedEdges)
+                e1 = wire_pairs[idx][0].OrderedEdges[i]
+                e2 = wire_pairs[idx][1].OrderedEdges[j]
                 # print(e1, e2)
                 of1 = other_face(self.shape1, self.face1, e1)
                 of2 = other_face(self.shape2, self.face2, e2)

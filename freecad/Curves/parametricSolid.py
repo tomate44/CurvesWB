@@ -85,7 +85,15 @@ class solid:
         return shape
 
     def execute(self, obj):
-        faces = _utils.getShape(obj, "Faces", "Face")
+        faces = []
+        # fl = _utils.getShape(obj, "Faces", "Face")
+        # print(fl)
+        for sel in obj.Faces:
+            fl = _utils.getShape(sel, "Faces", "Face")
+            if fl:
+                faces.extend(fl)
+            else:
+                faces.extend(sel[0].Shape.Faces)
         shape = Part.Compound(faces)
         try:
             shell = Part.Shell(shape.Faces)
@@ -165,7 +173,7 @@ class solidCommand:
 
     def Activated(self):
         faces = []
-        sel = FreeCADGui.Selection.getSelectionEx('', 0)
+        sel = FreeCADGui.Selection.getSelectionEx('')
         if sel == []:
             FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
         for selobj in sel:
@@ -174,9 +182,8 @@ class solidCommand:
                     if isinstance(selobj.SubObjects[i], Part.Face):
                         faces.append((selobj.Object,
                                       selobj.SubElementNames[i]))
-            elif selobj.Object.Shape.Faces:
-                for i in range(len(selobj.Object.Shape.Faces)):
-                    faces.append((selobj.Object, "Face{}".format(i + 1)))
+            else:
+                faces.append((selobj.Object, ("", )))
                 selobj.Object.ViewObject.Visibility = False
         if faces:
             self.makeSolidFeature(faces)
