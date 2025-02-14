@@ -184,36 +184,51 @@ class split:
                 # print(info)
                 if info[0][3] == "Edge":
                     n = info[0][4]
-                    nw = w.Edges[n].split(info[0][5])
-                    nw.Placement = w.Edges[n].Placement
+                    
+                    param = info[0][5]
+                    nw = w.Edges[n].split(param)
                     if len(nw.Edges) == 2:
-                        edges[n] = nw.Edges[0]
-                        edges.insert(n + 1, nw.Edges[1])
-
-                        # print([e.Length for e in edges])
+                        if w.Edges[n].Curve.TypeId == 'Part::GeomBSplineCurve':
+                            seg1 = w.Edges[n].copy().Curve
+                            seg2 = w.Edges[n].copy().Curve
+                            
+                            seg1.segment(seg1.FirstParameter, param)
+                            seg2.segment(param, seg2.LastParameter)
+                        
+                            edges[n] = seg1.toShape()
+                            edges.insert(n + 1, seg2.toShape())
+                        else:
+                            edges[n] = nw.Edges[0]
+                            edges.insert(n + 1, nw.Edges[1])
+                            # print([e.Length for e in edges])
+                            
                         se = Part.sortEdges(edges)
                         if len(se) > 1:
                             FreeCAD.Console.PrintError("Split curve : failed to build temp Wire !")
                             # print(se)
-                        w = Part.Wire(se[0])
+                        w = Part.Wire(se[0])                    
         else:
-            w = e.split(params[1:-1])
-            w.Placement = e.Placement
-        #     edges = []
-        #     print(params)
-        #     for i in range(1, len(params) - 1):
-        #         c = e.Curve.trim(params[i], params[i + 1])
-        #         edges.append(c.toShape())
-        #
-        # se = Part.sortEdges(edges)
-        # if len(se) > 1:
-        #     FreeCAD.Console.PrintError("Split curve : failed to build final Wire !")
-        #     wires = []
-        #     for el in se:
-        #         wires.append(Part.Wire(el))
-        #     w = Part.Compound(wires)
-        # else:
-        #     w = Part.Wire(se[0])
+            if e.Curve.TypeId == 'Part::GeomBSplineCurve':
+                print(e.Placement)
+                edges = []
+                print(params)
+                for i in range(0, len(params) - 1):
+                    c = e.copy().Curve.trim(params[i], params[i + 1])
+                    edges.append(c.toShape())
+                
+                se = Part.sortEdges(edges)
+                if len(se) > 1:
+                    FreeCAD.Console.PrintError("Split curve : failed to build final Wire !")
+                    wires = []
+                    for el in se:
+                        wires.append(Part.Wire(el))
+                    w = Part.Compound(wires)
+                else:
+                    w = Part.Wire(se[0])                    
+            else:
+                w = e.split(params[1:-1])
+                w.Placement = e.Placement
+            
         if e.Orientation == "Reversed":
             el = [e.reversed() for e in w.Edges]
             w = Part.Wire(el)
@@ -247,6 +262,7 @@ class split:
                 obj.Placement = sh.Placement
             else:
                 obj.Shape = w
+                obj.Placement = w.Placement
             obj.NormalizedParameters = KnotVector(params).normalize()
         else:
             FreeCAD.Console.PrintError("Split curve : Invalid Wire !")
