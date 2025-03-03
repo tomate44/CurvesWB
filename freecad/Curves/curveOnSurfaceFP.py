@@ -24,7 +24,7 @@ class cosFP:
         ''' Add the properties '''
         obj.addProperty("App::PropertyLinkSub",    "InputEdge",      "CurveOnSurface",   "Input edge")
         obj.addProperty("App::PropertyLinkSub",    "Face",           "CurveOnSurface",   "Support face")
-        obj.addProperty("App::PropertyFloat",      "Tolerance",      "CurveOnSurface",   "Tolerance").Tolerance=0.0001
+        obj.addProperty("App::PropertyFloat",      "Tolerance",      "CurveOnSurface",   "Tolerance")
         obj.addProperty("App::PropertyBool",       "ReverseTangent", "Orientation",   "Reverse tangent").ReverseTangent = False
         obj.addProperty("App::PropertyBool",       "ReverseNormal",  "Orientation",   "Reverse normal").ReverseNormal = False
         obj.addProperty("App::PropertyBool",       "ReverseBinormal","Orientation",   "Reverse binormal").ReverseBinormal = False
@@ -36,6 +36,7 @@ class cosFP:
         obj.addProperty("App::PropertyBool",       "Closed",         "CurveOnSurface", "Close the curve").Closed = False
         obj.addProperty("App::PropertyBool",       "Reverse",        "CurveOnSurface", "Reverse the parametric orientation of the curve").Reverse = False
         obj.Output = "Curve only"
+        obj.setExpression("Tolerance", u"1e-3")
         obj.Proxy = self
 
     def onChanged(self, fp, prop):

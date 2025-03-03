@@ -12,19 +12,65 @@ def parameterization(points, a, closed):
     """Computes a knot Sequence for a set of points
     fac (0-1) : parameterization factor
     fac=0 -> Uniform / fac=0.5 -> Centripetal / fac=1.0 -> Chord-Length"""
+    def distance(p1, p2):
+        p = p2 - p1
+        if isinstance(p, FreeCAD.Vector):
+            return p.Length
+        return p.length()
+
     pts = points.copy()
-    if closed and pts[0].distanceToPoint(pts[-1]) > 1e-7:  # we need to add the first point as the end point
-        pts.append(pts[0])
+    # print(f"parameterization on type {pts[0]}")
+    if closed:
+        le = distance(pts[-1], pts[0])
+        if le > 1e-7:  # we need to add the first point as the end point
+            pts.append(pts[0])
     params = [0]
     for i in range(1, len(pts)):
-        p = pts[i] - pts[i - 1]
-        if isinstance(p, FreeCAD.Vector):
-            le = p.Length
-        else:
-            le = p.length()
+        le = distance(pts[i - 1], pts[i])
         pl = pow(le, a)
         params.append(params[-1] + pl)
     return params
+
+
+def interpolation(pts, params, periodic=False, tans=[], flags=[]):
+    nbp = len(pts)
+    if not ((len(tans) == nbp) and (len(flags) == nbp)):
+        tans = [FreeCAD.Vector()] * nbp
+        flags = [False] * nbp
+    npts = pts
+    npars = params
+    ntans = tans
+    nflags = flags
+    if periodic:
+        n = 1
+        if nbp <= 4:
+            n = 2
+        npts.extend(pts * (2 * n))
+        ntans.extend(tans * (2 * n))
+        nflags.extend(flags * (2 * n))
+        period = params[-1] - params[0]
+        nparams = []
+        for p in params:
+            for i in range(1, n + 1):
+                nparams.append(p)
+                nparams.append(p - i * period)
+                nparams.append(p + i * period)
+        npars = list(set(nparams))
+        npars.sort()
+
+    bs = Part.BSplineCurve()
+    # print(npts, npars, periodic, ntans, nflags)
+    bs.interpolate(Points=npts, Parameters=npars, PeriodicFlag=periodic, Tangents=ntans, TangentFlags=nflags)
+    if not periodic:
+        return bs
+
+    offset = n * nbp
+    npoles = bs.getPoles()[offset:-offset - 1]
+    nmults = bs.getMultiplicities()[offset:-offset]
+    nknots = bs.getKnots()[offset:-offset]
+    nbs = Part.BSplineCurve()
+    nbs.buildFromPolesMultsKnots(npoles, nmults, nknots, True, 3)
+    return nbs
 
 
 class ConnectionMarker(graphics.Marker):
@@ -224,12 +270,12 @@ class InterpoCurveEditor(object):
     points can be :
     - Vector (free point)
     - (Vector, shape) (point on shape)"""
-    def __init__(self, points=[], fp=None):
+    def __init__(self, points=[], fp=None, periodic=False):
         self.points = list()
         self.curve = Part.BSplineCurve()
         self.fp = fp
         self.root_inserted = False
-        self.periodic = False
+        self.periodic = periodic
         self.param_factor = 1.0
         # self.support = None  #  Not yet implemented
         for p in points:
@@ -313,7 +359,7 @@ class InterpoCurveEditor(object):
                 for j in range(len(self.points[i].points)):
                     tans.append(FreeCAD.Vector(0, 0, 0))
                     flags.append(False)
-        return(tans, flags)
+        return tans, flags
 
     def update_curve(self):
         pts = list()
@@ -325,11 +371,11 @@ class InterpoCurveEditor(object):
             if self.fp:
                 fac = self.fp.Parametrization
             params = parameterization(pts, fac, self.periodic)
-            self.curve.interpolate(Points=pts, Parameters=params, PeriodicFlag=self.periodic)
+            self.curve = interpolation(pts, params, self.periodic)
             tans, flags = self.compute_tangents()
             if any(flags):
                 if (len(tans) == len(pts)) and (len(flags) == len(pts)):
-                    self.curve.interpolate(Points=pts, Parameters=params, PeriodicFlag=self.periodic, Tangents=tans, TangentFlags=flags)
+                    self.curve = interpolation(pts, params, self.periodic, tans, flags)
             if self.fp:
                 self.fp.Shape = self.curve.toShape()
 

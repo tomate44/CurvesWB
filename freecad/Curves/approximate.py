@@ -104,15 +104,15 @@ class Approximate:
         self.getPoints(obj)
         self.setTolerance(obj)
         # obj.ApproxTolerance = 0.05
-        
         # self.execute(obj)
 
     def setTolerance(self, obj):
         try:
             le = obj.PointObject.Shape.BoundBox.DiagonalLength
-            obj.ApproxTolerance = le / 10000.0
+            tol = le / 10000.0
+            obj.setExpression("ApproxTolerance", str(tol))
         except AttributeError:
-            obj.ApproxTolerance = 0.001
+            obj.setExpression("ApproxTolerance", u"1e-3")
 
     def getPoints(self, obj):
         if hasattr(obj.PointObject, 'Group'):

@@ -168,9 +168,9 @@ class GordonProfileFP:
         if len(pts) == 2:
             curve.buildFromPoles(pts)
         elif obj.Periodic and pts[0].distanceToPoint(pts[-1]) < 1e-7:
-            curve.interpolate(Points=pts[:-1], Parameters=params, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Tangents=tans[:-1], TangentFlags=flags[:-1])
+            curve = profile_editor.interpolation(pts[:-1], params, obj.Periodic, tans[:-1], flags[:-1])
         else:
-            curve.interpolate(Points=pts, Parameters=params, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Tangents=tans, TangentFlags=flags)
+            curve = profile_editor.interpolation(pts, params, obj.Periodic, tans, flags)
         obj.Shape = curve.toShape()
 
     def onChanged(self, fp, prop):
@@ -228,8 +228,8 @@ class GordonProfileVP:
                 if i < min(len(self.Object.Flags), len(self.Object.Tangents)):
                     if self.Object.Flags[i]:
                         pts[i].tangent = self.Object.Tangents[i]
-            self.ip = profile_editor.InterpoCurveEditor(pts, self.Object)
-            self.ip.periodic = self.Object.Periodic
+            self.ip = profile_editor.InterpoCurveEditor(pts, self.Object, self.Object.Periodic)
+            # self.ip.periodic = self.Object.Periodic
             self.ip.param_factor = self.Object.Parametrization
             for i in range(min(len(self.Object.LinearSegments), len(self.ip.lines))):
                 self.ip.lines[i].tangent = self.Object.LinearSegments[i]

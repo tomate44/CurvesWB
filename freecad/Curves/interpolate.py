@@ -60,7 +60,7 @@ class Interpolate:
         obj.addProperty("App::PropertyLink",           "Source",         "General",    "Source object that provides points to interpolate")
         obj.addProperty("App::PropertyLinkSubList",    "PointList",      "General",    "Point list to interpolate")
         obj.addProperty("App::PropertyBool",           "Periodic",       "General",    "Set the curve closed").Periodic = False
-        obj.addProperty("App::PropertyFloat",          "Tolerance",      "General",    "Interpolation tolerance").Tolerance = 1e-7
+        obj.addProperty("App::PropertyFloat",          "Tolerance",      "General",    "Interpolation tolerance")
         obj.addProperty("App::PropertyBool",           "CustomTangents", "General",    "User specified tangents").CustomTangents = False
         obj.addProperty("App::PropertyBool",           "DetectAligned",  "General",    "interpolate 3 aligned points with a line").DetectAligned = False
         obj.addProperty("App::PropertyBool",           "Polygonal",      "General",    "interpolate with a degree 1 polygonal curve").Polygonal = False
@@ -74,6 +74,7 @@ class Interpolate:
         obj.addProperty("App::PropertyInteger", "UTurns", "Spiral", "Nb of turns between 2 points, in U direction").UTurns = 0
         obj.addProperty("App::PropertyInteger", "VTurns", "Spiral", "Nb of turns between 2 points, in V direction").VTurns = 0
         obj.Parametrization = ["ChordLength", "Centripetal", "Uniform", "Custom"]
+        obj.setExpression("Tolerance", u"1e-7")
         obj.Proxy = self
         if isinstance(source, (list, tuple)):
             obj.PointList = source
