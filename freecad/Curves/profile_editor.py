@@ -12,16 +12,21 @@ def parameterization(points, a, closed):
     """Computes a knot Sequence for a set of points
     fac (0-1) : parameterization factor
     fac=0 -> Uniform / fac=0.5 -> Centripetal / fac=1.0 -> Chord-Length"""
+    def distance(p1, p2):
+        p = p2 - p1
+        if isinstance(p, FreeCAD.Vector):
+            return p.Length
+        return p.length()
+
     pts = points.copy()
-    if closed and pts[0].distanceToPoint(pts[-1]) > 1e-7:  # we need to add the first point as the end point
-        pts.append(pts[0])
+    # print(f"parameterization on type {pts[0]}")
+    if closed:
+        le = distance(pts[-1], pts[0])
+        if le > 1e-7:  # we need to add the first point as the end point
+            pts.append(pts[0])
     params = [0]
     for i in range(1, len(pts)):
-        p = pts[i] - pts[i - 1]
-        if isinstance(p, FreeCAD.Vector):
-            le = p.Length
-        else:
-            le = p.length()
+        le = distance(pts[i - 1], pts[i])
         pl = pow(le, a)
         params.append(params[-1] + pl)
     return params
