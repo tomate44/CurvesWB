@@ -93,6 +93,8 @@ class join:
         obj.Proxy = self
 
     def onChanged(self, fp, prop):
+        if 'Restore' in fp.State:
+            return
         if prop == "StartOffset":
             self.execute(fp)
         if hasattr(fp, "ExtensionProxy"):
