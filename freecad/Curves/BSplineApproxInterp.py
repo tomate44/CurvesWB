@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2018 German Aerospace Center (DLR)
+
 #  This file is a python port of the following files :
 #
 #  /src/geometry/CTiglBSplineApproxInterp.cpp
