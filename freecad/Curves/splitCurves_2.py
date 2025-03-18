@@ -83,7 +83,7 @@ class split:
                 e = fp.Source[0].Shape.Edge1
                 w = None
             else:
-                FreeCAD.Console.PrintError("SplitCurve : Input shape has no wires or edges\n")
+                FreeCAD.Console.PrintError("SplitCurve '{}' : Input shape has no wires or edges\n".format(fp.Label))
                 return None, None
         else:
             e = _utils.getShape(fp, "Source", "Edge")
@@ -124,13 +124,15 @@ class split:
         return parameters
 
     def onChanged(self, fp, prop):
-        e = None
-        if hasattr(fp, "Source") and fp.Source:
-            e, w = self.getShape(fp)
-        if not e:
+        if 'Restore' in fp.State:
             return
         if prop in ["Source", "Values", "Distance", "CuttingObjects"]:
-            debug("Split : {} changed".format(prop))
+            e = None
+            if hasattr(fp, "Source") and fp.Source:
+                e, w = self.getShape(fp)
+            if not e:
+                return
+            debug("Split {} : {} changed".format(fp.Label, prop))
             self.execute(fp)
 
     def execute(self, obj):
