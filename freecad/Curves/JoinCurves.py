@@ -93,6 +93,8 @@ class join:
         obj.Proxy = self
 
     def onChanged(self, fp, prop):
+        if 'Restore' in fp.State:
+            return
         if prop == "StartOffset":
             self.execute(fp)
         if hasattr(fp, "ExtensionProxy"):
@@ -130,7 +132,7 @@ class join:
             c.segment(e.FirstParameter, e.LastParameter)
             c.scaleKnotsToBounds()
             mid = c.parameterAtDistance(e.Length / 2)
-            print(c.FirstParameter, c.LastParameter, mid)
+            debug("FirstP: {} LastP: {} Mid: {}".format(c.FirstParameter, c.LastParameter, mid))
             c.insertKnot(mid, 1, 0.0)
             curves.append(c)
         debug("Edges : \n{}".format(str(curves)))
