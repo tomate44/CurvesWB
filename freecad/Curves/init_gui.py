@@ -140,7 +140,7 @@ class CurvesWorkbench(Gui.Workbench):
             contextlist = ["Curves_adjacent_faces", "Curves_bspline_to_console"]  # list of commands
             self.appendContextMenu("Curves", contextlist)
         elif recipient == "Tree":
-            contextlist = []  # list of commands
+            contextlist = ["join", "split", "Discretize", "Approximate", "Interpolate"]  # list of commands
             self.appendContextMenu("Curves", contextlist)
 
     def GetClassName(self):
