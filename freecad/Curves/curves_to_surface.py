@@ -616,12 +616,12 @@ class Gordon:
         ns = self.s1.copy()
         for i in range(1, len(self.s1.getPoles()) + 1):
             for j in range(1, len(self.s1.getPoles()[0]) + 1):
-                # w1 = self.s1.getWeight(i, j)
+                w1 = self.s1.getWeight(i, j)
                 # print(i,j)
                 # Part.show(self.s2.toShape())
-                # w2 = self.s2.getWeight(i, j)
-                # w3 = self.s3.getWeight(i, j)
-                w1, w2, w3 = 1, 1, 1
+                w2 = self.s2.getWeight(i, j)
+                w3 = self.s3.getWeight(i, j)
+                # w1, w2, w3 = 1, 1, 1
                 p1 = self.s1.getPole(i, j) * w1
                 p2 = self.s2.getPole(i, j) * w2
                 p3 = self.s3.getPole(i, j) * w3

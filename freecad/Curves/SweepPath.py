@@ -467,11 +467,12 @@ class RotationSweep(Sweep):
         bs = Part.BSplineSurface()
         curve = self.Path.Curve
         poles = [[self.Center] * curve.NbPoles, curve.getPoles()]
+        weights = [curve.getWeights(), curve.getWeights()]
         bs.buildFromPolesMultsKnots(poles,
                                     [2, 2], curve.getMultiplicities(),
                                     [0.0, 1.0], curve.getKnots(),
                                     False, curve.isPeriodic(),
-                                    1, curve.Degree)
+                                    1, curve.Degree, weights)
         BSplineFacade.syncDegree([bs, 0], [self.S1, 0])
         BSplineFacade.insKnots([bs, 0], [self.S1, 0], self.Tol2D)
         return bs

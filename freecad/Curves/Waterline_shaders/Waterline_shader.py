@@ -122,16 +122,20 @@ class WaterlineAnalysisShader:
 #doc.addObject("Part::Ellipsoid", "Ellipsoid")
 #doc.addObject("Part::Torus", "Torus")
 #doc.recompute()
+"""
+from importlib import reload
+from freecad.Curves.Waterline_shaders import Waterline_shader
+reload(Waterline_shader)
 
 view = Gui.ActiveDocument.ActiveView
 view.viewIsometric()
 Gui.SendMsgToActiveView("ViewFit")
 
 root = view.getViewer().getSceneGraph()
-shader = WaterlineAnalysisShader()
+shader = Waterline_shader.WaterlineAnalysisShader()
 #shader.UnitColor = (1, 0, 0)
 #shader.MainUnit = 20.0
 root.insertChild(shader.Shader, 0)
 
 
-
+"""

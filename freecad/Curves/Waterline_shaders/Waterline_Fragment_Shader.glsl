@@ -43,6 +43,7 @@ void main(void)
     }
     else
     {
-        gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0); // result;
+        // gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0); // result;
+        gl_FragColor = gl_Color;
     }
 }

@@ -11,5 +11,6 @@ void main()
     vertex = gl_Vertex;
     eposition = gl_ModelViewMatrix * gl_Vertex;
     normal = gl_NormalMatrix * gl_Normal;
+    gl_FrontColor = gl_Color;
     // normmat = gl_ModelViewMatrix;
 }
