@@ -88,12 +88,14 @@ class solid:
         faces = []
         # fl = _utils.getShape(obj, "Faces", "Face")
         # print(fl)
-        for sel in obj.Faces:
-            fl = _utils.getShape(sel, "Faces", "Face")
+        for o, subnames in obj.Faces:
+            fl = []
+            for subname in subnames:
+                fl.append(o.getSubObject(subname))
             if fl:
                 faces.extend(fl)
             else:
-                faces.extend(sel[0].Shape.Faces)
+                faces.extend(o.Shape.Faces)
         shape = Part.Compound(faces)
         try:
             shell = Part.Shell(shape.Faces)
