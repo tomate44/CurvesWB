@@ -78,11 +78,14 @@ class solid:
         open_edges = []
         for e in shape.Edges:
             aot = shape.ancestorsOfType(e, Part.Face)
-            if len(aot) < 2:
+            if len(aot) == 0:
+                open_edges.append(e)
+            elif len(aot) == 1 and not e.isSeam(aot[0]):
                 open_edges.append(e)
         if open_edges:
             return Part.Compound(open_edges)
-        return shape
+        FreeCAD.Console.PrintWarning(f"Parametric Solid : No open edge found")
+        return Part.Shape()
 
     def execute(self, obj):
         faces = []
