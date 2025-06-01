@@ -539,4 +539,5 @@ class SoS:
                 'ToolTip': __doc__}
 
 
-FreeCADGui.addCommand('SoS', SoS())
+if FreeCAD.GuiUp:
+    FreeCADGui.addCommand('SoS', SoS())
