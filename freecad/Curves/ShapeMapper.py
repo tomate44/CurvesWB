@@ -1,0 +1,609 @@
+import FreeCAD
+import FreeCADGui
+import Part
+import functools
+import time
+
+
+def timer(func):
+    @functools.wraps(func)
+    def wrapper_timer(*args, **kwargs):
+        tic = time.perf_counter()
+        value = func(*args, **kwargs)
+        toc = time.perf_counter()
+        elapsed_time = toc - tic
+        print(f"{func.__name__} took {elapsed_time:0.4f} seconds")
+        return value
+    return wrapper_timer
+
+
+# Old class - Not used
+class BoundarySorter:
+    """
+    Sort a wire list to build faces
+    Returns a list of lists of wires.
+    Each returned list has an outerwire
+    with eventually some inner wires.
+    All input wires are supposed to be coplanar.
+    """
+
+    def __init__(self, wires):
+        self.wires = []
+        self.parents = []
+        self.sorted_wires = []
+        self.open_wires = []
+        # self.surface = surface
+        for w in wires:
+            if not w.isClosed():
+                self.open_wires.append(w)
+            else:
+                self.wires.append(w)
+                self.parents.append([])
+                self.sorted_wires.append([])
+        self.done = False
+
+    def check_inside(self):
+        for i, w1 in enumerate(self.wires):
+            for j, w2 in enumerate(self.wires):
+                if not i == j:
+                    if w2.BoundBox.isInside(w1.BoundBox):
+                        # if self.fine_check_inside(w1, w2):
+                        self.parents[i].append(j)
+
+    def sort_pass(self):
+        to_remove = []
+        for i, p in enumerate(self.parents):
+            if (p is not None) and p == []:
+                to_remove.append(i)
+                self.sorted_wires[i].append(self.wires[i])
+                self.parents[i] = None
+        for i, p in enumerate(self.parents):
+            if (p is not None) and len(p) == 1:
+                to_remove.append(i)
+                self.sorted_wires[p[0]].append(self.wires[i])
+                self.parents[i] = None
+        # print("Removing full : {}".format(to_remove))
+        if len(to_remove) > 0:
+            for i, p in enumerate(self.parents):
+                if (p is not None):
+                    for r in to_remove:
+                        if r in p:
+                            p.remove(r)
+        else:
+            self.done = True
+
+    def sort(self):
+        self.check_inside()
+        # print(self.parents)
+        while not self.done:
+            # print("Pass {}".format(i))
+            self.sort_pass()
+        result = []
+        for w in self.sorted_wires:
+            if w:
+                result.append(w)
+        self.sorted_wires = result
+
+
+def validated_face(w, surf=None):
+    ''' Attempt to create valid surface by increasing tolerance if required
+    up to maxtol. On failure return a null face
+    '''
+    maxtol = 1e-4
+    tol = w.getTolerance(1)
+    while tol < maxtol:
+        if surf is not None:
+            f = Part.Face(surf, w)
+        else:
+            f = Part.Face(w)
+        try:
+            f.validate()
+            break
+        except Part.OCCError:
+            tol *= 2
+            w.fixTolerance(tol)
+    if tol < maxtol:
+        return f
+    else:
+        print('Face validation failed')
+        return Part.Face()  # null face
+
+
+def build_face(surf, wl, tol=1e-7):
+    f = validated_face(wl[0], surf)  # should be valid or null...
+    try:
+        f.check()
+    except Exception as e:
+        print(str(e))
+    if not f.isValid():
+        print("Invalid initial face")
+        f.validate()
+    if len(wl) > 1:
+        try:
+            f.cutHoles(wl[1:])
+            f.validate()
+        except AttributeError:
+            print("Faces with holes require FC 0.19+\nIgnoring holes\n")
+        except Part.OCCError:
+            print("Unable to cut hole in face")
+    # f.sewShape()
+    # f.check(True)
+    # print_tolerance(f)
+    if not f.isValid():
+        print("Invalid final face")
+    return f
+
+
+def build_periodic_face(surf, wl, tol=1e-7):
+    ffix = Part.ShapeFix.Face(surf, tol)
+    for w in wl:
+        ffix.add(w)
+    ffix.perform()
+    if ffix.fixOrientation():
+        print("fixOrientation")
+    if ffix.fixMissingSeam():
+        print("fixMissingSeam")
+    return ffix.face()
+
+# --- Sort PCurves ---
+# Algo may not be very efficient
+# It may be better to port Part.sortEdges algo
+# See AppPartPy @ 2188 and 158
+
+
+def sq_dist(v1, v2):
+    "return square distance between vectors or vectors2d"
+    if isinstance(v1, FreeCAD.Vector):
+        return (v1.x - v2.x)**2 + (v1.y - v2.y)**2 + (v1.z - v2.z)**2
+    elif isinstance(v1, FreeCAD.Base.Vector2d):
+        return (v1.x - v2.x)**2 + (v1.y - v2.y)**2
+
+
+def contact(pc1, pc2, tol=1e-7):
+    c1, fp1, lp1 = pc1
+    c2, fp2, lp2 = pc2
+    v1 = c1.value(fp1)
+    v2 = c1.value(lp1)
+    v3 = c2.value(fp2)
+    v4 = c2.value(lp2)
+    if sq_dist(v1, v3) < tol:
+        # print("contact v1 v3")
+        return True
+    elif sq_dist(v1, v4) < tol:
+        # print("contact v1 v4")
+        return True
+    elif sq_dist(v2, v3) < tol:
+        # print("contact v2 v3")
+        return True
+    elif sq_dist(v2, v4) < tol:
+        # print("contact v2 v4")
+        return True
+    # print("No contact")
+    return False
+
+
+@timer
+def find_joined_pcurves(pcurves, tol=1e-7):
+    """Sort a list of pcurves
+    and return a list of lists of joined pcurves
+    """
+    joined = []
+    curr = [0]
+    remain = list(range(1, len(pcurves)))
+    while len(remain) > 0:
+        # print(f"--- Search pass for {curr}")
+        # print(remain)
+        found = False
+        for idx in remain:
+            if contact(pcurves[curr[-1]], pcurves[idx]):
+                curr.append(idx)
+                remain.remove(idx)
+                found = True
+                # print(f"Found {idx}")
+                break
+        if not found:
+            joined.append(curr)
+            curr = [remain[0]]
+            remain.pop(0)
+    # if len(curr) == 1:
+    joined.append(curr)
+    # print(joined)
+    return joined
+
+
+def ruled_surfaces(shape1, shape2):
+    "return ruled surfaces between shape1 and shape2"
+    ruled = []
+    if shape1.Faces:
+        for h in range(len(shape1.Faces)):
+            face_1 = shape1.Faces[h]
+            face_2 = shape2.Faces[h]
+            for i in range(len(face_1.Wires)):
+                for j in range(len(face_1.Wires[i].Edges)):
+                    if not face_1.Wires[i].Edges[j].isSeam(face_1):
+                        rs = Part.makeRuledSurface(face_1.Wires[i].Edges[j],
+                                                   face_2.Wires[i].Edges[j])
+                        # print(rs)
+                        ruled.extend(rs.Faces)
+    elif shape1.Wires:
+        for i in range(len(shape1.Wires)):
+            rs = Part.makeRuledSurface(shape1.Wires[i], shape2.Wires[i])
+            # print(rs)
+            ruled.append(rs)
+    else:
+        for i in range(len(shape1.Edges)):
+            rs = Part.makeRuledSurface(shape1.Edges[i], shape2.Edges[i])
+            ruled.append(rs)
+    return Part.Compound(ruled)
+
+
+def upgrade_faces(shape):
+    "Try to upgrade a shape faces to a shell and solid"
+    try:
+        shell = Part.Shell(shape.Faces)
+        if shell.isValid():
+            shape = shell
+    except Part.OCCError:
+        print("Shell not valid")
+    try:
+        solid = Part.Solid(shape)
+        if solid.isValid():
+            shape = solid
+    except Part.OCCError:
+        print("Solid not valid")
+    return shape
+
+
+def grid(bounds=[0, 1, 0, 1], nbU=10, nbV=10, surface=None):
+    """Create a grid of lines in specified range
+    If surface is None :
+    - Return 2 lists of (NbU + 1) and (NbV + 1) Line2dSegment
+    Else :
+    - Return 2 lists of (NbU + 1) and (NbV + 1) edges"""
+    u0, u1, v0, v1 = bounds
+    uiso = []
+    for i in range(nbU + 1):
+        u = u0 + i * (u1 - u0) / nbU
+        p1 = FreeCAD.Base.Vector2d(u, v0)
+        p2 = FreeCAD.Base.Vector2d(u, v1)
+        line = Part.Geom2d.Line2dSegment(p1, p2)
+        fp = line.FirstParameter
+        lp = line.LastParameter
+        if surface is None:
+            uiso.append(line)
+        else:
+            uiso.append(line.toShape(surface, fp, lp))
+    viso = []
+    for i in range(nbV + 1):
+        v = v0 + i * (v1 - v0) / nbV
+        p1 = FreeCAD.Base.Vector2d(u0, v)
+        p2 = FreeCAD.Base.Vector2d(u1, v)
+        line = Part.Geom2d.Line2dSegment(p1, p2)
+        fp = line.FirstParameter
+        lp = line.LastParameter
+        if surface is None:
+            viso.append(line)
+        else:
+            viso.append(line.toShape(surface, fp, lp))
+    return uiso, viso
+
+
+class Quad:
+    def __init__(self, geomrange=[0, 1, 0, 1], paramrange=[0, 1, 0, 1]):
+        self.quad = Part.BSplineSurface()
+        self.GeometryRange = geomrange
+        self.ParameterRange = paramrange
+
+    @property
+    def Face(self):
+        return self.quad.toShape()
+
+    @property
+    def Surface(self):
+        return self.quad
+
+    @property
+    def GeometryRange(self):
+        pu1, pu2 = self.quad.getPoles()
+        p00 = pu1[0]
+        p11 = pu2[-1]
+        return p00.x, p11.x, p00.y, p11.y
+
+    @GeometryRange.setter
+    def GeometryRange(self, bounds):
+        if not (len(bounds) == 4):
+            raise RuntimeError("Quad need 4 bounds")
+        u0, u1, v0, v1 = bounds
+        self.quad.setPole(1, 1, FreeCAD.Vector(u0, v0, 0))
+        self.quad.setPole(1, 2, FreeCAD.Vector(u0, v1, 0))
+        self.quad.setPole(2, 1, FreeCAD.Vector(u1, v0, 0))
+        self.quad.setPole(2, 2, FreeCAD.Vector(u1, v1, 0))
+
+    @property
+    def ParameterRange(self):
+        return self.quad.bounds()
+
+    @ParameterRange.setter
+    def ParameterRange(self, bounds):
+        if not (len(bounds) == 4):
+            raise RuntimeError("Quad need 4 bounds")
+        self.quad.setUKnot(1, bounds[0])
+        self.quad.setUKnot(2, bounds[1])
+        self.quad.setVKnot(1, bounds[2])
+        self.quad.setVKnot(2, bounds[3])
+        # self.quad.scaleKnotsToBounds(*bounds) is less precise
+
+    def extend(self, *bounds):
+        u0, u1, v0, v1 = self.Limits
+        if len(bounds) == 1:
+            s0 = u0 - bounds[0]
+            s1 = u1 + bounds[0]
+            t0 = v0 - bounds[0]
+            t1 = v1 + bounds[0]
+        elif len(bounds) == 2:
+            s0 = u0 - bounds[0]
+            s1 = u1 + bounds[0]
+            t0 = v0 - bounds[1]
+            t1 = v1 + bounds[1]
+        elif len(bounds) == 4:
+            s0, s1, t0, t1 = bounds
+        else:
+            raise RuntimeError("Quad.extend need 1,2 or 4 parameters")
+        ku0, ku1, kv0, kv1 = self.Bounds
+        nu0, nu1, nv0, nv1 = self.Bounds
+        if s0 < u0:
+            nu0 += (ku1 - ku0) * (s0 - u0) / (u1 - u0)
+        if s1 > u1:
+            nu1 += (ku1 - ku0) * (s1 - u1) / (u1 - u0)
+        if t0 < v0:
+            nv0 += (kv1 - kv0) * (t0 - v0) / (v1 - v0)
+        if t1 > v1:
+            nv1 += (kv1 - kv0) * (t1 - v1) / (v1 - v0)
+        self.GeometryRange = s0, s1, t0, t1
+        self.ParameterRange = nu0, nu1, nv0, nv1
+
+    def reverseU(self):
+        u1, u2 = self.quad.getPoles()
+        self.quad.setPole(1, 1, u2[0])
+        self.quad.setPole(1, 2, u2[1])
+        self.quad.setPole(2, 1, u1[0])
+        self.quad.setPole(2, 2, u1[1])
+
+    def reverseV(self):
+        u1, u2 = self.quad.getPoles()
+        self.quad.setPole(1, 1, u1[1])
+        self.quad.setPole(1, 2, u1[0])
+        self.quad.setPole(2, 1, u2[1])
+        self.quad.setPole(2, 2, u2[0])
+
+    def swapUV(self):
+        u1, u2 = self.quad.getPoles()
+        self.quad.setPole(1, 2, u2[0])
+        self.quad.setPole(2, 1, u1[1])
+
+
+class ShapeMapper:
+    """
+    Map shapes on a target face
+    """
+
+    def __init__(self, source, target, transfer=None):
+        self.Source = source
+        self.Target = target
+        self.Transfer = transfer
+        self._flat_wires = None
+        self._sorted_wires = None
+        self.Tolerance = 1e-7
+
+    @property
+    def FlatWires(self):
+        if self._flat_wires is None:
+            self._flat_wires = self.get_flat_wires()
+        return self._flat_wires
+
+    @property
+    def SortedWires(self):
+        if self._sorted_wires is None:
+            self._sorted_wires = self.sort_wires()
+        return self._sorted_wires
+
+    def get_pcurves(self):
+        "Returns a list of pcurves from the Source shape edges"
+        pcurves = []
+        if self.Transfer is None and hasattr(self.Source, "Surface"):
+            for e in self.Source.Edges:
+                pcurve, fp, lp = self.Source.curveOnSurface(e)
+                if e.Orientation == "Reversed":
+                    pcurve.reverse()
+                pcurves.append((pcurve, fp, lp))
+        elif hasattr(self.Transfer, "Surface"):
+            proj = self.Transfer.project([self.Source])
+            for e in proj.Edges:
+                pcurve, fp, lp = self.Transfer.curveOnSurface(e)
+                if e.Orientation == "Reversed":
+                    pcurve.reverse()
+                pcurves.append((pcurve, fp, lp))
+        return pcurves
+
+    def get_flat_wires(self):
+        "Returns a list of flat wires (on XY plane) from joined pcurves"
+        pc = self.get_pcurves()
+        # print(pc)
+        se = find_joined_pcurves(pc)
+        wires = []
+        pl = Part.Plane()
+        for el in se:
+            edges = [pc[i][0].toShape(pl, pc[i][1], pc[i][2]) for i in el]
+            w = Part.Wire(edges)
+            fix = Part.ShapeFix.Wire()
+            fix.load(w)
+            fix.perform()
+            wires.append(fix.wire())
+        return wires
+
+    def sort_wires(self):
+        """Sort wires in order to build faces
+        and returns two lists :
+        - closed wires is a list of lists of wires
+        - open wires is a list
+        """
+        # bs = BoundarySorter(self.FlatWires)
+        # bs.sort()
+        # return bs.sorted_wires, bs.open_wires
+        closedw = []
+        openw = []
+        closed_wires = []
+        for w in self.FlatWires:
+            if w.isClosed():
+                closedw.append(w)
+            else:
+                openw.append(w)
+        if closedw:
+            closedcomp = Part.Compound(closedw)
+            faces = Part.makeFace(closedcomp)
+            closed_wires = [f.Wires for f in faces.Faces]
+        return closed_wires, openw
+
+    def map_edge_on_surface(self, edge, surface):
+        """Maps an edge's first pcurve on a surface.
+        Returns an edge
+        """
+        pcurve = edge.curveOnSurface(0)
+        if pcurve:
+            return pcurve[0].toShape(surface, pcurve[3], pcurve[4])
+
+    def map_on_surface(self, wires, surface, fill=False):
+        """Maps a list of wires on a surface.
+        Returns a compound of wires if fill = False
+        or a face if fill = True
+        """
+        wl = []
+        ori = "Forward"
+        for w in wires:
+            el = []
+            for e in w.Edges:
+                me = self.map_edge_on_surface(e, surface)
+                if me:
+                    el.append(me)
+            nw = Part.Wire(el)
+            nw.Orientation = ori
+            ori = "Reversed"
+            wl.append(nw)
+        if not fill:
+            return Part.Compound(wl)
+        face = build_face(surface, wl, self.Tolerance)
+        return face
+
+    def offset_face(self, face, offset):
+        if offset == 0.0:
+            return face
+        if face.Surface.Continuity == 'C0':
+            # TODO : create a C1 approximation
+            raise (RuntimeError, "Surface must be at least C1 continuous")
+        return face.makeOffsetShape(offset, self.Tolerance).Face1
+
+    def get_shapes(self, offset=0.0, fillfaces=True):
+        off1 = self.offset_face(self.Target, offset).Face1
+        if not fillfaces:
+            sh1 = self.map_on_surface(self.FlatWires, off1.Surface, False)
+            return Part.Compound(), sh1  # Compound of wires
+        # fillfaces = True
+        face_wires, other_wires = self.SortedWires
+        faces = []
+        for wl in face_wires:
+            face_1 = self.map_on_surface(wl, off1.Surface, True)
+            faces.append(face_1)
+
+        openwl1 = self.map_on_surface(other_wires, off1.Surface, False).Wires
+        open_wires = []
+        closed_wires = []
+        for w in openwl1:
+            if w.isClosed():
+                closed_wires.append(w)
+            else:
+                open_wires.append(w)
+
+        # TODO : sort wires along the seam
+        n = int(len(closed_wires) / 2)
+        for j in range(n):
+            i = j * 2
+            # print(i)
+            face_1 = build_periodic_face(off1.Surface, closed_wires[i:i + 2])
+            faces.append(face_1)
+
+        wl = sh1 = self.map_on_surface(open_wires, off1.Surface, False)
+        return Part.Compound(faces), wl
+
+    def get_extrusion(self, offset1=0.0, offset2=1.0):
+        _, wires1 = self.get_shapes(offset1, False)
+        _, wires2 = self.get_shapes(offset2, False)
+        shells = []
+        for i in range(len(wires1.Wires)):
+            faces = []
+            for j in range(len(wires1.Wires[i].Edges)):
+                ruled = ruled_surfaces(wires1.Wires[i].Edges[j],
+                                       wires2.Wires[i].Edges[j])
+                faces.extend(ruled.Faces)
+            shells.append(Part.Shell(faces))
+        return Part.Compound(shells)
+
+    def get_solids(self, offset1=0.0, offset2=1.0):
+        faces_1, _ = self.get_shapes(offset1, True)
+        faces_2, _ = self.get_shapes(offset2, True)
+        solids = []
+        for i in range(len(faces_1.Faces)):
+            f1 = faces_1.Faces[i]
+            f2 = faces_2.Faces[i]
+            ruled = ruled_surfaces(f1, f2)
+            ruled.add(f1)
+            ruled.add(f2)
+            so = upgrade_faces(ruled)
+            solids.append(so)
+        return Part.Compound(solids)
+
+
+@timer
+def test():
+    sel = FreeCADGui.Selection.getSelectionEx()
+    source = sel[0].Object.Shape
+    target = sel[1].SubObjects[0]
+    if len(sel) > 2:
+        transfer = sel[2].SubObjects[0]
+    else:
+        transfer = None
+
+    print(f"Source : {source}")
+    print(f"Target : {target}")
+    print(f"Transfer : {transfer}")
+
+    sm = ShapeMapper(source, target, transfer)
+    # print(sm.get_pcurves())
+    # print(sm.get_flat_wires())
+    # closed, openwl = sm.sort_wires()
+    # face = sm.map_on_surface(closed[0], target.Surface, True)
+    # Part.show(face)
+    # face.check(True)
+    grid1 = grid(bounds=target.ParameterRange, nbU=10, nbV=10, surface=target.Surface)
+    grsh1 = Part.Compound(grid1[0] + grid1[1])
+    Part.show(grsh1, "GridOnTarget")
+    print("GridOnTarget")
+    if transfer:
+        surf = transfer.Surface
+    else:
+        surf = Part.Plane()
+    grid2 = grid(bounds=target.ParameterRange, nbU=10, nbV=10, surface=surf)
+    grsh2 = Part.Compound(grid2[0] + grid2[1])
+    Part.show(grsh2, "GridOnTransfer")
+    print("GridOnTransfer")
+    shells = sm.get_extrusion(0.0, 1.0)
+    Part.show(shells, "extrusion")
+    print("extrusion")
+    faces, _ = sm.get_shapes(2.0)
+    Part.show(faces, "faces")
+    print("faces")
+    solids = sm.get_solids(-0.1, 0.5)
+    Part.show(solids, "solids")
+    print("solids")
+
+
+# test()
