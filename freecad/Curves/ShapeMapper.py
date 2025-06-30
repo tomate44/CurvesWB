@@ -288,6 +288,13 @@ def grid(bounds=[0, 1, 0, 1], nbU=10, nbV=10, surface=None):
     return uiso, viso
 
 
+def reverse_knots(knots):
+    rev = []
+    for k in knots[::-1]:
+        rev.append(knots[-1] - (k - knots[0]))
+    return rev
+
+
 class Quad:
     def __init__(self, geomrange=[0, 1, 0, 1], paramrange=[0, 1, 0, 1]):
         self.quad = Part.BSplineSurface()
@@ -363,23 +370,37 @@ class Quad:
         self.ParameterRange = nu0, nu1, nv0, nv1
 
     def reverseU(self):
-        u1, u2 = self.quad.getPoles()
-        self.quad.setPole(1, 1, u2[0])
-        self.quad.setPole(1, 2, u2[1])
-        self.quad.setPole(2, 1, u1[0])
-        self.quad.setPole(2, 2, u1[1])
+        # u1, u2 = self.quad.getPoles()
+        # self.quad.setPole(1, 1, u2[0])
+        # self.quad.setPole(1, 2, u2[1])
+        # self.quad.setPole(2, 1, u1[0])
+        # self.quad.setPole(2, 2, u1[1])
+        revpoles = self.quad.getPoles()[::-1]
+        for i, row in enumerate(revpoles):
+            self.quad.setPoleRow(i + 1, row)
+        self.quad.setUKnots(reverse_knots(self.quad.getUKnots()))
 
     def reverseV(self):
-        u1, u2 = self.quad.getPoles()
-        self.quad.setPole(1, 1, u1[1])
-        self.quad.setPole(1, 2, u1[0])
-        self.quad.setPole(2, 1, u2[1])
-        self.quad.setPole(2, 2, u2[0])
+        # u1, u2 = self.quad.getPoles()
+        # self.quad.setPole(1, 1, u1[1])
+        # self.quad.setPole(1, 2, u1[0])
+        # self.quad.setPole(2, 1, u2[1])
+        # self.quad.setPole(2, 2, u2[0])
+        poles = self.quad.getPoles()
+        for i, row in enumerate(poles):
+            self.quad.setPoleRow(i + 1, row[::-1])
+        self.quad.setVKnots(reverse_knots(self.quad.getVKnots()))
 
     def swapUV(self):
-        u1, u2 = self.quad.getPoles()
-        self.quad.setPole(1, 2, u2[0])
-        self.quad.setPole(2, 1, u1[1])
+        # u1, u2 = self.quad.getPoles()
+        # self.quad.setPole(1, 2, u2[0])
+        # self.quad.setPole(2, 1, u1[1])
+        self.quad.exchangeUV()
+        u0 = self.quad.getUKnot(1)
+        u1 = self.quad.getUKnot(self.quad.NbUKnots)
+        v0 = self.quad.getVKnot(1)
+        v1 = self.quad.getVKnot(self.quad.NbVKnots)
+        self.quad.scaleKnotsToBounds(v0, v1, u0, u1)
 
 
 class ShapeMapper:

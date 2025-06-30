@@ -37,9 +37,9 @@ class MapOnFaceFP:
     def __init__(self, obj):
         """Add the properties"""
         obj.addProperty("App::PropertyLinkList", "Sources", "BaseObjects",
-                        "Tooltip")
+                        "Source shapes that will be mapped on target face")
         obj.addProperty("App::PropertyLinkSub", "TargetFace", "BaseObjects",
-                        "Tooltip")
+                        "Target face of the mapping operation")
         obj.addProperty("App::PropertyLink", "TargetFlatMap", "BaseObjects",
                         "Tooltip")
         obj.addProperty("App::PropertyBool", "FillFaces", "MainSettings",
@@ -65,14 +65,15 @@ class MapOnFaceFP:
             return
         target = _utils.getShape(obj, "TargetFace", "Face")
         if not target:
-            error(obj, "No source shapes")
+            error(obj, "No target face")
             return
         if not hasattr(obj.TargetFlatMap, "Shape"):
             error(obj, "No transfer object")
             return
         transfer_shape = obj.TargetFlatMap.Shape
         bb = transfer_shape.BoundBox
-        transfer = ShapeMapper.Quad([bb.XMin, bb.XMax, bb.YMin, bb.YMax], target.ParameterRange)
+        transfer = ShapeMapper.Quad([bb.XMin, bb.XMax, bb.YMin, bb.YMax],
+                                    target.ParameterRange)
         if obj.ReverseU:
             transfer.reverseU()
         if obj.ReverseV:
