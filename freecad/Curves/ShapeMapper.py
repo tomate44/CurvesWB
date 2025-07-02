@@ -182,7 +182,7 @@ def contact(pc1, pc2, tol=1e-7):
     return False
 
 
-@timer
+# @timer
 def find_joined_pcurves(pcurves, tol=1e-7):
     """Sort a list of pcurves
     and return a list of lists of joined pcurves
@@ -295,23 +295,57 @@ def reverse_knots(knots):
     return rev
 
 
-class Quad:
+class ReversibleSurface:
+    """BSpline surface that can be reversed in U and V direction
+    Or that can have U and V directions swapped"""
+    @property
+    def Face(self):
+        return self.surface.toShape()
+
+    @property
+    def Surface(self):
+        return self.surface
+
+    def reverseU(self):
+        revpoles = self.surface.getPoles()[::-1]
+        for i, row in enumerate(revpoles):
+            self.surface.setPoleRow(i + 1, row)
+        self.surface.setUKnots(reverse_knots(self.surface.getUKnots()))
+
+    def reverseV(self):
+        poles = self.surface.getPoles()
+        for i, row in enumerate(poles):
+            self.surface.setPoleRow(i + 1, row[::-1])
+        self.surface.setVKnots(reverse_knots(self.surface.getVKnots()))
+
+    def swapUV(self):
+        self.surface.exchangeUV()
+        u0 = self.surface.getUKnot(1)
+        u1 = self.surface.getUKnot(self.surface.NbUKnots)
+        v0 = self.surface.getVKnot(1)
+        v1 = self.surface.getVKnot(self.surface.NbVKnots)
+        self.surface.scaleKnotsToBounds(v0, v1, u0, u1)
+
+
+class TransferSurface(ReversibleSurface):
+    def __init__(self, surf):
+        if isinstance(surf, Part.Face):
+            s0, s1, t0, t1 = surf.ParameterRange
+            rts = Part.RectangularTrimmedSurface(surf.Surface, s0, s1, t0, t1)
+            self.surface = rts.toBSpline()
+        else:
+            self.surface = surf.toBSpline()
+
+
+class Quad(ReversibleSurface):
     def __init__(self, geomrange=[0, 1, 0, 1], paramrange=[0, 1, 0, 1]):
-        self.quad = Part.BSplineSurface()
+        self.surface = Part.BSplineSurface()
         self.GeometryRange = geomrange
         self.ParameterRange = paramrange
 
     @property
-    def Face(self):
-        return self.quad.toShape()
-
-    @property
-    def Surface(self):
-        return self.quad
-
-    @property
     def GeometryRange(self):
-        pu1, pu2 = self.quad.getPoles()
+        pu1, pu2 = self.surface.getPoles()
         p00 = pu1[0]
         p11 = pu2[-1]
         return p00.x, p11.x, p00.y, p11.y
@@ -321,24 +355,24 @@ class Quad:
         if not (len(bounds) == 4):
             raise RuntimeError("Quad need 4 bounds")
         u0, u1, v0, v1 = bounds
-        self.quad.setPole(1, 1, FreeCAD.Vector(u0, v0, 0))
-        self.quad.setPole(1, 2, FreeCAD.Vector(u0, v1, 0))
-        self.quad.setPole(2, 1, FreeCAD.Vector(u1, v0, 0))
-        self.quad.setPole(2, 2, FreeCAD.Vector(u1, v1, 0))
+        self.surface.setPole(1, 1, FreeCAD.Vector(u0, v0, 0))
+        self.surface.setPole(1, 2, FreeCAD.Vector(u0, v1, 0))
+        self.surface.setPole(2, 1, FreeCAD.Vector(u1, v0, 0))
+        self.surface.setPole(2, 2, FreeCAD.Vector(u1, v1, 0))
 
     @property
     def ParameterRange(self):
-        return self.quad.bounds()
+        return self.surface.bounds()
 
     @ParameterRange.setter
     def ParameterRange(self, bounds):
         if not (len(bounds) == 4):
             raise RuntimeError("Quad need 4 bounds")
-        self.quad.setUKnot(1, bounds[0])
-        self.quad.setUKnot(2, bounds[1])
-        self.quad.setVKnot(1, bounds[2])
-        self.quad.setVKnot(2, bounds[3])
-        # self.quad.scaleKnotsToBounds(*bounds) is less precise
+        self.surface.setUKnot(1, bounds[0])
+        self.surface.setUKnot(2, bounds[1])
+        self.surface.setVKnot(1, bounds[2])
+        self.surface.setVKnot(2, bounds[3])
+        # self.surface.scaleKnotsToBounds(*bounds) is less precise
 
     def extend(self, *bounds):
         u0, u1, v0, v1 = self.Limits
@@ -368,39 +402,6 @@ class Quad:
             nv1 += (kv1 - kv0) * (t1 - v1) / (v1 - v0)
         self.GeometryRange = s0, s1, t0, t1
         self.ParameterRange = nu0, nu1, nv0, nv1
-
-    def reverseU(self):
-        # u1, u2 = self.quad.getPoles()
-        # self.quad.setPole(1, 1, u2[0])
-        # self.quad.setPole(1, 2, u2[1])
-        # self.quad.setPole(2, 1, u1[0])
-        # self.quad.setPole(2, 2, u1[1])
-        revpoles = self.quad.getPoles()[::-1]
-        for i, row in enumerate(revpoles):
-            self.quad.setPoleRow(i + 1, row)
-        self.quad.setUKnots(reverse_knots(self.quad.getUKnots()))
-
-    def reverseV(self):
-        # u1, u2 = self.quad.getPoles()
-        # self.quad.setPole(1, 1, u1[1])
-        # self.quad.setPole(1, 2, u1[0])
-        # self.quad.setPole(2, 1, u2[1])
-        # self.quad.setPole(2, 2, u2[0])
-        poles = self.quad.getPoles()
-        for i, row in enumerate(poles):
-            self.quad.setPoleRow(i + 1, row[::-1])
-        self.quad.setVKnots(reverse_knots(self.quad.getVKnots()))
-
-    def swapUV(self):
-        # u1, u2 = self.quad.getPoles()
-        # self.quad.setPole(1, 2, u2[0])
-        # self.quad.setPole(2, 1, u1[1])
-        self.quad.exchangeUV()
-        u0 = self.quad.getUKnot(1)
-        u1 = self.quad.getUKnot(self.quad.NbUKnots)
-        v0 = self.quad.getVKnot(1)
-        v1 = self.quad.getVKnot(self.quad.NbVKnots)
-        self.quad.scaleKnotsToBounds(v0, v1, u0, u1)
 
 
 class ShapeMapper:
@@ -455,7 +456,10 @@ class ShapeMapper:
         pl = Part.Plane()
         for el in se:
             edges = [pc[i][0].toShape(pl, pc[i][1], pc[i][2]) for i in el]
-            w = Part.Wire(edges)
+            try:
+                w = Part.Wire(edges)
+            except Part.OCCError:
+                Part.show(Part.Compound(edges))
             fix = Part.ShapeFix.Wire()
             fix.load(w)
             fix.perform()

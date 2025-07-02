@@ -58,6 +58,7 @@ class MapOnFaceFP:
                         "Swap U and V directions").ReverseV = False
         obj.Proxy = self
 
+    @ShapeMapper.timer
     def execute(self, obj):
         source = Part.Compound([o.Shape for o in obj.Sources])
         if len(source.Vertexes) == 0:
@@ -71,9 +72,12 @@ class MapOnFaceFP:
             error(obj, "No transfer object")
             return
         transfer_shape = obj.TargetFlatMap.Shape
-        bb = transfer_shape.BoundBox
-        transfer = ShapeMapper.Quad([bb.XMin, bb.XMax, bb.YMin, bb.YMax],
-                                    target.ParameterRange)
+        if len(transfer_shape.Faces) == 1:
+            transfer = ShapeMapper.TransferSurface(transfer_shape.Face1)
+        else:
+            bb = transfer_shape.BoundBox
+            transfer = ShapeMapper.Quad([bb.XMin, bb.XMax, bb.YMin, bb.YMax],
+                                        target.ParameterRange)
         if obj.ReverseU:
             transfer.reverseU()
         if obj.ReverseV:
@@ -97,7 +101,8 @@ class MapOnFaceFP:
         obj.Shape = sm.get_solids(obj.Offset, obj.Offset + obj.Thickness)
 
     def onChanged(self, obj, prop):
-        return False
+        if 'Restore' in obj.State:
+            return
 
 
 class MapOnFaceVP:
@@ -128,18 +133,27 @@ class MapOnFaceVP:
 
 
 class MapOnFaceCommand:
-    def makeFeature(self, sel=None):
+    def makeFeature(self, sel=[]):
         fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "MapOnFace")
         MapOnFaceFP(fp)
         MapOnFaceVP(fp.ViewObject)
+        props = ["Sources", "TargetFace", "TargetFlatMap"]
+        for i, link in enumerate(sel):
+            setattr(fp, props[i], link)
         FreeCAD.ActiveDocument.recompute()
 
     def Activated(self):
-        sel = FreeCADGui.Selection.getSelection()
+        sel = FreeCADGui.Selection.getSelectionEx()
+        links = []
         if sel == []:
             FreeCAD.Console.PrintError("Select something first !\n")
-        else:
-            self.makeFeature(sel)
+        if len(sel) >= 1:
+            links.append(sel[0].Object)
+        if len(sel) >= 2:
+            links.append((sel[1].Object, sel[1].SubElementNames))
+        if len(sel) >= 3:
+            links.append(sel[2].Object)
+        self.makeFeature(links)
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:
