@@ -5,7 +5,11 @@ __author__ = 'Christophe Grellier (Chris_G)'
 __license__ = 'LGPL 2.1'
 __doc__ = '''Map objects on a target face.
 This will replace SketchOnSurface.
-Work In Progress. Do Not Use.'''
+WORK IN PROGRESS. USE AT YOUR OWN RISKS.
+Three objects must be provided :
+- the source shapes to map on the target face
+- the target face on which the source shapes will be mapped
+- the object that represent the flat bounding box of the target face'''
 
 import os
 import FreeCAD
@@ -15,7 +19,7 @@ from freecad.Curves import _utils
 from freecad.Curves import ShapeMapper
 from freecad.Curves import ICONPATH
 
-TOOL_ICON = os.path.join(ICONPATH, 'icon.svg')
+TOOL_ICON = os.path.join(ICONPATH, 'map_on_face.svg')
 
 
 # Reminder : Available properties
@@ -26,28 +30,20 @@ for prop in obj.supportedProperties():
 
 """
 
+
 def error(obj, msg):
     FreeCAD.Console.PrintError(f"{obj.Label}: {msg}\n")
 
 
-
-class MapOnFaceFP:
-    "MapOnFace Feature Python Proxy"
-
+class MofProxyBase:
     def __init__(self, obj):
-        """Add the properties"""
         obj.addProperty("App::PropertyLinkList", "Sources", "BaseObjects",
                         "Source shapes that will be mapped on target face")
         obj.addProperty("App::PropertyLinkSub", "TargetFace", "BaseObjects",
                         "Target face of the mapping operation")
         obj.addProperty("App::PropertyLink", "TargetFlatMap", "BaseObjects",
-                        "Tooltip")
-        obj.addProperty("App::PropertyBool", "FillFaces", "MainSettings",
-                        "Make faces from closed wires").FillFaces = True
-        obj.addProperty("App::PropertyBool", "FillExtrusion", "MainSettings",
-                        "Add extrusion faces").FillExtrusion = True
-        obj.addProperty("App::PropertyFloat", "Offset", "MainSettings",
-                        "Offset distance of mapped sketch").Offset = 0.0
+                        """Shape (usually a sketcher rectangle) that represent
+                        the flat bounding box of the target face""")
         obj.addProperty("App::PropertyFloat", "Thickness", "MainSettings",
                         "Extrusion thickness").Thickness = 0.0
         obj.addProperty("App::PropertyBool", "ReverseU", "Orientation",
@@ -56,10 +52,8 @@ class MapOnFaceFP:
                         "Reverse V direction").ReverseV = False
         obj.addProperty("App::PropertyBool", "SwapUV", "Orientation",
                         "Swap U and V directions").ReverseV = False
-        obj.Proxy = self
 
-    @ShapeMapper.timer
-    def execute(self, obj):
+    def get_shapeMapper(self, obj):
         source = Part.Compound([o.Shape for o in obj.Sources])
         if len(source.Vertexes) == 0:
             error(obj, "No source shapes")
@@ -85,7 +79,26 @@ class MapOnFaceFP:
         if obj.SwapUV:
             transfer.swapUV()
 
-        sm = ShapeMapper.ShapeMapper(source, target, transfer.Face)
+        return ShapeMapper.ShapeMapper(source, target, transfer.Face)
+
+
+class MapOnFaceFP(MofProxyBase):
+    "MapOnFace Feature Python Proxy"
+
+    def __init__(self, obj):
+        """Add the properties"""
+        super(MapOnFaceFP, self).__init__(obj)
+        obj.addProperty("App::PropertyBool", "FillFaces", "MainSettings",
+                        "Make faces from closed wires").FillFaces = True
+        obj.addProperty("App::PropertyBool", "FillExtrusion", "MainSettings",
+                        "Add extrusion faces").FillExtrusion = True
+        obj.addProperty("App::PropertyFloat", "Offset", "MainSettings",
+                        "Offset distance of mapped sketch").Offset = 0.0
+        obj.Proxy = self
+
+    @ShapeMapper.timer
+    def execute(self, obj):
+        sm = self.get_shapeMapper(obj)
         if (not obj.FillExtrusion) or (obj.Thickness == 0.0):
             faces, wires = sm.get_shapes(obj.Offset, obj.FillFaces)
             comp = Part.Compound([faces, wires])
@@ -105,6 +118,39 @@ class MapOnFaceFP:
             return
 
 
+class MapOnFacePDFP(MofProxyBase):
+    "MapOnFace Part Design Proxy"
+
+    def __init__(self, obj):
+        """Add the properties"""
+        super(MapOnFacePDFP, self).__init__(obj)
+        obj.addProperty("App::PropertyBool", "Refine", "PartDesign",
+                        "Refine shape (clean up redundant edges) after operations")
+        obj.Thickness = 1.0
+        obj.Proxy = self
+
+    @ShapeMapper.timer
+    def execute(self, obj):
+        sm = self.get_shapeMapper(obj)
+        result = sm.get_solids(-0.001, obj.Thickness + -0.001)
+        base = obj.BaseFeature.Shape
+        if obj.Thickness == 0.0:
+            obj.Shape = base
+            error(obj, "Null thickness")
+            return
+        if obj.Thickness < 0.0:
+            bop = base.cut(result.Solids)
+        else:
+            bop = base.fuse(result.Solids)
+        if obj.Refine:
+            bop = bop.removeSplitter()
+        obj.Shape = bop
+
+    def onChanged(self, obj, prop):
+        if 'Restore' in obj.State:
+            return
+
+
 class MapOnFaceVP:
     def __init__(self, viewobj):
         viewobj.Proxy = self
@@ -114,6 +160,14 @@ class MapOnFaceVP:
 
     def attach(self, viewobj):
         self.Object = viewobj.Object
+        children = self.claimChildren()
+        for child in children:
+            child.ViewObject.Visibility = False
+
+    def claimChildren(self):
+        ol = self.Object.Sources
+        ol.append(self.Object.TargetFlatMap)
+        return ol
 
     if FreeCAD.Version()[0] == '0' and '.'.join(FreeCAD.Version()[1:3]) >= '21.2':
         def dumps(self):
@@ -133,14 +187,24 @@ class MapOnFaceVP:
 
 
 class MapOnFaceCommand:
-    def makeFeature(self, sel=[]):
-        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "MapOnFace")
-        MapOnFaceFP(fp)
-        MapOnFaceVP(fp.ViewObject)
+    def makeFeature(self, sel=[], body=None):
+        if body is None:
+            fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "MapOnFace")
+            MapOnFaceFP(fp)
+        else:
+            fp = body.newObject("PartDesign::FeaturePython", "MapOnFace")
+            MapOnFacePDFP(fp)
         props = ["Sources", "TargetFace", "TargetFlatMap"]
         for i, link in enumerate(sel):
             setattr(fp, props[i], link)
+        MapOnFaceVP(fp.ViewObject)
         FreeCAD.ActiveDocument.recompute()
+
+    def get_body(self, sel):
+        parents = [o.Object.getParent() for o in sel]
+        parents = list(set(parents))
+        if (len(parents) == 1) and (getattr(parents[0], "TypeId", "") == "PartDesign::Body"):
+            return parents[0]
 
     def Activated(self):
         sel = FreeCADGui.Selection.getSelectionEx()
@@ -153,7 +217,7 @@ class MapOnFaceCommand:
             links.append((sel[1].Object, sel[1].SubElementNames))
         if len(sel) >= 3:
             links.append(sel[2].Object)
-        self.makeFeature(links)
+        self.makeFeature(links, self.get_body(sel))
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:
