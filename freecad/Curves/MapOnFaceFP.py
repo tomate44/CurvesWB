@@ -72,6 +72,8 @@ class MofProxyBase:
             bb = transfer_shape.BoundBox
             transfer = ShapeMapper.Quad([bb.XMin, bb.XMax, bb.YMin, bb.YMax],
                                         target.ParameterRange)
+            ext = 10
+            transfer.extend(ext)
         if obj.ReverseU:
             transfer.reverseU()
         if obj.ReverseV:
@@ -131,8 +133,9 @@ class MapOnFacePDFP(MofProxyBase):
 
     @ShapeMapper.timer
     def execute(self, obj):
+        offset = 0.0
         sm = self.get_shapeMapper(obj)
-        result = sm.get_solids(-0.001, obj.Thickness + -0.001)
+        result = sm.get_solids(-offset, obj.Thickness + offset)
         base = obj.BaseFeature.Shape
         if obj.Thickness == 0.0:
             obj.Shape = base

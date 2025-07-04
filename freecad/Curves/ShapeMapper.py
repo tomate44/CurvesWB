@@ -326,6 +326,9 @@ class ReversibleSurface:
         v1 = self.surface.getVKnot(self.surface.NbVKnots)
         self.surface.scaleKnotsToBounds(v0, v1, u0, u1)
 
+    def extend(self, *args):
+        FreeCAD.Console.PrintError("Extending surface not implemented\n")
+
 
 class TransferSurface(ReversibleSurface):
     def __init__(self, surf):
@@ -368,14 +371,15 @@ class Quad(ReversibleSurface):
     def ParameterRange(self, bounds):
         if not (len(bounds) == 4):
             raise RuntimeError("Quad need 4 bounds")
-        self.surface.setUKnot(1, bounds[0])
-        self.surface.setUKnot(2, bounds[1])
-        self.surface.setVKnot(1, bounds[2])
-        self.surface.setVKnot(2, bounds[3])
+        # print(bounds)
+        self.surface.setUKnots(bounds[:2])
+        # self.surface.setUKnot(2, bounds[1])
+        self.surface.setVKnots(bounds[2:])
+        # self.surface.setVKnot(2, bounds[3])
         # self.surface.scaleKnotsToBounds(*bounds) is less precise
 
     def extend(self, *bounds):
-        u0, u1, v0, v1 = self.Limits
+        u0, u1, v0, v1 = self.GeometryRange
         if len(bounds) == 1:
             s0 = u0 - bounds[0]
             s1 = u1 + bounds[0]
@@ -390,8 +394,8 @@ class Quad(ReversibleSurface):
             s0, s1, t0, t1 = bounds
         else:
             raise RuntimeError("Quad.extend need 1,2 or 4 parameters")
-        ku0, ku1, kv0, kv1 = self.Bounds
-        nu0, nu1, nv0, nv1 = self.Bounds
+        ku0, ku1, kv0, kv1 = self.ParameterRange
+        nu0, nu1, nv0, nv1 = self.ParameterRange
         if s0 < u0:
             nu0 += (ku1 - ku0) * (s0 - u0) / (u1 - u0)
         if s1 > u1:
