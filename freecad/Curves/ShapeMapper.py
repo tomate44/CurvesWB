@@ -378,22 +378,35 @@ class Quad(ReversibleSurface):
         # self.surface.setVKnot(2, bounds[3])
         # self.surface.scaleKnotsToBounds(*bounds) is less precise
 
-    def extend(self, *bounds):
+    # def extend_by_value(self, bounds):
+    #     u0, u1, v0, v1 = self.GeometryRange
+    #     if len(bounds) == 1:
+    #         margins = bounds * 4
+    #     elif len(bounds) == 2:
+    #         margins = bounds[:1] * 2 + bounds[1:] * 2
+    #     elif len(bounds) == 4:
+    #         margins = bounds
+    #     else:
+    #         raise RuntimeError("Quad.extend_by_value need 1,2 or 4 parameters")
+    #     s0 = u0 - margins[0]
+    #     s1 = u1 + margins[1]
+    #     t0 = v0 - margins[2]
+    #     t1 = v1 + margins[3]
+    #     self.extend(s0, s1, t0, t1)
+
+    def get_new_geom_bounds(self, numU, numV):
         u0, u1, v0, v1 = self.GeometryRange
-        if len(bounds) == 1:
-            s0 = u0 - bounds[0]
-            s1 = u1 + bounds[0]
-            t0 = v0 - bounds[0]
-            t1 = v1 + bounds[0]
-        elif len(bounds) == 2:
-            s0 = u0 - bounds[0]
-            s1 = u1 + bounds[0]
-            t0 = v0 - bounds[1]
-            t1 = v1 + bounds[1]
-        elif len(bounds) == 4:
-            s0, s1, t0, t1 = bounds
-        else:
-            raise RuntimeError("Quad.extend need 1,2 or 4 parameters")
+        eu = (u1 - u0) * numU
+        ev = (v1 - v0) * numV
+        s0 = u0 - eu
+        s1 = u1 + eu
+        t0 = v0 - ev
+        t1 = v1 + ev
+        return (s0, s1, t0, t1)
+
+    def extend(self, numU=1, numV=1):
+        u0, u1, v0, v1 = self.GeometryRange
+        s0, s1, t0, t1 = self.get_new_geom_bounds(numU, numV)
         ku0, ku1, kv0, kv1 = self.ParameterRange
         nu0, nu1, nv0, nv1 = self.ParameterRange
         if s0 < u0:

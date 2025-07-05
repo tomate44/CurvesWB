@@ -6,7 +6,7 @@ __license__ = 'LGPL 2.1'
 __doc__ = '''Map objects on a target face.
 This will replace SketchOnSurface.
 WORK IN PROGRESS. USE AT YOUR OWN RISKS.
-Three objects must be provided :
+Three objects must be provided in sequence:
 - the source shapes to map on the target face
 - the target face on which the source shapes will be mapped
 - the object that represent the flat bounding box of the target face'''
@@ -72,8 +72,9 @@ class MofProxyBase:
             bb = transfer_shape.BoundBox
             transfer = ShapeMapper.Quad([bb.XMin, bb.XMax, bb.YMin, bb.YMax],
                                         target.ParameterRange)
-            ext = 10
-            transfer.extend(ext)
+            numU = 1 + source.BoundBox.XLength / bb.XLength
+            numV = 1 + source.BoundBox.YLength / bb.YLength
+            transfer.extend(numU, numV)
         if obj.ReverseU:
             transfer.reverseU()
         if obj.ReverseV:
