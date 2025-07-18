@@ -63,8 +63,8 @@ class MofProxyBase:
             error(obj, "No target face")
             return
         if not hasattr(obj.TargetFlatMap, "Shape"):
-            error(obj, "No transfer object")
-            return
+            error(obj, "No transfer object. Using Source face")
+            return ShapeMapper.ShapeMapper(source, target)
         transfer_shape = obj.TargetFlatMap.Shape
         if len(transfer_shape.Faces) == 1:
             transfer = ShapeMapper.TransferSurface(transfer_shape.Face1)
@@ -75,6 +75,7 @@ class MofProxyBase:
             numU = 1 + source.BoundBox.XLength / bb.XLength
             numV = 1 + source.BoundBox.YLength / bb.YLength
             transfer.extend(numU, numV)
+        print(transfer.get_center())
         if obj.ReverseU:
             transfer.reverseU()
         if obj.ReverseV:

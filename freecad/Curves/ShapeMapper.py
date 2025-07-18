@@ -298,6 +298,10 @@ def reverse_knots(knots):
 class ReversibleSurface:
     """BSpline surface that can be reversed in U and V direction
     Or that can have U and V directions swapped"""
+
+    def __init__(self, surf):
+        self.surface = surf
+
     @property
     def Face(self):
         return self.surface.toShape()
@@ -326,12 +330,31 @@ class ReversibleSurface:
         v1 = self.surface.getVKnot(self.surface.NbVKnots)
         self.surface.scaleKnotsToBounds(v0, v1, u0, u1)
 
+    def is_bilinear(self):
+        matchdeg = (self.surface.UDegree == 1) and (self.surface.VDegree == 1)
+        matchpol = (self.surface.NbUPoles == 2) and (self.surface.NbVPoles == 2)
+        return matchdeg and matchpol
+
+    def get_center(self):
+        u0, u1, v0, v1 = self.surface.bounds()
+        iso0 = self.surface.uIso(u0)
+        iso1 = self.surface.uIso(0.75 * u0 + 0.25 * u1)
+        iso2 = self.surface.uIso(0.25 * u0 + 0.75 * u1)
+        i1 = iso0.intersect(iso1)
+        i2 = iso0.intersect(iso2)
+        if (len(i1) > 0) and (len(i2) > 0):
+            p1 = FreeCAD.Vector(i1[0].X, i1[0].Y, i1[0].Z)
+            p2 = FreeCAD.Vector(i2[0].X, i2[0].Y, i2[0].Z)
+            if p1.distanceToPoint(p2) < 1e-7:
+                return p1
+
     def extend(self, *args):
         FreeCAD.Console.PrintError("Extending surface not implemented\n")
 
 
 class TransferSurface(ReversibleSurface):
     def __init__(self, surf):
+        super(TransferSurface, self).__init__(surf)
         if isinstance(surf, Part.Face):
             s0, s1, t0, t1 = surf.ParameterRange
             rts = Part.RectangularTrimmedSurface(surf.Surface, s0, s1, t0, t1)
@@ -342,7 +365,7 @@ class TransferSurface(ReversibleSurface):
 
 class Quad(ReversibleSurface):
     def __init__(self, geomrange=[0, 1, 0, 1], paramrange=[0, 1, 0, 1]):
-        self.surface = Part.BSplineSurface()
+        super(Quad, self).__init__(Part.BSplineSurface())
         self.GeometryRange = geomrange
         self.ParameterRange = paramrange
 

@@ -247,6 +247,114 @@ def flat_extrusion_surface(extr, inPlace=False, size=0.0):
     return nts2
 
 
+def intersection(lines, tol=1e-7):
+    """
+    If lines all intersect into one point.
+    Returns this point, or None
+    """
+    interlist = []
+    for i in range(len(lines) - 1):
+        inter = lines[i].intersect(lines[i + 1])
+        if len(inter) == 1:
+            interlist.append(inter[0].toShape().Point)
+    if len(interlist) == 0:
+        return None
+    for i in range(len(interlist) - 1):
+        if interlist[i].distanceToPoint(interlist[i + 1]) > tol:
+            return None
+    point = FreeCAD.Vector()
+    for pt in interlist:
+        point += pt
+    point /= len(interlist)
+    return point
+
+
+
+def flat_conical_surface(conic, inPlace=False, size=0.0):
+    """Returns a BSpline surface that is a flat
+    representation of the input conical Surface.
+
+    Parameters
+    ----------
+    extr : Surface of type Part.SurfaceOfExtrusion
+    InPlace (bool) : If True, the output surface will be placed so that it is
+        tangent to the source surface, at the origin extrusion line.
+        If False, the output surface will be in the default XY plane.
+    size (float) : Sets the V size of the output surface to size.
+        If size==0.0, size is set to twice the extrusion length
+
+    Returns
+    -------
+    a square BSpline surface that matches the parametric space
+    of the input Surface of Extrusion.
+    """
+    samples = 10
+    size = 1e10
+    u0, u1, v0, v1 = conic.bounds()
+    urange = u1 - u0
+    uparams = [u0 + i * urange / (samples) for i in range(samples)]
+    ulines = []
+    for u in uparams:
+        print(u)
+        iso = conic.uIso(u)
+        pt = iso.value(v0)
+        pt2 = iso.value(v1)
+        # print(tan)
+        line = Part.makeLine(pt, pt2)
+        Part.show(line)
+        ulines.append(line.Curve.toShape())
+    center = FreeCAD.Vector()
+    for i in range(len(ulines) - 1):
+        center += ulines[i].distToShape(ulines[i + 1])[1][0][0]
+    center = center / (samples - 1)
+    print(center)
+
+    sph = Part.Sphere()
+    sph.Center = center
+    sph.Radius = center.distanceToPoint(conic.uIso(u0).value(0.5 * (v0 + v1)))
+    inter = sph.intersect(conic)
+    print(inter)
+
+    if len(inter) > 1:
+        edges = [c.toShape() for c in inter]
+        se = Part.sortEdges(edges)
+        w = Part.Wire(se[0])
+        pe = w.approximate(1e-10, 1e-7, 1000, 7)
+        print("Projection : multiple edges approximated")
+    else:
+        pe = inter[0]
+
+    Part.show(pe.toShape())
+
+    alc = arclength_approx(pe)
+    sof = Part.SurfaceOfExtrusion(alc, conic.Direction)
+    # return sof
+    u0, u1, v0, v1 = sof.bounds()
+    nts = Part.RectangularTrimmedSurface(sof, u0, u1, -size, size)
+    nface = nts.toShape()
+
+    proj2 = nface.project([based])
+    if not proj2.Edges:
+        print("Flatten : Failed to create flat_conicusion_surface")
+        return nts
+    pe = proj2.Edge1
+    cos, fp, lp = nface.curveOnSurface(pe)
+    flatbasc = cos.toShape(fp, lp)
+    sof2 = Part.SurfaceOfExtrusion(flatbasc.Curve, FreeCAD.Vector(0, 1, 0))
+    u0, u1, v0, v1 = sof2.bounds()
+    nts2 = Part.RectangularTrimmedSurface(sof2, u0, u1, -size, size)
+
+    if inPlace:
+        origin = basc.value(basc.FirstParameter)
+        u, v = conic.parameter(origin)
+        y = conic.Direction
+        n = conic.normal(u, v)
+        rot = FreeCAD.Rotation(y.cross(n), y, n, "XYZ")
+        pl = FreeCAD.Placement(origin, rot)
+        nts2.transform(pl.Matrix)
+    return nts2
+
+
 def flatten_face(face, inPlace=False, size=0.0):
     """Returns a face that is a flat representation of the input cone or cylinder face.
 
@@ -278,6 +386,8 @@ def flatten_face(face, inPlace=False, size=0.0):
         flatsurf = flat_cylinder_surface(face.Surface, inPlace, size)
     elif isinstance(face.Surface, Part.SurfaceOfExtrusion):
         flatsurf = flat_extrusion_surface(face.Surface, inPlace, size)
+    elif isinstance(face.Surface, Part.BSplineSurface):
+        flatsurf = flat_conical_surface(face.Surface, inPlace, size)
     else:
         raise TypeError(f"Flattening surface of type {face.Surface.TypeId} not implemented")
     wl = []
@@ -309,44 +419,6 @@ def flatten_face(face, inPlace=False, size=0.0):
         ff.cutHoles(wl)
     ff.validate()
     return ff
-
-
-def flatten_face_new(face, inPlace=False, size=0.0):
-    """Returns a face that is a flat representation of the input cone or cylinder face.
-
-    Parameters
-    ----------
-    face : face of a cone or cylinder surface.
-    InPlace (bool) : If True, the output surface will be placed so that it is
-        tangent to the source face, at the seam line.
-        If False, the output surface will be in the default XY plane.
-    size (float) : Allows to specify the size of the computed surface.
-        This has now influence on the shape of the output face.
-
-    Returns
-    -------
-    a face that is the unrolled representation of the input cone or cylinder face.
-    """
-    if isinstance(face.Surface, Part.Cone):
-        if size <= 0.0:
-            comp = XY_Compound(face)
-            u, v = face.Surface.parameter(face.Surface.Apex)
-            vert = Part.Vertex(FreeCAD.Vector(u, v, 0))
-            comp.add(vert)
-            size = 1.01 * comp.BoundBox.YMax
-            # offset = face.Surface.parameter(face.Surface.Apex)
-            # size = abs(face.ParameterRange[3] - offset[1])
-            # print(size)
-        flatsurf = flat_cone_surface(face.Surface, inPlace, size)
-    elif isinstance(face.Surface, Part.Cylinder):
-        flatsurf = flat_cylinder_surface(face.Surface, inPlace, size)
-    elif isinstance(face.Surface, Part.SurfaceOfExtrusion):
-        flatsurf = flat_extrusion_surface(face.Surface, inPlace, size)
-    else:
-        raise TypeError(f"Flattening surface of type {face.Surface.TypeId} not implemented")
-    mapper = ShapeMapper(flatsurf.toShape(), face)
-    flat_face = mapper.map_shape(face, True)
-    return flat_face
 
 
 class FlattenProxy:
@@ -406,7 +478,10 @@ class Curves_Flatten_Face_Cmd:
         for so in sel:
             for sn in so.SubElementNames:
                 subo = so.Object.getSubObject(sn)
-                if hasattr(subo, "Surface") and isinstance(subo.Surface, (Part.Cylinder, Part.Cone, Part.SurfaceOfExtrusion)):
+                if hasattr(subo, "Surface") and isinstance(subo.Surface, (Part.Cylinder,
+                                                                        Part.Cone,
+                                                                        Part.SurfaceOfExtrusion,
+                                                                        Part.BSplineSurface)):
                     self.makeFeature((so.Object, sn))
                 else:
                     FreeCAD.Console.PrintError("Bad input :{}-{}\n".format(so.Object.Label, sn))
