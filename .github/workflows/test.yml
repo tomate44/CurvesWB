@@ -9,11 +9,17 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: 3.13
-    - name: Install pytest & pytest-cov
-      run: pip install pytest pytest-cov
     - name: Run tests
-      run: cd freecad/Curves && pytest test_mixed_curve.py --cov=mixed_curve --cov-report=html
-    - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v5
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
+      run: cd freecad/Curves 
+    - name: get freecad
+      run: wget https://github.com/FreeCAD/FreeCAD/releases/download/0.21.2/FreeCAD_0.21.2-Linux-x86_64.AppImage && chmod +x FreeCAD_0.21.2-Linux-x86_64.AppImage
+    - name: Run tests
+      run: ./FreeCAD_0.21.2-Linux-x86_64.AppImage --console -P test_mixed_curve_freecad.py
+    # - name: Install pytest & pytest-cov
+    #   run: pip install pytest pytest-cov
+    # - name: Run tests
+    #   run: cd freecad/Curves && pytest test_mixed_curve.py --cov=mixed_curve --cov-report=html
+    # - name: Upload coverage reports to Codecov
+    #   uses: codecov/codecov-action@v5
+    #   with:
+        # token: ${{ secrets.CODECOV_TOKEN }}
