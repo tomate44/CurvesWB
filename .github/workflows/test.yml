@@ -12,9 +12,9 @@ jobs:
     - name: Run tests
       run: cd freecad/Curves 
     - name: get freecad
-      run: wget https://github.com/FreeCAD/FreeCAD/releases/download/0.21.2/FreeCAD_0.21.2-Linux-x86_64.AppImage && chmod +x FreeCAD_0.21.2-Linux-x86_64.AppImage
+      run: wget https://github.com/FreeCAD/FreeCAD/releases/download/weekly-2025.07.29/FreeCAD_weekly-2025.07.29-Linux-x86_64-py311.AppImage && chmod +x FreeCAD_weekly-2025.07.29-Linux-x86_64-py311.AppImage
     - name: Run tests
-      run: ./FreeCAD_0.21.2-Linux-x86_64.AppImage --console -P test_mixed_curve_freecad.py
+      run: ./FreeCAD_weekly-2025.07.29-Linux-x86_64-py311.AppImage --console -P test_mixed_curve_freecad.py
     # - name: Install pytest & pytest-cov
     #   run: pip install pytest pytest-cov
     # - name: Run tests
