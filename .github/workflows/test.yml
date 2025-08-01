@@ -14,12 +14,7 @@ jobs:
     - name: get freecad
       run: wget https://github.com/FreeCAD/FreeCAD/releases/download/weekly-2025.07.29/FreeCAD_weekly-2025.07.29-Linux-x86_64-py311.AppImage -O FreeCAD.AppImage && chmod +x FreeCAD.AppImage
     - name: Run tests
-      run: ./FreeCAD.AppImage -c -t test_mixed_curve_freecad.py
-    # - name: Install pytest & pytest-cov
-    #   run: pip install pytest pytest-cov
-    # - name: Run tests
-    #   run: cd freecad/Curves && pytest test_mixed_curve.py --cov=mixed_curve --cov-report=html
-    # - name: Upload coverage reports to Codecov
-    #   uses: codecov/codecov-action@v5
-    #   with:
-        # token: ${{ secrets.CODECOV_TOKEN }}
+      run: |
+          export DISPLAY=:99
+          sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 &
+          ./FreeCAD.AppImage -M `pwd` -t freecad.Curves.TestCurves

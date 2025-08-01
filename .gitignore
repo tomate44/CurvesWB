@@ -4,3 +4,5 @@
 /docFiles/
 
 *.DS_STORE
+.venv
+.idea

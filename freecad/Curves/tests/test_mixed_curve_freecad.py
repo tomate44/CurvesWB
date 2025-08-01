@@ -9,6 +9,9 @@ Run this with FreeCAD's Python interpreter
 import unittest
 import sys
 import os
+from pathlib import Path
+
+#print(os.path.dirname(os.path.abspath(__file__)))
 
 # Import FreeCAD modules (should work in AppImage environment)
 try:
@@ -22,11 +25,13 @@ except ImportError as e:
     FREECAD_AVAILABLE = False
 
 # Add the path to your mixed_curve module
-current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, current_dir)
+currentFilePath = Path(__file__)
+moduleDir = currentFilePath.parent.parent.absolute()
+print(moduleDir)
+sys.path.append(f"{moduleDir}")
 
 try:
-    import mixed_curve
+    import freecad.Curves.mixed_curve
     print("✅ mixed_curve module imported successfully")
     MIXED_CURVE_AVAILABLE = True
 except ImportError as e:
@@ -94,9 +99,9 @@ class TestMixedCurveWithFreeCAD(unittest.TestCase):
         edges.append(arc)
         
         # Test with mixed_curve if available
-        if hasattr(mixed_curve, 'MixedCurve'):
+        if hasattr(freecad.Curves.mixed_curve, 'MixedCurve'):
             try:
-                curve = mixed_curve.MixedCurve(edges)
+                curve = freecad.Curves.mixed_curve.MixedCurve(edges)
                 self.assertIsNotNone(curve)
                 print("✅ MixedCurve created with real geometry")
             except Exception as e:
