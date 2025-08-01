@@ -222,17 +222,17 @@ def ruled_surfaces(shape1, shape2):
                 for j in range(len(face_1.Wires[i].Edges)):
                     if not face_1.Wires[i].Edges[j].isSeam(face_1):
                         rs = Part.makeRuledSurface(face_1.Wires[i].Edges[j],
-                                                   face_2.Wires[i].Edges[j])
+                                                   face_2.Wires[i].Edges[j], 1)
                         # print(rs)
                         ruled.extend(rs.Faces)
     elif shape1.Wires:
         for i in range(len(shape1.Wires)):
-            rs = Part.makeRuledSurface(shape1.Wires[i], shape2.Wires[i])
+            rs = Part.makeRuledSurface(shape1.Wires[i], shape2.Wires[i], 1)
             # print(rs)
             ruled.append(rs)
     else:
         for i in range(len(shape1.Edges)):
-            rs = Part.makeRuledSurface(shape1.Edges[i], shape2.Edges[i])
+            rs = Part.makeRuledSurface(shape1.Edges[i], shape2.Edges[i], 1)
             ruled.append(rs)
     return Part.Compound(ruled)
 
