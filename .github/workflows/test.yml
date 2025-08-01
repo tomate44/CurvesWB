@@ -10,4 +10,4 @@ jobs:
       with:
         python-version: 3.13
     - name: Run tests
-      run: cd frecad/Curves && python test_mixed_curve.py
+      run: cd freecad/Curves && python test_mixed_curve.py
