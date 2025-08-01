@@ -48,7 +48,6 @@ try:
     import coverage
 
     print("✅ Coverage module available")
-    COVERAGE_AVAILABLE = True
 except ImportError:
     print("❌ Coverage module not available - installing...")
 
@@ -56,11 +55,9 @@ except ImportError:
         pip_install('coverage')
         import coverage
 
-        COVERAGE_AVAILABLE = True
         print("✅ Coverage installed and imported")
     except Exception as e:
-        print(f"❌ Failed to install coverage: {{e}}")
-        COVERAGE_AVAILABLE = False
+        print(f"❌ Failed to install coverage: {e}")
 
 coverage_dir = Path("coverage_reports")
 shutil.rmtree(coverage_dir, ignore_errors=True)
