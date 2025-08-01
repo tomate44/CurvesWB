@@ -4,10 +4,16 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: 3.13
+    - name: Install pytest & pytest-cov
+      run: pip install pytest pytest-cov
     - name: Run tests
-      run: cd freecad/Curves && python test_mixed_curve.py
+      run: cd freecad/Curves && pytest test_mixed_curve.py --cov=mixed_curve --cov-report=html
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
