@@ -12,7 +12,6 @@ import unittest
 from pathlib import Path
 
 from freecad.Curves.tests.base_test import BaseTestCase
-from freecad.Curves.tests.coverage_report import CoverageReportCollector
 
 # print(os.path.dirname(os.path.abspath(__file__)))
 
@@ -52,8 +51,6 @@ class TestMixedCurveWithFreeCAD(BaseTestCase):
         # Create a new document for testing
         cls.doc = FreeCAD.newDocument("TestDoc")
         print(f"✅ Created test document: {cls.doc.Name}")
-        cls.collector = CoverageReportCollector.create_collector()
-        cls.collector.start()
 
     @classmethod
     def tearDownClass(cls):
@@ -61,8 +58,6 @@ class TestMixedCurveWithFreeCAD(BaseTestCase):
         if hasattr(cls, 'doc'):
             FreeCAD.closeDocument(cls.doc.Name)
             print("✅ Cleaned up test document")
-        cls.collector.stop()
-        cls.collector.save()
 
     def setUp(self):
         """Set up before each test"""

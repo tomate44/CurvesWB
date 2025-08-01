@@ -7,5 +7,3 @@ if [ ! -f ./FreeCAD.AppImage ]; then
 fi
 
 ./FreeCAD.AppImage -M `pwd` -t freecad.Curves.TestCurves
-
-python3 ./freecad/Curves/tests/coverage_report.py
