@@ -177,7 +177,7 @@ def flat_cone_surface(cone, inPlace=False, size=0.0):
     return rs
 
 
-def flat_extrusion_surface(extr, inPlace=False, size=0.0):
+def flat_extrusion_surface(extr, inPlace=False, size=1e10):
     """Returns a BSpline surface that is a flat
     representation of the input Surface of Extrusion.
 
@@ -195,7 +195,6 @@ def flat_extrusion_surface(extr, inPlace=False, size=0.0):
     a square BSpline surface that matches the parametric space
     of the input Surface of Extrusion.
     """
-    size = 1e10
     basc = extr.BasisCurve
     # if basc.isPeriodic():
     #     basc.setNotPeriodic()
@@ -326,33 +325,35 @@ def flat_conical_surface(conic, inPlace=False, size=0.0):
 
     Part.show(pe.toShape())
 
-    alc = arclength_approx(pe)
-    sof = Part.SurfaceOfExtrusion(alc, conic.Direction)
-    # return sof
-    u0, u1, v0, v1 = sof.bounds()
-    nts = Part.RectangularTrimmedSurface(sof, u0, u1, -size, size)
-    nface = nts.toShape()
+    # What's next ?
 
-    proj2 = nface.project([based])
-    if not proj2.Edges:
-        print("Flatten : Failed to create flat_conicusion_surface")
-        return nts
-    pe = proj2.Edge1
-    cos, fp, lp = nface.curveOnSurface(pe)
-    flatbasc = cos.toShape(fp, lp)
-    sof2 = Part.SurfaceOfExtrusion(flatbasc.Curve, FreeCAD.Vector(0, 1, 0))
-    u0, u1, v0, v1 = sof2.bounds()
-    nts2 = Part.RectangularTrimmedSurface(sof2, u0, u1, -size, size)
-
-    if inPlace:
-        origin = basc.value(basc.FirstParameter)
-        u, v = conic.parameter(origin)
-        y = conic.Direction
-        n = conic.normal(u, v)
-        rot = FreeCAD.Rotation(y.cross(n), y, n, "XYZ")
-        pl = FreeCAD.Placement(origin, rot)
-        nts2.transform(pl.Matrix)
-    return nts2
+    # alc = arclength_approx(pe)
+    # sof = Part.SurfaceOfExtrusion(alc, conic.Direction)
+    # # return sof
+    # u0, u1, v0, v1 = sof.bounds()
+    # nts = Part.RectangularTrimmedSurface(sof, u0, u1, -size, size)
+    # nface = nts.toShape()
+    #
+    # proj2 = nface.project([based])
+    # if not proj2.Edges:
+    #     print("Flatten : Failed to create flat_conicusion_surface")
+    #     return nts
+    # pe = proj2.Edge1
+    # cos, fp, lp = nface.curveOnSurface(pe)
+    # flatbasc = cos.toShape(fp, lp)
+    # sof2 = Part.SurfaceOfExtrusion(flatbasc.Curve, FreeCAD.Vector(0, 1, 0))
+    # u0, u1, v0, v1 = sof2.bounds()
+    # nts2 = Part.RectangularTrimmedSurface(sof2, u0, u1, -size, size)
+    #
+    # if inPlace:
+    #     origin = basc.value(basc.FirstParameter)
+    #     u, v = conic.parameter(origin)
+    #     y = conic.Direction
+    #     n = conic.normal(u, v)
+    #     rot = FreeCAD.Rotation(y.cross(n), y, n, "XYZ")
+    #     pl = FreeCAD.Placement(origin, rot)
+    #     nts2.transform(pl.Matrix)
+    # return nts2
 
 
 def flatten_face(face, inPlace=False, size=0.0):
@@ -386,8 +387,8 @@ def flatten_face(face, inPlace=False, size=0.0):
         flatsurf = flat_cylinder_surface(face.Surface, inPlace, size)
     elif isinstance(face.Surface, Part.SurfaceOfExtrusion):
         flatsurf = flat_extrusion_surface(face.Surface, inPlace, size)
-    elif isinstance(face.Surface, Part.BSplineSurface):
-        flatsurf = flat_conical_surface(face.Surface, inPlace, size)
+    # elif isinstance(face.Surface, Part.BSplineSurface):
+    #     flatsurf = flat_conical_surface(face.Surface, inPlace, size)
     else:
         raise TypeError(f"Flattening surface of type {face.Surface.TypeId} not implemented")
     wl = []
@@ -480,8 +481,7 @@ class Curves_Flatten_Face_Cmd:
                 subo = so.Object.getSubObject(sn)
                 if hasattr(subo, "Surface") and isinstance(subo.Surface, (Part.Cylinder,
                                                                         Part.Cone,
-                                                                        Part.SurfaceOfExtrusion,
-                                                                        Part.BSplineSurface)):
+                                                                        Part.SurfaceOfExtrusion)):
                     self.makeFeature((so.Object, sn))
                 else:
                     FreeCAD.Console.PrintError("Bad input :{}-{}\n".format(so.Object.Label, sn))

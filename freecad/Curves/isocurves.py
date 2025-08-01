@@ -183,9 +183,11 @@ class multiIso:
     def setNumberU(self, n):
         fp = self.bounds[0]
         lp = self.bounds[1]
+        u0, u1, v0, v1 = self.face.Surface.bounds()
+        uperiod = u1 - u0
         closed = False
         if self.face.Surface.isUClosed():
-            if (abs(lp - fp - self.face.Surface.UPeriod()) < TOL3D):
+            if (abs(lp - fp - uperiod) < TOL3D):
                 closed = True
                 # print("U Closed")
         if closed:
@@ -197,9 +199,11 @@ class multiIso:
     def setNumberV(self, n):
         fp = self.bounds[2]
         lp = self.bounds[3]
+        u0, u1, v0, v1 = self.face.Surface.bounds()
+        vperiod = v1 - v0
         closed = False
         if self.face.Surface.isVClosed():
-            if (abs(lp - fp - self.face.Surface.VPeriod()) < TOL3D):
+            if (abs(lp - fp - vperiod) < TOL3D):
                 closed = True
                 # print("V Closed")
         if closed:

@@ -90,6 +90,7 @@ class join:
         obj.addProperty("App::PropertyBool", "ForceClosed", "Join", "Force closed curve").ForceClosed = False
         obj.addProperty("App::PropertyBool", "Reverse", "Join", "Reverse the output curve").Reverse = False
         obj.addProperty("App::PropertyInteger", "StartOffset", "Join", "Set the start point of closed curve").StartOffset = 0
+        obj.addProperty("App::PropertyBool", "Rational", "Join", "Allow rational BSpline output").Rational = True
         obj.Proxy = self
 
     def onChanged(self, fp, prop):
@@ -111,32 +112,35 @@ class join:
                     res.append(link[0].getSubObject(ss))
         return res
 
-    def execute(self, obj):
+    def getBsplines(self, obj):
+        curves = []
         edges = self.getEdges(obj)
         if not edges:
             raise RuntimeError("No input edges")
-            # return False
-        # tmp = list()
-        # for e in edges:
-        #     if not isinstance(e.Curve, Part.BSplineCurve):
-        #         tmp += e.toNurbs().Edges
-        #     else:
-        #         tmp.append(e)
-        curves = list()
+
         for e in edges:
+            if hasattr(obj, "Rational") and obj.Rational:
+                try:
+                    c = e.toNurbs().Edge1.Curve
+                except Exception as exc:
+                    debug(f"JoinCurve : Nurbs conversion error\n{exc}\n")
+                    c = e.Curve.toBSpline(e.FirstParameter, e.LastParameter)
+            else:
+                c = e.Curve.toBSpline(e.FirstParameter, e.LastParameter)
             try:
-                c = e.toNurbs().Edge1.Curve
+                c.segment(e.FirstParameter, e.LastParameter)
             except Exception as exc:
-                debug(f"JoinCurve : Nurbs conversion error\n{exc}\n")
-                c = e.Curve.toBSpline()
-            c.segment(e.FirstParameter, e.LastParameter)
-            c.scaleKnotsToBounds()
+                debug(f"JoinCurve : curve.segment error\n{exc}\n")
+            if hasattr(c, "scaleKnotsToBounds"):
+                c.scaleKnotsToBounds()
             mid = c.parameterAtDistance(e.Length / 2)
             debug("FirstP: {} LastP: {} Mid: {}".format(c.FirstParameter, c.LastParameter, mid))
             c.insertKnot(mid, 1, 0.0)
             curves.append(c)
-        debug("Edges : \n{}".format(str(curves)))
+        return curves
 
+    def execute(self, obj):
+        curves = self.getBsplines(obj)
         c0 = curves[0].copy()
         outcurves = []
         for n, c in enumerate(curves[1:]):
