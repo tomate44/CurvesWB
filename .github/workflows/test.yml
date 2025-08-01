@@ -14,7 +14,7 @@ jobs:
     - name: get freecad
       run: wget https://github.com/FreeCAD/FreeCAD/releases/download/weekly-2025.07.29/FreeCAD_weekly-2025.07.29-Linux-x86_64-py311.AppImage -O FreeCAD.AppImage && chmod +x FreeCAD.AppImage
     - name: Run tests
-      run: ./FreeCAD.AppImage --console -P test_mixed_curve_freecad.py
+      run: ./FreeCAD.AppImage -c -t test_mixed_curve_freecad.py
     # - name: Install pytest & pytest-cov
     #   run: pip install pytest pytest-cov
     # - name: Run tests
