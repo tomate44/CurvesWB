@@ -617,6 +617,8 @@ class GeomInfo:
                     return
             else:
                 return
+            if self.ss.isNull():
+                return
             if self.ss.ShapeType == 'Face':
                 surf = self.ss.Surface
                 t = self.getSurfInfo(self.ss)

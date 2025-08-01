@@ -87,16 +87,17 @@ class join:
         obj.addProperty("App::PropertyFloat", "Tolerance", "Join", "Tolerance").Tolerance = 0.01
         obj.addProperty("App::PropertyBool", "CornerBreak", "Join", "Break on sharp corners").CornerBreak = False
         obj.addProperty("App::PropertyBool", "ForceContact", "Join", "Force connection of edges").ForceContact = True
-        obj.addProperty("App::PropertyBool", "ForceClosed", "Join", "Force closed curve").ForceClosed = False
+        obj.addProperty("App::PropertyBool", "ForceClosed", "ClosedCurves", "Force closed curve").ForceClosed = False
         obj.addProperty("App::PropertyBool", "Reverse", "Join", "Reverse the output curve").Reverse = False
-        obj.addProperty("App::PropertyInteger", "StartOffset", "Join", "Set the start point of closed curve").StartOffset = 0
+        obj.addProperty("App::PropertyInteger", "StartOffset", "ClosedCurves", "Move the origin of closed curve along the consecutive knots")
+        obj.addProperty("App::PropertyFloat", "OffsetParameter", "ClosedCurves", "Additional offset of origin of closed curve (percent of curve length)")
         obj.addProperty("App::PropertyBool", "Rational", "Join", "Allow rational BSpline output").Rational = True
         obj.Proxy = self
 
     def onChanged(self, fp, prop):
         if 'Restore' in fp.State:
             return
-        if prop == "StartOffset":
+        if prop in ["StartOffset", "OffsetParameter"]:
             self.execute(fp)
         if hasattr(fp, "ExtensionProxy"):
             fp.ExtensionProxy.onChanged(fp, prop)
@@ -119,23 +120,15 @@ class join:
             raise RuntimeError("No input edges")
 
         for e in edges:
+            tc = e.Curve
             if hasattr(obj, "Rational") and obj.Rational:
                 try:
-                    c = e.toNurbs().Edge1.Curve
+                    tc = e.toNurbs().Edge1.Curve
                 except Exception as exc:
                     debug(f"JoinCurve : Nurbs conversion error\n{exc}\n")
-                    c = e.Curve.toBSpline(e.FirstParameter, e.LastParameter)
-            else:
-                c = e.Curve.toBSpline(e.FirstParameter, e.LastParameter)
-            try:
-                c.segment(e.FirstParameter, e.LastParameter)
-            except Exception as exc:
-                debug(f"JoinCurve : curve.segment error\n{exc}\n")
-            if hasattr(c, "scaleKnotsToBounds"):
-                c.scaleKnotsToBounds()
-            mid = c.parameterAtDistance(e.Length / 2)
-            debug("FirstP: {} LastP: {} Mid: {}".format(c.FirstParameter, c.LastParameter, mid))
-            c.insertKnot(mid, 1, 0.0)
+
+            c = tc.toBSpline(e.FirstParameter, e.LastParameter)
+            c.scaleKnotsToBounds()
             curves.append(c)
         return curves
 
@@ -174,8 +167,17 @@ class join:
             for c in outcurves:
                 c.reverse()
         if len(outcurves) == 1 and outcurves[0].isClosed():
-            outcurves[0].setPeriodic()
-            outcurves[0].setOrigin(1 + obj.StartOffset % outcurves[0].NbKnots)
+            pc = outcurves[0]
+            pc.setPeriodic()
+            knot_idx = 1 + obj.StartOffset % outcurves[0].NbKnots
+            pc.setOrigin(knot_idx)
+            if hasattr(obj, "OffsetParameter"):
+                rl = pc.length() * (obj.OffsetParameter % 100) / 100
+                par = pc.parameterAtDistance(rl, pc.FirstParameter)
+                pc.insertKnot(par, 1, 0.0)
+                new_idx = 1 + pc.getKnots().index(par)
+                pc.setOrigin(new_idx)
+                outcurves = [pc]
         outEdges = [Part.Edge(c) for c in outcurves]
 
         if hasattr(obj, "ExtensionProxy"):
