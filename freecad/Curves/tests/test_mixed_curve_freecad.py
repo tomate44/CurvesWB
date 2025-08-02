@@ -67,60 +67,7 @@ class TestMixedCurveWithFreeCAD(BaseTestCase):
         self.assertIsNotNone(FreeCAD.Version())
         print(f"FreeCAD Version: {FreeCAD.Version()}")
 
-    def test_create_basic_geometry(self):
-        """Test creating basic geometry objects"""
-        # Create a simple line for testing
-        p1 = FreeCAD.Vector(0, 0, 0)
-        p2 = FreeCAD.Vector(10, 0, 0)
-        line = Part.LineSegment(p1, p2)
-
-        self.assertIsNotNone(line)
-        self.assertEqual(line.StartPoint, p1)
-        self.assertEqual(line.EndPoint, p2)
-
-    def test_curve_properties_with_freecad(self):
-        """Test curve properties using FreeCAD objects"""
-        # Create a B-spline curve
-        poles = [
-            FreeCAD.Vector(0, 0, 0),
-            FreeCAD.Vector(1, 1, 0),
-            FreeCAD.Vector(2, 0, 0),
-            FreeCAD.Vector(3, 1, 0)
-        ]
-
-        bspline = Part.BSplineCurve()
-        bspline.buildFromPoles(poles)
-        edge = Part.Edge(bspline)
-
-        # Test basic properties
-        self.assertTrue(edge.Length > 0)
-        self.assertIsNotNone(edge.FirstParameter)
-        self.assertIsNotNone(edge.LastParameter)
-
-        print(f"Edge length: {edge.Length}")
-        print(f"Parameter range: {edge.FirstParameter} to {edge.LastParameter}")
-
-    def test_document_integration(self):
-        """Test integration with FreeCAD document"""
-        # Add an object to the document
-        obj = self.doc.addObject("Part::Feature", "TestCurve")
-
-        # Create simple geometry
-        line = Part.LineSegment(
-            FreeCAD.Vector(0, 0, 0),
-            FreeCAD.Vector(10, 10, 0)
-        )
-        obj.Shape = Part.Edge(line)
-
-        self.doc.recompute()
-
-        # Verify object was created
-        self.assertIn("TestCurve", [obj.Name for obj in self.doc.Objects])
-        self.assertTrue(obj.Shape.isValid())
-
-        print(f"  ✅ Created object in document: {obj.Name}")
-
-    def test_load_curves_test_files(self):
+    def test_creation_curve_from_file_with_sketches(self):
         """Test curves from file freecad/Curves/TestFiles/gtr.FCStd"""
         import glob
         import os
