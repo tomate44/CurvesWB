@@ -2,3 +2,8 @@
 *.md
 *.fcstd1
 /docFiles/
+
+*.DS_STORE
+.venv
+.idea
+FreeCAD.AppImage

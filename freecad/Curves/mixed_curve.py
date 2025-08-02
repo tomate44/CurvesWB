@@ -20,6 +20,9 @@ TOOL_ICON = os.path.join(ICONPATH, 'mixed_curve.svg')
 debug = _utils.debug
 # debug = _utils.doNothing
 
+#1e6 = kilomether
+#1e10 = 10k kilomethers
+TRIMMED_SURFACE_SIZE = 1e10
 
 class MixedCurve:
     """Builds a 3D curve as the intersection of 2 projected curves."""
@@ -38,7 +41,7 @@ class MixedCurve:
     def trimmed_surface(self, face):
         u0, u1, v0, v1 = face.ParameterRange
         # print(face.ParameterRange)
-        rts = Part.RectangularTrimmedSurface(face.Surface, u0, u1, -1e50, 1e50)
+        rts = Part.RectangularTrimmedSurface(face.Surface, u0, u1, -TRIMMED_SURFACE_SIZE, TRIMMED_SURFACE_SIZE)
         # print(rts)
         return rts
 
@@ -164,6 +167,8 @@ class MixedCurveCmd:
         cc.Active = False
         MixedCurveVP(cc.ViewObject)
         FreeCAD.ActiveDocument.recompute()
+        #return the result for test checks
+        return cc
 
     def Activated(self):
         vd = [FreeCAD.Vector(0, 0, 0), FreeCAD.Vector(0, 0, 0)]
