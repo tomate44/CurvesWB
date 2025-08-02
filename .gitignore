@@ -6,3 +6,4 @@
 *.DS_STORE
 .venv
 .idea
+FreeCAD.AppImage

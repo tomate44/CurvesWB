@@ -10,10 +10,10 @@ import os
 import sys
 import unittest
 from pathlib import Path
+from pprint import pprint
 
+from freecad.Curves import mixed_curve
 from freecad.Curves.tests.base_test import BaseTestCase
-
-# print(os.path.dirname(os.path.abspath(__file__)))
 
 # Import FreeCAD modules (should work in AppImage environment)
 try:
@@ -149,38 +149,38 @@ class TestMixedCurveWithFreeCAD(BaseTestCase):
 
         print(f"✅ Created object in document: {obj.Name}")
 
+    def test_load_curves_test_files(self):
+        """Test curves from file freecad/Curves/TestFiles/gtr.FCStd"""
+        import glob
+        import os
 
-def run_freecad_tests():
-    """Run tests with detailed output"""
-    print("=" * 60)
-    print("RUNNING FREECAD APPIMAGE TESTS")
-    print("=" * 60)
+        test_file = "./freecad/Curves/TestFiles/gtr.FCStd"
 
-    # Check environment
-    print("Environment Check:")
-    print(f"Python version: {sys.version}")
-    print(f"Current directory: {os.getcwd()}")
-    print(f"Python path includes: {sys.path[:3]}...")
+        file_name = os.path.basename(test_file)
+        print(f"  Loading test file: {file_name}")
 
-    # Create test suite
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestMixedCurveWithFreeCAD)
+        doc = FreeCAD.openDocument(test_file)
+        self.assertIsNotNone(doc)
+        self.assertIsNotNone(doc.Name)
 
-    # Run tests
-    runner = unittest.TextTestRunner(verbosity=2)
-    result = runner.run(suite)
+        sketches = []
+        for obj in doc.Objects:
+            if obj.Name == "Sketch039" or obj.Name == "Sketch040":
+                # add sketch for create a new working curve
+                sketches.append(obj)
+            elif obj.Name == "Mixed_curve018" or obj.Name == "Mixed_curve019":
+                # check, that we have 2 bad curves
+                self.assertEqual(len(obj.Shape.Wires), 0)
 
-    print("\n" + "=" * 60)
-    if result.wasSuccessful():
-        print("✅ ALL TESTS PASSED!")
-    else:
-        print("❌ SOME TESTS FAILED!")
-        print(f"Failures: {len(result.failures)}")
-        print(f"Errors: {len(result.errors)}")
-    print("=" * 60)
+        self.assertEqual(len(sketches), 2)
 
-    return result.wasSuccessful()
+        curve = mixed_curve.MixedCurveCmd().makeCPCFeature(
+            sketches[0], sketches[1], 
+            mixed_curve.MixedCurveCmd().get_sketch_plane_normal(sketches[0]),
+            mixed_curve.MixedCurveCmd().get_sketch_plane_normal(sketches[1])
+        )
+        # check, that new wire is ok and will be rendered without errors
+        self.assertGreater(len(curve.Shape.Wires), 0)
 
-
-if __name__ == '__main__':
-    success = run_freecad_tests()
-    sys.exit(0 if success else 1)
+        recomputeRes = doc.recompute()        
+        FreeCAD.closeDocument(doc.Name)

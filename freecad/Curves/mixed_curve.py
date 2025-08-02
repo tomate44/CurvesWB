@@ -20,6 +20,9 @@ TOOL_ICON = os.path.join(ICONPATH, 'mixed_curve.svg')
 debug = _utils.debug
 # debug = _utils.doNothing
 
+#1e6 = kilomether
+#1e10 = 10k kilomethers
+TRIMMED_SURFACE_SIZE = 1e10
 
 class MixedCurve:
     """Builds a 3D curve as the intersection of 2 projected curves."""
@@ -38,7 +41,7 @@ class MixedCurve:
     def trimmed_surface(self, face):
         u0, u1, v0, v1 = face.ParameterRange
         # print(face.ParameterRange)
-        rts = Part.RectangularTrimmedSurface(face.Surface, u0, u1, -1e50, 1e50)
+        rts = Part.RectangularTrimmedSurface(face.Surface, u0, u1, -TRIMMED_SURFACE_SIZE, TRIMMED_SURFACE_SIZE)
         # print(rts)
         return rts
 
@@ -164,6 +167,8 @@ class MixedCurveCmd:
         cc.Active = False
         MixedCurveVP(cc.ViewObject)
         FreeCAD.ActiveDocument.recompute()
+        #return the result for test checks
+        return cc
 
     def Activated(self):
         vd = [FreeCAD.Vector(0, 0, 0), FreeCAD.Vector(0, 0, 0)]
@@ -182,6 +187,28 @@ class MixedCurveCmd:
         else:
             d1, d2 = [FreeCAD.Vector(0, 0, 0), FreeCAD.Vector(0, 0, 0)]
         self.makeCPCFeature(sel[0].Object, sel[1].Object, d1, d2)
+
+    def get_sketch_plane_normal(self, sketch):
+        """Get the normal vector of the sketch plane"""
+        if hasattr(sketch, 'Placement'):
+            # Get the Z-axis of the sketch's coordinate system
+            placement = sketch.Placement
+            normal = placement.Rotation.multVec(FreeCAD.Vector(0, 0, 1))
+            return normal
+        elif hasattr(sketch, 'Support') and sketch.Support:
+            # If sketch is on a face, get face normal
+            support_obj, face_names = sketch.Support
+            if face_names:
+                face = getattr(support_obj[0], face_names[0], None)
+                if hasattr(face, 'normalAt'):
+                    # Get normal at center of face
+                    bbox = face.BoundBox
+                    center_u = (bbox.XMin + bbox.XMax) / 2
+                    center_v = (bbox.YMin + bbox.YMax) / 2
+                    return face.normalAt(center_u, center_v)
+
+        # Default to XY plane normal
+        return FreeCAD.Vector(0, 0, 1)
 
     def IsActive(self):
         if FreeCAD.ActiveDocument:
