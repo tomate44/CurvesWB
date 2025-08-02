@@ -94,11 +94,33 @@ class TestMixedCurveWithFreeCAD(BaseTestCase):
 
         curve = mixed_curve.MixedCurveCmd().makeCPCFeature(
             sketches[0], sketches[1], 
-            mixed_curve.MixedCurveCmd().get_sketch_plane_normal(sketches[0]),
-            mixed_curve.MixedCurveCmd().get_sketch_plane_normal(sketches[1])
+            self.get_sketch_plane_normal(sketches[0]),
+            self.get_sketch_plane_normal(sketches[1])
         )
         # check, that new wire is ok and will be rendered without errors
         self.assertGreater(len(curve.Shape.Wires), 0)
 
         recomputeRes = doc.recompute()        
         FreeCAD.closeDocument(doc.Name)
+
+    def get_sketch_plane_normal(self, sketch):
+        """Get the normal vector of the sketch plane"""
+        if hasattr(sketch, 'Placement'):
+            # Get the Z-axis of the sketch's coordinate system
+            placement = sketch.Placement
+            normal = placement.Rotation.multVec(FreeCAD.Vector(0, 0, 1))
+            return normal
+        elif hasattr(sketch, 'Support') and sketch.Support:
+            # If sketch is on a face, get face normal
+            support_obj, face_names = sketch.Support
+            if face_names:
+                face = getattr(support_obj[0], face_names[0], None)
+                if hasattr(face, 'normalAt'):
+                    # Get normal at center of face
+                    bbox = face.BoundBox
+                    center_u = (bbox.XMin + bbox.XMax) / 2
+                    center_v = (bbox.YMin + bbox.YMax) / 2
+                    return face.normalAt(center_u, center_v)
+
+        # Default to XY plane normal
+        return FreeCAD.Vector(0, 0, 1)
