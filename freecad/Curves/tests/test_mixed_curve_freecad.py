@@ -29,7 +29,6 @@ except ImportError as e:
 # Add the path to your mixed_curve module
 currentFilePath = Path(__file__)
 moduleDir = currentFilePath.parent.parent.absolute()
-print(moduleDir)
 sys.path.append(f"{moduleDir}")
 
 try:
@@ -79,34 +78,6 @@ class TestMixedCurveWithFreeCAD(BaseTestCase):
         self.assertEqual(line.StartPoint, p1)
         self.assertEqual(line.EndPoint, p2)
 
-    def test_mixed_curve_with_real_geometry(self):
-        """Test mixed curve with real FreeCAD geometry"""
-        # Create test edges
-        edges = []
-
-        # Line segment
-        line = Part.LineSegment(
-            FreeCAD.Vector(0, 0, 0),
-            FreeCAD.Vector(5, 0, 0)
-        )
-        edges.append(Part.Edge(line))
-
-        # Arc
-        circle = Part.Circle(FreeCAD.Vector(7.5, 0, 0), FreeCAD.Vector(0, 0, 1), 2.5)
-        arc = Part.Edge(circle, 0, 3.14159)  # Half circle
-        edges.append(arc)
-
-        # Test with mixed_curve if available
-        if hasattr(freecad.Curves.mixed_curve, 'MixedCurve'):
-            try:
-                curve = freecad.Curves.mixed_curve.MixedCurve(edges)
-                self.assertIsNotNone(curve)
-                print("✅ MixedCurve created with real geometry")
-            except Exception as e:
-                print(f"⚠️  MixedCurve creation failed: {e}")
-        else:
-            print("⚠️  MixedCurve class not found in module")
-
     def test_curve_properties_with_freecad(self):
         """Test curve properties using FreeCAD objects"""
         # Create a B-spline curve
@@ -147,7 +118,7 @@ class TestMixedCurveWithFreeCAD(BaseTestCase):
         self.assertIn("TestCurve", [obj.Name for obj in self.doc.Objects])
         self.assertTrue(obj.Shape.isValid())
 
-        print(f"✅ Created object in document: {obj.Name}")
+        print(f"  ✅ Created object in document: {obj.Name}")
 
     def test_load_curves_test_files(self):
         """Test curves from file freecad/Curves/TestFiles/gtr.FCStd"""
