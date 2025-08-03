@@ -5,7 +5,7 @@
   <version>0.6.67</version>
   <maintainer email="cg@grellier.fr">Christophe Grellier</maintainer>
   <license file="LICENSE">LGPL-2.1</license>
-  <url type="repository" branch="master">https://github.com/tomate44/CurvesWB</url>
+  <url type="repository" branch="main">https://github.com/tomate44/CurvesWB</url>
   <url type="documentation">https://wiki.freecad.org/Curves_Workbench</url>
 
   <content>
