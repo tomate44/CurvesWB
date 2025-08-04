@@ -7,7 +7,7 @@ This workbench is developed for FreeCAD main develoment branch.
 ## Important Notes  
 * This workbench is EXPERIMENTAL and should NOT be used for any serious work.
 * This workbench is not suitable for beginners. A good knowledge of FreeCAD is needed.
-* This workbench is essentialy my personal playground for experimenting with geometric algorithms.
+* This workbench is essentially my personal playground for experimenting with geometric algorithms.
 
 ## Installation 
 There are 2 methods to install Curves WB:
