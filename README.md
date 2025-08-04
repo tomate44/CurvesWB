@@ -30,14 +30,14 @@ For FreeCAD version 0.17 or higher it's preferred to install this workbench with
 </details><br/>
 
 ## Documentation
-The Curves workbench documentation can be found on the FreeCAD wiki: https://wiki.freecad.org/Curves_Workbench
+The Curves workbench documentation can be found on the [FreeCAD wiki](https://wiki.freecad.org/Curves_Workbench).
 
 ## Feedback  
 The main and recommended channel for discussion, feedback, suggestions, and patches is the following discussion of FreeCAD's forum : [Curves workbench](https://forum.freecadweb.org/viewtopic.php?f=8&t=22675)
 
 ## Contributing
 #### Reporting issues
-Issues should first be reported in the [FreeCAD forum discussion](https://forum.freecadweb.org/viewtopic.php?f=8&t=22675). A minimal FreeCAD file demonstrating the bug should be attached. 
+Issues should first be reported in the [FreeCAD forum discussion](https://forum.freecadweb.org/viewtopic.php?f=8&t=22675). A minimal FreeCAD file demonstrating the bug should be attached.  
 Issues reported in Github may be unnoticed. A minimal FreeCAD file demonstrating the bug should be attached to the issue report, with *.FCStd extension renamed to *.zip
 
 #### Contributing code
@@ -48,4 +48,4 @@ The workbench documention is not extensive.
 Contributing documentation on [FreeCAD wiki](https://wiki.freecad.org/Curves_Workbench) is welcome.
 
 ## License  
-CurvesWB is released under the LGPL2.1+ license. See [LICENSE](LICENSE).
+CurvesWB is released under the LGPL2.1+ license. See [LICENSE](https://github.com/tomate44/CurvesWB/blob/main/LICENSES/LGPL-2.1.txt).
