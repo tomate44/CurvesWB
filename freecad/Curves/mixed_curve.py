@@ -20,6 +20,10 @@ TOOL_ICON = os.path.join(ICONPATH, 'mixed_curve.svg')
 debug = _utils.debug
 # debug = _utils.doNothing
 
+# 1e6 = kilomether
+# 1e10 = 10k kilomethers
+TRIMMED_SURFACE_SIZE = 1e10
+
 
 class MixedCurve:
     """Builds a 3D curve as the intersection of 2 projected curves."""
@@ -38,7 +42,7 @@ class MixedCurve:
     def trimmed_surface(self, face):
         u0, u1, v0, v1 = face.ParameterRange
         # print(face.ParameterRange)
-        rts = Part.RectangularTrimmedSurface(face.Surface, u0, u1, -1e50, 1e50)
+        rts = Part.RectangularTrimmedSurface(face.Surface, u0, u1, -TRIMMED_SURFACE_SIZE, TRIMMED_SURFACE_SIZE)
         # print(rts)
         return rts
 
@@ -84,17 +88,38 @@ class MixedCurveFP:
                         "Build ruled surfaces between Shape2 and resulting Mixed-Curve").FillFace2 = False
         obj.Proxy = self
 
+    def get_direction(self, obj):
+        pl = obj.Shape.findPlane()
+        if pl is not None:
+            return pl.Axis
+        if hasattr(obj, 'Support') and obj.Support:
+            # If obj is attached to a face, get face normal
+            support_obj, face_names = obj.Support
+            if face_names:
+                face = getattr(support_obj[0], face_names[0], None)
+                if hasattr(face, 'normalAt'):
+                    # Get normal at center of face
+                    u0, u1, v0, v1 = face.ParameterRange
+                    center_u = (u0 + u1) / 2
+                    center_v = (v0 + v1) / 2
+                    return face.normalAt(center_u, center_v)
+        if hasattr(obj, 'Placement'):
+            # Get the Z-axis of the object's coordinate system
+            placement = obj.Placement
+            normal = placement.Rotation.multVec(FreeCAD.Vector(0, 0, 1))
+            return normal
+        return FreeCAD.Vector(0, 0, 1)
+
     def execute(self, obj):
         s1 = obj.Shape1.Shape
         s2 = obj.Shape2.Shape
-        if obj.Direction1.Length < 1e-7:
-            d1 = obj.Shape1.Placement.Rotation.multVec(FreeCAD.Vector(0, 0, -1))
-        else:
-            d1 = obj.Direction1
-        if obj.Direction2.Length < 1e-7:
-            d2 = obj.Shape2.Placement.Rotation.multVec(FreeCAD.Vector(0, 0, -1))
-        else:
-            d2 = obj.Direction2
+        d1 = obj.Direction1
+        d2 = obj.Direction2
+        if d1.Length < 1e-7:
+            d1 = self.get_direction(obj.Shape1)
+        if d2.Length < 1e-7:
+            d2 = self.get_direction(obj.Shape2)
+
         cc = MixedCurve(s1, s2, d1, d2)
 
         if hasattr(obj, "Active") and obj.Active:
