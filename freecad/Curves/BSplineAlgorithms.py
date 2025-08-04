@@ -643,6 +643,6 @@ class BSplineAlgorithms(object):
 
         result, error = approximationObj.FitCurveOptimal(parameters, 10)
         if not isinstance(result, Part.BSplineCurve):
-            raise ValueError("FitCurveOptimal failed to compute a valid curve")
+            return None
         return result
 

@@ -162,6 +162,8 @@ class BSplineApproxInterp(object):
         # solve system
         iteration = 0
         result, error = self.python_solve(parms, knots, mults)  # TODO occKnots, occMults ???? See above
+        if error is None:
+            return None, None
         old_error = error * 2
 
         debug("FitCurveOptimal iteration # {}".format(iteration))
@@ -171,6 +173,8 @@ class BSplineApproxInterp(object):
             old_error = error
             self.optimizeParameters(result, parms)
             result, error = self.python_solve(parms, knots, mults)
+            if error is None:
+                return None, None
             debug("error = {}".format(error))
             iteration += 1
         return result, error
