@@ -405,6 +405,7 @@ class BlendCurveVP:
 
     def setEdit(self, vobj, mode=0):
         debug("BlendCurve Edit mode = {}".format(mode))
+        self.Object.AutoScale = False
         if mode == 0:
             if vobj.Selectable:
                 self.select_state = True
