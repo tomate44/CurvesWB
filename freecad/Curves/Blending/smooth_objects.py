@@ -889,7 +889,7 @@ class BlendCurve:
         try:
             from scipy.optimize import minimize
             return True
-        except ImportError:
+        except (ImportError, ValueError):
             return False
 
     @property

@@ -23,7 +23,7 @@ CAN_MINIMIZE = True
 
 try:
     from scipy.optimize import minimize
-except ImportError:
+except (ImportError, ValueError):
     CAN_MINIMIZE = False
 
 vec3 = FreeCAD.Vector
