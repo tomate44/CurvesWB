@@ -63,7 +63,8 @@ class BlendCurveFP:
             for sen in senl:
                 if ("Edge" in sen) or ("Line" in sen):
                     sh = obj.Shape.copy()
-                    sh.Placement = obj.getGlobalPlacement()
+                    if hasattr(obj, "getGlobalPlacement"):
+                        sh.Placement = obj.getGlobalPlacement()
                     if hasattr(sh, "getElementName"):
                         sub = sh.getElement(sh.getElementName(sen))
                     else:
