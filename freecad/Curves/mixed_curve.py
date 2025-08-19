@@ -23,6 +23,7 @@ debug = _utils.debug
 # 1e6 = kilomether
 # 1e10 = 10k kilomethers
 TRIMMED_SURFACE_SIZE = 1e10
+err = FreeCAD.Console.PrintError
 
 
 class MixedCurve:
@@ -108,7 +109,7 @@ class MixedCurveFP:
             placement = obj.Placement
             normal = placement.Rotation.multVec(FreeCAD.Vector(0, 0, 1))
             return normal
-        return FreeCAD.Vector(0, 0, 1)
+        return FreeCAD.Vector(0, 0, 0)
 
     def execute(self, obj):
         s1 = obj.Shape1.Shape
@@ -126,6 +127,10 @@ class MixedCurveFP:
             mixed = obj.ExtensionProxy.approximate(obj, cc.shape())
         else:
             mixed = cc.shape()
+        if not mixed.Wires:
+            err(f"Mixed Curve '{obj.Label}' :\n- Unable to find intersection.\n- Set Direction properties explicitely.\n")
+            obj.Shape = Part.Shape()
+            return
         if not hasattr(obj, "FillFace1"):
             obj.Shape = mixed
             return
