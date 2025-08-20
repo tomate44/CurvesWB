@@ -44,8 +44,8 @@ class BlendCurveFP:
         obj.addProperty("App::PropertyVectorList", "CurvePts", "BlendCurve", "Poles of the Bezier curve")
         obj.addProperty("App::PropertyEnumeration", "Output", "BlendCurve", "Output type").Output = ["Wire", "Joined", "Single"]
         obj.addProperty("App::PropertyBool", "AutoScale", "BlendCurve", "Compute scales to get minimal curvature along curve").AutoScale = False
-        obj.Scale1 = (1., -5.0, 5.0, 0.05)
-        obj.Scale2 = (1., -5.0, 5.0, 0.05)
+        obj.Scale1 = (1., -100.0, 100.0, 0.05)
+        obj.Scale2 = (1., -100.0, 100.0, 0.05)
         obj.setEditorMode("CurvePts", 2)
         obj.Proxy = self
 
