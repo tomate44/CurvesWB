@@ -5,6 +5,9 @@ import functools
 import time
 
 
+mes = FreeCAD.Console.PrintMessage
+
+
 def timer(func):
     @functools.wraps(func)
     def wrapper_timer(*args, **kwargs):
@@ -12,7 +15,7 @@ def timer(func):
         value = func(*args, **kwargs)
         toc = time.perf_counter()
         elapsed_time = toc - tic
-        print(f"{func.__name__} took {elapsed_time:0.4f} seconds")
+        mes(f"{func.__name__} took {elapsed_time:0.4f} seconds")
         return value
     return wrapper_timer
 
@@ -456,6 +459,19 @@ class ShapeMapper:
         self._flat_wires = None
         self._sorted_wires = None
         self.Tolerance = 1e-7
+        self.Messages = ["", ]
+        _ = self.FlatWires
+        # _ = self.SortedWires
+
+    def timer(func):
+        def wrapper_timer(self, *args, **kwargs):
+            tic = time.perf_counter()
+            value = func(self, *args, **kwargs)
+            toc = time.perf_counter()
+            elapsed_time = toc - tic
+            self.Messages.append(f"{func.__name__}: {elapsed_time:0.4f} seconds")
+            return value
+        return wrapper_timer
 
     @property
     def FlatWires(self):
@@ -469,6 +485,7 @@ class ShapeMapper:
             self._sorted_wires = self.sort_wires()
         return self._sorted_wires
 
+    @timer
     def get_pcurves(self):
         "Returns a list of pcurves from the Source shape edges"
         pcurves = []
@@ -478,7 +495,7 @@ class ShapeMapper:
                 if e.Orientation == "Reversed":
                     pcurve.reverse()
                 pcurves.append((pcurve, fp, lp))
-        elif hasattr(self.Transfer, "Surface"):
+        elif hasattr(self.Transfer, "Surface"):  # self.Transfer is a face
             proj = self.Transfer.project([self.Source])
             for e in proj.Edges:
                 pcurve, fp, lp = self.Transfer.curveOnSurface(e)
@@ -487,6 +504,7 @@ class ShapeMapper:
                 pcurves.append((pcurve, fp, lp))
         return pcurves
 
+    @timer
     def get_flat_wires(self):
         "Returns a list of flat wires (on XY plane) from joined pcurves"
         pc = self.get_pcurves()
@@ -506,6 +524,7 @@ class ShapeMapper:
             wires.append(fix.wire())
         return wires
 
+    @timer
     def sort_wires(self):
         """Sort wires in order to build faces
         and returns two lists :
@@ -524,9 +543,12 @@ class ShapeMapper:
             else:
                 openw.append(w)
         if closedw:
-            closedcomp = Part.Compound(closedw)
-            faces = Part.makeFace(closedcomp)
-            closed_wires = [f.Wires for f in faces.Faces]
+            # closedcomp = Part.Compound(closedw)
+            # faces = Part.makeFace(closedcomp)
+            # closed_wires = [f.Wires for f in faces.Faces]
+            sorter = BoundarySorter(closedw)
+            sorter.sort()
+            closed_wires = sorter.sorted_wires
         return closed_wires, openw
 
     def map_edge_on_surface(self, edge, surface):
@@ -537,6 +559,7 @@ class ShapeMapper:
         if pcurve:
             return pcurve[0].toShape(surface, pcurve[3], pcurve[4])
 
+    # @timer
     def map_on_surface(self, wires, surface, fill=False):
         """Maps a list of wires on a surface.
         Returns a compound of wires if fill = False
@@ -567,6 +590,7 @@ class ShapeMapper:
             raise (RuntimeError, "Surface must be at least C1 continuous")
         return face.makeOffsetShape(offset, self.Tolerance).Face1
 
+    @timer
     def get_shapes(self, offset=0.0, fillfaces=True):
         off1 = self.offset_face(self.Target, offset).Face1
         if not fillfaces:
@@ -599,6 +623,7 @@ class ShapeMapper:
         wl = sh1 = self.map_on_surface(open_wires, off1.Surface, False)
         return Part.Compound(faces), wl
 
+    @timer
     def get_extrusion(self, offset1=0.0, offset2=1.0):
         _, wires1 = self.get_shapes(offset1, False)
         _, wires2 = self.get_shapes(offset2, False)
@@ -612,6 +637,7 @@ class ShapeMapper:
             shells.append(Part.Shell(faces))
         return Part.Compound(shells)
 
+    @timer
     def get_solids(self, offset1=0.0, offset2=1.0):
         faces_1, _ = self.get_shapes(offset1, True)
         faces_2, _ = self.get_shapes(offset2, True)
