@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 import FreeCAD as App
 import FreeCADGui as Gui
 from pivy import coin

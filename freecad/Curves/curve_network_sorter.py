@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 # This file is a python port of /src/guide_curves/CTiglCurveNetworkSorter.cpp
 # from the Tigl library : https://github.com/DLR-SC/tigl under Apache-2 license
 import FreeCAD

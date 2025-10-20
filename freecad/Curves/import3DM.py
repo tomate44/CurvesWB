@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 __title__ = "import3DM"
 __author__ = "Christophe Grellier (Chris_G) - Keith Sloan (keithsloan52)"
 __license__ = "LGPL 2.1"

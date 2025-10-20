@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 __title__ = "isoCurves for FreeCAD"
 __author__ = "Chris_G"
 __license__ = "LGPL 2.1"

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 class TruncateExtend:
     """Truncate or extend a shape by a given distance
     te = TruncateExtend(shape, cutter, distance, reverse=False)

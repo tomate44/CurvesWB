@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 __title__ = "Macro IsoCurves"
 __author__ = "Chris_G"
 __doc__ = '''

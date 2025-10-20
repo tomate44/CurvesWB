@@ -1,4 +1,4 @@
-#  -*- coding: utf-8 -*-
+# SPDX-License-Identifier: LGPL-2.1-or-later
 
 __title__ = "Sketch on surface"
 __author__ = "Christophe Grellier (Chris_G)"
