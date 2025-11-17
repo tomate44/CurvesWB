@@ -67,7 +67,7 @@ class MofProxyBase:
             return ShapeMapper.ShapeMapper(source, target)
         transfer_shape = obj.TargetFlatMap.Shape
         if len(transfer_shape.Faces) == 1:
-            transfer = ShapeMapper.TransferSurface(transfer_shape.Face1)
+            transfer = ShapeMapper.TransferSurface(transfer_shape.Face1.Surface)
         else:
             bb = transfer_shape.BoundBox
             transfer = ShapeMapper.Quad([bb.XMin, bb.XMax, bb.YMin, bb.YMax],

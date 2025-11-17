@@ -461,15 +461,22 @@ class FlattenViewProxy:
     def getIcon(self):
         return TOOL_ICON
 
+    def getDefaultDisplayMode(self):
+        "Return the name of the default display mode. It must be defined in getDisplayModes."
+        return "Flat Lines"
 
 class Curves_Flatten_Face_Cmd:
     """Create a flatten face feature"""
 
     def makeFeature(self, sel=None):
-        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "Flatten")
+        fp = FreeCAD.ActiveDocument.addObject("Part::Part2DObjectPython", "Flatten")
         FlattenProxy(fp)
         FlattenViewProxy(fp.ViewObject)
         fp.Source = sel
+        if sel:
+            parent = sel[0].getParent()
+            if (getattr(parent, "TypeId", "") == "PartDesign::Body"):
+                parent.addObject(fp)
         FreeCAD.ActiveDocument.recompute()
 
     def Activated(self):
@@ -480,8 +487,8 @@ class Curves_Flatten_Face_Cmd:
             for sn in so.SubElementNames:
                 subo = so.Object.getSubObject(sn)
                 if hasattr(subo, "Surface") and isinstance(subo.Surface, (Part.Cylinder,
-                                                                        Part.Cone,
-                                                                        Part.SurfaceOfExtrusion)):
+                                                                          Part.Cone,
+                                                                          Part.SurfaceOfExtrusion)):
                     self.makeFeature((so.Object, sn))
                 else:
                     FreeCAD.Console.PrintError("Bad input :{}-{}\n".format(so.Object.Label, sn))
