@@ -428,13 +428,13 @@ class FlattenProxy:
         obj.addProperty("App::PropertyLinkSub", "Source",
                         "Source", "The conical face to flatten")
         obj.addProperty("App::PropertyBool", "InPlace",
-                        "Settings", "Unroll the face in place")
+                        "Settings", "Position Flatten object :\ntangent to original face (True)\nor on the XY plane (False)")
         obj.addProperty("App::PropertyFloat", "Size",
                         "Settings", "Size of the underlying surface")
         obj.setEditorMode("Size", 2)
         obj.Size = 0.0
         preferences = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves")
-        obj.InPlace = preferences.GetBool("FlattenDefaultInPlace", True)
+        obj.InPlace = preferences.GetBool("FlattenDefaultInPlace", False)
         obj.Proxy = self
 
     def get_face(self, fp):
@@ -451,7 +451,10 @@ class FlattenProxy:
         obj.Shape = flat_face
 
     def onChanged(self, obj, prop):
-        return False
+        if 'Restore' in obj.State:
+            return
+        if prop in ["Source", "InPlace", "Size"]:
+            self.execute(obj)
 
 
 class FlattenViewProxy:
@@ -465,18 +468,35 @@ class FlattenViewProxy:
         "Return the name of the default display mode. It must be defined in getDisplayModes."
         return "Flat Lines"
 
+    def setEdit(self, vobj, mode=0):
+        return True
+
+    def unsetEdit(self, vobj, mode=0):
+        return False
+
+    def doubleClicked(self, vobj):
+        return True
+
+
 class Curves_Flatten_Face_Cmd:
     """Create a flatten face feature"""
 
     def makeFeature(self, sel=None):
-        fp = FreeCAD.ActiveDocument.addObject("Part::Part2DObjectPython", "Flatten")
-        FlattenProxy(fp)
-        FlattenViewProxy(fp.ViewObject)
-        fp.Source = sel
+        body = None
+        obj_type = "Part::FeaturePython"
         if sel:
             parent = sel[0].getParent()
             if (getattr(parent, "TypeId", "") == "PartDesign::Body"):
-                parent.addObject(fp)
+                body = parent
+                obj_type = "Part::Part2DObjectPython"
+        fp = FreeCAD.ActiveDocument.addObject(obj_type, "Flatten")
+        FlattenProxy(fp)
+        FlattenViewProxy(fp.ViewObject)
+        fp.Source = sel
+        if body:
+            body.addObject(fp)
+            fp.InPlace = False
+            fp.setEditorMode("InPlace", 1)
         FreeCAD.ActiveDocument.recompute()
 
     def Activated(self):
