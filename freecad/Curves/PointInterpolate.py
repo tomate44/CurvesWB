@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 import Part
 import numpy as np
 from freecad.Curves import PointParameters

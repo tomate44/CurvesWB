@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 def helix_on_face(face, turns=1.0, wire_output=True):
     """
     Create an helix shape on a periodic face.

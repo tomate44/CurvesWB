@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 from __future__ import division # allows floating point division from integers
 import FreeCAD, Part, math
 import os, dummy, FreeCADGui
