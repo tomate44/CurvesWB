@@ -22,7 +22,6 @@ def timer(func):
     return wrapper_timer
 
 
-# Old class - Not used
 class BoundarySorter:
     """
     Sort a wire list to build faces
@@ -33,7 +32,7 @@ class BoundarySorter:
     """
 
     def __init__(self, wires):
-        self.wires = []
+        self.closed_wires = []
         self.parents = []
         self.sorted_wires = []
         self.open_wires = []
@@ -42,14 +41,14 @@ class BoundarySorter:
             if not w.isClosed():
                 self.open_wires.append(w)
             else:
-                self.wires.append(w)
+                self.closed_wires.append(w)
                 self.parents.append([])
                 self.sorted_wires.append([])
         self.done = False
 
     def check_inside(self):
-        for i, w1 in enumerate(self.wires):
-            for j, w2 in enumerate(self.wires):
+        for i, w1 in enumerate(self.closed_wires):
+            for j, w2 in enumerate(self.closed_wires):
                 if not i == j:
                     if w2.BoundBox.isInside(w1.BoundBox):
                         # if self.fine_check_inside(w1, w2):
@@ -60,12 +59,12 @@ class BoundarySorter:
         for i, p in enumerate(self.parents):
             if (p is not None) and p == []:
                 to_remove.append(i)
-                self.sorted_wires[i].append(self.wires[i])
+                self.sorted_wires[i].append(self.closed_wires[i])
                 self.parents[i] = None
         for i, p in enumerate(self.parents):
             if (p is not None) and len(p) == 1:
                 to_remove.append(i)
-                self.sorted_wires[p[0]].append(self.wires[i])
+                self.sorted_wires[p[0]].append(self.closed_wires[i])
                 self.parents[i] = None
         # print("Removing full : {}".format(to_remove))
         if len(to_remove) > 0:
@@ -536,22 +535,10 @@ class ShapeMapper:
         # bs = BoundarySorter(self.FlatWires)
         # bs.sort()
         # return bs.sorted_wires, bs.open_wires
-        closedw = []
-        openw = []
-        closed_wires = []
-        for w in self.FlatWires:
-            if w.isClosed():
-                closedw.append(w)
-            else:
-                openw.append(w)
-        if closedw:
-            # closedcomp = Part.Compound(closedw)
-            # faces = Part.makeFace(closedcomp)
-            # closed_wires = [f.Wires for f in faces.Faces]
-            sorter = BoundarySorter(closedw)
-            sorter.sort()
-            closed_wires = sorter.sorted_wires
-        return closed_wires, openw
+
+        sorter = BoundarySorter(self.FlatWires)
+        sorter.sort()
+        return sorter.sorted_wires, sorter.open_wires
 
     def map_edge_on_surface(self, edge, surface):
         """Maps an edge's first pcurve on a surface.
