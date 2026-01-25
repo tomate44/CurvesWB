@@ -116,17 +116,11 @@ def removeDecim(arr):
     return r
 
 def getCoinNode(shape):
-    import tempfile
-    iv = shape.writeInventor()
-    temp = tempfile.NamedTemporaryFile()
-    temp.write(shape.writeInventor())
-    temp.seek(0)
+    buf = shape.writeInventor()
     inp = coin.SoInput()
-    #openFile(str(filename.toLatin1()))
-    inp.openFile(temp.name)
-    root = coin.SoDB.readAll(inp)
-    temp.close()
-    return(root)
+    inp.setBuffer(buf)
+    node = coin.SoDB.readAll(inp)
+    return node
 
 
 class colorNode(coin.SoSeparator):

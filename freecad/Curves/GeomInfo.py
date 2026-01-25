@@ -24,6 +24,37 @@ TOOL_ICON = os.path.join(ICONPATH, 'info.svg')
 DEBUG = False
 
 
+def hex_to_color(color):
+    hex_string = f"{color:08x}"
+    print(hex_string)
+    r = hex_string[0:2]
+    g = hex_string[2:4]
+    b = hex_string[4:6]
+    print(r, g, b)
+    return int(r, 16) / 255, int(g, 16) / 255, int(b, 16) / 255
+
+
+AxisXcolor = FreeCAD.ParamGet("User parameter:View").GetUnsigned('AxisXColor', 0xff000000)
+print(AxisXcolor)
+AxisYcolor = FreeCAD.ParamGet("User parameter:View").GetUnsigned('AxisYColor', 0x00ff0000)
+AxisZcolor = FreeCAD.ParamGet("User parameter:View").GetUnsigned('AxisZColor', 0x0000ff00)
+Xcolor = hex_to_color(AxisXcolor)
+Ycolor = hex_to_color(AxisYcolor)
+Zcolor = hex_to_color(AxisZcolor)
+
+
+def edge_node(edge, color=(0.0, 0.0, 0.0), width=1, pattern=0xffff):
+    "return a coin node of the edge, with specified color, width and pattern"
+    full_node = _utils.rootNode(edge)
+    node = full_node.getChild(1).getChild(0)
+    mat = node.getChild(0)
+    mat.diffuseColor.setValues(0, 1, [color])
+    style = node.getChild(1)
+    style.lineWidth = 1
+    style.linePattern = pattern
+    return node
+
+
 def debug(string):
     if DEBUG:
         FreeCAD.Console.PrintMessage(string)
@@ -104,7 +135,7 @@ def paramList(n, fp, lp):
     return params
 
 
-def curveNode(cur):
+def bsplinecurveNode(cur):
     bspline = False
     rational = False
     try:
@@ -178,6 +209,39 @@ def curveNode(cur):
         vizSep.addChild(knotMarkerSep)
         vizSep.addChild(multSep)
     return vizSep
+
+
+class curveNode:
+    "Coin3D node that displays curve data of an edge"
+
+    def __init__(self, edge, samples=100):
+        self.edge = edge
+        self.samples = samples
+        self.node = coin.SoSeparator()
+        self.build_node()
+
+    def build_node(self):
+        # color = coinNodes.colorNode((0.7, 0.7, 1.0))
+        # self.node.addChild(color)
+        curve = self.edge.Curve
+        if hasattr(curve, "Axis") and hasattr(curve, "Center"):
+            culen = self.edge.Length / 2
+            axis_end = curve.Axis * culen
+            axis = Part.makeLine(curve.Center, curve.Center + axis_end)
+            axis_node = edge_node(axis, Zcolor, 1, 0x00ff)
+            self.node.addChild(axis_node)
+        if curve.isPeriodic():
+            edge = curve.toShape()
+        else:
+            efp, elp = self.edge.ParameterRange
+            ext_range = (elp - efp) * 1.0
+            fp = max(efp - ext_range, curve.FirstParameter)
+            lp = min(elp + ext_range, curve.LastParameter)
+            edge = curve.toShape(fp, lp)
+        curve_node = edge_node(edge, Xcolor, 1, 0x00ff)
+        self.node.addChild(curve_node)
+        if isinstance(curve, (Part.BezierCurve, Part.BSplineCurve)):
+            self.node.addChild(bsplinecurveNode(curve))
 
 
 def surfNode(surf):
@@ -587,13 +651,15 @@ class GeomInfo:
         if hasattr(edge, 'Length'):
             r = edge.Length
             s = "Length : {:3.3f}".format(r)
-            if hasattr(curve, 'length'):
+            try:
                 le = curve.length()
                 if not le == r and le < 1e20:
                     s += " ({:3.3f})".format(le)
-                ret.append(s)
-            else:
-                ret.append("Length : Infinite")
+            except (AttributeError, Part.OCCError):
+                pass
+            ret.append(s)
+            # else:
+            #     ret.append("Length : Infinite")
         if hasattr(edge, 'getTolerance'):
             s = "Shape Tolerance : {}".format(edge.getTolerance(1))
             ret.append(s)
@@ -633,7 +699,7 @@ class GeomInfo:
                 self.SoText2.string.setValues(0, len(t), t)
                 self.removeGrid()
                 self.root = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
-                self.node = curveNode(cur)
+                self.node = curveNode(self.ss).node
                 self.insertGrid()
 
     def GetResources(self):
