@@ -18,41 +18,10 @@ from . import ICONPATH
 from pivy import coin
 from . import CoinNodes as coinNodes
 from . import TOL3D
-
+from freecad.Curves.lib.trimmed_surface import TrimmedSurface
 
 TOOL_ICON = os.path.join(ICONPATH, 'info.svg')
 DEBUG = False
-
-
-def hex_to_color(color):
-    hex_string = f"{color:08x}"
-    print(hex_string)
-    r = hex_string[0:2]
-    g = hex_string[2:4]
-    b = hex_string[4:6]
-    print(r, g, b)
-    return int(r, 16) / 255, int(g, 16) / 255, int(b, 16) / 255
-
-
-AxisXcolor = FreeCAD.ParamGet("User parameter:View").GetUnsigned('AxisXColor', 0xff000000)
-print(AxisXcolor)
-AxisYcolor = FreeCAD.ParamGet("User parameter:View").GetUnsigned('AxisYColor', 0x00ff0000)
-AxisZcolor = FreeCAD.ParamGet("User parameter:View").GetUnsigned('AxisZColor', 0x0000ff00)
-Xcolor = hex_to_color(AxisXcolor)
-Ycolor = hex_to_color(AxisYcolor)
-Zcolor = hex_to_color(AxisZcolor)
-
-
-def edge_node(edge, color=(0.0, 0.0, 0.0), width=1, pattern=0xffff):
-    "return a coin node of the edge, with specified color, width and pattern"
-    full_node = _utils.rootNode(edge)
-    node = full_node.getChild(1).getChild(0)
-    mat = node.getChild(0)
-    mat.diffuseColor.setValues(0, 1, [color])
-    style = node.getChild(1)
-    style.lineWidth = 1
-    style.linePattern = pattern
-    return node
 
 
 def debug(string):
@@ -61,68 +30,57 @@ def debug(string):
         FreeCAD.Console.PrintMessage("\n")
 
 
-def beautify(shp):
-    if not shp:
-        return ""
-    else:
-        t = shp
-        if (shp[0] == "<") and (shp[-1] == ">"):
-            t = shp[1:-1]
-        return t.split()[0]
+# String formatting
+
+def extract_name(obj):
+    "Return the name of a Shape or Geometry object"
+    t = str(obj)
+    if (t[0] == "<") and (t[-1] == ">"):
+        txt = t[1:-1]
+        return txt.split()[0]
+    return ""
 
 
-def getString(weights):
+def format_weights(weights):
+    "Return a list of formatted strings from BSpline weights"
     weightStr = []
     for w in weights:
         if abs(w - 1.0) < 0.001:
             weightStr.append("")
         elif w.is_integer():
-            weightStr.append(" %d" % int(w))
+            weightStr.append(f" {int(w)}")
         else:
-            weightStr.append(" %0.2f" % w)
+            weightStr.append(f" {w:.2f}")
     return weightStr
 
 
-def cleanString(arr):
+def numbers_to_str(arr, num=20):
+    """
+    Return a formatted string from a number list
+    If the array has more than 'num' items, string is truncated
+    """
     strArr = ""
-    if len(arr) > 20:
-        return cleanString(arr[0:10]) + " ... " + cleanString(arr[-10:])
+    if len(arr) > num:
+        lim = num // 2
+        return numbers_to_str(arr[0:lim]) + " ... " + numbers_to_str(arr[-lim:])
     for w in arr:
         if isinstance(w, float):
-            strArr += "%0.2f, " % w
+            strArr += f"{w:.2f}, "
         else:
-            strArr += "%d, " % int(w)
+            strArr += "{w}, "
     return strArr[:-2]
 
 
-def coordStr(v):
-    if hasattr(v, 'x'):
-        s = "%0.2f" % v.x
-        if hasattr(v, 'y'):
-            s += ", %0.2f" % v.y
-            if hasattr(v, 'z'):
-                s += ", %0.2f" % v.z
-        return s
-    else:
-        return v
-
-
-def removeDecim(arr):
-    r = []
-    for fl in arr:
-        r.append("%0.2f" % fl)
-    return r
-
-
 def to1D(arr):
+    "Return a list from a 2D array"
     array = []
     for row in arr:
-        for el in row:
-            array.append(el)
+        array.extend(row)
     return array
 
 
 def paramList(n, fp, lp):
+    "Return a list of n parameters in [fp, lp]"
     rang = lp - fp
     params = []
     if n == 1:
@@ -133,6 +91,18 @@ def paramList(n, fp, lp):
         for i in range(n):
             params.append(fp + 1.0 * i * rang / (n - 1))
     return params
+
+
+def edge_node(edge, color=(0.0, 0.0, 0.0), width=1, pattern=0xffff):
+    "return a coin node of the edge, with specified color, width and pattern"
+    full_node = _utils.rootNode(edge, 1, 0.05, 0.05)
+    node = full_node.getChild(0)
+    mat = node.getChild(0)
+    mat.diffuseColor.setValues(0, 1, [color])
+    style = node.getChild(1)
+    style.lineWidth = width
+    style.linePattern = pattern
+    return node
 
 
 def bsplinecurveNode(cur):
@@ -158,7 +128,7 @@ def bsplinecurveNode(cur):
     polesnode = coinNodes.coordinate3Node(poles)
 
     # *** Set weights ***
-    weightStr = getString(weights)
+    weightStr = format_weights(weights)
 
     polySep = coinNodes.polygonNode((0.5, 0.5, 0.5), 1)
     polySep.vertices = poles
@@ -211,40 +181,7 @@ def bsplinecurveNode(cur):
     return vizSep
 
 
-class curveNode:
-    "Coin3D node that displays curve data of an edge"
-
-    def __init__(self, edge, samples=100):
-        self.edge = edge
-        self.samples = samples
-        self.node = coin.SoSeparator()
-        self.build_node()
-
-    def build_node(self):
-        # color = coinNodes.colorNode((0.7, 0.7, 1.0))
-        # self.node.addChild(color)
-        curve = self.edge.Curve
-        if hasattr(curve, "Axis") and hasattr(curve, "Center"):
-            culen = self.edge.Length / 2
-            axis_end = curve.Axis * culen
-            axis = Part.makeLine(curve.Center, curve.Center + axis_end)
-            axis_node = edge_node(axis, Zcolor, 1, 0x00ff)
-            self.node.addChild(axis_node)
-        if curve.isPeriodic():
-            edge = curve.toShape()
-        else:
-            efp, elp = self.edge.ParameterRange
-            ext_range = (elp - efp) * 1.0
-            fp = max(efp - ext_range, curve.FirstParameter)
-            lp = min(elp + ext_range, curve.LastParameter)
-            edge = curve.toShape(fp, lp)
-        curve_node = edge_node(edge, Xcolor, 1, 0x00ff)
-        self.node.addChild(curve_node)
-        if isinstance(curve, (Part.BezierCurve, Part.BSplineCurve)):
-            self.node.addChild(bsplinecurveNode(curve))
-
-
-def surfNode(surf):
+def bsplinesurfNode(surf):
     bspline = False
     rational = False
     try:
@@ -271,7 +208,7 @@ def surfNode(surf):
 
     # *** Set weights ***
     flatW = to1D(weights)
-    weightStr = getString(flatW)
+    weightStr = format_weights(flatW)
 
     polyRowSep = coinNodes.rowNode((0.5, 0, 0), 1)
     polyRowSep.vertices = (nbU, nbV)
@@ -316,113 +253,185 @@ def surfNode(surf):
         vizSep.addChild(weightSep)
 
     if bspline:
-
-        # *** Set knots ***
-        uknotPoints = []
-        nb_curves = 0
-        np = 100
+        color = (1.0, 0.5, 0.3)
         for k in uknots:
             try:
                 uIso = surf.uIso(k)
                 if uIso.length() > TOL3D:
-                    epts = uIso.toShape().discretize(np)
-                    for p in epts:
-                        uknotPoints.append((p.x, p.y, p.z))
-                    nb_curves += 1
+                    ush = uIso.toShape()
+                    uiso_node = edge_node(ush, color, 3)
+                    vizSep.addChild(uiso_node)
+                    # nb_curves += 1
+                    color = (0.7, 0.0, 0.3)
             except Exception as exc:
                 debug(f"Error computing surface U Iso\n{exc}")
 
-        if nb_curves > 0:
-            uknotsnode = coinNodes.coordinate3Node(uknotPoints)
-            uCurves = coinNodes.rowNode((1.0, 0.5, 0.3), 3)
-            uCurves.color = [(1.0, 0.5, 0.3)] * (np - 1)
-            uCurves.color += [(0.7, 0.0, 0.3)] * (nb_curves - 1) * (np - 1)
-            uCurves.vertices = (nb_curves, np)
-            vizSep.addChild(uknotsnode)
-            vizSep.addChild(uCurves)
-
-        vknotPoints = []
-        nb_curves = 0
+        color = (0.8, 0.8, 0.0)
         for k in vknots:
             try:
                 vIso = surf.vIso(k)
                 if vIso.length() > TOL3D:
-                    epts = vIso.toShape().discretize(np)
-                    for p in epts:
-                        vknotPoints.append((p.x, p.y, p.z))
-                    nb_curves += 1
+                    vsh = vIso.toShape()
+                    viso_node = edge_node(vsh, color, 3)
+                    vizSep.addChild(viso_node)
+                    # nb_curves += 1
+                    color = (0.3, 0.0, 0.7)
             except Exception as exc:
                 debug(f"Error computing surface V Iso\n{exc}")
 
-        if nb_curves > 0:
-            vknotsnode = coinNodes.coordinate3Node(vknotPoints)
-            vCurves = coinNodes.rowNode((0.3, 0.5, 1.0), 3)
-            vCurves.color = [(0.8, 0.8, 0.0)] * (np - 1)
-            vCurves.color += [(0.3, 0.0, 0.7)] * (nb_curves - 1) * (np - 1)
-            vCurves.vertices = (nb_curves, np)
-            vizSep.addChild(vknotsnode)
-            vizSep.addChild(vCurves)
-
-        # removed because of several FC crashes
-#         # ***** isoCurves ******
-#
-#         uparam = paramList(16,u0,u1)
-#         uisoPoints = []
-#         nb_curves = 0
-#         for k in uparam:
-#             try:
-#                 uIso = surf.uIso(k)
-#                 epts = uIso.toShape().discretize(100)
-#                 if len(epts) == 100:
-#                     for p in epts:
-#                         uisoPoints.append((p.x,p.y,p.z))
-#                     nb_curves += 1
-#             except:
-#                 debug("Error computing surface U Iso")
-#
-#         if nb_curves > 0:
-#             uisonode = coinNodes.coordinate3Node(uisoPoints)
-#             uisoCurves = coinNodes.rowNode((0.0,0.0,0.0),1)
-#             uisoCurves.transparency = 0.8
-#             uisoCurves.vertices=(nb_curves,100)
-#             vizSep.addChild(uisonode)
-#             vizSep.addChild(uisoCurves)
-#             #debug(str(uCurves.vertices))
-#
-#         vparam = paramList(16,v0,v1)
-#         visoPoints = []
-#         nb_curves = 0
-#         for k in vparam:
-#             try:
-#                 vIso = surf.vIso(k)
-#                 epts = vIso.toShape().discretize(100)
-#                 if len(epts) == 100:
-#                     for p in epts:
-#                         vknotPoints.append((p.x,p.y,p.z))
-#                     nb_curves += 1
-#             except:
-#                 debug("Error computing surface V Iso")
-#
-#         if nb_curves > 0:
-#             visonode = coinNodes.coordinate3Node(visoPoints)
-#             visoCurves = coinNodes.rowNode((0.0,0.0,0.0),1)
-#             visoCurves.transparency = 0.8
-#             visoCurves.vertices=(nb_curves,100)
-#             vizSep.addChild(visonode)
-#             vizSep.addChild(visoCurves)
-#
-#         # *** Set texts ***
-#         multStr = []
-#         for m in mults:
-#             multStr.append("%d"%m)
-#
-#         knotMarkerSep = coinNodes.markerSetNode((0,0,1),coin.SoMarkerSet.CIRCLE_FILLED_9_9)
-#
-#         # *** Set mult text ***
-#         multSep = coinNodes.multiTextNode((0,0,1),"osiFont,FreeSans,sans",16,1)
-#         multSep.data = (knotPoints,multStr)
-
     return vizSep
+
+
+class GeomNode:
+    def __init__(self):
+        self.node = coin.SoSeparator()
+        view_param = FreeCAD.ParamGet("User parameter:View")
+        AxisXcolor = view_param.GetUnsigned('AxisXColor', 0xff000000)
+        AxisYcolor = view_param.GetUnsigned('AxisYColor', 0x00ff0000)
+        AxisZcolor = view_param.GetUnsigned('AxisZColor', 0x0000ff00)
+        curves_param = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves")
+        Ucolor = curves_param.GetUnsigned('GeomInfoColorU', AxisXcolor)
+        Vcolor = curves_param.GetUnsigned('GeomInfoColorV', AxisYcolor)
+        Wcolor = curves_param.GetUnsigned('GeomInfoColorW', AxisZcolor)
+        self.Xcolor = self.hex_to_color(Ucolor)
+        self.Ycolor = self.hex_to_color(Vcolor)
+        self.Zcolor = self.hex_to_color(Wcolor)
+        self.lineWidth = 1
+        self.linePattern = 0xffff
+
+    def hex_to_color(self, color):
+        hex_string = f"{color:08x}"
+        r = hex_string[0:2]
+        g = hex_string[2:4]
+        b = hex_string[4:6]
+        return int(r, 16) / 255, int(g, 16) / 255, int(b, 16) / 255
+
+
+class curveNode(GeomNode):
+    "Coin3D node that displays curve data of an edge"
+
+    def __init__(self, edge):
+        super().__init__()
+        self.edge = edge
+        self.build_node()
+
+    def build_node(self):
+        # color = coinNodes.colorNode((0.7, 0.7, 1.0))
+        # self.node.addChild(color)
+        curve = self.edge.Curve
+        if hasattr(curve, "Axis") and hasattr(curve, "Center"):
+            culen = self.edge.Length / 2
+            axis_end = curve.Axis * culen
+            axis = Part.makeLine(curve.Center, curve.Center + axis_end)
+            axis_node = edge_node(axis, self.Zcolor, self.lineWidth, self.linePattern)
+            self.node.addChild(axis_node)
+        if isinstance(curve, (Part.BezierCurve, Part.BSplineCurve)):
+            self.node.addChild(bsplinecurveNode(curve))
+            return
+        if curve.isPeriodic():
+            edge = curve.toShape()
+        else:
+            efp, elp = self.edge.ParameterRange
+            try:
+                fp = curve.parameterAtDistance(-self.edge.Length, efp)
+                lp = curve.parameterAtDistance(self.edge.Length, elp)
+            except Part.OCCError:  # Hyperbola
+                ext_range = (elp - efp) * 1.0
+                fp = max(efp - ext_range, curve.FirstParameter)
+                lp = min(elp + ext_range, curve.LastParameter)
+                print(fp, lp)
+            edge = curve.toShape(fp, lp)
+        curve_node = edge_node(edge, self.Xcolor, self.lineWidth, self.linePattern)
+        self.node.addChild(curve_node)
+
+
+class surfNode(GeomNode):
+    "Coin3D node that displays surface data of a face"
+
+    def __init__(self, face):
+        super().__init__()
+        self.face = face
+        curves_param = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves")
+        self.num_iso = curves_param.GetInt('GeomInfoNumIso', 20)
+        self.build_node()
+
+    def build_node(self):
+        surf = self.face.Surface
+        if hasattr(surf, "Axis") and hasattr(surf, "Center"):
+            u0, u1, v0, v1 = self.face.ParameterRange
+            axis = Part.makeLine(surf.Center, surf.Center + surf.Axis)
+            par1 = axis.Curve.parameter(surf.value(u0, v0))
+            par2 = axis.Curve.parameter(surf.value(u1, v1))
+            p1 = min(par1, par2)
+            p2 = max(par1, par2)
+            axis_pr = p2 - p1
+            axis = axis.Curve.toShape(p1 - axis_pr * 2, p2 + axis_pr * 2)
+            axis_node = edge_node(axis, self.Zcolor, self.lineWidth, self.linePattern)
+            self.node.addChild(axis_node)
+        if isinstance(surf, (Part.BezierSurface, Part.BSplineSurface)):
+            self.node.addChild(bsplinesurfNode(surf))
+            return
+        ts = TrimmedSurface(self.face)
+        ts.extend()
+        ts.extend(1, Relative=True)
+        tsurf = ts.Surface
+        upars = paramList(self.num_iso, *ts.Bounds[:2])
+        vpars = paramList(self.num_iso, *ts.Bounds[2:])
+        color = (1.0, 0.5, 0.3)
+        width = 3
+        for u in upars:
+            uiso = tsurf.uIso(u)
+            # Part.show(uiso.toShape(*ts.Bounds[2:]))
+            self.node.addChild(edge_node(uiso.toShape(), color, width, self.linePattern))
+            color = self.Xcolor
+            width = self.lineWidth
+        color = (0.3, 0.5, 1.0)
+        width = 3
+        for v in vpars:
+            viso = tsurf.vIso(v)
+            # Part.show(viso.toShape(*ts.Bounds[:2]))
+            self.node.addChild(edge_node(viso.toShape(), color, width, self.linePattern))
+            color = self.Ycolor
+            width = self.lineWidth
+
+
+class HUDNode:
+    def __init__(self):
+        curves_param = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves")
+        left_margin = curves_param.GetFloat('GeomInfoLeftMargin', 0.02)
+        top_margin = curves_param.GetFloat('GeomInfoTopMargin', 0.1)
+        f_name = curves_param.GetString('GeomInfoFontString', "FreeMono,FreeSans,sans")
+        size = curves_param.GetInt('GeomInfoFontSize', 14)
+        pref_col = curves_param.GetString('GeomInfoFontColor', "0,0,0")
+
+        self.node = coin.SoSeparator()
+        self.cam = coin.SoOrthographicCamera()
+        self.cam.aspectRatio = 1
+        self.cam.viewportMapping = coin.SoCamera.LEAVE_ALONE
+
+        self.trans = coin.SoTranslation()
+        self.trans.translation = (-1.0 + left_margin * 2, 1.0 - top_margin * 2, 0)
+
+        self.myFont = coin.SoFont()
+        self.myFont.name = f_name
+        self.myFont.size.setValue(size)
+        self.SoText2 = coin.SoText2()
+        self.SoText2.string = ""
+        color = tuple([float(x) for x in pref_col.split(',')])
+        self.color = coin.SoBaseColor()
+        self.color.rgb = color
+
+        self.node.addChild(self.cam)
+        self.node.addChild(self.trans)
+        self.node.addChild(self.color)
+        self.node.addChild(self.myFont)
+        self.node.addChild(self.SoText2)
+
+    def set_text(self, txt):
+        if isinstance(txt, str):
+            self.SoText2.string = txt
+        elif isinstance(txt, (list, tuple)):
+            self.SoText2.string.setValues(0, len(txt), txt)
 
 
 class GeomInfo:
@@ -439,35 +448,7 @@ class GeomInfo:
             # install the function in resident mode
             FreeCADGui.Selection.addObserver(self)
             self.active = True
-            self.textSep = coin.SoSeparator()
-            self.cam = coin.SoOrthographicCamera()
-            self.cam.aspectRatio = 1
-            self.cam.viewportMapping = coin.SoCamera.LEAVE_ALONE
-
-            self.trans = coin.SoTranslation()
-            left_margin = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves").GetFloat('GeomInfoLeftMargin', 0.02)
-            top_margin = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves").GetFloat('GeomInfoTopMargin', 0.1)
-            self.trans.translation = (-1.0 + left_margin * 2, 1.0 - top_margin * 2, 0)
-
-            self.myFont = coin.SoFont()
-            f_name = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves").GetString('GeomInfoFontString', "FreeMono,FreeSans,sans")
-            self.myFont.name = f_name
-            size = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves").GetInt('GeomInfoFontSize', 14)
-            # print(size)
-            self.myFont.size.setValue(size)
-            self.SoText2 = coin.SoText2()
-            self.SoText2.string = ""  # "Nothing Selected\r2nd line"
-            pref_col = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves").GetString('GeomInfoFontColor', "0,0,0")
-            color = tuple([float(x) for x in pref_col.split(',')])
-            self.color = coin.SoBaseColor()
-            self.color.rgb = color
-
-            self.textSep.addChild(self.cam)
-            self.textSep.addChild(self.trans)
-            self.textSep.addChild(self.color)
-            self.textSep.addChild(self.myFont)
-            self.textSep.addChild(self.SoText2)
-
+            self.hud = HUDNode()
             self.addHUD()
             self.Active = True
             self.viz = False
@@ -486,7 +467,7 @@ class GeomInfo:
             self.sg = self.view.getSceneGraph()
             self.viewer = self.view.getViewer()
             self.render = self.viewer.getSoRenderManager()
-            self.sup = self.render.addSuperimposition(self.textSep)
+            self.sup = self.render.addSuperimposition(self.hud.node)
             self.sg.touch()
         except AttributeError:
             self.activeDoc = None
@@ -512,27 +493,24 @@ class GeomInfo:
 
 # ------ Selection Observer --------
 
-    def addSelection(self, doc, obj, sub, pnt):  # Selection
-        # FreeCAD.Console.PrintMessage("addSelection %s %s\n" % (obj, str(sub)))
+    def addSelection(self, doc, obj, sub, pnt):
         if self.Active:
             if not doc == self.activeDoc:
                 self.removeHUD()
                 self.addHUD()
             self.getTopo()
 
-    def removeSelection(self, doc, obj, sub):  # Delete selected object
-        # FreeCAD.Console.PrintMessage("removeSelection %s %s\n" % (obj, str(sub)))
+    def removeSelection(self, doc, obj, sub):
         if self.Active:
-            self.SoText2.string = ""
+            self.hud.set_text("")
             self.removeGrid()
 
     def setPreselection(self, doc, obj, sub):
         pass
 
     def clearSelection(self, doc):  # If screen is clicked, delete selection
-        # FreeCAD.Console.PrintMessage("clearSelection\n")
         if self.Active:
-            self.SoText2.string = ""
+            self.hud.set_text("")
             self.removeGrid()
 
 # ------ get info about shape --------
@@ -551,22 +529,10 @@ class GeomInfo:
         else:
             return False
 
-    # def propMeth(self, c, att):
-    #     if hasattr(c, att):
-    #         a = c.__getattribute__(att)()
-    #         if not a:
-    #             return False
-    #         elif hasattr(a, 'x') and hasattr(a, 'y') and hasattr(a, 'z'):
-    #             return "%s : (%0.2f, %0.2f, %0.2f)" % (att, a.x, a.y, a.z)
-    #         else:
-    #             return "%s : %s"%(att, str(a))
-    #     else:
-    #         return False
-
     def getSurfInfo(self, face):
         surf = face.Surface
         ret = []
-        ret.append(beautify(str(surf)))
+        ret.append(extract_name(surf))
         props = ['Center',
                  'Axis',
                  'Position',
@@ -605,7 +571,7 @@ class GeomInfo:
             for i in funct:
                 r = i[0]()
                 if r:
-                    s = str(i[1]) + " : " + cleanString(r)
+                    s = str(i[1]) + " : " + numbers_to_str(r)
                     ret.append(s)
         if hasattr(face, 'getTolerance'):
             s = "Shape Tolerance : {}".format(face.getTolerance(1))
@@ -621,7 +587,7 @@ class GeomInfo:
     def getCurvInfo(self, edge):
         curve = edge.Curve
         ret = []
-        ret.append(beautify(str(curve)))
+        ret.append(extract_name(curve))
         props = ['Center',
                  'Axis',
                  'Position',
@@ -642,11 +608,11 @@ class GeomInfo:
                 ret.append(s)
         if hasattr(curve, 'getKnots'):
             r = curve.getKnots()
-            s = "Knots : " + cleanString(r)
+            s = "Knots : " + numbers_to_str(r)
             ret.append(s)
         if hasattr(curve, 'getMultiplicities'):
             r = curve.getMultiplicities()
-            s = "Mults : " + cleanString(r)
+            s = "Mults : " + numbers_to_str(r)
             ret.append(s)
         if hasattr(edge, 'Length'):
             r = edge.Length
@@ -685,22 +651,17 @@ class GeomInfo:
                 return
             if self.ss.isNull():
                 return
+            t = ""
             if self.ss.ShapeType == 'Face':
-                surf = self.ss.Surface
                 t = self.getSurfInfo(self.ss)
-                self.SoText2.string.setValues(0, len(t), t)
-                self.removeGrid()
-                self.root = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
-                self.node = surfNode(surf)
-                self.insertGrid()
+                self.node = surfNode(self.ss).node
             elif self.ss.ShapeType == 'Edge':
-                cur = self.ss.Curve
                 t = self.getCurvInfo(self.ss)
-                self.SoText2.string.setValues(0, len(t), t)
-                self.removeGrid()
-                self.root = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
                 self.node = curveNode(self.ss).node
-                self.insertGrid()
+            self.hud.set_text(t)
+            self.removeGrid()
+            self.root = FreeCADGui.ActiveDocument.ActiveView.getSceneGraph()
+            self.insertGrid()
 
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
