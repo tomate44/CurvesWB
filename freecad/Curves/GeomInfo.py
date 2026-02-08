@@ -36,9 +36,8 @@ def extract_name(obj):
     "Return the name of a Shape or Geometry object"
     t = str(obj)
     if (t[0] == "<") and (t[-1] == ">"):
-        txt = t[1:-1]
-        return txt.split()[0]
-    return ""
+        t = t[1:-1]
+    return t.split()[0]
 
 
 def format_weights(weights):
@@ -67,7 +66,7 @@ def numbers_to_str(arr, num=20):
         if isinstance(w, float):
             strArr += f"{w:.2f}, "
         else:
-            strArr += "{w}, "
+            strArr += f"{w}, "
     return strArr[:-2]
 
 
