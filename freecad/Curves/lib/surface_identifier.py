@@ -56,13 +56,11 @@ class SurfaceIdentifier:
         u0, u1, v0, v1 = self.bounds
         urange = u1 - u0
         vrange = v1 - v0
-        n = int(pow(self.num_samples, 0.5))
-        for i in range(n):
-            u = u0 + i * urange / (n - 1)
-            for j in range(n):
-                v = v0 + j * vrange / (n - 1)
-                i += 1
-                yield u, v
+        for i in range(self.num_samples):
+            u = u0 + i * urange / (self.num_samples - 1)
+            v = v0 + i * vrange / (self.num_samples - 1)
+            i += 1
+            yield u, v
 
     def random_UV(self):
         "Random generator of (u, v) parameters in the source face bounds"
@@ -159,14 +157,16 @@ class SurfaceIdentifier:
             li1 = lines[i].toShape(-size, size)
             li2 = lines[i + 1].toShape(-size, size)
             d, pts, info = li1.distToShape(li2)
+            # Part.show(Part.Compound([li1, li2]))
             if d > self.tol:
-                # self.log(f"Find_apex, intersection #{i} : {d} out of tolerance {self.tol}")
+                # self.log(f"Find_apex 1, intersection #{i} : {d} out of tolerance {self.tol}")
+                # Part.show(Part.Compound([li1, li2]))
                 return None
             interlist.append(0.5 * pts[0][0] + 0.5 * pts[0][1])
         for i in range(len(interlist) - 1):
             d = interlist[i].distanceToPoint(interlist[i + 1])
             if d > self.tol:
-                # self.log(f"Find_apex, intersection #{i} : {d} out of tolerance {self.tol}")
+                # self.log(f"Find_apex 2, intersection #{i} : {d} out of tolerance {self.tol}")
                 return None
         self.Apex = self.mean_vec(interlist)
         self.log(f"Found Apex {self.vecstr(self.Apex)}")
@@ -232,7 +232,7 @@ class SurfaceIdentifier:
 
     def cylinder_radius(self):
         "Returns the radius of a surface with axis, and no apex"
-        pt = self.face.valueAt(u0, v0)
+        pt = self.face.valueAt(self.bounds[0], self.bounds[2])
         self.Radius = pt.distanceToLine(self.Center, self.Axis)
         return self.Radius
 
@@ -277,13 +277,13 @@ class SurfaceIdentifier:
             self.log("Surface is a plane")
             return pl
         axis = self.find_axis()
-        if axis and self.Center:
-            self.log("Surface is a cylinder")
-            return self.get_cylinder()
         apex = self.find_apex()
         if axis and apex:
             self.log("Surface is a cone")
             return self.get_cone()
+        if axis and self.Center:
+            self.log("Surface is a cylinder")
+            return self.get_cylinder()
         if axis:
             self.log("Surface is an extrusion")
             return None
