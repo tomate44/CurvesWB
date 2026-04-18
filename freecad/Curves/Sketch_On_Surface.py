@@ -198,6 +198,11 @@ class sketchOnSurface:
         for i, wirelist in enumerate(bs.sort()):
             # print(wirelist)
             f = validated_face(wirelist[0], face.Surface) #should valid or null...
+            if f.isNull():
+                # validated_face() gave up; skip rather than crashing in
+                # isValid() below with Standard_NullObject on a NULL shape.
+                error("{:3}:Could not build face from projected wire; skipping\n".format(i))
+                continue
             try:
                 f.check()
             except Exception as e:
@@ -298,6 +303,21 @@ class sketchOnSurface:
         comp = Part.Compound(skedges)
 
         bb = comp.BoundBox
+        # Include ExtraObjects so the mapping domain always contains every
+        # shape being mapped. This prevents two failure modes:
+        #   * glyphs that overshoot the sketch bounds mapping outside the
+        #     target face's parameter range (fails Part.Face validation)
+        #   * an empty sketch producing a degenerate ±MAX_DOUBLE bbox, which
+        #     builds a NaN quad surface and hangs BRepAlgo_NormalProjection
+        #     in a non-converging Newton iteration.
+        for eo in obj.ExtraObjects:
+            if eo is not None and not eo.Shape.isNull():
+                bb.add(eo.Shape.BoundBox)
+        if not bb.isValid():
+            error("Sketch_On_Surface: no geometry to define mapping bounds. "
+                  "Add a construction rectangle to the sketch, or ensure "
+                  "ExtraObjects contains non-empty shapes.\n")
+            return
         u0, u1, v0, v1 = (bb.XMin, bb.XMax, bb.YMin, bb.YMax)
         debug("Sketch bounds = {}".format((u0, u1, v0, v1)))
         try:
