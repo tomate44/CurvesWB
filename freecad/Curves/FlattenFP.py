@@ -387,6 +387,8 @@ def flatten_face(face, inPlace=False, size=0.0):
         flatsurf = flat_cylinder_surface(face.Surface, inPlace, size)
     elif isinstance(face.Surface, Part.SurfaceOfExtrusion):
         flatsurf = flat_extrusion_surface(face.Surface, inPlace, size)
+    elif isinstance(face.Surface, Part.Plane):
+        flatsurf = Part.Plane()
     # elif isinstance(face.Surface, Part.BSplineSurface):
     #     flatsurf = flat_conical_surface(face.Surface, inPlace, size)
     else:

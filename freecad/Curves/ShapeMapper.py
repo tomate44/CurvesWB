@@ -299,6 +299,18 @@ def reverse_knots(knots):
     return rev
 
 
+def get_compound_plane(compound, tol=1e-7):
+    if compound.Faces:
+        tsh = compound.Face1
+    elif compound.Wires:
+        tsh = compound.wires1
+    else:
+        return
+    pl = tsh.findPlane(tol)
+    if pl and compound.isCoplanar(tsh):
+        return pl
+
+
 class ReversibleSurface:
     """BSpline surface that can be reversed in U and V direction
     Or that can have U and V directions swapped"""
@@ -574,6 +586,10 @@ class ShapeMapper:
     def offset_face(self, face, offset):
         if offset == 0.0:
             return face
+        if pl := face.findPlane(self.Tolerance):
+            off = face.copy()
+            off.translate(pl.Axis * offset)
+            return off
         if face.Surface.Continuity == 'C0':
             # TODO : create a C1 approximation
             raise (RuntimeError, "Surface must be at least C1 continuous")
@@ -615,6 +631,9 @@ class ShapeMapper:
     @timer
     def get_extrusion(self, offset1=0.0, offset2=1.0):
         _, wires1 = self.get_shapes(offset1, False)
+        if pl := get_compound_plane(wires1, self.Tolerance):
+            extr = wires1.extrude(pl.Axis * (offset2 - offset1))
+            return extr
         _, wires2 = self.get_shapes(offset2, False)
         shells = []
         for i in range(len(wires1.Wires)):
@@ -629,6 +648,9 @@ class ShapeMapper:
     @timer
     def get_solids(self, offset1=0.0, offset2=1.0):
         faces_1, _ = self.get_shapes(offset1, True)
+        if pl := get_compound_plane(faces_1, self.Tolerance):
+            extr = faces_1.extrude(pl.Axis * (offset2 - offset1))
+            return extr
         faces_2, _ = self.get_shapes(offset2, True)
         solids = []
         for i in range(len(faces_1.Faces)):
