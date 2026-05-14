@@ -50,12 +50,12 @@ def change_surface(surface, face, tol=1e-7):
                 e = de.Curve.toShape(de.FirstParameter, de.LastParameter)
                 e.Orientation = de.Orientation
             except TypeError:
-                Part.show(e, "Curve Type Error")
                 e = de
-            if not e.isSeam(face):
-                edges.append(e)
-            else:
+                Part.show(e, "Curve Type Error")
+            if e.isSeam(face):
                 seam_found = True
+            elif e.Length > tol:
+                edges.append(e)
         if not seam_found:
             wires.append(Part.Wire(edges))
         else:

@@ -327,6 +327,10 @@ class curveNode(GeomNode):
         if isinstance(curve, (Part.BezierCurve, Part.BSplineCurve)):
             self.node.addChild(bsplinecurveNode(curve))
             return
+        if isinstance(curve, (Part.OffsetCurve)):
+            cn = curveNode(curve.BasisCurve.toShape())
+            # basis_node = edge_node(curve.BasisCurve.toShape(), self.Zcolor, self.lineWidth, self.linePattern)
+            self.node.addChild(cn.node)
         if curve.isPeriodic():
             edge = curve.toShape()
         else:
@@ -339,7 +343,10 @@ class curveNode(GeomNode):
                 fp = max(efp - ext_range, curve.FirstParameter)
                 lp = min(elp + ext_range, curve.LastParameter)
                 print(fp, lp)
-            edge = curve.toShape(fp, lp)
+            try:
+                edge = curve.toShape(fp, lp)
+            except Part.OCCError:  # OffsetCurve
+                edge = self.edge
         curve_node = edge_node(edge, self.Xcolor, self.lineWidth, self.linePattern)
         self.node.addChild(curve_node)
 
@@ -596,7 +603,8 @@ class GeomInfo:
                  'Location',
                  'Degree',
                  'NbPoles',
-                 'Continuity']
+                 'Continuity',
+                 'OffsetValue']
         for p in props:
             s = self.propStr(curve, p)
             if s:

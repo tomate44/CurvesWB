@@ -224,7 +224,11 @@ class Interpolate:
                 # self.detect_aligned_pts(obj, pts)
                 bs.interpolate(Points=pts, PeriodicFlag=obj.Periodic, Tolerance=obj.Tolerance, Parameters=obj.Parameters,
                                Tangents=obj.Tangents, TangentFlags=obj.TangentFlags)  # Scale=False)
-        obj.Shape = bs.toShape()
+        final_shape = bs.toShape()
+        if obj.WireOutput:
+            knots = [bs.parameter(pt) for pt in pts[1:-1]]
+            final_shape = final_shape.split(knots)
+        obj.Shape = final_shape
 
     def setParameters(self, obj):
         # Computes a knot Sequence for a set of points

@@ -1,6 +1,7 @@
 import FreeCAD
 import Part
 
+from math import pi
 from freecad.Curves.lib.point_list import PointList
 from freecad.Curves.lib.precision import tol3d
 from freecad.Curves.lib.logger import FCLogger
@@ -25,6 +26,12 @@ class PointGrid:
     def __repr__(self):
         return str(self)
 
+    def deepcopy(self):
+        pts = [list(row) for row in self.pts]
+        pg = PointGrid(pts, self.tol)
+        pg.AverageParams = self.AverageParams
+        return pg
+
     @property
     def NbU(self):
         'Number of U lines'
@@ -38,7 +45,7 @@ class PointGrid:
     def debug_points(self):
         'Returns a 4x4 point grid sample'
         sph = Part.Sphere()
-        samplesU = [0.0, 0.5, 1.0, 2.0, 2.8, 3.0]
+        samplesU = [0.0, pi/6, pi/4, 3*pi/4, 5*pi/6, pi]
         samplesV = [0.0, 0.2, 0.8, 1.0]
         pts = []
         for u in samplesU:
@@ -128,8 +135,10 @@ class PointGrid:
 
     def set_Vclosed(self):
         if not self.is_Vclosed():
+            pts = []
             for i in range(self.NbU):
-                self.pts[i].append(self.pts[i][0])
+                pts.append(self.pts[i] + [self.pts[i][0]])
+            self.pts = pts
 
     def set_Vopen(self):
         if self.is_Vclosed():
@@ -153,14 +162,14 @@ class PointGrid:
         return average
 
     def interpolate_Ucurves(self, factor=1.0, periodic=False, average=True):
-        if periodic:
-            self.set_Uclosed()
+        # if periodic:
+        #     self.set_Uclosed()
         if average:
             uparams = self.compute_Uparams(factor)
+            # print(len(pts), uparams)
             curves = []
             for pts in self.pointsU():
                 pl = PointList(pts, self.tol)
-                print(len(pts), uparams)
                 c = pl.interpolate(uparams, periodic, 3)
                 curves.append(c.toShape())
             return Part.Compound(curves)
@@ -168,8 +177,55 @@ class PointGrid:
         for pts in self.pointsU():
             pl = PointList(pts, self.tol)
             c = pl.interpolate(factor, periodic, 3)
-            print(len(pts), len(pl.Parameters))
+            # print(len(pts), len(pl.Parameters))
             curves.append(c.toShape())
         return Part.Compound(curves)
 
+    def interpolate_Vcurves(self, factor=1.0, periodic=False, average=True):
+        pg = self.deepcopy()
+        pg.swapUV()
+        comp = pg.interpolate_Ucurves(factor, periodic, average)
+        return comp
 
+    def interpolate_surface(self, factors=[1.0, 1.0], periodic=[False, False], average=[True, True]):
+        pg = self.deepcopy()
+        if periodic[0]:
+            pg.set_Uclosed()
+        if periodic[1]:
+            pg.set_Vclosed()
+        comp = pg.interpolate_Ucurves(factors[1], periodic[1], average[1])
+        c = comp.Edge1.Curve
+        vdegree = c.Degree
+        vknots = c.getKnots()
+        vmults = c.getMultiplicities()
+        vperiodic = c.isPeriodic()
+        pts = [e.Curve.getPoles() for e in comp.Edges]
+        pg = PointGrid(pts, self.tol)
+        comp = pg.interpolate_Vcurves(factors[0], periodic[0], average[0])
+        pts = [e.Curve.getPoles() for e in comp.Edges]
+        pg = PointGrid(pts, self.tol)
+        # print(pg)
+        pg.swapUV()
+        poles = pg.pts
+        c = comp.Edge1.Curve
+        udegree = c.Degree
+        uknots = c.getKnots()
+        umults = c.getMultiplicities()
+        uperiodic = c.isPeriodic()
+        bs = Part.BSplineSurface()
+        print(f"{len(poles)}x{len(poles[0])}", umults, vmults, uknots, vknots, uperiodic, vperiodic, udegree, vdegree)
+        bs.buildFromPolesMultsKnots(poles, umults, vmults, uknots, vknots, uperiodic, vperiodic, udegree, vdegree)
+        return bs
+
+
+'''
+from importlib import reload
+from freecad.Curves.lib import point_grid
+reload(point_grid)
+
+pg = point_grid.PointGrid()
+Part.show(pg.ShapePolygon)
+s = pg.interpolate_surface([1,1], [False, True], [False, False])
+Part.show(s.toShape())
+
+'''

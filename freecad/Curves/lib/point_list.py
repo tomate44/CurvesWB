@@ -6,7 +6,7 @@ import Part
 
 class PointList:
     def __init__(self, pts, tol=1e-7):
-        self.Points = pts
+        self.Points = list(pts)
         self.tol = tol
 
     def is_closed(self):
@@ -14,6 +14,7 @@ class PointList:
 
     def set_closed(self):
         if not self.is_closed():
+            # print(self.Points)
             self.Points.append(self.Points[0])
 
     def set_open(self):
@@ -71,6 +72,8 @@ class PointList:
                                  k=degree,
                                  bc_type=interp_type)
         fcbs = self.scipy_spline_to_freecad(spl)
+        if periodic:
+            fcbs.setPeriodic()
         return fcbs
 
 

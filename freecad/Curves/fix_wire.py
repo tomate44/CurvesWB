@@ -2,7 +2,7 @@
 
 from math import pi
 import Part
-from . import TOL3D
+TOL3D = 1e-7
 
 def fit_edge_to_point(e1, pt, tol=TOL3D):
     """Transform an edge by rotation / scaling so that its nearest end match point.

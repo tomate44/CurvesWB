@@ -230,7 +230,11 @@ class SurfaceIdentifier:
         pt2 = axis_line.projectPoint(pt1)
         iso = surf.uIso(surf.bounds()[0])
         pl = Part.Plane(pt2, surf.Axis)
-        pt = pl.intersect(iso)[0][0]
+        try:
+            pt = pl.intersect(iso)[0][0]
+        except IndexError:
+            self.logger.error(f"Intersection failed. Rotation aborted")
+            return surf
         pt3 = pt.toShape().Point
         v1 = pt2 - pt1
         v2 = pt3 - pt2
