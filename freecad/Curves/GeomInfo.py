@@ -371,6 +371,8 @@ class surfNode(GeomNode):
             p1 = min(par1, par2)
             p2 = max(par1, par2)
             axis_pr = p2 - p1
+            if axis_pr < 1e-7:
+                axis_pr = self.face.BoundBox.DiagonalLength
             axis = axis.Curve.toShape(p1 - axis_pr * 2, p2 + axis_pr * 2)
             axis_node = edge_node(axis, self.Zcolor, self.lineWidth, self.linePattern)
             self.node.addChild(axis_node)

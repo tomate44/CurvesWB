@@ -1,10 +1,14 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 import FreeCAD
 import Part
 
 from math import pi
 from freecad.Curves.lib.point_list import PointList
 from freecad.Curves.lib.precision import tol3d
+from freecad.Curves.lib.timer import cls_timer
 from freecad.Curves.lib.logger import FCLogger
+from freecad.Curves.lib.math_util import float_range
 
 
 class PointGrid:
@@ -13,11 +17,12 @@ class PointGrid:
     '''
 
     def __init__(self, points=None, tol=tol3d):
+        self.log = FCLogger("Debug", "PointGrid")
         if points is None:
             self.pts = self.debug_points()
         else:
             self.pts = points
-        self.tol = tol
+        self.Tolerance = tol
         self.AverageParams = True
 
     def __str__(self):
@@ -28,7 +33,7 @@ class PointGrid:
 
     def deepcopy(self):
         pts = [list(row) for row in self.pts]
-        pg = PointGrid(pts, self.tol)
+        pg = PointGrid(pts, self.Tolerance)
         pg.AverageParams = self.AverageParams
         return pg
 
@@ -43,7 +48,7 @@ class PointGrid:
         return len(self.pts[0])
 
     def debug_points(self):
-        'Returns a 4x4 point grid sample'
+        'Returns a 6x4 point grid sample'
         sph = Part.Sphere()
         samplesU = [0.0, pi/6, pi/4, 3*pi/4, 5*pi/6, pi]
         samplesV = [0.0, 0.2, 0.8, 1.0]
@@ -52,6 +57,29 @@ class PointGrid:
             uiso = sph.uIso(u)
             pts.append([uiso.value(pow(v, 1.2)) for v in samplesV])
         return pts
+
+    def discretize(self, surf, nbu, nbv):
+        '''
+        Sets the point grid by discretizing the surface.
+
+        Arguments:
+            surf: Part.Surface or Part.Face
+            nbu: number of points in the U directions
+            nbv: number of points in the V direction
+        '''
+        if isinstance(surf, Part.Face):
+            u0, u1, v0, v1 = surf.ParameterRange
+            s = surf.Surface
+        else:
+            u0, u1, v0, v1 = surf.bounds()
+            s = surf
+        pts = []
+        for u in float_range(u0, u1, nbu):
+            row = []
+            for v in float_range(v0, v1, nbv):
+                row.append(s.value(u,v))
+            pts.append(row)
+        self.pts = pts
 
     def rowU(self, idx):
         'Returns the row of U points at idx'
@@ -112,7 +140,7 @@ class PointGrid:
     def is_Uclosed(self):
         closed = True
         for p1, p2 in list(zip(self.pts[0], self.pts[-1])):
-            if p1.distanceToPoint(p2) > self.tol:
+            if p1.distanceToPoint(p2) > self.Tolerance:
                 closed = False
         return closed
 
@@ -129,7 +157,7 @@ class PointGrid:
     def is_Vclosed(self):
         closed = True
         for col in self.pts:
-            if col[0].distanceToPoint(col[-1]) > self.tol:
+            if col[0].distanceToPoint(col[-1]) > self.Tolerance:
                 closed = False
         return closed
 
@@ -148,7 +176,7 @@ class PointGrid:
     def compute_Uparams(self, factor=1.0):
         par = []
         for col in self.pointsU():
-            pl = PointList(col, self.tol)
+            pl = PointList(col, self.Tolerance)
             par.append(pl.compute_params(factor, [0.0, 1 / self.NbU]))
         average = [sum(pars) for pars in list(zip(*par))]
         return average
@@ -156,7 +184,7 @@ class PointGrid:
     def compute_Vparams(self, factor=1.0):
         par = []
         for col in self.pointsV():
-            pl = PointList(col, self.tol)
+            pl = PointList(col, self.Tolerance)
             par.append(pl.compute_params(factor, [0.0, 1 / self.NbV]))
         average = [sum(pars) for pars in list(zip(*par))]
         return average
@@ -169,13 +197,13 @@ class PointGrid:
             # print(len(pts), uparams)
             curves = []
             for pts in self.pointsU():
-                pl = PointList(pts, self.tol)
+                pl = PointList(pts, self.Tolerance)
                 c = pl.interpolate(uparams, periodic, 3)
                 curves.append(c.toShape())
             return Part.Compound(curves)
         curves = []
         for pts in self.pointsU():
-            pl = PointList(pts, self.tol)
+            pl = PointList(pts, self.Tolerance)
             c = pl.interpolate(factor, periodic, 3)
             # print(len(pts), len(pl.Parameters))
             curves.append(c.toShape())
@@ -187,6 +215,7 @@ class PointGrid:
         comp = pg.interpolate_Ucurves(factor, periodic, average)
         return comp
 
+    @cls_timer
     def interpolate_surface(self, factors=[1.0, 1.0], periodic=[False, False], average=[True, True]):
         pg = self.deepcopy()
         if periodic[0]:
@@ -200,10 +229,10 @@ class PointGrid:
         vmults = c.getMultiplicities()
         vperiodic = c.isPeriodic()
         pts = [e.Curve.getPoles() for e in comp.Edges]
-        pg = PointGrid(pts, self.tol)
+        pg = PointGrid(pts, self.Tolerance)
         comp = pg.interpolate_Vcurves(factors[0], periodic[0], average[0])
         pts = [e.Curve.getPoles() for e in comp.Edges]
-        pg = PointGrid(pts, self.tol)
+        pg = PointGrid(pts, self.Tolerance)
         # print(pg)
         pg.swapUV()
         poles = pg.pts
@@ -217,6 +246,13 @@ class PointGrid:
         bs.buildFromPolesMultsKnots(poles, umults, vmults, uknots, vknots, uperiodic, vperiodic, udegree, vdegree)
         return bs
 
+    @cls_timer
+    def fc_interpolate(self):
+        bs = Part.BSplineSurface()
+        bs.interpolate(self.pts)
+        return bs
+
+
 
 '''
 from importlib import reload
@@ -225,7 +261,7 @@ reload(point_grid)
 
 pg = point_grid.PointGrid()
 Part.show(pg.ShapePolygon)
-s = pg.interpolate_surface([1,1], [False, True], [False, False])
+s = pg.interpolate_surface([1,1], [True, True])
 Part.show(s.toShape())
 
 '''
