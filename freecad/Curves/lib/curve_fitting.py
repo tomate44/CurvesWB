@@ -75,8 +75,38 @@ class CurveFitting:
         bsp.buildFromPolesMultsKnots(poles, mults, knots, False, degree)
         return bsp
 
+    def makima_tangents(self, params):
+        '''
+        Computes tangents of points using modified Akima method.
+        See: https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.Akima1DInterpolator.html
+        '''
+        def delta(i):
+            return (self.Points[i + 1] - self.Points[i]) / (params[i + 1] - params[i])
+
+        def delta_list():
+            deltas = [None] * (self._ptsl.Nb + 3)
+            for i in range(self._ptsl.Nb - 1):
+                deltas[i + 2] = delta(i)
+            deltas[1] = 2 * deltas[2] - deltas[3]
+            deltas[0] = 2 * deltas[1] - deltas[2]
+            deltas[-2] = 2 * deltas[-3] - deltas[-4]
+            deltas[-1] = 2 * deltas[-2] - deltas[-3]
+            return deltas
+
+        tans = [None] * self._ptsl.Nb
+        deltas = delta_list()
+        for i in range(self._ptsl.Nb):
+            j = i + 2
+            w1 = (deltas[j+1] - deltas[j]).Length
+            w2 = (deltas[j-1] - deltas[j-2]).Length
+            f1 = w1 / (w1 + w2)
+            f2 = w2 / (w1 + w2)
+            tan = f1 * deltas[j-1] + f2 * deltas[j]
+            tans[i] = tan
+        return tans
+
     @cls_timer
-    def scipy_interpolate(self, parameters=None):
+    def interpolate_scipy(self, parameters=None):
         '''
         Interpolate points using scipy
 
@@ -143,7 +173,11 @@ class CurveFitting:
         Returns:
             Part.BSplineCurve with max C1 continuity
         '''
+        if self.Periodic:
+            self._ptsl.set_closed()
         self.Parameters = self._ptsl.compute_params(self.ParamFactor)
+        if self.Periodic:
+            self._ptsl.set_open()
         bsp = Part.BSplineCurve()
         bsp.interpolate(Points=self.Points,
                         PeriodicFlag=self.Periodic,
@@ -152,3 +186,12 @@ class CurveFitting:
                         Tangents=tangents,
                         TangentFlags=flags)
         return bsp
+
+    @cls_timer
+    def interpolate_makima(self):
+        params = self._ptsl.compute_params(self.ParamFactor)
+        tans = self.makima_tangents(params)
+        flags = [True] * len(tans)
+        bs = self.interpolate_with_tangents(tans, flags)
+        return bs
+
