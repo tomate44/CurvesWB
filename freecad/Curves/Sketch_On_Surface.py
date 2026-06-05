@@ -16,6 +16,7 @@ from freecad.Curves import ICONPATH
 TOOL_ICON = os.path.join(ICONPATH, 'sketch_surf.svg')
 
 debug = _utils.debug
+warn = _utils.warn
 # debug = _utils.doNothing
 vec = FreeCAD.Vector
 error = FreeCAD.Console.PrintError
@@ -305,7 +306,11 @@ class sketchOnSurface:
                 supp = obj.Sketch.Support
             if hasattr(obj.Sketch, "AttachmentSupport"):
                 supp = obj.Sketch.AttachmentSupport
-            n = eval(supp[0][1][0].lstrip('Face'))
+            n = supp[0][1][0].lstrip('Face')
+            if not n.isnumeric():
+                warn("Possible topological naming issue with supporting face {}\n".format(supp[0][1][0]))
+                n = supp[0][1][0].lstrip('?Face')
+            n = int(n)
             face = supp[0][0].Shape.Faces[n - 1]
             # face.Placement = obj.Sketch.Support[0][0].getGlobalPlacement()
         except (IndexError, AttributeError, SyntaxError) as e:
