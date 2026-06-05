@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
-import FreeCAD
+from FreeCAD import Vector
 import Part
 
 from math import pi
@@ -19,9 +19,14 @@ class PointGrid:
     def __init__(self, points=None, tol=tol3d):
         self.log = FCLogger("Debug", "PointGrid")
         if points is None:
-            self.pts = self.debug_points()
+            self.Points = self.debug_points()
         else:
-            self.pts = points
+            self.Points = []
+            for row in points:
+                if isinstance(row[0], Part.Vertex):
+                    self.Points.append([Vector(v.Point) for v in row])
+                else:
+                    self.Points.append([Vector(v) for v in row])
         self.Tolerance = tol
         self.AverageParams = True
 
@@ -32,20 +37,19 @@ class PointGrid:
         return str(self)
 
     def deepcopy(self):
-        pts = [list(row) for row in self.pts]
-        pg = PointGrid(pts, self.Tolerance)
+        pg = PointGrid(self.Points, self.Tolerance)
         pg.AverageParams = self.AverageParams
         return pg
 
     @property
     def NbU(self):
         'Number of U lines'
-        return len(self.pts)
+        return len(self.Points)
 
     @property
     def NbV(self):
         'Number of V lines'
-        return len(self.pts[0])
+        return len(self.Points[0])
 
     def debug_points(self):
         'Returns a 6x4 point grid sample'
@@ -77,17 +81,17 @@ class PointGrid:
         for u in float_range(u0, u1, nbu):
             row = []
             for v in float_range(v0, v1, nbv):
-                row.append(s.value(u,v))
+                row.append(s.value(u, v))
             pts.append(row)
-        self.pts = pts
+        self.Points = pts
 
     def rowU(self, idx):
         'Returns the row of U points at idx'
-        return self.pts[idx]
+        return self.Points[idx]
 
     def rowV(self, idx):
         'Returns the row of V points at idx'
-        return [self.pts[i][idx] for i in range(self.NbU)]
+        return [self.Points[i][idx] for i in range(self.NbU)]
 
     def pointsU(self):
         for i in range(self.NbU):
@@ -99,7 +103,7 @@ class PointGrid:
 
     def swapUV(self):
         'Swap U and V directions of the grid'
-        self.pts = list(zip(*self.pts))
+        self.Points = list(zip(*self.Points))
 
     # *** Shapes
 
@@ -107,7 +111,7 @@ class PointGrid:
     def ShapePoints(self):
         'Returns a coumpound of vertexes'
         comp = Part.Compound()
-        for col in self.pts:
+        for col in self.Points:
             comp.add(Part.Compound([Part.Vertex(p) for p in col]))
         return comp
 
@@ -115,7 +119,7 @@ class PointGrid:
     def ShapeLinesU(self):
         'Returns a compound of U polylines'
         comp = Part.Compound()
-        for col in self.pts:
+        for col in self.Points:
             comp.add(Part.makePolygon(col))
         return comp
 
@@ -139,24 +143,24 @@ class PointGrid:
 
     def is_Uclosed(self):
         closed = True
-        for p1, p2 in list(zip(self.pts[0], self.pts[-1])):
+        for p1, p2 in list(zip(self.Points[0], self.Points[-1])):
             if p1.distanceToPoint(p2) > self.Tolerance:
                 closed = False
         return closed
 
     def set_Uclosed(self):
         if not self.is_Uclosed():
-            self.pts.append(self.pts[0])
+            self.Points.append(self.Points[0])
 
     def set_Uopen(self):
         if self.is_Uclosed():
-            self.pts = self.pts[:-1]
+            self.Points = self.Points[:-1]
 
     # *** V Closed
 
     def is_Vclosed(self):
         closed = True
-        for col in self.pts:
+        for col in self.Points:
             if col[0].distanceToPoint(col[-1]) > self.Tolerance:
                 closed = False
         return closed
@@ -165,13 +169,13 @@ class PointGrid:
         if not self.is_Vclosed():
             pts = []
             for i in range(self.NbU):
-                pts.append(self.pts[i] + [self.pts[i][0]])
-            self.pts = pts
+                pts.append(self.Points[i] + [self.Points[i][0]])
+            self.Points = pts
 
     def set_Vopen(self):
         if self.is_Vclosed():
             for i in range(self.NbU):
-                self.pts[i] = self.pts[i][:-1]
+                self.Points[i] = self.Points[i][:-1]
 
     def compute_Uparams(self, factor=1.0):
         par = []
@@ -222,25 +226,27 @@ class PointGrid:
             pg.set_Uclosed()
         if periodic[1]:
             pg.set_Vclosed()
+
         comp = pg.interpolate_Ucurves(factors[1], periodic[1], average[1])
         c = comp.Edge1.Curve
         vdegree = c.Degree
         vknots = c.getKnots()
         vmults = c.getMultiplicities()
         vperiodic = c.isPeriodic()
-        pts = [e.Curve.getPoles() for e in comp.Edges]
-        pg = PointGrid(pts, self.Tolerance)
-        comp = pg.interpolate_Vcurves(factors[0], periodic[0], average[0])
-        pts = [e.Curve.getPoles() for e in comp.Edges]
-        pg = PointGrid(pts, self.Tolerance)
-        # print(pg)
+
+        pg.Points = [e.Curve.getPoles() for e in comp.Edges]
         pg.swapUV()
-        poles = pg.pts
+        comp = pg.interpolate_Ucurves(factors[0], periodic[0], average[0])
         c = comp.Edge1.Curve
         udegree = c.Degree
         uknots = c.getKnots()
         umults = c.getMultiplicities()
         uperiodic = c.isPeriodic()
+
+        pg.Points = [e.Curve.getPoles() for e in comp.Edges]
+        pg.swapUV()
+        poles = pg.Points
+
         bs = Part.BSplineSurface()
         print(f"{len(poles)}x{len(poles[0])}", umults, vmults, uknots, vknots, uperiodic, vperiodic, udegree, vdegree)
         bs.buildFromPolesMultsKnots(poles, umults, vmults, uknots, vknots, uperiodic, vperiodic, udegree, vdegree)
@@ -249,9 +255,8 @@ class PointGrid:
     @cls_timer
     def fc_interpolate(self):
         bs = Part.BSplineSurface()
-        bs.interpolate(self.pts)
+        bs.interpolate(self.Points)
         return bs
-
 
 
 '''

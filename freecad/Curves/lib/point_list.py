@@ -2,7 +2,7 @@
 
 import numpy as np
 from scipy.interpolate import make_interp_spline
-import FreeCAD
+from FreeCAD import Vector
 import Part
 
 from freecad.Curves.lib.precision import tol3d
@@ -29,9 +29,9 @@ class PointList:
         if pts is None:
             self.Points = self.debug_points()
         elif isinstance(pts[0], Part.Vertex):
-            self.Points = [v.Point for v in pts]
+            self.Points = [Vector(v.Point) for v in pts]
         else:
-            self.Points = [p for p in pts]
+            self.Points = [Vector(p) for p in pts]
         self.Tolerance = tol
 
     def __str__(self):
@@ -47,6 +47,9 @@ class PointList:
     def Nb(self):
         'Number of Points'
         return len(self.Points)
+
+    def deepcopy(self):
+        return PointList(self.Points, self.Tolerance)
 
     # *** Shapes
 
@@ -85,7 +88,7 @@ class PointList:
         with alternating Z height.
         For debugging.
         '''
-        ci = Part.Circle(FreeCAD.Vector(0, 0, 0), FreeCAD.Vector(0, 0, 1), 10.0)
+        ci = Part.Circle(Vector(0, 0, 0), Vector(0, 0, 1), 10.0)
         pts = ci.discretize(9)[:-1]
         offsetZ = 1
         for p in pts:
@@ -117,7 +120,7 @@ class PointList:
     def scipy_spline_to_freecad(self, spl):
         'Returns a Part.BSplineCurve from a scipy BSpline object'
         u, c, degree = spl.tck
-        poles = [FreeCAD.Vector(*v) for v in c]
+        poles = [Vector(*v) for v in c]
         knots = [u[0]]
         mults = [1]
         for k in u[1:]:
