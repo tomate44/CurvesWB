@@ -658,7 +658,7 @@ class ParametricBlendCurve:
     def getEdge(self, edge):
         if "Line" in edge[1]:
             return edge[0].Shape
-        n = eval(edge[1].lstrip('Edge'))
+        n = int(edge[1].lstrip('Edge'))
         return edge[0].Shape.Edges[n - 1]
 
     def normalizedParam(self, edge, par, endClamp=False):

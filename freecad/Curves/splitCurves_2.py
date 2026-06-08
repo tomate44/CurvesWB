@@ -286,13 +286,13 @@ class MarkerOnEdge(graphics.Marker):
     def subshape_from_sublink(self, o):
         name = o[1][0]
         if 'Vertex' in name:
-            n = eval(name.lstrip('Vertex'))
+            n = int(name.lstrip('Vertex'))
             return(o[0].Shape.Vertexes[n - 1])
         elif 'Edge' in name:
-            n = eval(name.lstrip('Edge'))
+            n = int(name.lstrip('Edge'))
             return(o[0].Shape.Edges[n - 1])
         elif 'Face' in name:
-            n = eval(name.lstrip('Face'))
+            n = int(name.lstrip('Face'))
             return(o[0].Shape.Faces[n - 1])
 
     def add_text(self):

@@ -36,10 +36,10 @@ class profileSupportFP:
         res = []
         try:
             if hasattr(obj, "Edge1"):
-                n = eval(obj.Edge1[1][0].lstrip('Edge'))
+                n = int(obj.Edge1[1][0].lstrip('Edge'))
                 res.append(obj.Edge1[0].Shape.Edges[n - 1])
             if hasattr(obj, "Edge2"):
-                n = eval(obj.Edge2[1][0].lstrip('Edge'))
+                n = int(obj.Edge2[1][0].lstrip('Edge'))
                 res.append(obj.Edge2[0].Shape.Edges[n - 1])
             return(res)
         except TypeError:

@@ -50,7 +50,7 @@ class trimFace:
         shapelist = link[1]
         for s in shapelist:
             if 'Face' in s:
-                n = eval(s.lstrip('Face'))
+                n = int(s.lstrip('Face'))
                 debug("Face {}".format(n))
                 return(o.Shape.Faces[n - 1])
         return None
@@ -62,7 +62,7 @@ class trimFace:
             shapelist = link[1]
             for s in shapelist:
                 if 'Edge' in s:
-                    n = eval(s.lstrip('Edge'))
+                    n = int(s.lstrip('Edge'))
                     debug("Edge {}".format(n))
                     res.append(o.Shape.Edges[n - 1])
         return res

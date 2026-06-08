@@ -305,7 +305,7 @@ class sketchOnSurface:
                 supp = obj.Sketch.Support
             if hasattr(obj.Sketch, "AttachmentSupport"):
                 supp = obj.Sketch.AttachmentSupport
-            n = eval(supp[0][1][0].lstrip('Face'))
+            n = int(supp[0][1][0].lstrip('Face'))
             face = supp[0][0].Shape.Faces[n - 1]
             # face.Placement = obj.Sketch.Support[0][0].getGlobalPlacement()
         except (IndexError, AttributeError, SyntaxError) as e:
@@ -522,7 +522,7 @@ class SoS:
                 sketch.AttachmentSupport = face_link
             else:
                 sketch.Support = face_link
-            n = eval(face_link[1][0].lstrip('Face'))
+            n = int(face_link[1][0].lstrip('Face'))
             fa = face_link[0].Shape.Faces[n-1]
             build_sketch(sketch, fa)
             doc.recompute()

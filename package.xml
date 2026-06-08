@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<package format="1">
+<package format="1" xmlns="https://wiki.freecad.org/Package_Metadata">
   <name>Curves workbench</name>
   <description>A collection of tools mainly dedicated to NURBS curves and surfaces modeling.</description>
-  <version>0.6.71</version>
+  <version>0.6.72</version>
+  <date>2026-06-08</date>
   <maintainer email="cg@grellier.fr">Christophe Grellier</maintainer>
   <license file="LICENSE-CODE">LGPL-2.1-or-later</license>
   <license file="LICENSE-TIGL">Apache-2.0</license>
@@ -14,7 +15,7 @@
       <name>Curves workbench</name>
       <classname>CurvesWorkbench</classname>
       <description>A collection of tools mainly dedicated to NURBS curves and surfaces modeling.</description>
-      <version>0.6.71</version>
+      <version>0.6.72</version>
       <subdirectory>./</subdirectory>
       <icon>freecad/Curves/resources/icons/blendSurf.svg</icon>
       <freecadmin>0.21.2</freecadmin>

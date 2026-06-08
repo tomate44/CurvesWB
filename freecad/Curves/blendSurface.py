@@ -197,7 +197,7 @@ class blendSurface:
         if hasattr(obj, "InputEdge"):
             o = obj.InputEdge[0]
             ss = obj.InputEdge[1][0]
-            n = eval(ss.lstrip('Edge'))
+            n = int(ss.lstrip('Edge'))
             if len(o.Shape.Edges) >= n:
                 res = o.Shape.Edges[n - 1]
         return(res)
@@ -207,7 +207,7 @@ class blendSurface:
         if hasattr(obj, "Face"):
             o = obj.Face[0]
             ss = obj.Face[1][0]
-            n = eval(ss.lstrip('Face'))
+            n = int(ss.lstrip('Face'))
             if len(o.Shape.Faces) >= n:
                 res = o.Shape.Faces[n - 1]
         return(res)

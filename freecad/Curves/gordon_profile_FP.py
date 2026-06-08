@@ -65,17 +65,17 @@ class GordonProfileFP:
             for ob, names in fp.Support:
                 for name in names:
                     if "Vertex" in name:
-                        n = eval(name.lstrip("Vertex"))
+                        n = int(name.lstrip("Vertex"))
                         if len(ob.Shape.Vertexes) >= n:
                             sl.append(ob.Shape.Vertexes[n - 1])
                     elif ("Point" in name):
                         sl.append(Part.Vertex(ob.Shape.Point))
                     elif ("Edge" in name):
-                        n = eval(name.lstrip("Edge"))
+                        n = int(name.lstrip("Edge"))
                         if len(ob.Shape.Edges) >= n:
                             sl.append(ob.Shape.Edges[n - 1])
                     elif ("Face" in name):
-                        n = eval(name.lstrip("Face"))
+                        n = int(name.lstrip("Face"))
                         if len(ob.Shape.Faces) >= n:
                             sl.append(ob.Shape.Faces[n - 1])
             return sl

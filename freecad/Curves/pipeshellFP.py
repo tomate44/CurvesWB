@@ -79,7 +79,7 @@ class pipeShell:
             return res
         o = content[0]
         for ss in content[1]:
-            n = eval(ss.lstrip('Vertex'))
+            n = int(ss.lstrip('Vertex'))
             res = o.Shape.Vertexes[n - 1]
         return res
 

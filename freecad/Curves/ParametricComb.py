@@ -222,13 +222,13 @@ class Comb:
             debug(str(o) + " - ")
             for f in e[1]:
                 if 'Edge' in f:
-                    n = eval(f.lstrip('Edge'))
+                    n = int(f.lstrip('Edge'))
                     debug(str(n) + "")
                     if o.Shape.Edges:
                         g = o.Shape.Edges[n - 1]
                         totalLength += g.Length
                 elif 'Face' in f:
-                    n = eval(f.lstrip('Face'))
+                    n = int(f.lstrip('Face'))
                     debug(str(n) + "")
                     if o.Shape.Faces:
                         g = o.Shape.Faces[n - 1]
@@ -257,13 +257,13 @@ class Comb:
             debug(str(o.Name) + " - ")
             for f in e[1]:
                 if 'Edge' in f:
-                    n = eval(f.lstrip('Edge'))
+                    n = int(f.lstrip('Edge'))
                     debug('Edge ' + str(n) + "")
                     debug(str(o.Shape) + "")
                     if o.Shape.Edges:
                         edgeList.append(o.Shape.Edges[n - 1])
                 elif 'Face' in f:
-                    n = eval(f.lstrip('Face'))
+                    n = int(f.lstrip('Face'))
                     debug('Face ' + str(n) + "")
                     debug(str(o.Shape) + "")
                     if o.Shape.Faces:

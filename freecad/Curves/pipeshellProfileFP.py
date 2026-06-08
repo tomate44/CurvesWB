@@ -41,7 +41,7 @@ class profile:
             for l in content:
                 o = l[0]
                 for ss in l[1]:
-                    n = eval(ss.lstrip('Edge'))
+                    n = int(ss.lstrip('Edge'))
                     res.append(o.Shape.Edges[n-1])
         else:
             FreeCAD.Console.PrintError("\n%s object has no property %s\n"%(obj.Label, prop))
@@ -56,7 +56,7 @@ class profile:
                 return(res)
             o = content[0]
             for ss in content[1]:
-                n = eval(ss.lstrip('Vertex'))
+                n = int(ss.lstrip('Vertex'))
                 res.append(o.Shape.Vertexes[n-1])
         else:
             FreeCAD.Console.PrintError("\n%s object has no property %s\n"%(obj.Label, prop))

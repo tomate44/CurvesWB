@@ -54,7 +54,7 @@ class Discretization:
         e = obj.Edge[1][0]
         e = e.split(";")[-1]
         e = e.split(".")[-1]
-        n = eval(e.lstrip('Edge'))
+        n = int(e.lstrip('Edge'))
         try:
             edge = o.Shape.Edges[n - 1]
             return edge.FirstParameter, edge.LastParameter
