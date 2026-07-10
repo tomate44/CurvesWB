@@ -1,11 +1,64 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
-import numpy as np
-from scipy.interpolate import make_interp_spline
 from FreeCAD import Vector
 import Part
 
 from freecad.Curves.lib.precision import tol3d
+
+
+class PointParameters(list):
+    def __init__(self, params=[]):
+        super().__init__(params)
+    
+    def __add__(self, other):
+        if isinstance(other, (int, float)):
+            return PointParameters([self[i] + other for i in range(len(self))])
+        if not self.__len__() == other.__len__():
+            raise ValueError("The two lists must have the same length")
+        return PointParameters([self[i] + other[i] for i in range(len(self))])
+    
+    def __radd__(self, other):
+        return self + other
+    
+    def __iadd__(self, other):
+        if not self.__len__() == other.__len__():
+            raise ValueError("The two lists must have the same length")
+        for i in range(len(self)):
+            self[i] += other[i]
+        return self
+    
+    def __mul__(self, value):
+        if not isinstance(value, (int, float)):
+            raise TypeError(f"numeric value expected, got {type(value).__name__}")
+        return PointParameters([item * value for item in self])
+    
+    def __rmul__(self, value):
+        return self * value
+    
+    def __truediv__(self, value):
+        if not isinstance(value, (int, float)):
+            raise TypeError(f"numeric value expected, got {type(value).__name__}")
+        return PointParameters([item / value for item in self])
+    
+    def scale_to_bounds(self, a, b):
+        fac = (b - a) / (self[-1] - self[0])
+        return PointParameters([a + fac * (val - self[0]) for val in self])
+    
+    def set_bounds(self, a, b):
+        fp = self[0]
+        lp = self[-1]
+        fac = (b - a) / (lp - fp)
+        for i in range(len(self)):
+            nval = a + fac * (self[i] - fp)
+            self[i] = nval
+    
+    def normalized(self):
+        return self.scale_to_bounds(0.0, 1.0)
+    
+    def normalize(self):
+        self.set_bounds(0.0, 1.0)
+
+
 
 
 class PointList:
@@ -26,13 +79,12 @@ class PointList:
                   if None, a default list is created (see method debug_points)
             tol: geometric tolerance
         '''
-        if pts is None:
-            self.Points = self.debug_points()
-        elif isinstance(pts[0], Part.Vertex):
-            self.Points = [Vector(v.Point) for v in pts]
+        if isinstance(pts, PointList):
+            self._pts = pts.Points
+            self.Tolerance = pts.Tolerance
         else:
-            self.Points = [Vector(p) for p in pts]
-        self.Tolerance = tol
+            self.Points = pts
+            self.Tolerance = tol
 
     def __str__(self):
         closed = ""
@@ -42,6 +94,17 @@ class PointList:
 
     def __repr__(self):
         return str(self)
+
+    @property
+    def Points(self):
+        return self._pts
+
+    @Points.setter
+    def Points(self, pts):
+        if isinstance(pts[0], Part.Vertex):
+            self._pts = [Vector(v.Point) for v in pts]
+        else:
+            self._pts = [Vector(p) for p in pts]
 
     @property
     def Nb(self):
@@ -61,7 +124,9 @@ class PointList:
     @property
     def ShapePolygon(self):
         'Returns a polygon wire of the points'
-        return Part.makePolygon(self.Points)
+        if not self.has_duplicates():
+            return Part.makePolygon(self.Points)
+        return Part.Shape()
 
     # *** Closedness
 
@@ -82,103 +147,90 @@ class PointList:
 
     # *** Other methods
 
-    def debug_points(self):
-        '''
-        Returns an open list of 8 points around a circle
-        with alternating Z height.
-        For debugging.
-        '''
-        ci = Part.Circle(Vector(0, 0, 0), Vector(0, 0, 1), 10.0)
-        pts = ci.discretize(9)[:-1]
-        offsetZ = 1
-        for p in pts:
-            p.z += offsetZ
-            offsetZ = -offsetZ
-        return pts
+    def has_duplicates(self):
+        for i in range(1, self.Nb):
+            d = self.Points[i].distanceToPoint(self.Points[i - 1])
+            if d < self.Tolerance:
+                return True
+        return False
 
-    def compute_params(self, param_factor=1.0, param_range=[0.0, 1.0]):
+    def compute_params(self, param_factor=1.0):
         '''
         Computes a list of parameters from the points
         param_factor (float) : parameterization factor, usually between 0.0 and 1.0
             0.0 -> Uniform / 0.5 -> Centripetal / 1.0 -> Chord-Length
-        param_range : range of the computed params
-            if None, the raw computed values are returned
         Returns a list of floats
         '''
-        pl = [0]
+        pl = [0.0]
         for i in range(1, len(self.Points)):
             p = self.Points[i] - self.Points[i - 1]
             span = pow(p.Length, param_factor)
             pl.append(pl[-1] + span)
-        if param_range is not None:
-            p0, p1 = param_range
-            pl = [p0 + p1 * (p - pl[0]) / (pl[-1] - pl[0]) for p in pl]
-            pl[0], pl[-1] = p0, p1
         self.Parameters = pl
         return pl
 
-    def scipy_spline_to_freecad(self, spl):
-        'Returns a Part.BSplineCurve from a scipy BSpline object'
-        u, c, degree = spl.tck
-        poles = [Vector(*v) for v in c]
-        knots = [u[0]]
-        mults = [1]
-        for k in u[1:]:
-            if k == knots[-1]:
-                mults[-1] += 1
-            else:
-                knots.append(k)
-                mults.append(1)
-        bsp = Part.BSplineCurve()
-        bsp.buildFromPolesMultsKnots(poles, mults, knots, False, degree)
-        return bsp
 
-    def interpolate(self, param=1.0, periodic=False, degree=3):
+class PointListSample:
+    '''
+    Create various PointList objects for testing purpose
+    '''
+
+    def __init__(self):
+        return
+
+    def duplicate_points(self, nb=10):
         '''
-        Interpolate points using scipy
+        Create an list of nb duplicate points
         '''
-        interp_type = 'not-a-knot'
-        if periodic:
-            self.set_closed()
-            interp_type = 'periodic'
-        if isinstance(param, (list, tuple)):
-            self.Parameters = param
-        else:
-            self.compute_params(param)
-        nppts = np.empty((len(self.Points), 3))
-        for i, pt in enumerate(self.Points):
-            nppts[i] = [pt[0], pt[1], pt[2]]
-        spl = make_interp_spline(self.Parameters,
-                                 nppts,
-                                 k=min(degree, len(self.Points) - 1),
-                                 bc_type=interp_type)
-        fcbs = self.scipy_spline_to_freecad(spl)
-        if periodic:
-            fcbs.setPeriodic()
-        return fcbs
+        pts = [Vector()] * nb
+        return PointList(pts)
+
+    def oscillating_circle(self, nb=10):
+        '''
+        Returns an open list of nb points around a circle
+        with alternating Z height.
+        Useful to test periodic interpolation
+        '''
+        ci = Part.Circle(Vector(0, 0, 0), Vector(0, 0, 1), 1.0)
+        pts = ci.discretize(nb + 1)[:-1]
+        offsetZ = 1
+        for p in pts:
+            p.z += offsetZ
+            offsetZ = -offsetZ
+        return PointList(pts)
+
+    def square(self, nb=3):
+        '''
+        Returns an open list of 4 * nb points on a square
+        Useful to test Akima interpolation
+        '''
+        pts = []
+        vl = [[Vector(-1, -1, -1), Vector(-1, 1, -1)],
+              [Vector(-1, 1, 1), Vector(1, 1, 1)],
+              [Vector(1, 1, -1), Vector(1, -1, -1)],
+              [Vector(1, -1, 1), Vector(-1, -1, 1)]]
+        for p1, p2 in vl:
+            li = Part.makeLine(p1, p2)
+            pts.extend(li.discretize(nb + 2)[1:-1])
+        return PointList(pts)
 
 
 '''
-# Test script
-npts = 17
-radius = 10
+from importlib import reload
+from freecad.Curves.lib import point_list
+reload(point_list)
 
-# create interpolation points
-ci = Part.Circle(FreeCAD.Vector(0, 0, 0), FreeCAD.Vector(0, 0, 1), radius)
-pts = ci.discretize(npts)[:-1]
-offsetZ = 1
-for p in pts:
-    p.z += offsetZ
-    offsetZ = -offsetZ
+pls = point_list.PointListSample()
+pl1 = pls.duplicate_points(10)
+pl2 = pls.oscillating_circle(10)
+pl3 = pls.square(10)
+
+for pl in [pl1, pl2, pl3]:
+    print(pl)
+    Part.show(pl.ShapePoints, "Points")
+    Part.show(pl.ShapePolygon, "Polyline")
+    pars = pl.compute_params(1.0)
+    print(pars)
 
 
-ptsint = PointList(pts)
-ptsint.compute_params(1.0)
-
-bs = Part.BSplineCurve()
-bs.interpolate(Points=pts, Parameters=ptsint.Parameters)
-Part.show(bs.toShape(), "FC BSpline")
-
-bs = ptsint.interpolate(1.0, True, 3)
-Part.show(bs.toShape(), "periodic BSpline")
 '''

@@ -233,7 +233,7 @@ class SurfaceIdentifier:
         try:
             pt = pl.intersect(iso)[0][0]
         except IndexError:
-            self.logger.error(f"Intersection failed. Rotation aborted")
+            self.logger.error("Intersection failed. Rotation aborted")
             return surf
         pt3 = pt.toShape().Point
         v1 = pt2 - pt1
@@ -308,7 +308,7 @@ for o in sel:
     faces = []
     for i, face in enumerate(o.Shape.Faces):
         log.debug(f"--- Face{i + 1} ({face.Surface.TypeId})")
-        nf = canonical_face(face, 10, tol3d)
+        nf = canonical_face(face, 10, 1e-6)
         faces.append(nf)
     shell = Part.Shell(faces)
     shell.sewShape()

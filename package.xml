@@ -4,6 +4,7 @@
   <description>A collection of tools mainly dedicated to NURBS curves and surfaces modeling.</description>
   <version>0.6.72</version>
   <date>2026-06-08</date>
+  <author>Christophe Grellier</author>
   <maintainer email="cg@grellier.fr">Christophe Grellier</maintainer>
   <license file="LICENSE-CODE">LGPL-2.1-or-later</license>
   <license file="LICENSE-TIGL">Apache-2.0</license>

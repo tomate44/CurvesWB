@@ -15,7 +15,7 @@ def face_validate(face):
     if face.isValid():
         logger.debug("face validate success.")
     else:
-        logger.debug("face validate failed.")
+        logger.error("face validate failed.")
     return face
 
 
@@ -52,6 +52,7 @@ def change_surface(surface, face, tol=1e-7):
             except TypeError:
                 e = de
                 Part.show(e, "Curve Type Error")
+                logger.error("Curve Type Error")
             if e.isSeam(face):
                 seam_found = True
             elif e.Length > tol:

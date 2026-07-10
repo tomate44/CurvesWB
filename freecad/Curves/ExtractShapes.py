@@ -24,7 +24,7 @@ class extract:
                 gpl = o.Object.getGlobalPlacement()
                 sh.Placement = gpl
             for name in o.SubElementNames:
-                fullname = "{}_{}".format(o.ObjectName, name)
+                fullname = "{}_{}".format(o.Object.Label, name)
                 newobj = o.Document.addObject("Part::Feature", fullname)
                 newobj.Shape = sh.getElement(name)
             o.Object.ViewObject.Visibility = False

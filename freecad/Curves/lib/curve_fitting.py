@@ -18,15 +18,11 @@ from freecad.Curves.lib.logger import FCLogger
 
 class CurveFitting:
     '''
-    Various methods to fit a BSpline Curve on a list of points
+    Base Class to fit a BSpline Curve on a list of points
 
     Attributes:
-        Points: a list of consecutive FreeCAD.Vector
-        Tolerance: geometric tolerance
         ParamFactor: parametrization factor of the points
-        Periodic: periodicity of the fitting curve
-        Degree: degree of the fitting curve
-        Parameters: parameters of the interpolated points
+        Tolerance: geometric tolerance
     '''
 
     def __init__(self, param_factor=1.0, tol=tol3d):
@@ -40,24 +36,33 @@ class CurveFitting:
         self.log = FCLogger("Debug", "CurveFitting")
         self.ParamFactor = param_factor
         self.Tolerance = tol
-        self.perform = None
 
-    # Modes
-    def set_scipy_mode(self, degree=3, bc=None):
+    def fit_curve(self):
+        pass
+
+
+class ScipyInterpolation(CurveFitting):
+    '''
+    Fit a BSpline Curve on a list of points
+    using the scipy library
+
+    Attributes:
+        ParamFactor: parametrization factor of the points
+        Tolerance: geometric tolerance
+        Degree: the degree of the curve
+    '''
+
+    def __init__(self, param_factor=1.0, tol=tol3d, degree=3):
+        '''
+        Initialisation of the curve fitting algorithm.
+
+        Attributes:
+            param_factor: parametrization factor of the points
+            tol: geometric tolerance
+            degree: the degree of the curve
+        '''
+        super().__init__(param_factor, tol)
         self.Degree = degree
-        self.bc = bc
-        self.perform = self.interpolate_scipy
-
-    def set_makima_mode(self):
-        self.perform = self.interpolate_makima
-
-    def set_endtangents_mode(self, periodic=False):
-        self.periodic = periodic
-        self.perform = self.interpolate_with_end_tangents
-
-    def set_fulltangents_mode(self, periodic=False):
-        self.periodic = periodic
-        self.perform = self.interpolate_with_tangents
 
     def _scipy_spline_to_freecad(self, spl):
         'Returns a Part.BSplineCurve from a scipy BSpline object'
@@ -75,129 +80,268 @@ class CurveFitting:
         bsp.buildFromPolesMultsKnots(poles, mults, knots, False, degree)
         return bsp
 
-    def makima_tangents(self, points, params):
-        '''
-        Computes tangents of points using modified Akima method.
-        See: https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.Akima1DInterpolator.html
-        '''
-        def delta(i):
-            return (points[i + 1] - points[i]) / (params[i + 1] - params[i])
-
-        def delta_list():
-            deltas = [None] * (len(points) + 3)
-            for i in range(len(points) - 1):
-                deltas[i + 2] = delta(i)
-            deltas[1] = 2 * deltas[2] - deltas[3]
-            deltas[0] = 2 * deltas[1] - deltas[2]
-            deltas[-2] = 2 * deltas[-3] - deltas[-4]
-            deltas[-1] = 2 * deltas[-2] - deltas[-3]
-            return deltas
-
-        tans = [None] * len(points)
-        deltas = delta_list()
-        for i in range(len(points)):
-            j = i + 2
-            w1 = (deltas[j+1] - deltas[j]).Length
-            w2 = (deltas[j-1] - deltas[j-2]).Length
-            f1 = w1 / (w1 + w2)
-            f2 = w2 / (w1 + w2)
-            tan = f1 * deltas[j-1] + f2 * deltas[j]
-            tans[i] = tan
-        return tans
-
     @cls_timer
-    def interpolate_scipy(self, points, parameters):
+    def fit_curve(self, points, parameters=None, bc='not-a-knot'):
         '''
         Interpolate points using scipy
 
         Attributes:
+            points (list of vectors): the points to interpolate
+            parameters (list of floats, or None): Optional list of parameters
+            for the points. If None, parameters are computed using ParamFactor
+            bc (str): boundary condition (see scipy doc)
+
+        Returns:
+            Part.BSplineCurve
+        '''
+        if not SCIPY_AVAILABLE:
+            self.log.error("scipy and numpy python packages are missing.")
+            return
+        ptsl = PointList(points)
+        if isinstance(parameters, (list, tuple)):
+            params = parameters
+        else:
+            params = ptsl.compute_params(self.ParamFactor)
+        nppts = np.empty((ptsl.Nb, 3))
+        for i, pt in enumerate(ptsl.Points):
+            nppts[i] = [pt[0], pt[1], pt[2]]
+        spl = make_interp_spline(params,
+                                 nppts,
+                                 k=self.Degree,
+                                 bc_type=bc)
+        fcbs = self._scipy_spline_to_freecad(spl)
+        return fcbs
+
+
+class PeriodicInterpolation(ScipyInterpolation):
+    '''
+    Fit a periodic BSpline Curve on a list of points
+    using the scipy library
+
+    Attributes:
+        ParamFactor: parametrization factor of the points
+        Tolerance: geometric tolerance
+        Degree: the degree of the curve
+    '''
+
+    def __init__(self, param_factor=1.0, tol=tol3d, degree=3):
+        '''
+        Initialisation of the curve fitting algorithm.
+
+        Attributes:
+            param_factor: parametrization factor of the points
+            tol: geometric tolerance
+            degree: the degree of the curve
+        '''
+        super().__init__(param_factor, tol, degree)
+
+    def fit_curve(self, points, parameters=None):
+        '''
+        Periodic interpolate points using scipy
+
+        Attributes:
+            points (list of vectors): the points to interpolate
             parameters (list of floats, or None): Optional list of parameters
             for the points. If None, parameters are computed using ParamFactor
 
         Returns:
             Part.BSplineCurve
         '''
-        if not SCIPY_AVAILABLE:
-            self.log.error("Function unavailable. Requires scipy and numpy python packages.")
-            return
-        if self.bc is None:
-            interp_type = 'not-a-knot'
-        else:
-            interp_type = self.bc
-        if self.Periodic:
-            self._ptsl.set_closed()
-            interp_type = 'periodic'
-        if isinstance(parameters, (list, tuple)):
-            self.Parameters = parameters
-        else:
-            self.Parameters = self._ptsl.compute_params(self.ParamFactor)
-        nppts = np.empty((self._ptsl.Nb, 3))
-        for i, pt in enumerate(self.Points):
-            nppts[i] = [pt[0], pt[1], pt[2]]
-        spl = make_interp_spline(self.Parameters,
-                                 nppts,
-                                 k=self.Degree,
-                                 bc_type=interp_type)
-        fcbs = self._scipy_spline_to_freecad(spl)
-        if self.Periodic:
-            fcbs.setPeriodic()
+        ptsl = PointList(points)
+        ptsl.set_closed()
+        fcbs = super().fit_curve(ptsl, parameters, 'periodic')
+        # if isinstance(parameters, (list, tuple)):
+        #     params = parameters
+        # else:
+        #     params = ptsl.compute_params(self.ParamFactor)
+        # nppts = np.empty((self._ptsl.Nb, 3))
+        # for i, pt in enumerate(self.Points):
+        #     nppts[i] = [pt[0], pt[1], pt[2]]
+        # spl = make_interp_spline(params,
+        #                          nppts,
+        #                          k=self.Degree,
+        #                          bc_type='periodic')
+        # fcbs = self._scipy_spline_to_freecad(spl)
+        fcbs.setPeriodic()
         return fcbs
 
-    @cls_timer
-    def interpolate_with_end_tangents(self, points, parameters, start_tangent, end_tangent):
-        '''
-        Interpolate points with tangent specified at first and last points
 
-        Arguments:
-            start_tangent (FreeCAD.Vector): Tangent vector of the first point
-            end_tangent (FreeCAD.Vector): Tangent vector of the last point
 
-        Returns:
-            Part.BSplineCurve
-        '''
-        self.Parameters = self._ptsl.compute_params(self.ParamFactor)
-        bsp = Part.BSplineCurve()
-        bsp.interpolate(Points=self.Points,
-                        PeriodicFlag=self.Periodic,
-                        Tolerance=self.Tolerance,
-                        Parameters=self.Parameters,
-                        InitialTangent=start_tangent,
-                        FinalTangent=end_tangent)
-        return bsp
 
-    @cls_timer
-    def interpolate_with_tangents(self, tangents, flags):
-        '''
-        Interpolate points with tangent specified at each point
+'''
+from importlib import reload
+from freecad.Curves.lib import curve_fitting
+reload(curve_fitting)
 
-        Arguments:
-            tangents (list of FreeCAD.Vector): Tangent vector of each point
-            flags (list of bool): activation flags of each tangent vector
+pts = curve_fitting.TestPoints.oscillating_circle(9)
+cf = curve_fitting.PeriodicInterpolation(1.0, 1e-7, 3)
+bs = cf.fit_curve(pts)
+Part.show(bs.toShape())
 
-        Returns:
-            Part.BSplineCurve with max C1 continuity
-        '''
-        if self.Periodic:
-            self._ptsl.set_closed()
-        self.Parameters = self._ptsl.compute_params(self.ParamFactor)
-        if self.Periodic:
-            self._ptsl.set_open()
-        bsp = Part.BSplineCurve()
-        bsp.interpolate(Points=self.Points,
-                        PeriodicFlag=self.Periodic,
-                        Tolerance=self.Tolerance,
-                        Parameters=self.Parameters,
-                        Tangents=tangents,
-                        TangentFlags=flags)
-        return bsp
+pts = curve_fitting.TestPoints.square(5)
+cf = curve_fitting.ScipyInterpolation(1.0, 1e-7, 3)
+bs = cf.fit_curve(pts)
+Part.show(bs.toShape())
 
-    @cls_timer
-    def interpolate_makima(self):
-        params = self._ptsl.compute_params(self.ParamFactor)
-        tans = self.makima_tangents(params)
-        flags = [True] * len(tans)
-        bs = self.interpolate_with_tangents(tans, flags)
-        return bs
+'''
+
+
+# # Modes
+# def set_scipy_mode(self, degree=3, bc=None):
+#     self.Degree = degree
+#     self.bc = bc
+#     self.perform = self.interpolate_scipy
+#
+# def set_makima_mode(self):
+#     self.perform = self.interpolate_makima
+#
+# def set_endtangents_mode(self, periodic=False):
+#     self.periodic = periodic
+#     self.perform = self.interpolate_with_end_tangents
+#
+# def set_fulltangents_mode(self, periodic=False):
+#     self.periodic = periodic
+#     self.perform = self.interpolate_with_tangents
+#
+# def _scipy_spline_to_freecad(self, spl):
+#     'Returns a Part.BSplineCurve from a scipy BSpline object'
+#     u, c, degree = spl.tck
+#     poles = [FreeCAD.Vector(*v) for v in c]
+#     knots = [u[0]]
+#     mults = [1]
+#     for k in u[1:]:
+#         if k == knots[-1]:
+#             mults[-1] += 1
+#         else:
+#             knots.append(k)
+#             mults.append(1)
+#     bsp = Part.BSplineCurve()
+#     bsp.buildFromPolesMultsKnots(poles, mults, knots, False, degree)
+#     return bsp
+#
+# def makima_tangents(self, points, params):
+#     '''
+#     Computes tangents of points using modified Akima method.
+#     See: https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.Akima1DInterpolator.html
+#     '''
+#     def delta(i):
+#         return (points[i + 1] - points[i]) / (params[i + 1] - params[i])
+#
+#     def delta_list():
+#         deltas = [None] * (len(points) + 3)
+#         for i in range(len(points) - 1):
+#             deltas[i + 2] = delta(i)
+#         deltas[1] = 2 * deltas[2] - deltas[3]
+#         deltas[0] = 2 * deltas[1] - deltas[2]
+#         deltas[-2] = 2 * deltas[-3] - deltas[-4]
+#         deltas[-1] = 2 * deltas[-2] - deltas[-3]
+#         return deltas
+#
+#     tans = [None] * len(points)
+#     deltas = delta_list()
+#     for i in range(len(points)):
+#         j = i + 2
+#         w1 = (deltas[j+1] - deltas[j]).Length
+#         w2 = (deltas[j-1] - deltas[j-2]).Length
+#         f1 = w1 / (w1 + w2)
+#         f2 = w2 / (w1 + w2)
+#         tan = f1 * deltas[j-1] + f2 * deltas[j]
+#         tans[i] = tan
+#     return tans
+#
+# @cls_timer
+# def interpolate_scipy(self, points, parameters):
+#     '''
+#     Interpolate points using scipy
+#
+#     Attributes:
+#         parameters (list of floats, or None): Optional list of parameters
+#         for the points. If None, parameters are computed using ParamFactor
+#
+#     Returns:
+#         Part.BSplineCurve
+#     '''
+#     if not SCIPY_AVAILABLE:
+#         self.log.error("Function unavailable. Requires scipy and numpy python packages.")
+#         return
+#     if self.bc is None:
+#         interp_type = 'not-a-knot'
+#     else:
+#         interp_type = self.bc
+#     if self.Periodic:
+#         self._ptsl.set_closed()
+#         interp_type = 'periodic'
+#     if isinstance(parameters, (list, tuple)):
+#         self.Parameters = parameters
+#     else:
+#         self.Parameters = self._ptsl.compute_params(self.ParamFactor)
+#     nppts = np.empty((self._ptsl.Nb, 3))
+#     for i, pt in enumerate(self.Points):
+#         nppts[i] = [pt[0], pt[1], pt[2]]
+#     spl = make_interp_spline(self.Parameters,
+#                              nppts,
+#                              k=self.Degree,
+#                              bc_type=interp_type)
+#     fcbs = self._scipy_spline_to_freecad(spl)
+#     if self.Periodic:
+#         fcbs.setPeriodic()
+#     return fcbs
+#
+# @cls_timer
+# def interpolate_with_end_tangents(self, points, parameters, start_tangent, end_tangent):
+#     '''
+#     Interpolate points with tangent specified at first and last points
+#
+#     Arguments:
+#         start_tangent (FreeCAD.Vector): Tangent vector of the first point
+#         end_tangent (FreeCAD.Vector): Tangent vector of the last point
+#
+#     Returns:
+#         Part.BSplineCurve
+#     '''
+#     self.Parameters = self._ptsl.compute_params(self.ParamFactor)
+#     bsp = Part.BSplineCurve()
+#     bsp.interpolate(Points=self.Points,
+#                     PeriodicFlag=self.Periodic,
+#                     Tolerance=self.Tolerance,
+#                     Parameters=self.Parameters,
+#                     InitialTangent=start_tangent,
+#                     FinalTangent=end_tangent)
+#     return bsp
+#
+# @cls_timer
+# def interpolate_with_tangents(self, tangents, flags):
+#     '''
+#     Interpolate points with tangent specified at each point
+#
+#     Arguments:
+#         tangents (list of FreeCAD.Vector): Tangent vector of each point
+#         flags (list of bool): activation flags of each tangent vector
+#
+#     Returns:
+#         Part.BSplineCurve with max C1 continuity
+#     '''
+#     if self.Periodic:
+#         self._ptsl.set_closed()
+#     self.Parameters = self._ptsl.compute_params(self.ParamFactor)
+#     if self.Periodic:
+#         self._ptsl.set_open()
+#     bsp = Part.BSplineCurve()
+#     bsp.interpolate(Points=self.Points,
+#                     PeriodicFlag=self.Periodic,
+#                     Tolerance=self.Tolerance,
+#                     Parameters=self.Parameters,
+#                     Tangents=tangents,
+#                     TangentFlags=flags)
+#     return bsp
+#
+# @cls_timer
+# def interpolate_makima(self):
+#     params = self._ptsl.compute_params(self.ParamFactor)
+#     tans = self.makima_tangents(params)
+#     flags = [True] * len(tans)
+#     bs = self.interpolate_with_tangents(tans, flags)
+#     return bs
 
 
 '''

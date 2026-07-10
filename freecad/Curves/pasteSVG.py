@@ -8,7 +8,12 @@ __usage__ = """When working in parallel with FreeCAD and a SVG editor (Inkscape)
 copy (CTRL-C) an object in the SVG editor, switch to FreeCAD and activate tool.
 This will import the SVG content of the clipboard into the active FreeCAD document."""
 
-import xml.sax
+try:
+    # If this system provides a secure parser, use that:
+    import defusedxml.sax as sax
+except ImportError:
+    # Otherwise fall back to the Python standard parser
+    import xml.sax as sax
 import importSVG
 import os
 import FreeCAD
@@ -30,17 +35,14 @@ class pasteSVG:
             if not doc:
                 doc = FreeCAD.newDocument("SvgImport")
             h.doc = doc
-            xml.sax.parseString(t, h)
+            sax.parseString(bytes(t, "UTF8"), h)
             doc.recompute()
             FreeCADGui.SendMsgToActiveView("ViewFit")
         else:
-            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
+            FreeCAD.Console.PrintError("Clipboard content is not an SVG string")
 
     def IsActive(self):
-        cb = QtGui.QApplication.clipboard()
-        cb_content = cb.text()
-        if cb_content[0:5] == '<?xml':
-            return True
+        return True
 
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
