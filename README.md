@@ -1,7 +1,7 @@
 ## FreeCAD Curves and Surfaces WorkBench 
 ![Curves Workbench](https://github.com/tomate44/CurvesWB/raw/main/docs/pics/CurvesWB.jpg)
 
-This is a python workbench for [FreeCAD](https://www.freecad.org), with a collection of tools, mainly for NURBS curves and surfaces.  
+This is a python workbench for [FreeCAD](https://www.freecad.org) and [xwzCAD](https://www.codeberg.org/xwzCAD), with a collection of tools, mainly for NURBS curves and surfaces.  
 This workbench is developed for FreeCAD main develoment branch.
 
 ## Important Notes  
@@ -33,15 +33,15 @@ For FreeCAD version 0.17 or higher it's preferred to install this workbench with
 The Curves workbench documentation can be found on the [FreeCAD wiki](https://wiki.freecad.org/Curves_Workbench).
 
 ## Feedback  
-The main and recommended channel for discussion, feedback, suggestions, and patches is the following discussion of FreeCAD's forum : [Curves workbench](https://forum.freecad.org/viewtopic.php?f=8&t=22675)
+The main and recommended channel for discussion, feedback, suggestions, and patches is the following subforum of FreeCAD's forum : [Curves workbench](https://forum.freecad.org/viewforum.php?f=67)
 
 ## Contributing
 #### Reporting issues
-Issues should first be reported in the [FreeCAD forum discussion](https://forum.freecad.org/viewtopic.php?f=8&t=22675). A minimal FreeCAD file demonstrating the bug should be attached.  
+Issues should first be reported in the [FreeCAD forum](https://forum.freecad.org/viewforum.php?f=67). A minimal FreeCAD file demonstrating the bug should be attached.  
 Issues reported in Github may be unnoticed. A minimal FreeCAD file demonstrating the bug should be attached to the issue report, with *.FCStd extension renamed to *.zip
 
 #### Contributing code
-Code contribution is NOT encouraged and should first be discussed in [FreeCAD forum discussion](https://forum.freecad.org/viewtopic.php?f=8&t=22675).
+Code contribution is NOT encouraged and should first be discussed in [FreeCAD forum](https://forum.freecad.org/viewforum.php?f=67).
 
 #### Contributing documentation
 The workbench documention is not extensive.  
