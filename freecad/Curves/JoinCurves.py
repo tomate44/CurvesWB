@@ -84,6 +84,7 @@ class join:
         ''' Add the properties '''
         obj.addProperty("App::PropertyLinkSubList", "Edges", "InputSources", "List of edges to join")
         obj.addProperty("App::PropertyLink", "Base", "InputSources", "Join all the edges of this base object")
+        obj.addProperty("App::PropertyBool", "ClaimChildren", "InputSources", "Should Base be claimed as a Child?").ClaimChildren=True
         obj.addProperty("App::PropertyFloat", "Tolerance", "Join", "Tolerance").Tolerance = 0.01
         obj.addProperty("App::PropertyBool", "CornerBreak", "Join", "Break on sharp corners").CornerBreak = False
         obj.addProperty("App::PropertyBool", "ForceContact", "Join", "Force connection of edges").ForceContact = True
@@ -197,6 +198,7 @@ class join:
 class joinVP:
     def __init__(self, vobj):
         vobj.Proxy = self
+        self.fp = vobj.Object
 
     def getIcon(self):
         return (TOOL_ICON)
@@ -217,7 +219,10 @@ class joinVP:
         def __setstate__(self, state):
             self.loads(state)
 
-    # def claimChildren(self):
+    def claimChildren(self):
+        if hasattr(self, 'fp'):
+            if self.fp.Base and self.fp.ClaimChildren:
+                return [ self.fp.Base ] 
         # return None #[self.Object.Base, self.Object.Tool]
 
 
