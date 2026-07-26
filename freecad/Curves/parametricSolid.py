@@ -14,11 +14,9 @@ import os
 import FreeCAD
 import FreeCADGui
 import Part
-import tempfile
 
 from PySide import QtGui
 
-from freecad.Curves import _utils
 from freecad.Curves import ICONPATH
 
 TOOL_ICON = os.path.join(ICONPATH, 'solid.svg')
@@ -27,7 +25,7 @@ TOOL_ICON = os.path.join(ICONPATH, 'solid.svg')
 def get_svg(shape_type):
     colors = {"": "ffffff",
               "Compound": "ff0000",
-              "Shell": "ff7b00",
+              "Shell": "ffff00",
               "Solid": "00ff00"}
     return '''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
@@ -57,6 +55,7 @@ def get_svg(shape_type):
 
 class solid:
     """Make a parametric solid from selected faces"""
+
     def __init__(self, obj):
         obj.addProperty("App::PropertyLinkSubList",
                         "Faces",
@@ -84,7 +83,7 @@ class solid:
                 open_edges.append(e)
         if open_edges:
             return Part.Compound(open_edges)
-        FreeCAD.Console.PrintWarning(f"Parametric Solid : No open edge found")
+        FreeCAD.Console.PrintWarning("Parametric Solid : No open edge found")
         return Part.Shape()
 
     def execute(self, obj):
@@ -102,6 +101,7 @@ class solid:
         shape = Part.Compound(faces)
         try:
             shell = Part.Shell(shape.Faces)
+            shell.sewShape()
             if shell.isValid():
                 shape = shell
         except Part.OCCError:
@@ -168,6 +168,7 @@ class solidVP:
 
 class solidCommand:
     """Make a parametric solid from selected faces"""
+
     def makeSolidFeature(self, source):
         solidFP = FreeCAD.ActiveDocument.addObject("Part::FeaturePython",
                                                    "Solid")

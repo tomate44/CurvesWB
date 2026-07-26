@@ -1,9 +1,12 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
-__title__ = 'Title'
+__title__ = 'Surface Analysis'
 __author__ = 'Christophe Grellier (Chris_G)'
 __license__ = 'LGPL 2.1'
-__doc__ = 'Doc'
+__doc__ = '''Inspect surface continuity with color stripes.\n
+          Experimental GLSL shader version of the Zebra tool.\n
+          All properties are in the View tab.
+          '''
 
 # import os
 import FreeCAD
@@ -19,58 +22,7 @@ TOOL_ICON = path.join(ICONPATH, 'zebra.svg')
 # debug = _utils.doNothing
 
 
-props = """
-App::PropertyBool
-App::PropertyBoolList
-App::PropertyFloat
-App::PropertyFloatList
-App::PropertyFloatConstraint
-App::PropertyQuantity
-App::PropertyQuantityConstraint
-App::PropertyAngle
-App::PropertyDistance
-App::PropertyLength
-App::PropertySpeed
-App::PropertyAcceleration
-App::PropertyForce
-App::PropertyPressure
-App::PropertyInteger
-App::PropertyIntegerConstraint
-App::PropertyPercent
-App::PropertyEnumeration
-App::PropertyIntegerList
-App::PropertyIntegerSet
-App::PropertyMap
-App::PropertyString
-App::PropertyUUID
-App::PropertyFont
-App::PropertyStringList
-App::PropertyLink
-App::PropertyLinkSub
-App::PropertyLinkList
-App::PropertyLinkSubList
-App::PropertyMatrix
-App::PropertyVector
-App::PropertyVectorList
-App::PropertyPlacement
-App::PropertyPlacementLink
-App::PropertyColor
-App::PropertyColorList
-App::PropertyMaterial
-App::PropertyPath
-App::PropertyFile
-App::PropertyFileIncluded
-App::PropertyPythonObject
-Part::PropertyPartShape
-Part::PropertyGeometryList
-Part::PropertyShapeHistory
-Part::PropertyFilletEdges
-Sketcher::PropertyConstraintList
-"""
-
-
 class SurfaceAnalysisProxyFP:
-    """Creates a ..."""
     def __init__(self, obj):
         """Add the properties"""
         obj.addProperty("App::PropertyLinkList", "Sources",

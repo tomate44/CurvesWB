@@ -224,7 +224,7 @@ class s2rCommand:
     def GetResources(self):
         return {'Pixmap': TOOL_ICON,
                 'MenuText': 'Sweep2Rails',
-                'ToolTip': 'Sweep profiles on 2 rails'}
+                'ToolTip': 'Sweep profiles on 2 rails\nDEPRECATED : Use Gordon surface.'}
 
 
 FreeCADGui.addCommand('sw2r', s2rCommand())

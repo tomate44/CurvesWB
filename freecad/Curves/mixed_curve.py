@@ -127,9 +127,12 @@ class MixedCurveFP:
             mixed = obj.ExtensionProxy.approximate(obj, cc.shape())
         else:
             mixed = cc.shape()
+        if isinstance(mixed, Part.Edge):
+            mixed = Part.Wire([mixed])
         if not mixed.Wires:
             err(f"Mixed Curve '{obj.Label}' :\n- Unable to find intersection.\n- Set Direction properties explicitely.\n")
             obj.Shape = Part.Shape()
+            raise RuntimeError("Unable to find intersection.")
             return
         if not hasattr(obj, "FillFace1"):
             obj.Shape = mixed
@@ -194,6 +197,7 @@ class MixedCurveCmd:
         cc.Active = False
         MixedCurveVP(cc.ViewObject)
         FreeCAD.ActiveDocument.recompute()
+        cc.ExtensionProxy.setTolerance(cc)
 
     def Activated(self):
         vd = [FreeCAD.Vector(0, 0, 0), FreeCAD.Vector(0, 0, 0)]

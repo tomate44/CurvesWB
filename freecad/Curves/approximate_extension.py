@@ -5,9 +5,6 @@ __author__ = "Christophe Grellier (Chris_G)"
 __license__ = "LGPL 2.1"
 __doc__ = "Approximate extension for other FeaturePython objects."
 
-import os
-import FreeCAD
-import FreeCADGui
 import Part
 from freecad.Curves import _utils
 from FreeCAD import Base
@@ -64,10 +61,12 @@ class ApproximateExtension:
         self.setTolerance(obj)
         obj.Active = False
 
-    def setTolerance(self, obj):
-        obj.ApproxTolerance = 1e-3
+    def setTolerance(self, obj, reltol=1e-4):
+        obj.ApproxTolerance = reltol
         if not obj.Shape.isNull():
-            obj.ApproxTolerance *= obj.Shape.BoundBox.DiagonalLength
+            abstol = obj.Shape.BoundBox.DiagonalLength * reltol
+            # obj.setExpression("ApproxTolerance", f"{abstol:.1E}")
+            obj.ApproxTolerance = abstol
 
     def approximate(self, obj, input_shape):
         if not obj.Active:

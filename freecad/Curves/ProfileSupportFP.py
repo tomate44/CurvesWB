@@ -3,7 +3,8 @@
 __title__ = 'Profile Support'
 __author__ = 'Christophe Grellier (Chris_G)'
 __license__ = 'LGPL 2.1'
-__doc__ = 'Creates a support shape between two rails'
+__doc__ = '''Creates a support shape between two rails\n
+             DEPRECATED : Sketcher now has intersection geometry'''
 
 import os
 import FreeCAD
@@ -17,58 +18,9 @@ TOOL_ICON = os.path.join(ICONPATH, 'profile_support.svg')
 # debug = _utils.debug
 # debug = _utils.doNothing
 
-props = """
-App::PropertyBool
-App::PropertyBoolList
-App::PropertyFloat
-App::PropertyFloatList
-App::PropertyFloatConstraint
-App::PropertyQuantity
-App::PropertyQuantityConstraint
-App::PropertyAngle
-App::PropertyDistance
-App::PropertyLength
-App::PropertySpeed
-App::PropertyAcceleration
-App::PropertyForce
-App::PropertyPressure
-App::PropertyInteger
-App::PropertyIntegerConstraint
-App::PropertyPercent
-App::PropertyEnumeration
-App::PropertyIntegerList
-App::PropertyIntegerSet
-App::PropertyMap
-App::PropertyString
-App::PropertyUUID
-App::PropertyFont
-App::PropertyStringList
-App::PropertyLink
-App::PropertyLinkSub
-App::PropertyLinkList
-App::PropertyLinkSubList
-App::PropertyMatrix
-App::PropertyVector
-App::PropertyVectorList
-App::PropertyPlacement
-App::PropertyPlacementLink
-App::PropertyColor
-App::PropertyColorList
-App::PropertyMaterial
-App::PropertyPath
-App::PropertyFile
-App::PropertyFileIncluded
-App::PropertyPythonObject
-Part::PropertyPartShape
-Part::PropertyGeometryList
-Part::PropertyShapeHistory
-Part::PropertyFilletEdges
-Sketcher::PropertyConstraintList
-"""
-
 
 class ProfileSupportFP:
-    """Creates a ..."""
+
     def __init__(self, obj, rail1, rail2, prof=None):
         """Add the properties"""
         obj.addProperty("App::PropertyLink", "Rail1",
