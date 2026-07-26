@@ -197,7 +197,9 @@ class sketchOnSurface:
         bs = BoundarySorter(wl, face.Surface, True)
         for i, wirelist in enumerate(bs.sort()):
             # print(wirelist)
-            f = validated_face(wirelist[0], face.Surface) #should valid or null...
+            f = validated_face(wirelist[0], face.Surface)  # should valid or null...
+            if f.isNull():
+                continue
             try:
                 f.check()
             except Exception as e:
@@ -217,7 +219,8 @@ class sketchOnSurface:
             # f.check(True)
             # print_tolerance(f)
             if not f.isValid():
-                error("{:3}:Invalid final face".format(i))
+                error("{:3}:Invalid final face. Ignoring.".format(i))
+                continue
             faces.append(f)
         return faces
 
@@ -295,6 +298,15 @@ class sketchOnSurface:
             if cons and not obj.ConstructionBounds:
                 continue
             skedges.append(obj.Sketch.Geometry[i].toShape())
+        if len(skedges) == 0:
+            error("No construction geometry in Mapped_Sketch\nFallback to normal geometry.")
+            skedges = obj.Sketch.Shape.Edges
+        if len(skedges) == 0:
+            error("Mapped_Sketch is empty\n")
+            skedges = [o.Shape for o in obj.ExtraObjects]
+        if len(skedges) == 0:
+            obj.Shape = Part.Shape()
+            raise ValueError("No geometry to map")
         comp = Part.Compound(skedges)
 
         bb = comp.BoundBox
@@ -305,7 +317,10 @@ class sketchOnSurface:
                 supp = obj.Sketch.Support
             if hasattr(obj.Sketch, "AttachmentSupport"):
                 supp = obj.Sketch.AttachmentSupport
-            n = int(supp[0][1][0].lstrip('Face'))
+            if '?Face' in supp[0][1][0]:
+                n = int(supp[0][1][0].lstrip('?Face'))
+            else:
+                n = int(supp[0][1][0].lstrip('Face'))
             face = supp[0][0].Shape.Faces[n - 1]
             # face.Placement = obj.Sketch.Support[0][0].getGlobalPlacement()
         except (IndexError, AttributeError, SyntaxError) as e:
