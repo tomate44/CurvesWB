@@ -12,6 +12,7 @@ class CurvesWorkbench(Gui.Workbench):
     ToolTip = "a workbench dedicated to curves and surfaces"
     Icon = os.path.join(ICONPATH, "blendSurf.svg")
     toolbox = []
+    isObserving = False
 
     def Initialize(self):
         """This function is executed when FreeCAD starts"""
