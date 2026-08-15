@@ -456,6 +456,7 @@ class GeomInfo:
             self.stack = []
             # install the function in resident mode
             FreeCADGui.Selection.addObserver(self)
+            FreeCADGui.addDocumentObserver(self)
             self.active = True
             self.hud = HUDNode()
             self.addHUD()
@@ -468,6 +469,7 @@ class GeomInfo:
             self.removeHUD()
             self.Active = False
             FreeCADGui.Selection.removeObserver(self)
+            FreeCADGui.removeDocumentObserver(self)
 
     def addHUD(self):
         try:
@@ -482,8 +484,9 @@ class GeomInfo:
             self.activeDoc = None
 
     def removeHUD(self):
+        debug("removeHUD: {}".format(str(self.sup)))
         try:
-            if self.viewer:
+            if str(self.activeDoc) and self.sup:
                 self.render.removeSuperimposition(self.sup)
                 self.removeGrid()
                 self.sg.touch()
@@ -499,6 +502,13 @@ class GeomInfo:
         if self.node:
             self.root.addChild(self.node)
             self.viz = True
+
+# ------ Document Observer ---------
+
+    def slotDeletedDocument(self, doc):
+        if doc == self.activeDoc:
+            self.activeDoc = None
+            self.sup = None
 
 # ------ Selection Observer --------
 
