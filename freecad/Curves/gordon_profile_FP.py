@@ -222,8 +222,11 @@ class GordonProfileVP:
                 if t == 0:
                     pts.append(profile_editor.MarkerOnShape([p]))
                 elif t == 1:
-                    pts.append(profile_editor.MarkerOnShape([p], sl[shape_idx]))
-                    shape_idx += 1
+                    if shape_idx < len(sl):
+                        pts.append(profile_editor.MarkerOnShape([p], sl[shape_idx]))
+                        shape_idx += 1
+                    else:
+                        pts.append(profile_editor.MarkerOnShape([p]))
             for i in range(len(pts)):  # p,t,f in zip(pts, self.Object.Tangents, self.Object.Flags):
                 if i < min(len(self.Object.Flags), len(self.Object.Tangents)):
                     if self.Object.Flags[i]:
