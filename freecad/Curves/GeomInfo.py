@@ -197,6 +197,10 @@ def bsplinesurfNode(surf):
     try:
         uknots = surf.getUKnots()
         vknots = surf.getVKnots()
+        umults = surf.getUMultiplicities()
+        vmults = surf.getVMultiplicities()
+        umults[-1] = 1
+        vmults[-1] = 1
         bspline = True
     except AttributeError:
         bspline = False
@@ -209,16 +213,16 @@ def bsplinesurfNode(surf):
     flatW = to1D(weights)
     weightStr = format_weights(flatW)
 
-    polyRowSep = coinNodes.rowNode((0.5, 0, 0), 1)
+    polyRowSep = coinNodes.rowNode((0.3, 0, 0), 1)
     polyRowSep.vertices = (nbU, nbV)
-    polyRowSep.color = [(0.5, 0.0, 0.0)] * len(flatPoles)
-    polyColSep = coinNodes.colNode((0, 0, 0.5), 1)
+    polyRowSep.color = [(0.3, 0.0, 0.0)] * len(flatPoles)
+    polyColSep = coinNodes.colNode((0, 0.3, 0), 1)
     polyColSep.vertices = (nbU, nbV)
-    polyColSep.color = [(0.0, 0.0, 0.5)] * len(flatPoles)
+    polyColSep.color = [(0.0, 0.3, 0.0)] * len(flatPoles)
 
     # *** Set markers ***
     markerSep = coinNodes.markerSetNode((1, 0, 0), coin.SoMarkerSet.DIAMOND_FILLED_9_9)
-    markerSep.color = [(1, 0, 0)] + [(0.5, 0.0, 0.5)] * (len(flatPoles) - 1)
+    markerSep.color = [(1, 0, 0)] + [(0.0, 0.0, 0.2)] * (len(flatPoles) - 1)
 
     u0, u1, v0, v1 = surf.bounds()
     halfU = u0 + (u1 - u0) / 2
@@ -252,29 +256,35 @@ def bsplinesurfNode(surf):
         vizSep.addChild(weightSep)
 
     if bspline:
-        color = (1.0, 0.5, 0.3)
-        for k in uknots:
+        # color = (0.0, 1.0, 0.0)
+        for i, k in enumerate(uknots):
+            mult = umults[i]
+            r = mult / (surf.UDegree + 1)
+            color = (0.0, r, 0.0)
             try:
                 uIso = surf.uIso(k)
                 if uIso.length() > TOL3D:
                     ush = uIso.toShape()
-                    uiso_node = edge_node(ush, color, 3)
+                    uiso_node = edge_node(ush, color, mult)
                     vizSep.addChild(uiso_node)
                     # nb_curves += 1
-                    color = (0.7, 0.0, 0.3)
+                    # color = (0.0, 1 - r, r)
             except Exception as exc:
                 debug(f"Error computing surface U Iso\n{exc}")
 
-        color = (0.8, 0.8, 0.0)
-        for k in vknots:
+        # color = (1.0, 0.0, 0.0)
+        for i, k in enumerate(vknots):
+            mult = vmults[i]
+            r = mult / (surf.VDegree + 1)
+            color = (r, 0.0, 0.0)
             try:
                 vIso = surf.vIso(k)
                 if vIso.length() > TOL3D:
                     vsh = vIso.toShape()
-                    viso_node = edge_node(vsh, color, 3)
+                    viso_node = edge_node(vsh, color, mult)
                     vizSep.addChild(viso_node)
                     # nb_curves += 1
-                    color = (0.3, 0.0, 0.7)
+                    # color = (1 - r, 0.0, r)
             except Exception as exc:
                 debug(f"Error computing surface V Iso\n{exc}")
 

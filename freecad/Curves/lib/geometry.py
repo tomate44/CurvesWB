@@ -4,6 +4,28 @@ import Part
 from freecad.Curves.lib.precision import tol3d
 
 
+def same_direction(c1, c2):
+    """
+    Check if the two curves THAT ARE VISUALLY IDENTICAL have the same direction
+    Used to join surfaces
+    """
+    fp = c1.FirstParameter
+    lp = c1.LastParameter
+    if fp < -1e50 and lp > 1e50:  # infinite curves
+        fp = -1e3
+        lp = 1e3
+    pr = lp - fp
+    ftp = fp + 0.1 * pr
+    ltp = fp + 0.9 * pr
+    pt1 = c1.value(ftp)
+    pt2 = c1.value(ltp)
+    par1 = c2.parameter(pt1)
+    par2 = c2.parameter(pt2)
+    if par1 > par2:
+        return False
+    return True
+
+
 def round_vector(vector, tol=tol3d):
     "Round vector to one of the main XYZ axis, if possible"
     length = vector.Length
