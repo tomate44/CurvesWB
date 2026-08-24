@@ -112,7 +112,7 @@ def orientU_surf(s, cidx, end=False):
     return s
 
 
-def surface_boundaries(surf: Part.Surface):
+def surface_boundaries(surf: Part.BSplineSurface):
     """
     Return a list of four boundary curves of a surface:
     [uIso(u0), uIso(u1), vIso(v0), vIso(v1)]
@@ -143,7 +143,7 @@ def match_orientation(s1: Part.BSplineSurface,
             try:
                 pts = c2.discretize(num_samples)
             except Part.OCCError:
-                # print("Degenerated edge. Ignoring.")
+                # print("Degenerated edge. Ignoring.")
                 continue
             dl = [Part.Vertex(p).distToShape(e1)[0] for p in pts]
             dsum = sum(dl)
