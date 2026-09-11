@@ -5,6 +5,8 @@ import FreeCAD
 from .version import __version__
 
 ICONPATH = os.path.join(os.path.dirname(__file__), "resources", "icons")
+WB_NAME = "Curves"
+WB_WIKI_URL = "https://wiki.freecad.org/Curves_Workbench"
 
 TOL3D = 1e-7
 TOL2D = 1e-9

@@ -10,46 +10,109 @@ from freecad.Curves.lib.geometry import same_direction
 from freecad.Curves.lib.precision import tol3d
 
 
+# class BSplineFacade:
+#     def __init__(self, surf, direction):
+#         self.surf = surf
+#         self.direction = direction
+#
+#     def __getattr__(self, attr):
+#         pass
+
+
 def get_continuities(surf: Part.BSplineSurface) -> tuple[int, int]:
     "Returns the continuities (as integer) in U and V directions"
     umults = surf.getUMultiplicities()
     vmults = surf.getVMultiplicities()
     if surf.isUPeriodic():
         umax = max(umults)
-    else:
+    elif len(umults) > 2:
         umax = max(umults[1:-1])
+    else:
+        umax = 0
     if surf.isVPeriodic():
         vmax = max(vmults)
-    else:
+    elif len(vmults) > 2:
         vmax = max(vmults[1:-1])
+    else:
+        vmax = 0
     udeg = surf.UDegree
     vdeg = surf.VDegree
     return udeg - umax, vdeg - vmax
 
 
-def raise_continuityU(surf: Part.BSplineSurface,
-                      order: int = 1,
-                      tol: float = 1e-7) -> bool:
+def inner_knots_indices(surf: Part.BSplineSurface,
+                        direction: int = 0) -> tuple[int, int]:
     """
-    Try to raise the continuity in U direction up to order
+    Returns the first and last indices of the inner knots of the surface.
+    direction is either 0 for U or 1 for V
+    """
+    periodic = surf.isUPeriodic()
+    nb_knots = surf.NbUKnots
+    if direction == 1:
+        periodic = surf.isVPeriodic()
+        nb_knots = surf.NbVKnots
+    if periodic:
+        return 1, nb_knots + 1
+    else:
+        return 2, nb_knots
+
+
+def get_continuity_knots(surf: Part.BSplineSurface,
+                         direction: int = 0,
+                         order: int = 1,
+                         exact: bool = False) -> list[int]:
+    """
+    Returns a list of indices of the knots with continuity
+    equal to order.
+    direction is either 0 for U or 1 for V
+    if exact is False, include the knots with continuity lower than order
+    """
+    knots = []
+    mult = surf.getUMultiplicity
+    degree = surf.UDegree
+    if direction == 1:
+        mult = surf.getVMultiplicity
+        degree = surf.VDegree
+    for j in range(*inner_knots_indices(surf, direction)):
+        m = mult(j)
+        print(f"Knot #{j} C{degree - m}")
+        tm = degree - order
+        if exact:
+            match = m == tm + 1
+        else:
+            match = m > tm
+        if match:
+            knots.append(j)
+    return knots
+
+
+def raise_continuity(surf: Part.BSplineSurface,
+                     direction: int = 0,
+                     order: int = 1,
+                     tol: float = 1e-7) -> bool:
+    """
+    Try to raise the continuity up to order.
+    direction is either 0 for U or 1 for V
     Returns success status
     """
-    udeg = surf.UDegree
+    # print(surf)
     success = True
-    if order > udeg:
+    degree = surf.UDegree
+    mult = surf.getUMultiplicity
+    remove_knot = surf.removeUKnot
+    if direction == 1:
+        degree = surf.VDegree
+        mult = surf.getVMultiplicity
+        remove_knot = surf.removeVKnot
+    if order > degree:
         raise ValueError("Continuity cannot be higher than degree")
-    if surf.isUPeriodic():
-        i = 1
-        lastidx = surf.NbUKnots + 1
-    else:
-        i = 2
-        lastidx = surf.NbUKnots
-    while i < lastidx:
-        m = surf.getUMultiplicity(i)
-        print(f"Knot #{i} C{udeg - m}")
-        tm = udeg - order
+    i, lki = inner_knots_indices(surf, direction)
+    while i < lki:
+        m = mult(i)
+        print(f"Knot #{i} C{degree - m}")
+        tm = degree - order
         if m > tm:
-            res = surf.removeUKnot(i, tm, tol)
+            res = remove_knot(i, tm, tol)
             if res:
                 print(f"      Continuity increased to {order}")
             else:
@@ -161,14 +224,56 @@ def match_orientation(s1: Part.BSplineSurface,
     return ns1, ns2
 
 
+def average_U_length(surf: Part.BSplineSurface,
+                     num_samples: int = 3
+                     ) -> float:
+    """
+    Returns the average length of surface along U dirction
+    """
+    u0, u1, v0, v1 = surf.bounds()
+    params = []
+    if num_samples == 1:
+        params = [0.5 * (v0 + v1)]
+    else:
+        for i in range(num_samples + 1):
+            params.append(v0 + i * (v1 - v0) / num_samples)
+    total_length = 0
+    for par in params:
+        c = surf.vIso(par)
+        total_length += c.length()
+    return total_length / num_samples
+
+
+def average_V_length(surf: Part.BSplineSurface,
+                     num_samples: int = 3
+                     ) -> float:
+    """
+    Returns the average length of surface along V dirction
+    """
+    u0, u1, v0, v1 = surf.bounds()
+    params = []
+    if num_samples == 1:
+        params = [0.5 * (u0 + u1)]
+    else:
+        for i in range(num_samples + 1):
+            params.append(u0 + i * (u1 - u0) / num_samples)
+    total_length = 0
+    for par in params:
+        c = surf.uIso(par)
+        total_length += c.length()
+    return total_length / num_samples
+
+
 def join_surfaces(s1, s2, tol=tol3d):
     """
     Join two BSpline surfaces into a single one.
     """
-    s1.scaleKnotsToBounds()
-    s2.scaleKnotsToBounds(1, 2, 0, 1)  # TODO Check parametrization
-    c1 = s1.uIso(1.0)
-    c2 = s2.uIso(1.0)
+    ul1 = average_U_length(s1, 3)
+    ul2 = average_U_length(s2, 3)
+    s1.scaleKnotsToBounds(0, ul1, 0, 1)
+    s2.scaleKnotsToBounds(ul1, ul1 + ul2, 0, 1)  # TODO Check parametrization
+    c1 = s1.uIso(ul1)
+    c2 = s2.uIso(ul1)
     ruled = Part.makeRuledSurface(c1.toShape(), c2.toShape())
     c = ruled.Surface.vIso(0.0)
     # Part.show(c.toShape())

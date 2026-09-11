@@ -213,12 +213,12 @@ def bsplinesurfNode(surf):
     flatW = to1D(weights)
     weightStr = format_weights(flatW)
 
-    polyRowSep = coinNodes.rowNode((0.3, 0, 0), 1)
+    polyRowSep = coinNodes.rowNode((0.5, 0.5, 0.5), 1)
     polyRowSep.vertices = (nbU, nbV)
-    polyRowSep.color = [(0.3, 0.0, 0.0)] * len(flatPoles)
-    polyColSep = coinNodes.colNode((0, 0.3, 0), 1)
+    polyRowSep.color = [(0.5, 0.5, 0.5)] * len(flatPoles)
+    polyColSep = coinNodes.colNode((0.5, 0.5, 0.5), 1)
     polyColSep.vertices = (nbU, nbV)
-    polyColSep.color = [(0.0, 0.3, 0.0)] * len(flatPoles)
+    polyColSep.color = [(0.5, 0.5, 0.5)] * len(flatPoles)
 
     # *** Set markers ***
     markerSep = coinNodes.markerSetNode((1, 0, 0), coin.SoMarkerSet.DIAMOND_FILLED_9_9)

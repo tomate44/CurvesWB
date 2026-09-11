@@ -9,19 +9,24 @@ import os
 import FreeCAD
 import FreeCADGui
 import Part
-# from freecad.Curves import _utils
+from freecad.Curves.BaseProxy import BaseFPOProxy
 from freecad.Curves.lib import bspline_surface
 from freecad.Curves import ICONPATH
 
 TOOL_ICON = os.path.join(ICONPATH, 'join_surfaces.svg')
 
 
-class JoinSurfaceFP:
+class JoinSurfaceFP(BaseFPOProxy):
     def __init__(self, obj):
-        obj.addProperty("App::PropertyLinkSubList", "Faces", "Input", "The faces to join")
-        obj.addProperty("App::PropertyFloat", "Tolerance", "Settings", "Tolerance for knot insertion")
-        obj.addProperty("App::PropertyInteger", "ContinuityU", "Shape Info", "Continuity of surface in U direction")
-        obj.addProperty("App::PropertyInteger", "ContinuityV", "Shape Info", "Continuity of surface in V direction")
+        super().__init__(obj)
+        obj.addProperty("App::PropertyLinkSubList", "Faces",
+                        "Input", "The faces to join")
+        obj.addProperty("App::PropertyFloat", "Tolerance",
+                        "Settings", "Tolerance for knot insertion")
+        obj.addProperty("App::PropertyInteger", "ContinuityU",
+                        "Shape Info", "Continuity of surface in U direction")
+        obj.addProperty("App::PropertyInteger", "ContinuityV",
+                        "Shape Info", "Continuity of surface in V direction")
         obj.setExpression('Tolerance', u'1e-07')
         obj.setEditorMode("ContinuityU", 1)
         obj.setEditorMode("ContinuityV", 1)
@@ -32,18 +37,26 @@ class JoinSurfaceFP:
         for o, subnames in obj.Faces:
             fl = []
             for subname in subnames:
-                fl.append(o.getSubObject(subname))
-            if fl:
+                # print(subname)
+                # print(o.getSubObject(subname))
+                f = o.getSubObject(subname)
+                if isinstance(f, Part.Face):
+                    fl.append(f)
+            if len(fl) > 0:
                 faces.extend(fl)
             else:
                 faces.extend(o.Shape.Faces)
+        # print(faces)
         sl = []
         for f in faces:
             if isinstance(f.Surface, Part.BSplineSurface):
                 sl.append(f.Surface)
             else:
-                rts = Part.RectangularTrimmedSurface(f.Surface, *f.ParameterRange)
+                rts = Part.RectangularTrimmedSurface(
+                    f.Surface, *f.ParameterRange)
                 sl.append(rts.toBSpline())
+        if len(sl) < 2:
+            raise ValueError(f"{obj.Label}: Needs at least 2 faces")
         s1, s2 = sl[:2]
         s1, s2 = bspline_surface.match_orientation(s1, s2)
         result = bspline_surface.join_surfaces(s1, s2, obj.Tolerance)
@@ -51,6 +64,7 @@ class JoinSurfaceFP:
             s2 = sl[i]
             s1, s2 = bspline_surface.match_orientation(result, s2)
             result = bspline_surface.join_surfaces(s1, s2, obj.Tolerance)
+        _ = bspline_surface.raise_continuity(result, 0, 1, 1e-7)
         uc, uv = bspline_surface.get_continuities(result)
         obj.ContinuityU = uc
         obj.ContinuityV = uv
@@ -108,7 +122,8 @@ class JoinSurfaceVP:
 
 class JoinSurfaceCmd:
     def makeFeature(self, sel=None):
-        fp = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "JoinSurface")
+        fp = FreeCAD.ActiveDocument.addObject(
+            "Part::FeaturePython", "JoinSurface")
         JoinSurfaceFP(fp)
         JoinSurfaceVP(fp.ViewObject)
         fp.Faces = sel
@@ -121,7 +136,11 @@ class JoinSurfaceCmd:
             return
         faces = []
         for so in sel:
-            faces.append((so.Object, so.SubElementNames))
+            if so.SubElementNames:
+                faces.append((so.Object, so.SubElementNames))
+            else:
+                faces.append(so.Object)
+        # print(faces)
         self.makeFeature(faces)
 
     def IsActive(self):

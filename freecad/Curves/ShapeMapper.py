@@ -592,7 +592,7 @@ class ShapeMapper:
             return off
         if face.Surface.Continuity == 'C0':
             # TODO : create a C1 approximation
-            raise (RuntimeError, "Surface must be at least C1 continuous")
+            raise RuntimeError("Surface must be at least C1 continuous")
         return face.makeOffsetShape(offset, self.Tolerance).Face1
 
     @timer
