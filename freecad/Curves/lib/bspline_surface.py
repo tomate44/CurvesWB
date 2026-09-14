@@ -7,37 +7,71 @@ __doc__ = 'Additional tools for BSpline surfaces'
 
 import Part
 from freecad.Curves.lib.geometry import same_direction
-from freecad.Curves.lib.precision import tol3d
+from freecad.Curves.lib.precision import tol3d, tol2d
 
 
-# class BSplineFacade:
-#     def __init__(self, surf, direction):
-#         self.surf = surf
-#         self.direction = direction
-#
-#     def __getattr__(self, attr):
-#         pass
+class BSplineFacade:
+    '''
+    Facade pattern that permits to use BSplineCurve methods and attributes
+    on the choosen direction of a BSplineSurface.
+
+    Attributes:
+    surf: Part.BSplineSurface
+    direction: int (0 or 1) for U or V
+    '''
+    attrlist = {"Degree": ("UDegree", "VDegree"),
+                "NbKnots": ("NbUKnots", "NbVKnots"),
+                "NbPoles": ("NbUPoles", "NbVPoles"),
+                "FirstUKnotIndex": ("FirstUKnotIndex", "FirstVKnotIndex"),
+                "LastUKnotIndex": ("LastUKnotIndex", "LastVKnotIndex"),
+                "getKnot": ("getUKnot", "getVKnot"),
+                "getKnots": ("getUKnots", "getVKnots"),
+                "getMultiplicity": ("getUMultiplicity", "getVMultiplicity"),
+                "getMultiplicities": ("getUMultiplicities", "getVMultiplicities"),
+                "increaseMultiplicity": ("increaseUMultiplicity", "increaseVMultiplicity"),
+                "incrementMultiplicity": ("incrementUMultiplicity", "incrementVMultiplicity"),
+                "insertKnot": ("insertUKnot", "insertVKnot"),
+                "insertKnots": ("insertUKnots", "insertVKnots"),
+                "isClosed": ("isUClosed", "isVClosed"),
+                "isPeriodic": ("isUPeriodic", "isVPeriodic"),
+                "isRational": ("isURational", "isVRational"),
+                "removeKnot": ("removeUKnot", "removeVKnot"),
+                "setKnot": ("setUKnot", "setVKnot"),
+                "setKnots": ("setUKnots", "setVKnots"),
+                "setNotPeriodic": ("setUNotPeriodic", "setVNotPeriodic"),
+                "setOrigin": ("setUOrigin", "setVOrigin"),
+                "setPeriodic": ("setUPeriodic", "setVPeriodic"),
+                "isoCurve": ("uIso", "vIso")}
+
+    def __init__(self,
+                 surf: Part.BSplineSurface,
+                 direction: int = 0):
+        self.surf = surf
+        self.direction = direction
+
+    def __getattr__(self, attr):
+        if hasattr(self.surf, attr):
+            return getattr(self.surf, attr)
+        newattr = BSplineFacade.attrlist[attr][self.direction]
+        return getattr(self.surf, newattr)
 
 
 def get_continuities(surf: Part.BSplineSurface) -> tuple[int, int]:
     "Returns the continuities (as integer) in U and V directions"
-    umults = surf.getUMultiplicities()
-    vmults = surf.getVMultiplicities()
-    if surf.isUPeriodic():
-        umax = max(umults)
-    elif len(umults) > 2:
-        umax = max(umults[1:-1])
-    else:
-        umax = 0
-    if surf.isVPeriodic():
-        vmax = max(vmults)
-    elif len(vmults) > 2:
-        vmax = max(vmults[1:-1])
-    else:
-        vmax = 0
-    udeg = surf.UDegree
-    vdeg = surf.VDegree
-    return udeg - umax, vdeg - vmax
+    def get_cont(surf: BSplineFacade) -> int:
+        mults = surf.getMultiplicities()
+        if surf.isPeriodic():
+            umax = max(mults)
+        elif len(mults) > 2:
+            umax = max(mults[1:-1])
+        else:
+            umax = 0
+        return surf.Degree - umax
+    bsf = BSplineFacade(surf, 0)
+    ucont = get_cont(bsf)
+    bsf.direction = 1
+    vcont = get_cont(bsf)
+    return ucont, vcont
 
 
 def inner_knots_indices(surf: Part.BSplineSurface,
@@ -46,15 +80,11 @@ def inner_knots_indices(surf: Part.BSplineSurface,
     Returns the first and last indices of the inner knots of the surface.
     direction is either 0 for U or 1 for V
     """
-    periodic = surf.isUPeriodic()
-    nb_knots = surf.NbUKnots
-    if direction == 1:
-        periodic = surf.isVPeriodic()
-        nb_knots = surf.NbVKnots
-    if periodic:
-        return 1, nb_knots + 1
+    bsf = BSplineFacade(surf, direction)
+    if bsf.isPeriodic():
+        return 1, bsf.NbKnots + 1
     else:
-        return 2, nb_knots
+        return 2, bsf.NbKnots
 
 
 def get_continuity_knots(surf: Part.BSplineSurface,
@@ -68,11 +98,9 @@ def get_continuity_knots(surf: Part.BSplineSurface,
     if exact is False, include the knots with continuity lower than order
     """
     knots = []
-    mult = surf.getUMultiplicity
-    degree = surf.UDegree
-    if direction == 1:
-        mult = surf.getVMultiplicity
-        degree = surf.VDegree
+    bsf = BSplineFacade(surf, direction)
+    mult = bsf.getMultiplicity
+    degree = bsf.Degree
     for j in range(*inner_knots_indices(surf, direction)):
         m = mult(j)
         print(f"Knot #{j} C{degree - m}")
@@ -89,7 +117,7 @@ def get_continuity_knots(surf: Part.BSplineSurface,
 def raise_continuity(surf: Part.BSplineSurface,
                      direction: int = 0,
                      order: int = 1,
-                     tol: float = 1e-7) -> bool:
+                     tol: float = tol3d) -> bool:
     """
     Try to raise the continuity up to order.
     direction is either 0 for U or 1 for V
@@ -97,31 +125,71 @@ def raise_continuity(surf: Part.BSplineSurface,
     """
     # print(surf)
     success = True
-    degree = surf.UDegree
-    mult = surf.getUMultiplicity
-    remove_knot = surf.removeUKnot
-    if direction == 1:
-        degree = surf.VDegree
-        mult = surf.getVMultiplicity
-        remove_knot = surf.removeVKnot
-    if order > degree:
+    bsf = BSplineFacade(surf, direction)
+    if order > bsf.Degree:
         raise ValueError("Continuity cannot be higher than degree")
     i, lki = inner_knots_indices(surf, direction)
     while i < lki:
-        m = mult(i)
-        print(f"Knot #{i} C{degree - m}")
-        tm = degree - order
+        m = bsf.getMultiplicity(i)
+        # print(f"Knot #{i} C{bsf.Degree - m}")
+        tm = bsf.Degree - order
         if m > tm:
-            res = remove_knot(i, tm, tol)
-            if res:
-                print(f"      Continuity increased to {order}")
-            else:
-                print(f"!!!!! Failed to increase Continuity to {order}")
+            res = bsf.removeKnot(i, tm, tol)
+            # if res:
+            #     print(f"      Continuity increased to {order}")
+            # else:
+            #     print(f"!!!!! Failed to increase Continuity to {order}")
             success = success and res
             if res and tm == 0:  # knot was removed, we don't increment index
                 continue
         i += 1
+    dirstr = "U"
+    if direction == 1:
+        dirstr = "V"
+    resstr = "OK"
+    if not success:
+        resstr = "Failed"
+    print(f"Raising surface {dirstr} continuity to C{order} : {resstr}")
     return success
+
+
+def smooth_surface(surf: Part.BSplineSurface,
+                   distance: float = 1.0,
+                   order: int = 1,
+                   tol: float = tol3d
+                   ) -> None:
+    """
+    Smooth surface up to continuity 'order' by rounding areas
+    given by distance around low continuity knots
+    """
+    for direction in [0, 1]:
+        bsf = BSplineFacade(surf, direction)
+        bad_knots = get_continuity_knots(surf, direction, order - 1, False)
+        print(f"Bad Knots : {bad_knots}")
+        insknots = []
+        for knot in bad_knots:
+            if direction == 0:
+                curves = isocurves_U(surf, 5)
+            else:
+                curves = isocurves_V(surf, 5)
+            kl1, kl2 = [], []
+            for c in curves:
+                kl1.append(c.parameterAtDistance(-distance, knot))
+                kl2.append(c.parameterAtDistance(distance, knot))
+            k1 = max(kl1)
+            k2 = min(kl2)
+            print(f"Neighbor knots : {k1} < {knot} < {k2}")
+            knots1 = [k1 + i * (knot - k1) / bsf.Degree for i in range(bsf.Degree)]
+            knots2 = [knot + i * (k2 - knot) / bsf.Degree for i in range(1, bsf.Degree + 1)]
+            print(f"New knots before : {knots1}")
+            print(f"New knots after :  {knots2}")
+            insknots += knots1 + knots2
+        for k in insknots:
+            if direction == 0:
+                surf.insertUKnot(k, 1, tol3d)
+            else:
+                surf.insertVKnot(k, 1, tol3d)
+    return surf
 
 
 def reverseU(surf: Part.BSplineSurface) -> Part.BSplineSurface:
@@ -224,6 +292,34 @@ def match_orientation(s1: Part.BSplineSurface,
     return ns1, ns2
 
 
+def isocurves_U(surf: Part.BSplineSurface,
+                num_samples: int = 3
+                ) -> list[Part.BSplineCurve]:
+    "Returns some U isocurves of the surface"
+    u0, u1, v0, v1 = surf.bounds()
+    params = []
+    if num_samples == 1:
+        params = [0.5 * (u0 + u1)]
+    else:
+        for i in range(num_samples + 1):
+            params.append(u0 + i * (u1 - u0) / num_samples)
+    return [surf.uIso(par) for par in params]
+
+
+def isocurves_V(surf: Part.BSplineSurface,
+                num_samples: int = 3
+                ) -> list[Part.BSplineCurve]:
+    "Returns some V isocurves of the surface"
+    u0, u1, v0, v1 = surf.bounds()
+    params = []
+    if num_samples == 1:
+        params = [0.5 * (v0 + v1)]
+    else:
+        for i in range(num_samples + 1):
+            params.append(v0 + i * (v1 - v0) / num_samples)
+    return [surf.vIso(par) for par in params]
+
+
 def average_U_length(surf: Part.BSplineSurface,
                      num_samples: int = 3
                      ) -> float:
@@ -264,10 +360,22 @@ def average_V_length(surf: Part.BSplineSurface,
     return total_length / num_samples
 
 
-def join_surfaces(s1, s2, tol=tol3d):
+def join_surfaces(surf1: Part.BSplineSurface,
+                  surf2: Part.BSplineSurface,
+                  tol_2d: float = tol2d,
+                  tol_3d: float = tol3d,
+                  ) -> Part.BSplineSurface:
     """
     Join two BSpline surfaces into a single one.
     """
+    s1, s2 = match_orientation(surf1, surf2)
+    d, pts, info = s1.toShape().distToShape(s2.toShape())
+    if d > tol_3d:  # Surfaces are not touching
+        c1 = s1.uIso(s1.bounds()[1])
+        c2 = s2.uIso(s2.bounds()[0])
+        ruled = Part.makeRuledSurface(c1.toShape(), c2.toShape()).Surface
+        # ruled.exchangeUV()
+        s1 = join_surfaces(s1, ruled, tol_2d, tol_3d)
     ul1 = average_U_length(s1, 3)
     ul2 = average_U_length(s2, 3)
     s1.scaleKnotsToBounds(0, ul1, 0, 1)
@@ -283,9 +391,9 @@ def join_surfaces(s1, s2, tol=tol3d):
     s2.increaseDegree(udeg, vdeg)
     kl = c.getKnots()
     ml = c.getMultiplicities()
-    s1.insertVKnots(kl, ml, tol3d, False)
-    s2.insertVKnots(s1.getVKnots(), s1.getVMultiplicities(), tol3d, False)
-    s1.insertVKnots(s2.getVKnots(), s2.getVMultiplicities(), tol3d, False)
+    s1.insertVKnots(kl, ml, tol_2d, False)
+    s2.insertVKnots(s1.getVKnots(), s1.getVMultiplicities(), tol_2d, False)
+    s1.insertVKnots(s2.getVKnots(), s2.getVMultiplicities(), tol_2d, False)
     # for i in range(len(kl)):
     # Part.show(s1.toShape())
     # Part.show(s2.toShape())
@@ -320,3 +428,25 @@ def join_surfaces(s1, s2, tol=tol3d):
     bs.buildFromPolesMultsKnots(poles, umults, vmults, uknots, vknots,
                                 uper, vper, udeg, vdeg, weights)
     return bs
+
+
+def join_multiple_surfaces(surflist: list[Part.BSplineSurface],
+                           tol: float = tol2d
+                           ) -> Part.BSplineSurface:
+    """
+    Join multiple BSpline surfaces into a single one.
+    """
+    if len(surflist) == 0:
+        raise ValueError("Surface list is empty")
+    if len(surflist) == 1:
+        return surflist[0]
+    s1, s2 = surflist[:2]
+    # s1, s2 = match_orientation(s1, s2)
+    result = join_surfaces(s1, s2, tol)
+    if len(surflist) == 2:
+        return result
+    for i in range(2, len(surflist)):
+        s2 = surflist[i]
+        # s1, s2 = match_orientation(result, s2)
+        result = join_surfaces(result, s2, tol)
+    return result

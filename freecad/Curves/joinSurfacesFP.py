@@ -9,9 +9,10 @@ import os
 import FreeCAD
 import FreeCADGui
 import Part
-from freecad.Curves.BaseProxy import BaseFPOProxy
+from freecad.Curves.BaseProxy import BaseFPOProxy, BaseFPOViewProxy
 from freecad.Curves.lib import bspline_surface
 from freecad.Curves import ICONPATH
+from freecad.Curves.lib.precision import tol3d, tol2d
 
 TOOL_ICON = os.path.join(ICONPATH, 'join_surfaces.svg')
 
@@ -21,18 +22,22 @@ class JoinSurfaceFP(BaseFPOProxy):
         super().__init__(obj)
         obj.addProperty("App::PropertyLinkSubList", "Faces",
                         "Input", "The faces to join")
-        obj.addProperty("App::PropertyFloat", "Tolerance",
-                        "Settings", "Tolerance for knot insertion")
+        obj.addProperty("App::PropertyFloat", "Tolerance2D",
+                        "Settings", "Parametric tolerance for knot insertion")
+        obj.addProperty("App::PropertyFloat", "Tolerance3D",
+                        "Settings", "Tolerance for knot removal (smoothing)")
         obj.addProperty("App::PropertyInteger", "ContinuityU",
                         "Shape Info", "Continuity of surface in U direction")
         obj.addProperty("App::PropertyInteger", "ContinuityV",
                         "Shape Info", "Continuity of surface in V direction")
-        obj.setExpression('Tolerance', u'1e-07')
+        obj.setExpression('Tolerance2D', str(tol2d))
+        obj.setExpression('Tolerance3D', str(tol3d))
         obj.setEditorMode("ContinuityU", 1)
         obj.setEditorMode("ContinuityV", 1)
         obj.Proxy = self
 
     def execute(self, obj):
+        # Populate the face list from Feature Property
         faces = []
         for o, subnames in obj.Faces:
             fl = []
@@ -46,7 +51,7 @@ class JoinSurfaceFP(BaseFPOProxy):
                 faces.extend(fl)
             else:
                 faces.extend(o.Shape.Faces)
-        # print(faces)
+        # Convert faces to BSpline surfaces
         sl = []
         for f in faces:
             if isinstance(f.Surface, Part.BSplineSurface):
@@ -55,16 +60,9 @@ class JoinSurfaceFP(BaseFPOProxy):
                 rts = Part.RectangularTrimmedSurface(
                     f.Surface, *f.ParameterRange)
                 sl.append(rts.toBSpline())
-        if len(sl) < 2:
-            raise ValueError(f"{obj.Label}: Needs at least 2 faces")
-        s1, s2 = sl[:2]
-        s1, s2 = bspline_surface.match_orientation(s1, s2)
-        result = bspline_surface.join_surfaces(s1, s2, obj.Tolerance)
-        for i in range(2, len(sl)):
-            s2 = sl[i]
-            s1, s2 = bspline_surface.match_orientation(result, s2)
-            result = bspline_surface.join_surfaces(s1, s2, obj.Tolerance)
-        _ = bspline_surface.raise_continuity(result, 0, 1, 1e-7)
+        # Join surfaces and try to raise continuity
+        result = bspline_surface.join_multiple_surfaces(sl, obj.Tolerance2D)
+        _ = bspline_surface.raise_continuity(result, 0, 1, obj.Tolerance3D)
         uc, uv = bspline_surface.get_continuities(result)
         obj.ContinuityU = uc
         obj.ContinuityV = uv
@@ -78,7 +76,7 @@ class JoinSurfaceFP(BaseFPOProxy):
         obj.setEditorMode("ContinuityV", 1)
 
 
-class JoinSurfaceVP:
+class JoinSurfaceVP(BaseFPOViewProxy):
     def __init__(self, viewobj):
         viewobj.addProperty("App::PropertyBool", "ClaimChildren",
                             "Display Options",
@@ -88,25 +86,6 @@ class JoinSurfaceVP:
 
     def getIcon(self):
         return TOOL_ICON
-
-    def attach(self, viewobj):
-        self.Object = viewobj.Object
-
-    if FreeCAD.Version()[0] == '0' and '.'.join(FreeCAD.Version()[1:3]) >= '21.2':
-        def dumps(self):
-            return {"name": self.Object.Name}
-
-        def loads(self, state):
-            self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
-            return None
-
-    else:
-        def __getstate__(self):
-            return {"name": self.Object.Name}
-
-        def __setstate__(self, state):
-            self.Object = FreeCAD.ActiveDocument.getObject(state["name"])
-            return None
 
     def claimChildren(self):
         if self.Object.ViewObject.ClaimChildren:
