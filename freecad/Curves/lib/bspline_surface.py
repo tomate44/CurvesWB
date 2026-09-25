@@ -126,9 +126,11 @@ def raise_continuity(surf: Part.BSplineSurface,
     # print(surf)
     success = True
     bsf = BSplineFacade(surf, direction)
-    if order > bsf.Degree:
+    if abs(order) > bsf.Degree:
         raise ValueError("Continuity cannot be higher than degree")
     i, lki = inner_knots_indices(surf, direction)
+    if order < 0:
+        order = bsf.Degree + order
     while i < lki:
         m = bsf.getMultiplicity(i)
         # print(f"Knot #{i} C{bsf.Degree - m}")
@@ -164,23 +166,27 @@ def smooth_surface(surf: Part.BSplineSurface,
     """
     for direction in [0, 1]:
         bsf = BSplineFacade(surf, direction)
-        bad_knots = get_continuity_knots(surf, direction, order - 1, False)
+        bad_knots = get_continuity_knots(surf, direction, order, False)
         print(f"Bad Knots : {bad_knots}")
         insknots = []
-        for knot in bad_knots:
+        for knotidx in bad_knots:
+            knot = bsf.getKnot(knotidx)
             if direction == 0:
-                curves = isocurves_U(surf, 5)
-            else:
                 curves = isocurves_V(surf, 5)
+            else:
+                curves = isocurves_U(surf, 5)
             kl1, kl2 = [], []
             for c in curves:
                 kl1.append(c.parameterAtDistance(-distance, knot))
                 kl2.append(c.parameterAtDistance(distance, knot))
             k1 = max(kl1)
             k2 = min(kl2)
+            num_knots = int(order)
             print(f"Neighbor knots : {k1} < {knot} < {k2}")
-            knots1 = [k1 + i * (knot - k1) / bsf.Degree for i in range(bsf.Degree)]
-            knots2 = [knot + i * (k2 - knot) / bsf.Degree for i in range(1, bsf.Degree + 1)]
+            knots1 = [k1 + i * (knot - k1) /
+                      num_knots for i in range(num_knots)]
+            knots2 = [knot + i * (k2 - knot) /
+                      num_knots for i in range(1, num_knots + 1)]
             print(f"New knots before : {knots1}")
             print(f"New knots after :  {knots2}")
             insknots += knots1 + knots2
@@ -234,11 +240,14 @@ def reverseV(surf: Part.BSplineSurface) -> Part.BSplineSurface:
 
 def orientU_surf(s, cidx, end=False):
     if cidx > 1:
+        print("exchangeUV")
         s.exchangeUV()
         cidx -= 2
     if cidx == 0 and end:
+        print("reverseU")
         return reverseU(s)
     if cidx == 1 and not end:
+        print("reverseU")
         return reverseU(s)
     return s
 
@@ -283,12 +292,18 @@ def match_orientation(s1: Part.BSplineSurface,
                 idx1 = i
                 idx2 = j
 
-    same_dir = same_direction(curves1[idx1], curves2[idx2])
+    # same_dir = same_direction(curves1[idx1], curves2[idx2])
     # print(f"contact {idx1}->{idx2}, same direction:{same_dir}")
+    print("Curve 1")
     ns1 = orientU_surf(s1, idx1, True)
+    print("Curve 2")
     ns2 = orientU_surf(s2, idx2, False)
+    c1 = ns1.uIso(ns1.bounds()[1])
+    c2 = ns2.uIso(ns2.bounds()[0])
+    same_dir = same_direction(c1, c2)
     if not same_dir:
-        ns2 = reverseU(ns2)
+        print("reverseV")
+        ns2 = reverseV(ns2)
     return ns1, ns2
 
 
@@ -371,18 +386,26 @@ def join_surfaces(surf1: Part.BSplineSurface,
     s1, s2 = match_orientation(surf1, surf2)
     d, pts, info = s1.toShape().distToShape(s2.toShape())
     if d > tol_3d:  # Surfaces are not touching
+        print(f"Inserting intermediate ruled surface. Dist = {d}")
         c1 = s1.uIso(s1.bounds()[1])
         c2 = s2.uIso(s2.bounds()[0])
+        print(same_direction(c1, c2))
         ruled = Part.makeRuledSurface(c1.toShape(), c2.toShape()).Surface
         # ruled.exchangeUV()
+        print("*** Joining to Ruled Surface")
         s1 = join_surfaces(s1, ruled, tol_2d, tol_3d)
+        print("***")
     ul1 = average_U_length(s1, 3)
     ul2 = average_U_length(s2, 3)
     s1.scaleKnotsToBounds(0, ul1, 0, 1)
     s2.scaleKnotsToBounds(ul1, ul1 + ul2, 0, 1)  # TODO Check parametrization
     c1 = s1.uIso(ul1)
     c2 = s2.uIso(ul1)
+    if not same_direction(c1, c2):
+        s2 = reverseV(s2)
+        c2 = s2.uIso(ul1)
     ruled = Part.makeRuledSurface(c1.toShape(), c2.toShape())
+    print(same_direction(c1, c2))
     c = ruled.Surface.vIso(0.0)
     # Part.show(c.toShape())
     vdeg = c.Degree
@@ -400,14 +423,16 @@ def join_surfaces(surf1: Part.BSplineSurface,
     # print(f"{len(s2.getPoles())}x{len(s2.getPoles()[0])}")
     # build poles array
     poles = s1.getPoles()[:-1]
-    midpoles = [0.5 * (v[0] + v[1]) for v in zip(s1.getPoles()[-1], s2.getPoles()[0])]
+    midpoles = [0.5 * (v[0] + v[1])
+                for v in zip(s1.getPoles()[-1], s2.getPoles()[0])]
     # print(len(midpoles))
     poles.append(midpoles)
     poles.extend(s2.getPoles()[1:])
     # print(f"{len(poles)}x{len(poles[0])}")
     # build weights array
     weights = s1.getWeights()[:-1]
-    midweights = [0.5 * (v[0] + v[1]) for v in zip(s1.getWeights()[-1], s2.getWeights()[0])]
+    midweights = [0.5 * (v[0] + v[1])
+                  for v in zip(s1.getWeights()[-1], s2.getWeights()[0])]
     weights.append(midweights)
     weights.extend(s2.getWeights()[1:])
     # weights = surf.getWeights()[::-1]
@@ -431,7 +456,8 @@ def join_surfaces(surf1: Part.BSplineSurface,
 
 
 def join_multiple_surfaces(surflist: list[Part.BSplineSurface],
-                           tol: float = tol2d
+                           tol_2d: float = tol2d,
+                           tol_3d: float = tol3d,
                            ) -> Part.BSplineSurface:
     """
     Join multiple BSpline surfaces into a single one.
@@ -442,11 +468,11 @@ def join_multiple_surfaces(surflist: list[Part.BSplineSurface],
         return surflist[0]
     s1, s2 = surflist[:2]
     # s1, s2 = match_orientation(s1, s2)
-    result = join_surfaces(s1, s2, tol)
+    result = join_surfaces(s1, s2, tol_2d, tol_3d)
     if len(surflist) == 2:
         return result
     for i in range(2, len(surflist)):
         s2 = surflist[i]
         # s1, s2 = match_orientation(result, s2)
-        result = join_surfaces(result, s2, tol)
+        result = join_surfaces(result, s2, tol_2d, tol_3d)
     return result

@@ -61,7 +61,9 @@ class JoinSurfaceFP(BaseFPOProxy):
                     f.Surface, *f.ParameterRange)
                 sl.append(rts.toBSpline())
         # Join surfaces and try to raise continuity
-        result = bspline_surface.join_multiple_surfaces(sl, obj.Tolerance2D)
+        result = bspline_surface.join_multiple_surfaces(sl,
+                                                        obj.Tolerance2D,
+                                                        obj.Tolerance3D)
         _ = bspline_surface.raise_continuity(result, 0, 1, obj.Tolerance3D)
         uc, uv = bspline_surface.get_continuities(result)
         obj.ContinuityU = uc

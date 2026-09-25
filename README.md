@@ -8,6 +8,7 @@ This workbench is developed for FreeCAD main develoment branch.
 * This workbench is EXPERIMENTAL and should NOT be used for any serious work.
 * This workbench is not suitable for beginners. A good knowledge of FreeCAD is needed.
 * This workbench is essentially my personal playground for experimenting with geometric algorithms.
+* This workbench is developed without any AI or LLM.
 
 ## Installation 
 There are 2 methods to install Curves WB:
@@ -41,7 +42,7 @@ Issues should first be reported in the [FreeCAD forum](https://forum.freecad.org
 Issues reported in Github may be unnoticed. A minimal FreeCAD file demonstrating the bug should be attached to the issue report, with *.FCStd extension renamed to *.zip
 
 #### Contributing code
-Code contribution is NOT encouraged and should first be discussed in [FreeCAD forum](https://forum.freecad.org/viewforum.php?f=67).
+Pull requests are deactivated. Code contribution should be discussed in [FreeCAD forum](https://forum.freecad.org/viewforum.php?f=67).
 
 #### Contributing documentation
 The workbench documention is not extensive.  
