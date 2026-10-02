@@ -51,6 +51,7 @@ def stretched_plane(poles, param_range=[0, 2, 0, 2], extend_factor=1.0):
                                 False, False, 1, 1)
     return bs
 
+
 def validated_face(w, surf=None):
     ''' Attempt to create valid surface by increasing tolerance if required up to
     maxtol. On failure return a null face
@@ -72,7 +73,7 @@ def validated_face(w, surf=None):
         return f
     else:
         debug('Face validation failed')
-        return Part.Face()  #null face
+        return Part.Face()  # null face
 
 
 class BoundarySorter:
@@ -161,6 +162,7 @@ def print_tolerance(shape):
 
 class sketchOnSurface:
     "This feature object maps a sketch on a surface"
+
     def __init__(self, obj):
         obj.addProperty("App::PropertyLink", "Sketch", "SketchOnSurface",
                         "Input Sketch")
@@ -197,7 +199,8 @@ class sketchOnSurface:
         bs = BoundarySorter(wl, face.Surface, True)
         for i, wirelist in enumerate(bs.sort()):
             # print(wirelist)
-            f = validated_face(wirelist[0], face.Surface)  # should valid or null...
+            # should valid or null...
+            f = validated_face(wirelist[0], face.Surface)
             if f.isNull():
                 continue
             try:
@@ -212,7 +215,8 @@ class sketchOnSurface:
                     f.cutHoles(wirelist[1:])
                     f.validate()
                 except AttributeError:
-                    error("Faces with holes require FC 0.19 or higher\nIgnoring holes\n")
+                    error(
+                        "Faces with holes require FC 0.19 or higher\nIgnoring holes\n")
                 except Part.OCCError:
                     error("Unable to cut hole in face")
             # f.sewShape()
@@ -299,7 +303,8 @@ class sketchOnSurface:
                 continue
             skedges.append(obj.Sketch.Geometry[i].toShape())
         if len(skedges) == 0:
-            error("No construction geometry in Mapped_Sketch\nFallback to normal geometry.")
+            error(
+                "No construction geometry in Mapped_Sketch\nFallback to normal geometry.")
             skedges = obj.Sketch.Shape.Edges
         if len(skedges) == 0:
             error("Mapped_Sketch is empty\n")
@@ -312,16 +317,22 @@ class sketchOnSurface:
         bb = comp.BoundBox
         u0, u1, v0, v1 = (bb.XMin, bb.XMax, bb.YMin, bb.YMax)
         debug("Sketch bounds = {}".format((u0, u1, v0, v1)))
+        supp = None
+        if hasattr(obj.Sketch, "Support"):
+            supp = obj.Sketch.Support
+        if hasattr(obj.Sketch, "AttachmentSupport"):
+            supp = obj.Sketch.AttachmentSupport
+        if supp is None:
+            raise RuntimeError("Failed to get the face support of the sketch")
         try:
-            if hasattr(obj.Sketch, "Support"):
-                supp = obj.Sketch.Support
-            if hasattr(obj.Sketch, "AttachmentSupport"):
-                supp = obj.Sketch.AttachmentSupport
-            if '?Face' in supp[0][1][0]:
-                n = int(supp[0][1][0].lstrip('?Face'))
-            else:
-                n = int(supp[0][1][0].lstrip('Face'))
-            face = supp[0][0].Shape.Faces[n - 1]
+            sko = supp[0][0]
+            subn = supp[0][1][0]
+            face = sko.getSubObject(subn)
+            # if '?Face' in supp[0][1][0]:
+            #     n = int(supp[0][1][0].lstrip('?Face'))
+            # else:
+            #     n = int(supp[0][1][0].lstrip('Face'))
+            # face = supp[0][0].Shape.Faces[n - 1]
             # face.Placement = obj.Sketch.Support[0][0].getGlobalPlacement()
         except (IndexError, AttributeError, SyntaxError) as e:
             error("{}\n".format(e))
@@ -344,7 +355,8 @@ class sketchOnSurface:
         quad = bs.toShape()
         m = obj.Sketch.getGlobalPlacement().Matrix
         m.invert()
-        inp_sh = [obj.Sketch.Shape.copy()] + [o.Shape.copy() for o in obj.ExtraObjects]
+        inp_sh = [obj.Sketch.Shape.copy()] + [o.Shape.copy()
+                                              for o in obj.ExtraObjects]
         input_shapes = []
         for sh in inp_sh:
             if not sh.isNull():
@@ -353,17 +365,20 @@ class sketchOnSurface:
         shapes_1 = []
         shapes_2 = []
         if (obj.Offset == 0):
-            shapes_1 = self.map_shapelist(input_shapes, quad, face, obj.FillFaces)
+            shapes_1 = self.map_shapelist(
+                input_shapes, quad, face, obj.FillFaces)
         else:
             f1 = self.offset_face(face, obj.Offset)
-            shapes_1 = self.map_shapelist(input_shapes, quad, f1.Face1, obj.FillFaces)
+            shapes_1 = self.map_shapelist(
+                input_shapes, quad, f1.Face1, obj.FillFaces)
         if (obj.Thickness == 0):
             if shapes_1:
                 obj.Shape = Part.Compound(shapes_1)
             return
         else:
             f2 = self.offset_face(face, obj.Offset + obj.Thickness)
-            shapes_2 = self.map_shapelist(input_shapes, quad, f2.Face1, obj.FillFaces)
+            shapes_2 = self.map_shapelist(
+                input_shapes, quad, f2.Face1, obj.FillFaces)
             if not obj.FillExtrusion:
                 if shapes_1 or shapes_2:
                     obj.Shape = Part.Compound(shapes_1 + shapes_2)
@@ -378,23 +393,24 @@ class sketchOnSurface:
                         for j in range(len(shapes_1[i].Edges)):
                             if obj.FillFaces and shapes_1[i].Edges[j].isSeam(shapes_1[i]):
                                 continue
-                            ruled = ruled_surface(shapes_1[i].Edges[j], shapes_2[i].Edges[j])
+                            ruled = ruled_surface(
+                                shapes_1[i].Edges[j], shapes_2[i].Edges[j])
                             try:
                                 ruled.check(False)
                             except ValueError:
                                 continue
                             faces.append(ruled)
                             # try:
-                                # face_is_closed = False
-                                # for ed in shapes_1[i].Wires[j].Edges:
-                                    # if ed.isSeam(shapes_1[i]):
-                                        # face_is_closed = True
-                                        # debug("closed face detected")
-                                # loft = Part.makeLoft([shapes_1[i].Wires[j], shapes_2[i].Wires[j]], False, True, face_is_closed, 5)
-                                # faces.extend(loft.Faces)
+                            # face_is_closed = False
+                            # for ed in shapes_1[i].Wires[j].Edges:
+                            # if ed.isSeam(shapes_1[i]):
+                            # face_is_closed = True
+                            # debug("closed face detected")
+                            # loft = Part.makeLoft([shapes_1[i].Wires[j], shapes_2[i].Wires[j]], False, True, face_is_closed, 5)
+                            # faces.extend(loft.Faces)
                             # except Part.OCCError:
-                                # # error_wires.extend([shapes_1[i].Wires[j], shapes_2[i].Wires[j]])
-                                # FreeCAD.Console.PrintError("Sketch on surface : failed to create loft face ({},{})".format(i,j))
+                            # # error_wires.extend([shapes_1[i].Wires[j], shapes_2[i].Wires[j]])
+                            # FreeCAD.Console.PrintError("Sketch on surface : failed to create loft face ({},{})".format(i,j))
                         try:
                             shell = Part.Shell(faces)
                             shell.sewShape()
@@ -403,10 +419,12 @@ class sketchOnSurface:
                             solid.fixTolerance(1e-5)
                             shapes.append(solid)
                         except Exception:
-                            FreeCAD.Console.PrintWarning("Sketch on surface : failed to create solid # {}.\n".format(i + 1))
+                            FreeCAD.Console.PrintWarning(
+                                "Sketch on surface : failed to create solid # {}.\n".format(i + 1))
                             shapes.extend(faces)
                     else:
-                        ruled = ruled_surface(shapes_1[i].Wires[0], shapes_2[i].Wires[0])
+                        ruled = ruled_surface(
+                            shapes_1[i].Wires[0], shapes_2[i].Wires[0])
                         try:
                             ruled.check(False)
                             shapes.append(ruled)
@@ -487,8 +505,10 @@ def addFaceBoundsToSketch(para_range, sk):
     conList.append(Sketcher.Constraint('Horizontal', o + 2))
     conList.append(Sketcher.Constraint('Vertical', o + 1))
     conList.append(Sketcher.Constraint('Vertical', o + 3))
-    conList.append(Sketcher.Constraint('DistanceX', o + 2, 2, o + 2, 1, u1 - u0))
-    conList.append(Sketcher.Constraint('DistanceY', o + 1, 1, o + 1, 2, v1 - v0))
+    conList.append(Sketcher.Constraint(
+        'DistanceX', o + 2, 2, o + 2, 1, u1 - u0))
+    conList.append(Sketcher.Constraint(
+        'DistanceY', o + 1, 1, o + 1, 2, v1 - v0))
     # conList.append(Sketcher.Constraint('DistanceX', o + 0, 1, -1, 1, -u0))
     # conList.append(Sketcher.Constraint('DistanceY', o + 0, 1, -1, 1, -v0))
     sk.addConstraint(conList)
@@ -529,7 +549,8 @@ class SoS:
         doc = FreeCAD.ActiveDocument
         sketch, face_link = self.get_selection()
         if not sketch and not face_link:
-            FreeCAD.Console.PrintMessage("Please select a face (in the 3D view) or a sketch\n")
+            FreeCAD.Console.PrintMessage(
+                "Please select a face (in the 3D view) or a sketch\n")
             return
         if not sketch:
             sketch = doc.addObject('Sketcher::SketchObject', 'Mapped_Sketch')
