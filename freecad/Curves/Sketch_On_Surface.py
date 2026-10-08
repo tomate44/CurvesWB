@@ -103,11 +103,23 @@ class BoundarySorter:
 
     def check_inside(self):
         for i, w1 in enumerate(self.wires):
+            bb1 = Part.Shape.optimalBoundingBox(w1)
             for j, w2 in enumerate(self.wires):
+                # UseShapeTolerance=True ?
+                bb2 = Part.Shape.optimalBoundingBox(w2)
+                # bb2.enlarge(1e-5) # should relate to tolerance
                 if not i == j:
-                    if w2.BoundBox.isInside(w1.BoundBox):
+                    if bb2.isInside(bb1):
                         if self.fine_check_inside(w1, w2):
                             self.parents[i].append(j)
+
+    # def check_inside(self):
+    #     for i, w1 in enumerate(self.wires):
+    #         for j, w2 in enumerate(self.wires):
+    #             if not i == j:
+    #                 if w2.BoundBox.isInside(w1.BoundBox):
+    #                     if self.fine_check_inside(w1, w2):
+    #                         self.parents[i].append(j)
 
     def sort_pass(self):
         to_remove = []
