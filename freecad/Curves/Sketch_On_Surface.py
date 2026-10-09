@@ -91,27 +91,38 @@ class BoundarySorter:
             self.sorted_wires.append([])
         self.done = False
 
-    def fine_check_inside(self, w1, w2):
-        f = validated_face(w2, self.surface)
-        if f.isNull():
+    def fine_check_inside(self, vert, face):
+        # f = validated_face(w2, self.surface)
+        if face.isNull():
             return False
-        if f.isValid():
-            pt = w1.Vertex1.Point
-            u, v = f.Surface.parameter(pt)
-            return f.isPartOfDomain(u, v)
+        if face.isValid():
+            # pt = w1.Vertex1.Point
+            u, v = face.Surface.parameter(vert.Point)
+            return face.isPartOfDomain(u, v)
         return False
 
     def check_inside(self):
+        numw = len(self.wires)
+        progressbar = FreeCAD.Base.ProgressIndicator()
+        progressbar.start(
+            "Sketch On Surface : sorting wires", numw * (numw - 1))
         for i, w1 in enumerate(self.wires):
             bb1 = Part.Shape.optimalBoundingBox(w1)
             for j, w2 in enumerate(self.wires):
+                if i == j:
+                    continue
+                progressbar.next()
                 # UseShapeTolerance=True ?
-                bb2 = Part.Shape.optimalBoundingBox(w2)
+                f = validated_face(w2, self.surface)
+                if f.isNull():
+                    bb2 = Part.Shape.optimalBoundingBox(w2)
+                else:
+                    bb2 = Part.Shape.optimalBoundingBox(f)
                 # bb2.enlarge(1e-5) # should relate to tolerance
-                if not i == j:
-                    if bb2.isInside(bb1):
-                        if self.fine_check_inside(w1, w2):
-                            self.parents[i].append(j)
+                if bb2.isInside(bb1):
+                    if self.fine_check_inside(w1.Vertex1, f):
+                        self.parents[i].append(j)
+        progressbar.stop()
 
     # def check_inside(self):
     #     for i, w1 in enumerate(self.wires):
@@ -397,7 +408,11 @@ class sketchOnSurface:
                     return
             else:
                 shapes = []
+                progressbar = FreeCAD.Base.ProgressIndicator()
+                progressbar.start(
+                    "Sketch On Surface : Mapping shapes", len(shapes_1))
                 for i in range(len(shapes_1)):
+                    progressbar.next()
                     if not (len(shapes_1[i].Edges) == len(shapes_2[i].Edges)):
                         continue
                     if isinstance(shapes_1[i], Part.Face):
@@ -442,6 +457,7 @@ class sketchOnSurface:
                             shapes.append(ruled)
                         except ValueError:
                             pass
+                progressbar.stop()
                 # shapes.append(quad)
                 if shapes:
                     if len(shapes) == 1:
