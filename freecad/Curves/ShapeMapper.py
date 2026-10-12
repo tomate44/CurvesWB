@@ -46,13 +46,23 @@ class BoundarySorter:
                 self.sorted_wires.append([])
         self.done = False
 
+    def fine_check_inside(self, w1, w2):
+        face = Part.Face([w2])
+        if face.isNull():
+            return False
+        if face.isValid():
+            # pt = w1.Vertex1.Point
+            u, v = face.Surface.parameter(w1.Vertex1.Point)
+            return face.isPartOfDomain(u, v)
+        return False
+
     def check_inside(self):
         for i, w1 in enumerate(self.closed_wires):
             for j, w2 in enumerate(self.closed_wires):
                 if not i == j:
-                    if w2.BoundBox.isInside(w1.BoundBox):
-                        # if self.fine_check_inside(w1, w2):
-                        self.parents[i].append(j)
+                    if w2.optimalBoundingBox().isInside(w1.optimalBoundingBox()):
+                        if self.fine_check_inside(w1, w2):
+                            self.parents[i].append(j)
 
     def sort_pass(self):
         to_remove = []
@@ -583,32 +593,32 @@ class ShapeMapper:
         face = build_face(surface, wl, self.Tolerance)
         return face
 
-    def offset_face(self, face, offset):
+    def offset_surface(self, face, offset):
         if offset == 0.0:
-            return face
+            return face.Surface
         if pl := face.findPlane(self.Tolerance):
             off = face.copy()
             off.translate(pl.Axis * offset)
-            return off
+            return off.Surface
         if face.Surface.Continuity == 'C0':
             # TODO : create a C1 approximation
             raise RuntimeError("Surface must be at least C1 continuous")
-        return face.makeOffsetShape(offset, self.Tolerance).Face1
+        return Part.OffsetSurface(face.Surface, offset)
 
     @timer
     def get_shapes(self, offset=0.0, fillfaces=True):
-        off1 = self.offset_face(self.Target, offset).Face1
+        offsurf1 = self.offset_surface(self.Target, offset)
         if not fillfaces:
-            sh1 = self.map_on_surface(self.FlatWires, off1.Surface, False)
+            sh1 = self.map_on_surface(self.FlatWires, offsurf1, False)
             return Part.Compound(), sh1  # Compound of wires
         # fillfaces = True
         face_wires, other_wires = self.SortedWires
         faces = []
         for wl in face_wires:
-            face_1 = self.map_on_surface(wl, off1.Surface, True)
+            face_1 = self.map_on_surface(wl, offsurf1, True)
             faces.append(face_1)
 
-        openwl1 = self.map_on_surface(other_wires, off1.Surface, False).Wires
+        openwl1 = self.map_on_surface(other_wires, offsurf1, False).Wires
         open_wires = []
         closed_wires = []
         for w in openwl1:
@@ -622,10 +632,10 @@ class ShapeMapper:
         for j in range(n):
             i = j * 2
             # print(i)
-            face_1 = build_periodic_face(off1.Surface, closed_wires[i:i + 2])
+            face_1 = build_periodic_face(offsurf1, closed_wires[i:i + 2])
             faces.append(face_1)
 
-        wl = sh1 = self.map_on_surface(open_wires, off1.Surface, False)
+        wl = self.map_on_surface(open_wires, offsurf1, False)
         return Part.Compound(faces), wl
 
     @timer
