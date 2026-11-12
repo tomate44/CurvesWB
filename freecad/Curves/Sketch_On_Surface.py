@@ -118,7 +118,11 @@ class BoundarySorter:
                     bb2 = Part.Shape.optimalBoundingBox(w2)
                 else:
                     bb2 = Part.Shape.optimalBoundingBox(f)
-                # bb2.enlarge(1e-5) # should relate to tolerance
+                tol1 = w1.getTolerance(1)
+                tol2 = w2.getTolerance(1)
+                bbtol = 2 * max(tol1, tol2)
+                print(bbtol)
+                bb2.enlarge(bbtol)
                 if bb2.isInside(bb1):
                     if self.fine_check_inside(w1.Vertex1, f):
                         self.parents[i].append(j)

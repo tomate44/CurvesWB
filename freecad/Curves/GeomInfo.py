@@ -133,7 +133,8 @@ def bsplinecurveNode(cur):
     polySep.vertices = poles
 
     # *** Set markers ***
-    markerSep = coinNodes.markerSetNode((1, 0, 0), coin.SoMarkerSet.DIAMOND_FILLED_9_9)
+    markerSep = coinNodes.markerSetNode(
+        (1, 0, 0), coin.SoMarkerSet.DIAMOND_FILLED_9_9)
     markerSep.color = [(1, 0, 0)] + [(0.5, 0.0, 0.5)] * (len(poles) - 1)
 
     if rational:
@@ -157,7 +158,8 @@ def bsplinecurveNode(cur):
         for m in mults:
             multStr.append("\n%d" % m)
 
-        knotMarkerSep = coinNodes.markerSetNode((0, 0, 1), coin.SoMarkerSet.CIRCLE_FILLED_5_5)
+        knotMarkerSep = coinNodes.markerSetNode(
+            (0, 0, 1), coin.SoMarkerSet.CIRCLE_FILLED_5_5)
         knotMarkerSep.color = [(0, 0, 1)] * len(knotPoints)
 
         # *** Set mult text ***
@@ -221,7 +223,8 @@ def bsplinesurfNode(surf):
     polyColSep.color = [(0.5, 0.5, 0.5)] * len(flatPoles)
 
     # *** Set markers ***
-    markerSep = coinNodes.markerSetNode((1, 0, 0), coin.SoMarkerSet.DIAMOND_FILLED_9_9)
+    markerSep = coinNodes.markerSetNode(
+        (1, 0, 0), coin.SoMarkerSet.DIAMOND_FILLED_9_9)
     markerSep.color = [(1, 0, 0)] + [(0.0, 0.0, 0.2)] * (len(flatPoles) - 1)
 
     u0, u1, v0, v1 = surf.bounds()
@@ -268,7 +271,7 @@ def bsplinesurfNode(surf):
                     uiso_node = edge_node(ush, color, mult)
                     vizSep.addChild(uiso_node)
                     # nb_curves += 1
-                    # color = (0.0, 1 - r, r)
+                    #  color = (0.0, 1 - r, r)
             except Exception as exc:
                 debug(f"Error computing surface U Iso\n{exc}")
 
@@ -284,7 +287,7 @@ def bsplinesurfNode(surf):
                     viso_node = edge_node(vsh, color, mult)
                     vizSep.addChild(viso_node)
                     # nb_curves += 1
-                    # color = (1 - r, 0.0, r)
+                    #  color = (1 - r, 0.0, r)
             except Exception as exc:
                 debug(f"Error computing surface V Iso\n{exc}")
 
@@ -298,7 +301,8 @@ class GeomNode:
         AxisXcolor = view_param.GetUnsigned('AxisXColor', 0xff000000)
         AxisYcolor = view_param.GetUnsigned('AxisYColor', 0x00ff0000)
         AxisZcolor = view_param.GetUnsigned('AxisZColor', 0x0000ff00)
-        curves_param = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves")
+        curves_param = FreeCAD.ParamGet(
+            "User parameter:BaseApp/Preferences/Mod/Curves")
         Ucolor = curves_param.GetUnsigned('GeomInfoColorU', AxisXcolor)
         Vcolor = curves_param.GetUnsigned('GeomInfoColorV', AxisYcolor)
         Wcolor = curves_param.GetUnsigned('GeomInfoColorW', AxisZcolor)
@@ -332,7 +336,8 @@ class curveNode(GeomNode):
             culen = self.edge.Length / 2
             axis_end = curve.Axis * culen
             axis = Part.makeLine(curve.Center, curve.Center + axis_end)
-            axis_node = edge_node(axis, self.Zcolor, self.lineWidth, self.linePattern)
+            axis_node = edge_node(
+                axis, self.Zcolor, self.lineWidth, self.linePattern)
             self.node.addChild(axis_node)
         if isinstance(curve, (Part.BezierCurve, Part.BSplineCurve)):
             self.node.addChild(bsplinecurveNode(curve))
@@ -343,21 +348,23 @@ class curveNode(GeomNode):
             self.node.addChild(cn.node)
         if curve.isPeriodic():
             edge = curve.toShape()
+        elif isinstance(curve, Part.Hyperbola):
+            edge = self.edge
         else:
             efp, elp = self.edge.ParameterRange
             try:
                 fp = curve.parameterAtDistance(-self.edge.Length, efp)
                 lp = curve.parameterAtDistance(self.edge.Length, elp)
-            except Part.OCCError:  # Hyperbola
+            except Part.OCCError:
                 ext_range = (elp - efp) * 1.0
                 fp = max(efp - ext_range, curve.FirstParameter)
                 lp = min(elp + ext_range, curve.LastParameter)
-                print(fp, lp)
             try:
                 edge = curve.toShape(fp, lp)
             except Part.OCCError:  # OffsetCurve
                 edge = self.edge
-        curve_node = edge_node(edge, self.Xcolor, self.lineWidth, self.linePattern)
+        curve_node = edge_node(
+            edge, self.Xcolor, self.lineWidth, self.linePattern)
         self.node.addChild(curve_node)
 
 
@@ -367,7 +374,8 @@ class surfNode(GeomNode):
     def __init__(self, face):
         super().__init__()
         self.face = face
-        curves_param = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves")
+        curves_param = FreeCAD.ParamGet(
+            "User parameter:BaseApp/Preferences/Mod/Curves")
         self.num_iso = curves_param.GetInt('GeomInfoNumIso', 20)
         self.build_node()
 
@@ -384,7 +392,8 @@ class surfNode(GeomNode):
             if axis_pr < 1e-7:
                 axis_pr = self.face.BoundBox.DiagonalLength
             axis = axis.Curve.toShape(p1 - axis_pr * 2, p2 + axis_pr * 2)
-            axis_node = edge_node(axis, self.Zcolor, self.lineWidth, self.linePattern)
+            axis_node = edge_node(
+                axis, self.Zcolor, self.lineWidth, self.linePattern)
             self.node.addChild(axis_node)
         if isinstance(surf, (Part.BezierSurface, Part.BSplineSurface)):
             self.node.addChild(bsplinesurfNode(surf))
@@ -401,7 +410,8 @@ class surfNode(GeomNode):
         for u in upars:
             uiso = tsurf.uIso(u)
             # Part.show(uiso.toShape(*ts.Bounds[2:]))
-            self.node.addChild(edge_node(uiso.toShape(), color, width, self.linePattern))
+            self.node.addChild(
+                edge_node(uiso.toShape(), color, width, self.linePattern))
             color = self.Xcolor
             width = self.lineWidth
         color = [0.5 * v for v in self.Ycolor]
@@ -409,17 +419,20 @@ class surfNode(GeomNode):
         for v in vpars:
             viso = tsurf.vIso(v)
             # Part.show(viso.toShape(*ts.Bounds[:2]))
-            self.node.addChild(edge_node(viso.toShape(), color, width, self.linePattern))
+            self.node.addChild(
+                edge_node(viso.toShape(), color, width, self.linePattern))
             color = self.Ycolor
             width = self.lineWidth
 
 
 class HUDNode:
     def __init__(self):
-        curves_param = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Curves")
+        curves_param = FreeCAD.ParamGet(
+            "User parameter:BaseApp/Preferences/Mod/Curves")
         left_margin = curves_param.GetFloat('GeomInfoLeftMargin', 0.02)
         top_margin = curves_param.GetFloat('GeomInfoTopMargin', 0.1)
-        f_name = curves_param.GetString('GeomInfoFontString', "FreeMono,FreeSans,sans")
+        f_name = curves_param.GetString(
+            'GeomInfoFontString', "FreeMono,FreeSans,sans")
         size = curves_param.GetInt('GeomInfoFontSize', 14)
         pref_col = curves_param.GetString('GeomInfoFontColor', "0,0,0")
 
@@ -429,7 +442,8 @@ class HUDNode:
         self.cam.viewportMapping = coin.SoCamera.LEAVE_ALONE
 
         self.trans = coin.SoTranslation()
-        self.trans.translation = (-1.0 + left_margin * 2, 1.0 - top_margin * 2, 0)
+        self.trans.translation = (-1.0 + left_margin * 2,
+                                  1.0 - top_margin * 2, 0)
 
         self.myFont = coin.SoFont()
         self.myFont.name = f_name
@@ -667,13 +681,14 @@ class GeomInfo:
         return ret
 
     def getTopo(self):
-        sel = FreeCADGui.Selection.getSelectionEx()
+        sel = FreeCADGui.Selection.getSelectionEx("", 0)
         if sel != []:
-            sel0 = sel[0]
+            sel0 = sel[-1]
             if sel0.HasSubObjects:
                 try:
-                    self.ss = sel0.SubObjects[-1]
                     self.so = sel0.Object
+                    self.ss = self.so.getSubObject(sel0.SubElementNames[-1],
+                                                   retType=0)
                 except Exception as exc:
                     debug(f"{exc}")
                     return

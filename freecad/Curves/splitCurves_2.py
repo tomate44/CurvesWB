@@ -32,6 +32,7 @@ debug = _utils.doNothing
 
 class split:
     """Splits the selected edge."""
+
     def __init__(self, obj, e):
         obj.Proxy = self
         obj.addProperty("App::PropertyLinkSub",
@@ -72,7 +73,7 @@ class split:
         if fp.Source is None:
             return None, None
         if fp.Source[1] == []:  # No subshape given, take wire 1
-            if fp.Source[0].Shape.Wires:
+            if fp.Source[0].Shape.Wires and len(fp.Source[0].Shape.Wire1.Edges) > 1:
                 w = fp.Source[0].Shape.Wire1
                 e = w.approximate(1e-9, 1e-7, len(w.Edges), 7).toShape()
                 # double tol2d = gp::Resolution();
@@ -83,7 +84,8 @@ class split:
                 e = fp.Source[0].Shape.Edge1
                 w = None
             else:
-                FreeCAD.Console.PrintError("SplitCurve '{}' : Input shape has no wires or edges\n".format(fp.Label))
+                FreeCAD.Console.PrintError(
+                    "SplitCurve '{}' : Input shape has no wires or edges\n".format(fp.Label))
                 return None, None
         else:
             e = _utils.getShape(fp, "Source", "Edge")
@@ -195,7 +197,8 @@ class split:
                         # print([e.Length for e in edges])
                         se = Part.sortEdges(edges)
                         if len(se) > 1:
-                            FreeCAD.Console.PrintError("Split curve : failed to build temp Wire !")
+                            FreeCAD.Console.PrintError(
+                                "Split curve : failed to build temp Wire !")
                             # print(se)
                         w = Part.Wire(se[0])
         else:
@@ -232,10 +235,12 @@ class split:
                     debug("Replacing closed edge")
                 elif len(e.Vertexes) == 2:
                     if e.Vertex1.Point.distanceToPoint(w.Vertexes[0].Point) < 1e-7:
-                        nsh = sh.replaceShape([(e, w), (e.Vertex1, w.Vertexes[0]), (e.Vertex2, w.Vertexes[-1])])
+                        nsh = sh.replaceShape(
+                            [(e, w), (e.Vertex1, w.Vertexes[0]), (e.Vertex2, w.Vertexes[-1])])
                         debug("Replacing open edge, ordered vertexes")
                     elif e.Vertex1.Point.distanceToPoint(w.Vertexes[-1].Point) < 1e-7:
-                        nsh = sh.replaceShape([(e, w), (e.Vertex1, w.Vertexes[-1]), (e.Vertex2, w.Vertexes[0])])
+                        nsh = sh.replaceShape(
+                            [(e, w), (e.Vertex1, w.Vertexes[-1]), (e.Vertex2, w.Vertexes[0])])
                         debug("Replacing open edge, reversed vertexes")
                 try:
                     fix = Part.ShapeFix.Shape(nsh)
@@ -244,7 +249,8 @@ class split:
                     nsh.check(True)
                     obj.Shape = nsh
                 except Exception as exc:
-                    FreeCAD.Console.PrintError(f"Split curve : Failed to rebuild complete shape\n{exc}")
+                    FreeCAD.Console.PrintError(
+                        f"Split curve : Failed to rebuild complete shape\n{exc}")
                     obj.Shape = w
                 obj.Placement = sh.Placement
             else:
@@ -287,13 +293,13 @@ class MarkerOnEdge(graphics.Marker):
         name = o[1][0]
         if 'Vertex' in name:
             n = int(name.lstrip('Vertex'))
-            return(o[0].Shape.Vertexes[n - 1])
+            return (o[0].Shape.Vertexes[n - 1])
         elif 'Edge' in name:
             n = int(name.lstrip('Edge'))
-            return(o[0].Shape.Edges[n - 1])
+            return (o[0].Shape.Edges[n - 1])
         elif 'Face' in name:
             n = int(name.lstrip('Face'))
-            return(o[0].Shape.Faces[n - 1])
+            return (o[0].Shape.Faces[n - 1])
 
     def add_text(self):
         self._text_switch.whichChild = coin.SO_SWITCH_ALL
@@ -408,6 +414,7 @@ class pointEditor(object):
     points can be :
     - Vector (free point)
     - (Vector, shape) (point on shape)"""
+
     def __init__(self, points=[], fp=None):
         self.points = list()
         self.fp = fp
@@ -458,7 +465,8 @@ class pointEditor(object):
         # self.root.on_drag.append(self.update_curve)
         # Keyboard callback
         # self.events = coin.SoEventCallback()
-        self._controlCB = self.root.events.addEventCallback(coin.SoKeyboardEvent.getClassTypeId(), self.controlCB)
+        self._controlCB = self.root.events.addEventCallback(
+            coin.SoKeyboardEvent.getClassTypeId(), self.controlCB)
         # populate root node
         # self.root.addChild(self.events)
         self.root += self.points
@@ -512,7 +520,8 @@ class pointEditor(object):
                 o._text_type += 1
 
     def quit(self):
-        self.root.events.removeEventCallback(coin.SoKeyboardEvent.getClassTypeId(), self._controlCB)
+        self.root.events.removeEventCallback(
+            coin.SoKeyboardEvent.getClassTypeId(), self._controlCB)
         self.root.unregister()
         # self.root.removeAllChildren()
         self.sg.removeChild(self.root)
@@ -533,7 +542,7 @@ class splitVP:
         self.ps = 0.0
 
     def getIcon(self):
-        return(TOOL_ICON)
+        return (TOOL_ICON)
 
     def attach(self, vobj):
         self.Object = vobj.Object
@@ -602,7 +611,8 @@ class splitVP:
                     elif p._text_type == 1:
                         value = "{:.3f}mm".format(temp.length())
                     elif p._text_type == 2:
-                        value = "{:.3f}%".format(100 * temp.length() / e.Length)
+                        value = "{:.3f}%".format(
+                            100 * temp.length() / e.Length)
                     params.append(value)
             self.Object.Values = params
             vobj.Selectable = self.select_state
@@ -654,8 +664,10 @@ class splitVP:
 
 class splitCommand:
     """Splits the selected edges."""
+
     def makeSplitFeature(self, e):
-        splitCurve = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", "SplitCurve")
+        splitCurve = FreeCAD.ActiveDocument.addObject(
+            "Part::FeaturePython", "SplitCurve")
         split(splitCurve, e)
         splitVP(splitCurve.ViewObject)
         FreeCAD.ActiveDocument.recompute()
@@ -665,12 +677,14 @@ class splitCommand:
     def Activated(self):
         sel = FreeCADGui.Selection.getSelectionEx()
         if sel == []:
-            FreeCAD.Console.PrintError("{} :\n{}\n".format(__title__, __usage__))
+            FreeCAD.Console.PrintError(
+                "{} :\n{}\n".format(__title__, __usage__))
         for selobj in sel:
             if selobj.HasSubObjects:
                 for i in range(len(selobj.SubObjects)):
                     if isinstance(selobj.SubObjects[i], Part.Edge):
-                        self.makeSplitFeature((selobj.Object, selobj.SubElementNames[i]))
+                        self.makeSplitFeature(
+                            (selobj.Object, selobj.SubElementNames[i]))
                         if selobj.Object.Shape:
                             if len(selobj.Object.Shape.Edges) == 1:
                                 selobj.Object.ViewObject.Visibility = False
