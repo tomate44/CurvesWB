@@ -13,6 +13,46 @@ vec2 = FreeCAD.Base.Vector2d
 err = FreeCAD.Console.PrintError
 
 
+class PCurve:
+    def __init__(self, *args):
+        if isinstance(args[0], Part.Edge) and isinstance(args[1], Part.Face):
+            self.curve2d, self.fp, self.lp = args[1].curveOnSurface(args[0])
+        elif len(args) == 3:
+            self.curve2d, self.fp, self.lp = args
+
+
+class Wire2D:
+    def __init__(self, pcurves):
+        self.pcurves = pcurves
+
+
+class FlattenedSurface:
+    XY = Part.Plane().toShape()
+
+    def __init__(self):
+        self.Matrix = FreeCAD.Matrix()
+
+    def mat2d(self):
+        cells = ("A11", "A12", "A13", "A21", "A22", "A23")
+        return [getattr(self.Matrix, cell) for cell in cells]
+
+    def get_wire2d(self, wire):
+        cosl = []
+        trfwire = wire.transformGeometry(self.Matrix, True)
+        for e in trfwire.Wire1.OrderedEdges:
+            pc, fp, lp = FlattenedSurface.XY.curveOnSurface(e)
+            # pc.transform(self.mat2d())
+            cosl.append(PCurve(pc, fp, lp))
+        return Wire2D(cosl)
+
+
+class FlattenedCylinder(FlattenedSurface):
+    def __init__(self, cylinder):
+        super().__init__()
+        self.BasisSurface = cylinder
+        self.Matrix.scale(1 / cylinder.Radius, 1, 1)
+
+
 class FlattenCylinder:
     def __init__(self, face):
         self.cylindricalFace = canonical_face(face)
@@ -91,7 +131,8 @@ def ruled_surface(curve1, curve2):
     surf = Part.BSplineSurface()
     poles = list(zip(bs1.getPoles(), bs2.getPoles()))
     mults = bs1.getMultiplicities()
-    surf.buildFromPolesMultsKnots(poles, mults, [2, 2], bs1.getKnots(), [0, 1], False, False, bs1.Degree, 1)
+    surf.buildFromPolesMultsKnots(poles, mults, [2, 2], bs1.getKnots(), [
+                                  0, 1], False, False, bs1.Degree, 1)
     return surf
 
 
@@ -198,7 +239,8 @@ def flat_cone_surface(cone, inPlace=False, size=0.0):
     end = start + 2 * size
     u0, u1, v0, v1 = rs.bounds()
     if hasattr(rs, "scaleKnotsToBounds"):
-        rs.scaleKnotsToBounds(u0, 2 * pi * hyp.length() / cone.Radius, start, end)
+        rs.scaleKnotsToBounds(
+            u0, 2 * pi * hyp.length() / cone.Radius, start, end)
     else:
         rs.setVKnots([start, end])
         knots = rs.getUKnots()
@@ -303,7 +345,6 @@ def intersection(lines, tol=1e-7):
         point += pt
     point /= len(interlist)
     return point
-
 
 
 def flat_conical_surface(conic, inPlace=False, size=0.0):
@@ -415,7 +456,8 @@ def flatten_face(face, inPlace=False, size=0.0):
             u, v = face.Surface.parameter(face.Surface.Apex)
             vert = Part.Vertex(FreeCAD.Vector(u, v, 0))
             comp.add(vert)
-            size = 1.01 * max(abs(comp.BoundBox.YMax), abs(comp.BoundBox.YLength))
+            size = 1.01 * max(abs(comp.BoundBox.YMax),
+                              abs(comp.BoundBox.YLength))
             # offset = face.Surface.parameter(face.Surface.Apex)
             # size = abs(face.ParameterRange[3] - offset[1])
             # print(size)
@@ -427,7 +469,8 @@ def flatten_face(face, inPlace=False, size=0.0):
     # elif isinstance(face.Surface, Part.BSplineSurface):
     #     flatsurf = flat_conical_surface(face.Surface, inPlace, size)
     else:
-        raise TypeError(f"Flattening surface of type {face.Surface.TypeId} not implemented")
+        raise TypeError(
+            f"Flattening surface of type {face.Surface.TypeId} not implemented")
     wl = []
     ow = None
     build_face = True
@@ -442,7 +485,8 @@ def flatten_face(face, inPlace=False, size=0.0):
             if w.Orientation == "Reversed":
                 nw.reverse()
         except (Part.OCCError, AssertionError):
-            FreeCAD.Console.PrintError(f"Wire{i + 1} is not valid. Switching to Compound output.\n")
+            FreeCAD.Console.PrintError(
+                f"Wire{i + 1} is not valid. Switching to Compound output.\n")
             build_face = False
             nw = Part.Compound(el)
         if w.isPartner(face.OuterWire):
@@ -457,4 +501,3 @@ def flatten_face(face, inPlace=False, size=0.0):
         ff.cutHoles(wl)
     ff.validate()
     return ff
-

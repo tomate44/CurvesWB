@@ -22,27 +22,28 @@ class CurvesWorkbench(Gui.Workbench):
             graphics.Marker([App.Vector()])
             # App.Console.PrintMessage("Pivy.graphics interaction library enabled\n")
         except Exception as exc:
-            App.Console.PrintWarning(str(exc) + "\nPivy.graphics interaction library is not available on this computer\n")
+            App.Console.PrintWarning(str(
+                exc) + "\nPivy.graphics interaction library is not available on this computer\n")
 
-        from . import lineFP # cleaned
+        from . import lineFP  # cleaned
         from . import gordon_profile_FP
-        from . import curveExtendFP # TODO use basisSpline
+        from . import curveExtendFP  # TODO use basisSpline
         from . import JoinCurves
-        from . import splitCurves_2 # cleaned
-        from . import Discretize # cleaned
+        from . import splitCurves_2  # cleaned
+        from . import Discretize  # cleaned
         from . import approximate
-        from . import ParametricBlendCurve # cleaned
+        from . import ParametricBlendCurve  # cleaned
         from . import ParametricComb
         from . import ZebraTool
         from . import TrimFace
         from . import GeomInfo
-        from . import ExtractShapes # cleaned
+        from . import ExtractShapes  # cleaned
         from . import IsoCurve
         from . import Sketch_On_Surface
         from . import Sweep2Rails
         from . import curveOnSurfaceFP
         from . import blendSurfaceFP
-        from . import parametricSolid # cleaned
+        from . import parametricSolid  # cleaned
         from . import ProfileSketch
         from . import pasteSVG
         from . import pipeshellProfileFP
@@ -68,6 +69,7 @@ class CurvesWorkbench(Gui.Workbench):
         from . import WaterLineFP
         from . import MapOnFaceFP
         from . import joinSurfacesFP
+        from . import RectangularFaceFP
         # from . import ProfileSupportFP
         # from . import Sweep2RailsFP
         # from . import HQRuledSurfaceFP
@@ -82,7 +84,8 @@ class CurvesWorkbench(Gui.Workbench):
                     "profile", "pipeshell", "gordon", "segment_surface", "Curves_JoinSurface", "comp_spring",
                     "ReflectLines", "MultiLoft", "Curves_BlendSurf2", "Curves_BlendSolid",
                     "Curves_FlattenFace", "Curves_RotationSweep", 'Curves_SurfaceAnalysis',
-                    'Curves_DraftAnalysis', "Curve_TruncateExtendCmd", "Curves_WaterlineCurves",]  # ,"Curves_ProfileSupport", "Curves_Sweep2Rails"]
+                    'Curves_DraftAnalysis', "Curve_TruncateExtendCmd", "Curves_WaterlineCurves",
+                    "Curves_RectangularFace"]  # ,"Curves_ProfileSupport", "Curves_Sweep2Rails"]
         misclist = ["GeomInfo", "extract", "solid", "pasteSVG", "to_console", "Curves_adjacent_faces",
                     "Curves_bspline_to_console"]
 
@@ -117,7 +120,8 @@ class CurvesWorkbench(Gui.Workbench):
             self.View_Directions.append(direction)
         except AttributeError:  # When ActiveView has no camera (TechDraw)
             pass
-        self.Selection.append(Gui.Selection.getSelectionObject(doc, obj, sub, pnt))
+        self.Selection.append(
+            Gui.Selection.getSelectionObject(doc, obj, sub, pnt))
 
     def removeSelection(self, doc, obj, sub):
         nl = []
@@ -125,7 +129,8 @@ class CurvesWorkbench(Gui.Workbench):
         for i in range(len(self.Selection)):
             doc_match = (doc == self.Selection[i].Document.Name)
             obj_match = (obj == self.Selection[i].Object.Name)
-            sub_match = (len(sub) == 0) or (sub in self.Selection[i].SubElementNames)
+            sub_match = (len(sub) == 0) or (
+                sub in self.Selection[i].SubElementNames)
             if doc_match and obj_match and sub_match:
                 continue
             nl.append(self.Selection[i])
@@ -140,10 +145,12 @@ class CurvesWorkbench(Gui.Workbench):
         """This is executed whenever the user right-clicks on screen.
         recipient" will be either 'view' or 'tree'"""
         if recipient == "View":
-            contextlist = ["Curves_adjacent_faces", "Curves_bspline_to_console"]  # list of commands
+            contextlist = ["Curves_adjacent_faces",
+                           "Curves_bspline_to_console"]  # list of commands
             self.appendContextMenu("Curves", contextlist)
         elif recipient == "Tree":
-            contextlist = ["join", "split", "Discretize", "Approximate", "Interpolate"]  # list of commands
+            contextlist = ["join", "split", "Discretize",
+                           "Approximate", "Interpolate"]  # list of commands
             self.appendContextMenu("Curves", contextlist)
 
     def GetClassName(self):

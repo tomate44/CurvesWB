@@ -19,12 +19,12 @@ class TrimmedSurface:
 
     def __init__(self, source):
         self._inf = 1e99
-        if source.isDerivedFrom("Part::GeomSurface"):
-            self.basis_surf = source
-            self.basis_face = None
-        elif isinstance(source, Part.Face):
-            self.basis_surf = source.Surface
-            self.basis_face = source
+        self.basis_surf = source
+        self.basis_face = None
+        # print(source.isNull())
+        if hasattr(source, "Face1"):
+            self.basis_surf = source.Face1.Surface
+            self.basis_face = source.Face1
         self.reset_boundaries()
 
     def reset_boundaries(self):
@@ -175,5 +175,3 @@ class TrimmedSurface:
     def Face(self):
         "The resulting trimmed face"
         return self.Surface.toShape()
-
-

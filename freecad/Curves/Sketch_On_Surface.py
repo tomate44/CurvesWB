@@ -121,7 +121,7 @@ class BoundarySorter:
                 tol1 = w1.getTolerance(1)
                 tol2 = w2.getTolerance(1)
                 bbtol = 2 * max(tol1, tol2)
-                print(bbtol)
+                # print(bbtol)
                 bb2.enlarge(bbtol)
                 if bb2.isInside(bb1):
                     if self.fine_check_inside(w1.Vertex1, f):
